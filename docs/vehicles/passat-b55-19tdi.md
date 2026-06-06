@@ -1,0 +1,54 @@
+---
+id: passat-b55-19tdi
+name: VW Passat B5.5 1.9 TDI 105cp
+expectedProtocol: ISO_14230_4_KWP_FAST
+supportedPidCount: 9
+extended: false
+---
+
+# VW Passat B5.5 — 1.9 TDI 105 cp (diesel, manual)
+
+The **hard case**, and the one to be most careful about. The B5.5 (2000–2005 facelift) 1.9 PD TDI
+uses **K-line** for diagnostics: **ISO 14230-4 KWP2000 (fast init)**, sometimes ISO 9141-2. Diesel
+EOBD became mandatory in the EU in 2004, so generic engine diagnostics are available but **thinner
+and slower** than on CAN cars, and some Mode 01 PIDs may simply return `NO DATA`.
+
+## Protocol
+
+- **Expected:** `ISO_14230_4_KWP_FAST` (ELM327 protocol `5`); fallback `ISO_9141_2` (`3`).
+- K-line uses a slower init and lower throughput; the ELM327 may show `BUS INIT:` and `SEARCHING...`.
+  The app uses longer timeouts here and polls fewer PIDs.
+
+## Live data we surface (`supportedPids`, 9)
+
+Conservative, realistic K-line diesel set:
+
+`0104` load · `0105` coolant · `010B` MAP (boost) · `010C` RPM · `010D` speed · `010F` intake air
+temp · `0111` accelerator/throttle · `011F` run time · `0142` module voltage
+
+> No generic MAF/oil-temp/fuel-rate here via standard OBD2 — those live in **VAG measuring blocks**
+> that a generic ELM327 cannot read. Genuine extra data needs VCDS-style tooling (out of scope).
+
+## Fault codes
+
+- Read **stored** (Mode 03) and **pending** (Mode 07); clear with Mode 04. The engine ECU answers
+  generic powertrain DTCs.
+
+## Extended PIDs
+
+None. **Mode 22 (UDS) does not apply** to this K-line/KWP2000 ECU; VAG measuring-group blocks are not
+accessible generically. This is the documented limit, not an app bug.
+
+## On-car checklist (mirrored into `testChecklist`)
+
+1. Connect over BLE, ignition on. Expect a brief `BUS INIT` / `SEARCHING...`.
+2. Confirm protocol shows **KWP2000 (fast)** or **ISO 9141-2**.
+3. Read live data slowly: RPM (~850 idle), coolant, MAP/boost under load, IAT, voltage.
+4. Some PIDs may show "not supported" — that is expected; only the bitmap-supported ones appear.
+5. Read VIN (Mode 09 may be unsupported on this ECU — record the result).
+6. Read DTCs; clear a harmless one and confirm.
+
+## Notes
+
+Treat slow responses and missing PIDs as **normal** for this car. If engine RPM/coolant/DTCs read and
+clear, the app is working correctly on K-line.

@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# test / build output
+coverage/
+dist/
+build/
+
+# Expo / native (Phase 2)
+.expo/
+.expo-shared/
+ios/
+android/
+*.orig.*
+web-build/
+
+# misc
+*.log
+.DS_Store
+.env*.local

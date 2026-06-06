@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Bolid Tester",
+    "slug": "bolid-tester",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "bolidtester",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bolidtester.app",
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "Bolid Tester connects to your OBD2 Bluetooth adapter to read vehicle diagnostics.",
+        "NSBluetoothPeripheralUsageDescription": "Bolid Tester connects to your OBD2 Bluetooth adapter to read vehicle diagnostics."
+      }
+    },
+    "android": {
+      "package": "com.bolidtester.app",
+      "permissions": [
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "neverForLocation": true
+        }
+      ]
+    ],
+    "_comment": "Phase 2 scaffolding. The native build (Expo prebuild / EAS) is done on a developer machine; not exercised in the cloud container."
+  }
+}
