@@ -8,7 +8,7 @@ import { isKLine, ProtocolId } from '../obd/protocols';
 const SAMPLE_VINS: Record<string, string> = {
   generic: '1HGBH41JXMN109186',
   'golf-plus-2009-20tdi': 'WVWZZZ1KZ9W000001',
-  'fiat-punto-2008-12': 'ZFA18800000000001',
+  'fiat-punto-2008-12': 'ZFA19900000438592', // real 199-body (Grande Punto) VIN
   'passat-b55-19tdi': 'WVWZZZ3BZ4E000001',
 };
 

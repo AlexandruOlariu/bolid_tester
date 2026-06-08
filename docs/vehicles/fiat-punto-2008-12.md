@@ -8,9 +8,11 @@ extended: false
 
 # Fiat Grande Punto 1.2 2008 — petrol, manual
 
-A **Grande Punto (199 body)** small petrol car. By 2008 the EU 1.2 Punto is the Grande Punto, which
-uses **CAN (ISO 15765-4)** — so it behaves much like the Golf reference rather than the older K-line
-Puntos. The engine is the **1.2 8v FIRE**, which is **MAP / speed-density (no MAF sensor)**.
+A **Grande Punto (199 body)** small petrol car — confirmed by the VIN prefix `ZFA199…`
+(`ZFA19900000438592`). By 2008 the EU 1.2 Punto is the Grande Punto, which uses
+**CAN (ISO 15765-4)** — so it behaves much like the Golf reference rather than the older K-line
+Puntos. The engine is the **1.2 8v FIRE** (engine code **199A4.000**, 48 kW / 64 cp), which is
+**MAP / speed-density (no MAF sensor)**.
 
 ## Protocol
 

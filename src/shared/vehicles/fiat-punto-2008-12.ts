@@ -5,7 +5,7 @@ export const fiatPunto2008: VehicleProfile = {
   id: 'fiat-punto-2008-12',
   name: 'Fiat Grande Punto 1.2 2008 (petrol)',
   year: 2008,
-  engine: '1.2 8v petrol (FIRE)',
+  engine: '1.2 8v petrol (199A4.000 FIRE, 48 kW)',
   fuel: 'petrol',
   expectedProtocol: 'ISO_15765_4_CAN_11_500',
   supportedPids: [
