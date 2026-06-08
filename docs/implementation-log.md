@@ -5,9 +5,32 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Phase 2 — Mobile app (Expo + Tamagui + BLE)
+
+**Status:** ✅ code complete. Core stays green here; the RN app compiles/runs on a dev machine /
+EAS (native build can't run in the container). See [`phase2-mobile-app.md`](./phase2-mobile-app.md).
+
+Implemented the feature-sliced UI over the tested core:
+- `src/shared/transports/ble/BleTransport.ts` — `Transport` over `react-native-ble-plx` with
+  **runtime characteristic discovery** (no hard-coded UUIDs); `permissions.ts`, `manager.ts`,
+  and a dependency-free `src/shared/lib/base64.ts` (unit-tested) for BLE payloads.
+- `src/shared/state/*` — Zustand stores (`sessionStore`, `settingsStore` incl. the adapter I/O log).
+- `src/shared/ui/*` — Tamagui widgets: `Screen`, `StatusBadge`, `ValueCard`, SVG `Gauge`.
+- `src/features/*` — seven slices (`connection`, `vehicle-select`, `live-data`, `fault-codes`,
+  `vehicle-info`, `extended-pids`, `settings`), each with `ui / styles / hooks / api / model`.
+- `src/app/*` — expo-router shell (tab navigation) + `tamagui.config.ts`, `babel.config.js`,
+  `metro.config.js`; `tsconfig.app.json` for the full-app typecheck; `@/*` path alias.
+
+The Settings **simulator toggle** lets the whole UI run with no hardware, driving the same
+`DiagnosticSession` the BLE path uses.
+
+Verified in container (core scope): `npm run typecheck` (0 errors), `npm test` (36 passing),
+`npm run lint` (0 issues). Full-app typecheck (`npm run typecheck:app`) runs on a dev machine after
+installing the RN deps.
+
 ## Phase 1 — OBD2 core + simulator + tests
 
-**Status:** ✅ complete and verified (typecheck clean, 34 tests pass, lint clean).
+**Status:** ✅ complete and verified (typecheck clean, 36 tests pass, lint clean).
 
 Implemented the platform-agnostic engine under `src/shared`:
 - `obd-core/transport` — `Transport` interface + `MockTransport` (virtual ELM327) + `scenarios`

@@ -3,20 +3,42 @@
   "version": "0.1.0",
   "private": true,
   "description": "Generic OBD2/EOBD diagnostics app (React Native/Expo). Documentation-driven — see docs/.",
+  "main": "expo-router/entry",
   "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "test": "jest",
-    "test:watch": "jest --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint \"src/**/*.ts\"",
-    "format": "prettier --write \"src/**/*.ts\" \"docs/**/*.md\""
+    "typecheck:app": "tsc -p tsconfig.app.json --noEmit",
+    "lint": "eslint \"src/shared/lib/**/*.ts\" \"src/shared/obd-core/**/*.ts\" \"src/shared/vehicles/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\" \"docs/**/*.md\""
   },
   "keywords": ["obd2", "elm327", "ble", "diagnostics", "react-native", "expo"],
   "license": "MIT",
+  "dependencies": {
+    "@tamagui/config": "^1.125.17",
+    "expo": "~53.0.0",
+    "expo-dev-client": "~5.1.0",
+    "expo-router": "~5.0.0",
+    "expo-status-bar": "~2.2.0",
+    "react": "19.0.0",
+    "react-native": "0.79.2",
+    "react-native-ble-plx": "^3.5.0",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.10.0",
+    "react-native-svg": "15.11.2",
+    "tamagui": "^1.125.17",
+    "zustand": "^5.0.3"
+  },
   "devDependencies": {
+    "@tamagui/babel-plugin": "^1.125.17",
     "@types/jest": "^29.5.12",
     "@types/node": "^20.12.7",
+    "@types/react": "~19.0.0",
     "@typescript-eslint/eslint-plugin": "^7.7.0",
     "@typescript-eslint/parser": "^7.7.0",
+    "babel-preset-expo": "~13.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "jest": "^29.7.0",
@@ -24,5 +46,5 @@
     "ts-jest": "^29.1.2",
     "typescript": "^5.4.5"
   },
-  "comment_phase2_dependencies": "The React Native UI layer (Phase 2) adds these runtime deps, installed on a developer machine / EAS (they require a native build and cannot run in the remote container): expo, expo-dev-client, expo-router, react, react-native, react-native-ble-plx, react-native-svg, zustand, tamagui, @tamagui/config."
+  "_note": "Core tooling (ts/jest/eslint) is installed and verified in CI/container. The RN runtime deps require a native build; install on a dev machine with `npm install` (or `npx expo install` to align native versions) — see docs/phase2-mobile-app.md."
 }

@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2021", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "types": ["node", "react", "react-native"],
+    "allowJs": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "noUnusedLocals": false
+  },
+  "//": "Full-app typecheck. Run on a dev machine after installing the RN deps: `npm run typecheck:app`.",
+  "include": ["src/**/*.ts", "src/**/*.tsx", "tamagui.config.ts"]
+}

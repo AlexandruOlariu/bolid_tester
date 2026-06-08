@@ -12,8 +12,10 @@ OBD2-compliant car.
 
 - ✅ **Phase 0** — docs foundation + scaffolding.
 - ✅ **Phase 1** — platform-agnostic OBD2 core + ELM327 simulator + tests (runs with no hardware).
-- ⏳ **Phase 2** — React Native (Expo) UI + BLE transport (`react-native-ble-plx`).
-- ⏳ **Phase 3** — experimental manufacturer (Mode 22) PIDs, polish, EAS builds.
+- ✅ **Phase 2** — React Native (Expo) feature-sliced UI + BLE transport (`react-native-ble-plx`) +
+  experimental Mode 22 PIDs. Builds/runs on a dev machine / EAS — see
+  [`docs/phase2-mobile-app.md`](./docs/phase2-mobile-app.md).
+- ⏳ **Phase 3** — on-car validation against the three example cars, polish, store builds.
 
 See [`docs/implementation-log.md`](./docs/implementation-log.md) for details.
 

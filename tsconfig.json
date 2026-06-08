@@ -14,7 +14,14 @@
     "declaration": false,
     "noEmit": true,
     "types": ["node", "jest"],
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] }
   },
-  "include": ["src/**/*.ts"]
+  "//": "Scoped to the platform-agnostic core (tested in the container). The RN app is typechecked with tsconfig.app.json on a dev machine.",
+  "include": [
+    "src/shared/lib/**/*.ts",
+    "src/shared/obd-core/**/*.ts",
+    "src/shared/vehicles/**/*.ts"
+  ]
 }

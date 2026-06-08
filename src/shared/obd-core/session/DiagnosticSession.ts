@@ -47,6 +47,15 @@ export class DiagnosticSession {
     return this.protocol;
   }
 
+  async disconnect(): Promise<void> {
+    this.client.detach();
+    try {
+      await this.transport.disconnect();
+    } catch {
+      // best-effort
+    }
+  }
+
   async connect(): Promise<SessionInfo> {
     if (this.transport.status !== 'connected') await this.transport.connect();
     this.client.attach();
