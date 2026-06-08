@@ -5,6 +5,28 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Phase 3 — Polish (in progress)
+
+Done:
+- **Verified the whole app typechecks** against the real RN/Tamagui/`react-native-ble-plx` types
+  (`npm run typecheck:app` → 0 errors), not just the core.
+- **Readiness monitors** (Mode 01 PID 01) — `src/shared/obd-core/obd/readiness.ts`
+  (`decodeMonitorStatus`) + `DiagnosticSession.readReadiness()`, surfaced on the Fault Codes screen
+  (MIL state, monitors complete/total, spark/compression ignition, not-ready list).
+- **Freeze frame** (Mode 02) — `DiagnosticSession.readFreezeFrame()` + simulator support, shown on the
+  Fault Codes screen with the triggering DTC and captured PIDs.
+- **CI** — `.github/workflows/ci.yml` runs lint + core typecheck + tests + full-app typecheck on
+  every push.
+
+Verified: `npm test` (39 passing, 11 suites), `npm run typecheck` (0), `npm run typecheck:app` (0),
+`npm run lint` (0).
+
+Remaining (needs hardware or external accounts):
+- On-car validation against the three example cars (checklists in `testing.md`); tune the profiles
+  from what the real cars report.
+- Log export/share; optional persisted settings (AsyncStorage).
+- iOS/Android store or EAS builds + signing (Apple Developer account / Android keystore).
+
 ## Phase 2 — Mobile app (Expo + Tamagui + BLE)
 
 **Status:** ✅ code complete. Core stays green here; the RN app compiles/runs on a dev machine /

@@ -12,6 +12,8 @@ Run with `npm test` (Jest + ts-jest over the pure-TS core). Coverage:
 - **DTC parsing** — `01 33 → P0133`, `02 99 → P0299`, `41 01 → C0101`, `C3 00 → U0300`, padding
   `00 00 → none`; Mode 03/07/0A framing.
 - **VIN assembly** — multi-frame `0902` → 17-char ASCII.
+- **Readiness monitors** — `0101` → MIL, DTC count, ignition type, per-monitor supported/complete.
+- **Freeze frame** — Mode 02 trigger DTC + captured PIDs (via the session integration).
 - **ELM327 client** — command queueing (half-duplex), echo/whitespace/prompt stripping,
   `NO DATA`/`?`/`SEARCHING...` handling, timeouts.
 - **Simulator** — supported-PID bitmaps match the scenario; live values in range; DTC inject/clear;
@@ -25,7 +27,9 @@ Run with `npm test` (Jest + ts-jest over the pure-TS core). Coverage:
 - **vehicle-docs-sync** — every TS profile has a `docs/vehicles/<id>.md`; the doc front-matter
   `expectedProtocol` and `supportedPidCount` match the TS profile.
 
-Also: `npm run typecheck` (`tsc --noEmit`) and `npm run lint` (eslint).
+Also: `npm run typecheck` (core, `tsc --noEmit`), `npm run lint` (eslint), and
+`npm run typecheck:app` (full RN app — run after installing deps). All of these run in CI
+(`.github/workflows/ci.yml`) on every push.
 
 ## On-car manual checklists
 

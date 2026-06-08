@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # --ignore-scripts: we only need types/sources for checks, not native builds.
+      - run: npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund
+      - name: Lint (core)
+        run: npm run lint
+      - name: Typecheck (core)
+        run: npm run typecheck
+      - name: Test (core + simulator)
+        run: npm test
+      - name: Typecheck (full app)
+        run: npm run typecheck:app

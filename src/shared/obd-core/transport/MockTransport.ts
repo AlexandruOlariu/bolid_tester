@@ -142,6 +142,20 @@ export class MockTransport implements Transport {
       return data ? '62' + did + toHex(data) : 'NO DATA';
     }
 
+    // Mode 02 freeze frame: `02 <pid> <frame>` → `42 <pid> <frame> <data>` (only if a DTC is set).
+    if (h.startsWith('02') && h.length === 6) {
+      const stored = this.scenario.storedDtcs ?? [];
+      if (stored.length === 0) return 'NO DATA';
+      const pid = h.slice(2, 4);
+      const frame = h.slice(4, 6);
+      if (pid === '02') {
+        const [b0, b1] = encodeDtc(stored[0]);
+        return '42' + '02' + frame + toHex([b0, b1]);
+      }
+      const data = SIM_PID_BYTES[('01' + pid).toLowerCase()] ?? [0x00];
+      return '42' + pid + frame + toHex(data);
+    }
+
     if (h.length === 4 && h.startsWith('01')) {
       if (h === '0100' || h === '0120' || h === '0140' || h === '0160') {
         const data = encodeSupportedPids(h, this.supportedNums());
@@ -150,7 +164,8 @@ export class MockTransport implements Transport {
       if (h === '0101') {
         const n = (this.scenario.storedDtcs ?? []).length;
         const a = (n > 0 ? 0x80 : 0) | (n & 0x7f);
-        return '4101' + toHex([a, 0, 0, 0]);
+        // B=0x07: 3 continuous monitors supported & complete (spark); C/D: catalyst + O2 complete.
+        return '4101' + toHex([a, 0x07, 0x21, 0x00]);
       }
       if (this.scenario.supportedPids.includes(h)) {
         const data = SIM_PID_BYTES[h.toLowerCase()] ?? [0x00];

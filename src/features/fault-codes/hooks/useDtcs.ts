@@ -3,7 +3,8 @@ import { useDtcStore } from '../model/dtcStore';
 import * as dtcService from '../api/dtcService';
 
 export function useDtcs() {
-  const { stored, pending, permanent, loading, error, set, setLoading, setError } = useDtcStore();
+  const { stored, pending, permanent, readiness, freezeFrame, loading, error, set, setLoading, setError } =
+    useDtcStore();
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -27,5 +28,5 @@ export function useDtcs() {
     void refresh();
   }, [refresh]);
 
-  return { stored, pending, permanent, loading, error, refresh, clear };
+  return { stored, pending, permanent, readiness, freezeFrame, loading, error, refresh, clear };
 }

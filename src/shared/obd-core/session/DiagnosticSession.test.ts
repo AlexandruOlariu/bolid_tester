@@ -51,6 +51,23 @@ describe('DiagnosticSession (integration via simulator)', () => {
     });
   }
 
+  it('reads readiness monitors and a freeze frame after a DTC is set', async () => {
+    const session = new DiagnosticSession(
+      new MockTransport(buildScenario('golf-plus-2009-20tdi', { storedDtcs: ['P0299'] })),
+      { commandTimeoutMs: 1000 },
+    );
+    await session.connect();
+
+    const readiness = await session.readReadiness();
+    expect(readiness?.milOn).toBe(true);
+    expect(readiness?.dtcCount).toBe(1);
+    expect(readiness?.monitors.find((m) => m.id === 'misfire')?.complete).toBe(true);
+
+    const ff = await session.readFreezeFrame(['010C', '0105']);
+    expect(ff.triggerDtc).toBe('P0299');
+    expect(ff.values.find((v) => v.pid === '010C')?.value).toBeCloseTo(820, 0);
+  });
+
   it('reads the experimental extended PID on the Golf, not on the Passat', async () => {
     const golf = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')), {
       commandTimeoutMs: 1000,

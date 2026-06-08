@@ -1,10 +1,14 @@
 import { create } from 'zustand';
 import type { Dtc } from '@/shared/obd-core/obd/dtc';
+import type { MonitorStatus } from '@/shared/obd-core/obd/readiness';
+import type { FreezeFrame } from '@/shared/obd-core/session/DiagnosticSession';
 
 export interface DtcResult {
   stored: Dtc[];
   pending: Dtc[];
   permanent: Dtc[];
+  readiness: MonitorStatus | null;
+  freezeFrame: FreezeFrame | null;
 }
 
 interface DtcState extends DtcResult {
@@ -19,6 +23,8 @@ export const useDtcStore = create<DtcState>((set) => ({
   stored: [],
   pending: [],
   permanent: [],
+  readiness: null,
+  freezeFrame: null,
   loading: false,
   error: null,
   set: (r) => set({ ...r }),

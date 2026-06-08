@@ -6,8 +6,9 @@ import { Transport } from '../transport/Transport';
 import { ProtocolId } from '../obd/protocols';
 import { decodeSupportedPids } from '../obd/supportedPids';
 import { isMarkerPid, decodePid, PID_REGISTRY } from '../obd/pids';
-import { parseDtcBytes, toDtc, Dtc } from '../obd/dtc';
+import { parseDtcBytes, decodeDtcBytes, toDtc, Dtc } from '../obd/dtc';
 import { parseVin } from '../obd/vin';
+import { decodeMonitorStatus, MonitorStatus } from '../obd/readiness';
 
 export interface LiveValue {
   pid: string;
@@ -26,6 +27,14 @@ export interface SessionInfo {
 }
 
 export type DtcKind = '03' | '07' | '0A';
+
+export interface FreezeFrame {
+  triggerDtc: string | null;
+  values: LiveValue[];
+}
+
+/** Default PIDs captured in the freeze frame view. */
+const FREEZE_PIDS = ['010C', '0105', '010D', '0104', '010B', '0111'];
 
 export class DiagnosticSession {
   readonly client: Elm327Client;
@@ -135,5 +144,36 @@ export class DiagnosticSession {
     const r = await this.client.command('22' + did);
     if (r.notice || r.bytes.length < 1) return null;
     return r.bytes.slice(1 + did.length / 2);
+  }
+
+  /** MIL state + readiness monitors (Mode 01 PID 01). */
+  async readReadiness(): Promise<MonitorStatus | null> {
+    const r = await this.client.command('0101');
+    if (r.notice || r.bytes.length < 6) return null;
+    return decodeMonitorStatus(r.bytes.slice(2));
+  }
+
+  /** Freeze-frame snapshot (Mode 02): the triggering DTC + a few captured PIDs at frame 0. */
+  async readFreezeFrame(pids: string[] = FREEZE_PIDS): Promise<FreezeFrame> {
+    const trigger = await this.client.command('020200');
+    let triggerDtc: string | null = null;
+    if (!trigger.notice && trigger.bytes.length >= 5) {
+      triggerDtc = decodeDtcBytes(trigger.bytes[3], trigger.bytes[4]) || null;
+    }
+    const values: LiveValue[] = [];
+    for (const pid of pids) {
+      const v = await this.readFreezeValue(pid);
+      if (v) values.push(v);
+    }
+    return { triggerDtc, values };
+  }
+
+  private async readFreezeValue(pid: string): Promise<LiveValue | null> {
+    const r = await this.client.command('02' + pid.slice(2) + '00');
+    if (r.notice || r.bytes.length < 4) return null;
+    const value = decodePid(pid, r.bytes.slice(3));
+    if (value === null) return null;
+    const d = PID_REGISTRY[pid];
+    return { pid, name: d.name, unit: d.unit, value, ts: Date.now() };
   }
 }
