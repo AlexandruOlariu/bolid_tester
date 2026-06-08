@@ -38,8 +38,8 @@ profile's `testChecklist`:
 
 - **Golf Plus 2009 2.0 TDI** → [`vehicles/golf-plus-2009-20tdi.md`](./vehicles/golf-plus-2009-20tdi.md)
   (expect CAN, full data, VIN, DTC read/clear, try experimental Mode 22).
-- **Fiat Punto 1.2 2007** → [`vehicles/fiat-punto-2007-12.md`](./vehicles/fiat-punto-2007-12.md)
-  (record K-line vs CAN; trims/timing; VIN maybe absent).
+- **Fiat Grande Punto 1.2 2008** → [`vehicles/fiat-punto-2008-12.md`](./vehicles/fiat-punto-2008-12.md)
+  (expect CAN; trims/timing; VIN available).
 - **Passat B5.5 1.9 TDI** → [`vehicles/passat-b55-19tdi.md`](./vehicles/passat-b55-19tdi.md)
   (expect slow K-line, fewer PIDs; RPM/coolant/DTC read+clear is success).
 

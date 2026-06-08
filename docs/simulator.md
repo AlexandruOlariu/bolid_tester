@@ -28,7 +28,7 @@ from a vehicle profile.
 Built from the vehicle registry + overrides:
 - `generic` — CAN, broad PID set, sample VIN, no injected DTCs.
 - `golf-plus-2009-20tdi` — CAN 11/500, 16 PIDs, VIN, optional DTCs, one experimental Mode 22 DID.
-- `fiat-punto-2007-12` — KWP2000 fast, 14 PIDs, VIN optional.
+- `fiat-punto-2008-12` — CAN 11/500, 13 PIDs, VIN.
 - `passat-b55-19tdi` — KWP2000 fast, 9 PIDs, **no MAF/oil/fuel-rate**, slower timing, VIN often
   absent.
 

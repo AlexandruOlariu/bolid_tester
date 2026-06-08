@@ -35,7 +35,7 @@ npm run lint
 ## Example cars validated
 
 The three cars in [`docs/vehicles/`](./docs/vehicles) are the project owner's own cars, used as
-reference profiles: **VW Golf Plus 2009 2.0 TDI** (CAN), **Fiat Punto 1.2 2007** (K-line/CAN), and
+reference profiles: **VW Golf Plus 2009 2.0 TDI** (CAN), **Fiat Grande Punto 1.2 2008** (CAN), and
 **VW Passat B5.5 1.9 TDI** (K-line). They are examples — the app works with any OBD2 car, and new
 cars are added as data (a Markdown profile + a typed object).
 

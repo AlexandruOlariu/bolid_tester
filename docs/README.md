@@ -46,5 +46,5 @@ the generic tool works on real, diverse hardware (modern CAN diesel, older petro
 diesel). They are **examples**, not the app's fixed scope — see [`vehicles/`](./vehicles/).
 
 - VW Golf Plus 2009, 2.0 TDI 110 cp, diesel, manual — expected **CAN** (ISO 15765-4).
-- Fiat Punto 1.2 2007, petrol, manual — expected **K-line** (ISO 9141-2 / KWP2000) or CAN.
+- Fiat Grande Punto 1.2 2008, petrol, manual — expected **CAN** (ISO 15765-4).
 - VW Passat B5.5, 1.9 TDI 105 cp, diesel, manual — expected **K-line KWP2000** (ISO 14230-4).

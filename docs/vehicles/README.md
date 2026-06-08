@@ -59,5 +59,5 @@ runtime. Use it for any car without a dedicated profile.
 ## Example cars
 
 - [`golf-plus-2009-20tdi.md`](./golf-plus-2009-20tdi.md) — modern CAN diesel (the easy case).
-- [`fiat-punto-2007-12.md`](./fiat-punto-2007-12.md) — older petrol, K-line or CAN.
+- [`fiat-punto-2008-12.md`](./fiat-punto-2008-12.md) — Grande Punto petrol on CAN.
 - [`passat-b55-19tdi.md`](./passat-b55-19tdi.md) — older K-line diesel (the hard case).

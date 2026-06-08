@@ -13,7 +13,7 @@ interface Case {
 const CASES: Case[] = [
   { id: 'generic', protocol: 'ISO_15765_4_CAN_11_500', vin: true },
   { id: 'golf-plus-2009-20tdi', protocol: 'ISO_15765_4_CAN_11_500', vin: true },
-  { id: 'fiat-punto-2007-12', protocol: 'ISO_14230_4_KWP_FAST', vin: true },
+  { id: 'fiat-punto-2008-12', protocol: 'ISO_15765_4_CAN_11_500', vin: true },
   { id: 'passat-b55-19tdi', protocol: 'ISO_14230_4_KWP_FAST', vin: false },
 ];
 

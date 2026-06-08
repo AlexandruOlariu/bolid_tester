@@ -14,7 +14,7 @@ registry, not the app's fixed scope**:
 | Car | Engine | Fuel | Expected OBD2 transport |
 |-----|--------|------|--------------------------|
 | VW Golf Plus 2009, 110 cp | 2.0 TDI, manual | diesel | **CAN** (ISO 15765-4) — full generic support |
-| Fiat Punto 1.2 2007 | 1.2 petrol, manual | petrol | **K-line** (ISO 9141-2 / KWP2000) or CAN |
+| Fiat Grande Punto 1.2 2008 | 1.2 petrol, manual | petrol | **CAN** (ISO 15765-4) |
 | VW Passat B5.5, 105 cp | 1.9 TDI, manual | diesel | **K-line KWP2000** (ISO 14230-4) — riskiest, thinner live data |
 
 Adding a car later = drop in a `docs/vehicles/<car>.md` + a typed profile (no changes to the engine);

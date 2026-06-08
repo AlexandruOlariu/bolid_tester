@@ -67,7 +67,7 @@ read `ATDPN` (protocol number) and `ATRV` (voltage). See [`obd2-reference.md`](.
 | Car | Likely negotiated protocol | Notes |
 |-----|----------------------------|-------|
 | Golf Plus 2009 2.0 TDI | CAN 11/500 (`6`) | Full, fast, many PIDs. |
-| Fiat Punto 1.2 2007 | KWP2000 fast (`5`) or CAN | Depends on exact variant; auto-detect handles it. |
+| Fiat Grande Punto 1.2 2008 | CAN 11/500 (`6`) | 199-body petrol on CAN; auto-detect confirms. |
 | Passat B5.5 1.9 TDI | KWP2000 fast (`5`) / ISO 9141-2 (`3`) | Slower K-line; fewer live PIDs; engine DTC read/clear OK. |
 
 ## Sources
