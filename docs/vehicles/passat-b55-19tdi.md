@@ -1,17 +1,28 @@
 ---
 id: passat-b55-19tdi
-name: VW Passat B5.5 1.9 TDI 105cp
+name: VW Passat B5.5 1.9 TDI AVB
 expectedProtocol: ISO_14230_4_KWP_FAST
+vin: WVWZZZ3BZ4E342958
+engineCode: AVB
 supportedPidCount: 9
 extended: false
 ---
 
-# VW Passat B5.5 — 1.9 TDI 105 cp (diesel, manual)
+# VW Passat B5.5 — 1.9 TDI AVB-family (diesel)
 
 The **hard case**, and the one to be most careful about. The B5.5 (2000–2005 facelift) 1.9 PD TDI
 uses **K-line** for diagnostics: **ISO 14230-4 KWP2000 (fast init)**, sometimes ISO 9141-2. Diesel
 EOBD became mandatory in the EU in 2004, so generic engine diagnostics are available but **thinner
 and slower** than on CAN cars, and some Mode 01 PIDs may simply return `NO DATA`.
+
+## Confirmed VCDS details
+
+- **VIN:** `WVWZZZ3BZ4E342958`
+- **Chassis:** `3B (3B - VW Passat B5, 1997 > 2005)`
+- **Engine label:** `038-906-019-AVB.lbl`
+- **Engine ECU:** `038 906 019 KC`
+- **VCDS component:** `1,9l R4 EDC G000SG 4896`
+- **Mileage at scan:** `234280 km`
 
 ## Protocol
 
@@ -33,6 +44,9 @@ temp · `0111` accelerator/throttle · `011F` run time · `0142` module voltage
 
 - Read **stored** (Mode 03) and **pending** (Mode 07); clear with Mode 04. The engine ECU answers
   generic powertrain DTCs.
+- VCDS scan from 2025-05-17 showed **no engine ECU fault codes**.
+- Non-engine VCDS module faults were present in HVAC, central convenience, and radio modules; a
+  generic ELM327 app cannot read those modules.
 
 ## Extended PIDs
 
@@ -45,8 +59,9 @@ accessible generically. This is the documented limit, not an app bug.
 2. Confirm protocol shows **KWP2000 (fast)** or **ISO 9141-2**.
 3. Read live data slowly: RPM (~850 idle), coolant, MAP/boost under load, IAT, voltage.
 4. Some PIDs may show "not supported" — that is expected; only the bitmap-supported ones appear.
-5. Read VIN (Mode 09 may be unsupported on this ECU — record the result).
-6. Read DTCs; clear a harmless one and confirm.
+5. Read VIN (Mode 09 may be unsupported on this ECU); if present, confirm it matches
+   `WVWZZZ3BZ4E342958`.
+6. Read engine DTCs; the 2025-05-17 VCDS scan had no engine faults.
 
 ## Notes
 

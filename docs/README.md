@@ -45,6 +45,6 @@ The three cars below are the user's **own cars**, used as **reference profiles**
 the generic tool works on real, diverse hardware (modern CAN diesel, older petrol, older K-line
 diesel). They are **examples**, not the app's fixed scope — see [`vehicles/`](./vehicles/).
 
-- VW Golf Plus 2009, 2.0 TDI 110 cp, diesel, manual — expected **CAN** (ISO 15765-4).
+- VW Golf Plus 2009, 2.0 TDI 81 kW / 109 cp, diesel, manual — expected **CAN** (ISO 15765-4).
 - Fiat Grande Punto 1.2 2008, petrol, manual — expected **CAN** (ISO 15765-4).
-- VW Passat B5.5, 1.9 TDI 105 cp, diesel, manual — expected **K-line KWP2000** (ISO 14230-4).
+- VW Passat B5.5, 1.9 TDI AVB-family, diesel, manual — expected **K-line KWP2000** (ISO 14230-4).

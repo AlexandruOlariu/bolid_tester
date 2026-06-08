@@ -3,7 +3,7 @@ import { asciiToBytes } from '../../lib/bytes';
 
 describe('VIN assembly', () => {
   it('assembles a single-frame VIN', () => {
-    const vin = 'WVWZZZ1KZ9W000001';
+    const vin = 'WVWZZZ1KZ9W903398';
     const bytes = [0x49, 0x02, 0x01, ...asciiToBytes(vin)];
     expect(parseVin(bytes)).toBe(vin);
   });
