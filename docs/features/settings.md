@@ -17,8 +17,13 @@ Developer and runtime settings.
 - Writes the adapter-source choice that `connectionService` reads when building the `Transport`.
 
 ## model
-- `settingsStore` (Zustand, persisted): `adapterSource`, `simulatedVehicleId`, `injectedDtcs`,
-  `units`, `pollIntervalMs`, `theme`.
+- `settingsStore` (Zustand, **persisted**): `adapterSource`, `simulatedVehicleId`, `injectedDtcs`,
+  `units`, `pollIntervalMs`, `theme`, and the `ai` config (server URL, model, structured-output
+  mode, timeout, key). The live `log` is **not** persisted.
+- The selected real-car profile (`vehicleStore.selectedProfileId`) is persisted too.
+- Persistence uses zustand's `persist` middleware over a small `StateStorage` backed by
+  **expo-file-system** (`shared/state/persistStorage.ts`) — JSON files in the app document
+  directory. No extra native dependency; best-effort (a filesystem error just means no persistence).
 
 ## Behavior
 - Switching to **Simulator** lets the entire app run with no car — used for development, demos, and as

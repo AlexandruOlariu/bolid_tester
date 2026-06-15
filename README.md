@@ -31,6 +31,7 @@ Phase-4 additions (reachable from the **More** tab):
 
 | Feature | What it does | Notes |
 |---|---|---|
+| [Diagnose (AI)](./docs/features/ai-diagnose.md) | One-tap AI health report from a local OpenAI-compatible LLM (e.g. LM Studio); reads + gated clear-DTC | falls back to on-device rules if no server |
 | [Trips](./docs/features/trip-recording.md) | Record live data, export CSV/JSON, replay | — |
 | [Charts](./docs/features/live-charts.md) | Live PIDs plotted over time | — |
 | [Performance](./docs/features/performance-tests.md) | 0–100, ¼-mile, braking | closed-course |

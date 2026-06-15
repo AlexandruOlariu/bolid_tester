@@ -17,5 +17,6 @@ export * from './analysis/performance';
 export * from './analysis/trip';
 export * from './analysis/chartBuffer';
 export * from './analysis/notifications';
+export * from './analysis/aiDiagnosis';
 export * from './coding/coding';
 export * from './coding/udsCoding';

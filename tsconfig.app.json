@@ -5,6 +5,7 @@
     "lib": ["ES2021", "DOM"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "customConditions": ["react-native"],
     "types": ["node", "react", "react-native"],
     "allowJs": true,
     "noEmit": true,
@@ -12,7 +13,7 @@
     "resolveJsonModule": true,
     "noUnusedLocals": false
   },
-  "//": "Full-app typecheck. Run on a dev machine after installing the RN deps: `npm run typecheck:app`.",
+  "//": "Full-app typecheck: `npm run typecheck:app`. Bundler resolution + react-native condition for RN deps.",
   "include": ["src/**/*.ts", "src/**/*.tsx", "tamagui.config.ts"],
   "exclude": ["node_modules", "**/*.test.ts"]
 }

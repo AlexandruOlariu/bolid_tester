@@ -5,6 +5,37 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## AI auto-diagnosis (feature: ai-diagnose)
+
+**Status:** ✅ core complete and verified (pure logic unit-tested here; 20 new tests, full core suite
+green, lint clean). The RN screen + settings build on a dev machine / EAS like the rest of the app.
+Spec: [`features/ai-diagnose.md`](./features/ai-diagnose.md).
+
+One-tap health check: gather a snapshot from the live `DiagnosticSession` (DTCs 03/07/0A, readiness,
+freeze frame, and a one-shot poll of the key supported live PIDs), send it to a user-configured
+**OpenAI-compatible** server (e.g. a local **LM Studio**), and render a plain-language report. Falls
+back to a deterministic on-device rule-based report when the AI is off/unconfigured/unreachable.
+
+Platform-agnostic core (`src/shared/obd-core/analysis/aiDiagnosis.ts`, unit-tested):
+- Types `DiagnosticSnapshot` / `AiReport` / `AiFinding` / `AiAction` / `AiClientConfig`.
+- `summarizeSnapshot`, `localHeuristicReport` (MIL/DTCs/overheat/fuel-trim/charging/readiness rules).
+- `buildDiagnosisMessages`, `buildChatRequestBody`, `extractMessageContent`, `parseAiReport`
+  (tolerant of code-fenced/prose-wrapped JSON; falls back to local on any failure),
+  `normalizeBaseUrl`, `overallFromFindings`, `KEY_DIAGNOSTIC_PIDS`.
+
+App layer:
+- `src/shared/ai/openaiClient.ts` — `chatCompletion` / `listModels` over `fetch` with an
+  AbortController timeout and friendly errors (lives in `shared`, no cross-feature deps).
+- `src/features/ai-diagnose/*` — store, `diagnoseService` (gather/analyze/clearCodes), `useAiDiagnose`
+  hook, and `AiDiagnoseScreen` (overall banner, findings, gated Clear-DTC action, disclaimer).
+- Settings → **AI assistant** section (enable, server URL, model + Detect, JSON mode, timeout, Test).
+- Routing: `/ai-diagnose` route + hidden tab; entry added to the **More** menu.
+
+Safety: reads + **clear DTCs only** (Mode 04, confirmed); the model only *suggests* actions from a
+fixed enum and never writes coding/service-reset.
+
+---
+
 ## Phase 4 — Analysis, performance, sensor tests, coding & notifications
 
 **Status:** ✅ core complete and verified (87 tests pass, lint clean). UI slices built on top of the

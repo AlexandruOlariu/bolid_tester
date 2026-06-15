@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Platform } from 'react-native';
-import { ScrollView, YStack, XStack, Text, Paragraph, Button, Card } from 'tamagui';
+import { ScrollView, YStack, XStack, Text, Paragraph, Button, Card, Input, Spinner } from 'tamagui';
 import { Screen } from '@/shared/ui';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { VEHICLE_PROFILES } from '@/shared/vehicles';
+import { normalizeBaseUrl } from '@/shared/obd-core';
+import { listModels, AiClientError } from '@/shared/ai';
 import { connectionService } from '@/features/connection';
 
 const ACCENT = '#2bb673';
@@ -30,6 +32,123 @@ function SegGroup({ children }: { children: React.ReactNode }) {
     <Card bordered padding="$3" backgroundColor="$backgroundHover">
       {children}
     </Card>
+  );
+}
+
+function AiSection() {
+  const ai = useSettingsStore((s) => s.ai);
+  const setAi = useSettingsStore((s) => s.setAi);
+  const [testing, setTesting] = useState(false);
+  const [statusText, setStatusText] = useState<string | null>(null);
+
+  const test = async (autofillModel: boolean) => {
+    setTesting(true);
+    setStatusText('Connecting…');
+    try {
+      const models = await listModels(ai);
+      if (models.length === 0) {
+        setStatusText('Connected, but the server lists no models. Load a model on the server first.');
+      } else {
+        if (autofillModel) setAi({ model: models[0] });
+        const shown = models.slice(0, 4).join(', ');
+        setStatusText(`Connected ✓ — ${models.length} model(s): ${shown}${models.length > 4 ? '…' : ''}`);
+      }
+    } catch (e) {
+      setStatusText(`Failed: ${e instanceof AiClientError || e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <YStack gap="$2">
+      <SectionLabel>AI assistant (auto-diagnose)</SectionLabel>
+      <SegGroup>
+        <YStack gap="$3">
+          <XStack gap="$2" alignItems="center">
+            <Paragraph flex={1}>Enabled</Paragraph>
+            <Seg active={ai.enabled} label="On" onPress={() => setAi({ enabled: true })} />
+            <Seg active={!ai.enabled} label="Off" onPress={() => setAi({ enabled: false })} />
+          </XStack>
+
+          <YStack gap="$1">
+            <Paragraph theme="alt2" fontSize="$2">
+              Server URL (OpenAI-compatible, e.g. LM Studio)
+            </Paragraph>
+            <Input
+              value={ai.baseUrl}
+              onChangeText={(t) => setAi({ baseUrl: t })}
+              placeholder="http://192.168.1.50:1234"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+            />
+            {ai.baseUrl ? (
+              <Paragraph theme="alt2" fontSize="$1">
+                → {normalizeBaseUrl(ai.baseUrl)}/chat/completions
+              </Paragraph>
+            ) : null}
+          </YStack>
+
+          <YStack gap="$1">
+            <Paragraph theme="alt2" fontSize="$2">
+              Model
+            </Paragraph>
+            <Input
+              value={ai.model}
+              onChangeText={(t) => setAi({ model: t })}
+              placeholder="e.g. qwen2.5-7b-instruct"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </YStack>
+
+          <YStack gap="$1">
+            <XStack gap="$2" alignItems="center" flexWrap="wrap">
+              <Paragraph flex={1}>Structured output</Paragraph>
+              <Seg active={ai.jsonMode === 'schema'} label="Schema" onPress={() => setAi({ jsonMode: 'schema' })} />
+              <Seg active={ai.jsonMode === 'object'} label="JSON" onPress={() => setAi({ jsonMode: 'object' })} />
+              <Seg active={ai.jsonMode === 'off'} label="Off" onPress={() => setAi({ jsonMode: 'off' })} />
+            </XStack>
+            <Paragraph theme="alt2" fontSize="$1">
+              Schema = json_schema (LM Studio / current OpenAI). JSON = json_object (older OpenAI). Off
+              = plain text. The app auto-falls back to text if the server rejects the format.
+            </Paragraph>
+          </YStack>
+
+          <XStack gap="$2" alignItems="center" flexWrap="wrap">
+            <Paragraph>Timeout</Paragraph>
+            {[15000, 30000, 60000].map((ms) => (
+              <Seg
+                key={ms}
+                active={ai.timeoutMs === ms}
+                label={`${ms / 1000}s`}
+                onPress={() => setAi({ timeoutMs: ms })}
+              />
+            ))}
+          </XStack>
+
+          <XStack gap="$2">
+            <Button
+              flex={1}
+              onPress={() => void test(false)}
+              disabled={testing}
+              icon={testing ? () => <Spinner /> : undefined}
+            >
+              Test connection
+            </Button>
+            <Button flex={1} theme="green" onPress={() => void test(true)} disabled={testing}>
+              Detect model
+            </Button>
+          </XStack>
+          {statusText ? (
+            <Paragraph theme="alt2" fontSize="$2">
+              {statusText}
+            </Paragraph>
+          ) : null}
+        </YStack>
+      </SegGroup>
+    </YStack>
   );
 }
 
@@ -84,6 +203,8 @@ export function SettingsScreen() {
           </YStack>
         </>
       ) : null}
+
+      <AiSection />
 
       <YStack gap="$2">
         <SectionLabel>Theme</SectionLabel>

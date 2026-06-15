@@ -10,6 +10,7 @@ import {
   Gauge as GaugeIcon,
   Wrench,
   KeyRound,
+  Stethoscope,
 } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
 
@@ -21,6 +22,7 @@ interface Entry {
 }
 
 const ENTRIES: Entry[] = [
+  { route: '/ai-diagnose', title: 'Diagnose (AI)', subtitle: 'One-tap AI health check', Icon: Stethoscope },
   { route: '/charts', title: 'Charts', subtitle: 'Live parameters over time', Icon: LineChart },
   { route: '/performance', title: 'Performance', subtitle: '0–100, ¼-mile, braking', Icon: Timer },
   { route: '/trips', title: 'Trips', subtitle: 'Record & export live data', Icon: RouteIcon },

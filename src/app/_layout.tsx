@@ -26,12 +26,12 @@ const NAV = {
 export default function RootLayout() {
   const system = useColorScheme();
   const pref = useSettingsStore((s) => s.theme);
-  const theme = pref === 'system' ? (system ?? 'dark') : pref;
-  const nav = NAV[theme] ?? NAV.dark;
+  const scheme: 'light' | 'dark' = pref === 'system' ? (system === 'light' ? 'light' : 'dark') : pref;
+  const nav = NAV[scheme];
 
   return (
-    <TamaguiProvider config={config} defaultTheme={theme}>
-      <Theme name={theme}>
+    <TamaguiProvider config={config} defaultTheme={scheme}>
+      <Theme name={scheme}>
         <Tabs
           screenOptions={{
             headerShown: true,
@@ -104,6 +104,7 @@ export default function RootLayout() {
           />
           {/* Reachable from the Info screen; hidden from the tab bar. */}
           <Tabs.Screen name="extended" options={{ href: null, title: 'Extended PIDs' }} />
+          <Tabs.Screen name="ai-diagnose" options={{ href: null, title: 'Diagnose (AI)' }} />
           <Tabs.Screen name="charts" options={{ href: null, title: 'Charts' }} />
           <Tabs.Screen name="performance" options={{ href: null, title: 'Performance' }} />
           <Tabs.Screen name="trips" options={{ href: null, title: 'Trips' }} />
