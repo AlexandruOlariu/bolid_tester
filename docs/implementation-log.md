@@ -5,6 +5,65 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Phase 4 — Analysis, performance, sensor tests, coding & notifications
+
+**Status:** ✅ core complete and verified (87 tests pass, lint clean). UI slices built on top of the
+tested core; the RN/Tamagui screens compile/run on a dev machine / EAS like the rest of the app.
+Specs: [`features/trip-recording`](./features/trip-recording.md), [`live-charts`](./features/live-charts.md),
+[`performance-tests`](./features/performance-tests.md), [`alerts`](./features/alerts.md),
+[`sensor-tests`](./features/sensor-tests.md), [`coding`](./features/coding.md),
+[`notifications`](./features/notifications.md).
+
+Platform-agnostic core (in `src/shared/obd-core`, all unit-tested here):
+- `analysis/alerts.ts` — `AlertEngine` (edge detection + hysteresis), `defaultRules`.
+- `analysis/performance.ts` — `computeAccelRun` (0–100 + splits), `computeDragRun` (60 ft / ⅛ / ¼
+  mile + trap), `computeBrakeRun`, plus `timeToSpeed` / `cumulativeDistance` integration.
+- `analysis/trip.ts` — `downsample`, `tripStats` (duration/distance/max), `toCsv` / `toJson`.
+- `analysis/chartBuffer.ts` — `ChartBuffer` ring buffer + min/max `decimate` + `seriesStats`.
+- `analysis/notifications.ts` — `deriveDiagnosticEvents` (MIL/connection rising edges), quiet-hours
+  `filterNotifications`, `dueReminders`.
+- `obd/mode06.ts` — `decodeMode06` (on-board monitor test results with pass/fail).
+- `coding/coding.ts` — byte/bit helpers, schema decode, `diffCoding`.
+- `coding/udsCoding.ts` — UDS sequence (`10/27/22/2E/3E`) and the guarded `codeModule`
+  (read→backup→security→write→verify) over an injectable sender.
+
+Engine/profile/simulator extensions:
+- `vehicles/types.ts` + the Golf profile gained `mode06Tests`, `moduleSensors` (illustrative ABS
+  wheel-speed), and `codingModules` (illustrative BCM coding) — all clearly experimental/unverified.
+- `MockTransport` now answers **Mode 06**, **module-scoped UDS 22** (via `ATSH` addressing), and the
+  **coding services**; `buildScenario` wires the new profile data through.
+- `DiagnosticSession` gained additive `send` / `setHeader` / `setRxFilter` / `readMode06`.
+- Integration tests cover Mode 06, an ABS module read, and a full coding backup→write→verify on the
+  Golf simulator — all with no hardware.
+
+Follow-up (reachability + Passat): added a visible **More** tab (`src/features/more`) that links to
+all the Phase-4 screens (charts, performance, trips, alerts, sensor tests, service reset, coding,
+notifications) via expo-router — they were previously hidden routes. Extended **service reset to the
+Passat** with a **KWP2000 (K-line)** path: `serviceReset` now branches on `transport: 'uds' | 'kwp'`
+(KWP uses `10`/`27`/`31`/`3B`/`21`); the simulator answers the KWP session-start + routine; the
+Passat profile carries an illustrative KWP descriptor; UI gating matches the link (CAN for UDS,
+K-line for KWP). Tests: 87 passing.
+
+Follow-up (service reset): added a **service-interval reset** ("oil service / SRI reset") — a write
+to the instrument cluster via UDS **RoutineControl `31`** or adaptation `2E`, in
+`obd-core/coding/udsCoding` (`routineControl`, `serviceReset`) with unit + Golf-simulator integration
+tests; `MockTransport` answers RoutineControl; the Golf profile carries an illustrative `serviceReset`
+descriptor; a gated `service-reset` feature slice + route. Experimental — extended to the Passat via
+KWP2000 in the follow-up above. Spec: [`features/service-reset`](./features/service-reset.md).
+
+UI (feature-sliced, `src/features/*`, each with `model` Zustand store + `hooks` + `ui` screen +
+`index`): `alerts`, `live-charts`, `performance-tests`, `trip-recording`, `sensor-tests`, `coding`,
+`notifications`; a shared `src/shared/notify` delivers local notifications (dependency-tolerant
+wrapper) so features don't depend on each other. New expo-router routes registered (hidden tabs);
+`expo-notifications` / `expo-file-system` / `expo-haptics` / `expo-location` / `expo-sharing` added
+to `package.json` (install on a dev machine with `npx expo install`).
+
+Verified here: `npm test` (87 passing), `npm run lint` (0 issues). Note: `npm run typecheck` currently
+trips on a pre-existing `expo/tsconfig.base` `customConditions` vs `moduleResolution` conflict in the
+toolchain (unrelated to this code); ts-jest type-checks the core on every test run.
+
+---
+
 ## Phase 3 — Polish (in progress)
 
 Done:
@@ -36,54 +95,4 @@ Implemented the feature-sliced UI over the tested core:
 - `src/shared/transports/ble/BleTransport.ts` — `Transport` over `react-native-ble-plx` with
   **runtime characteristic discovery** (no hard-coded UUIDs); `permissions.ts`, `manager.ts`,
   and a dependency-free `src/shared/lib/base64.ts` (unit-tested) for BLE payloads.
-- `src/shared/state/*` — Zustand stores (`sessionStore`, `settingsStore` incl. the adapter I/O log).
-- `src/shared/ui/*` — Tamagui widgets: `Screen`, `StatusBadge`, `ValueCard`, SVG `Gauge`.
-- `src/features/*` — seven slices (`connection`, `vehicle-select`, `live-data`, `fault-codes`,
-  `vehicle-info`, `extended-pids`, `settings`), each with `ui / styles / hooks / api / model`.
-- `src/app/*` — expo-router shell (tab navigation) + `tamagui.config.ts`, `babel.config.js`,
-  `metro.config.js`; `tsconfig.app.json` for the full-app typecheck; `@/*` path alias.
-
-The Settings **simulator toggle** lets the whole UI run with no hardware, driving the same
-`DiagnosticSession` the BLE path uses.
-
-Verified in container (core scope): `npm run typecheck` (0 errors), `npm test` (36 passing),
-`npm run lint` (0 issues). Full-app typecheck (`npm run typecheck:app`) runs on a dev machine after
-installing the RN deps.
-
-## Phase 1 — OBD2 core + simulator + tests
-
-**Status:** ✅ complete and verified (typecheck clean, 36 tests pass, lint clean).
-
-Implemented the platform-agnostic engine under `src/shared`:
-- `obd-core/transport` — `Transport` interface + `MockTransport` (virtual ELM327) + `scenarios`
-  (builds a simulator scenario from any vehicle profile).
-- `obd-core/elm327` — `Elm327Client` (half-duplex command queue, prompt handling, init sequence,
-  timeouts) + `responseParser` (notice/hex detection).
-- `obd-core/obd` — `protocols`, `pids` (registry + decoders), `dtc` (encode/decode/parse +
-  dictionary), `vin`, `supportedPids` (bitmap encode/decode).
-- `obd-core/session` — `DiagnosticSession` orchestration (connect → init → identify → poll →
-  read/clear DTCs → extended PIDs).
-- `vehicles` — typed registry: `generic` + the three example cars.
-
-Tests (`npm test`): PID decoders, DTC encode/decode/parse, VIN assembly, supported-PID bitmaps,
-ELM327 client (init/read/NO-DATA/timeout), response parser, the `vehicle-docs-sync` guard, and a
-full **DiagnosticSession integration** for the generic profile and all three cars (protocol,
-effective PID set, VIN present/absent, DTC read+clear, live value, experimental Mode 22).
-
-Verified: `npm run typecheck` (0 errors), `npm test` (34 passing), `npm run lint` (0 issues).
-
-## Phase 0 — Docs foundation & scaffolding
-
-**Status:** ✅ complete.
-
-- Created the `docs/` source-of-truth tree: `README.md`, `PLAN.md`, `architecture.md`,
-  `obd2-reference.md`, `adapter-vgate-icar-pro.md`, `simulator.md`, `testing.md`, this log;
-  `vehicles/` (registry README + three example profiles with machine-readable front-matter);
-  `features/` (one spec per feature slice).
-- Project scaffolding: `package.json`, `tsconfig.json`, `jest.config.js`, `.eslintrc.cjs`,
-  `.prettierrc`, `.gitignore`, root `README.md`, and Phase-2 Expo scaffolding (`app.json`, `eas.json`).
-
-**Note on Phase 2 (mobile UI):** the React Native UI install (Expo / Tamagui /
-`react-native-ble-plx`) requires a native build and cannot be exercised inside the remote container,
-so it is developed/installed on a developer machine / EAS. The **OBD2 core + simulator + tests** are
-fully built and verified here, and the UI sits thinly on top of this already-tested engine.
+- `src/shared/state/*` — Zustand stores (`sessionStore`, `settingsStore` incl. the adapter I/O log)

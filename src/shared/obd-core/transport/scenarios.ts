@@ -20,6 +20,21 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
   const extendedDids = profile.extendedPids?.length
     ? Object.fromEntries(profile.extendedPids.map((e) => [e.did, e.sampleResponse]))
     : undefined;
+  const mode06 = profile.mode06Tests?.length
+    ? Object.fromEntries(profile.mode06Tests.map((m) => [m.mid, m.sampleResponse]))
+    : undefined;
+  const moduleDids = profile.moduleSensors?.length
+    ? profile.moduleSensors.reduce<Record<string, Record<string, number[]>>>((acc, s) => {
+        (acc[s.reqHeader] ??= {})[s.did] = s.sampleResponse;
+        return acc;
+      }, {})
+    : undefined;
+  const coding = profile.codingModules?.length
+    ? profile.codingModules.reduce<Record<string, Record<string, number[]>>>((acc, m) => {
+        (acc[m.reqHeader] ??= {})[m.codingDid] = m.sampleCoding.slice();
+        return acc;
+      }, {})
+    : undefined;
 
   const base: SimScenario = {
     protocol,
@@ -31,6 +46,9 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
     pendingDtcs: [],
     permanentDtcs: [],
     extendedDids,
+    mode06,
+    moduleDids,
+    coding,
     latencyMs: kline ? 5 : 0,
     emitSearching: kline,
   };

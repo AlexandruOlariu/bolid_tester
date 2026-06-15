@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   Info,
   Settings2,
+  LayoutGrid,
 } from 'lucide-react-native';
 import config from '../../tamagui.config';
 import { useSettingsStore } from '@/shared/state/settingsStore';
@@ -94,8 +95,23 @@ export default function RootLayout() {
               tabBarIcon: ({ color, size }) => <Settings2 size={size} color={color} />,
             }}
           />
+          <Tabs.Screen
+            name="more"
+            options={{
+              title: 'More',
+              tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
+            }}
+          />
           {/* Reachable from the Info screen; hidden from the tab bar. */}
           <Tabs.Screen name="extended" options={{ href: null, title: 'Extended PIDs' }} />
+          <Tabs.Screen name="charts" options={{ href: null, title: 'Charts' }} />
+          <Tabs.Screen name="performance" options={{ href: null, title: 'Performance' }} />
+          <Tabs.Screen name="trips" options={{ href: null, title: 'Trips' }} />
+          <Tabs.Screen name="alerts" options={{ href: null, title: 'Alerts' }} />
+          <Tabs.Screen name="sensors" options={{ href: null, title: 'Sensor tests' }} />
+          <Tabs.Screen name="coding" options={{ href: null, title: 'Coding' }} />
+          <Tabs.Screen name="notifications" options={{ href: null, title: 'Notifications' }} />
+          <Tabs.Screen name="service-reset" options={{ href: null, title: 'Service reset' }} />
         </Tabs>
       </Theme>
     </TamaguiProvider>

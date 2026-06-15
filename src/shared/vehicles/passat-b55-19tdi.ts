@@ -21,6 +21,18 @@ export const passatB55: VehicleProfile = {
     '0142',
   ],
   dtcModes: ['03', '07'],
+  serviceReset: {
+    // EXPERIMENTAL / illustrative KWP2000 (K-line) path. On a real B5.5 the reliable method is often
+    // the dash stalk buttons; a generic ELM327 KWP reset is slower and car-specific. Confirm first.
+    module: 'Instrument cluster (KWP2000)',
+    reqHeader: '8A1710',
+    rxFilter: '',
+    transport: 'kwp',
+    session: 0x85,
+    method: 'routine',
+    routineId: '01',
+    experimental: true,
+  },
   notes:
     'K-line: slower and thinner than CAN. VCDS reports engine label 038-906-019-AVB and ECU ' +
     '038 906 019 KC. Missing MAF/oil/fuel-rate via generic OBD2 is expected (that data lives in ' +

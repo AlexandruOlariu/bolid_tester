@@ -42,9 +42,17 @@ too.
 
 ### What a generic ELM327 can and cannot do
 - ✅ Engine/emissions ECU via standard OBD2: live data (Mode 01), read & clear DTCs (03/04/07),
-  freeze frame (02), readiness, VIN (09).
+  freeze frame (02), readiness, VIN (09), **on-board monitor test results (Mode 06)**.
 - ⚠️ Manufacturer extended PIDs (Mode 22) are experimental, per-profile, tuned on the real car.
-- ❌ Not VCDS/VAG-COM: no ABS/airbag/transmission/cluster modules, no MS/SW-CAN.
+- ⚠️ **Other modules (e.g. ABS/ESP) on CAN cars** can sometimes be *read* via UDS `22` with custom
+  addressing (`ATSH`/`ATCRA`/flow control) — experimental, per-profile, unverified, **CAN only**
+  (never K-line). Powers experimental wheel-speed/sensor reads — see
+  [`features/sensor-tests.md`](./features/sensor-tests.md).
+- ⚠️ **Coding/writes** (UDS `2E`/`31`, long coding/adaptation) are *partially* possible on CAN cars
+  but blocked by manufacturer-secret security access (`27`) and per-module byte layouts; shipped
+  disabled, simulator-first, backup-mandatory — see [`features/coding.md`](./features/coding.md).
+- ❌ Not VCDS/VAG-COM: no guaranteed ABS/airbag/transmission/cluster coverage, no MS/SW-CAN; never
+  immobilizer/airbag/cluster-mileage writes.
 
 ## Milestones
 
@@ -55,6 +63,22 @@ too.
   toggle.
 - **Phase 3 — Extended PIDs + polish.** Profile-driven Mode 22 PIDs (VAG example) behind a flag,
   freeze frame, readiness, logging/export, on-car checklists, EAS builds.
+- **Phase 4 — Analysis, performance & module access (proposed).** New feature slices on top of the
+  existing core + poll loop, simulator-first:
+  - [`trip-recording`](./features/trip-recording.md) — persisted time-series + CSV/JSON export +
+    replay.
+  - [`live-charts`](./features/live-charts.md) — time-series / X–Y plots for live data and trips.
+  - [`performance-tests`](./features/performance-tests.md) — 0–100, ¼-mile, braking (ECU speed,
+    optional GPS).
+  - [`alerts`](./features/alerts.md) — user threshold rules with haptic/visual/audible actions.
+  - [`notifications`](./features/notifications.md) — local (on-device) notifications for alerts,
+    connection/diagnostic events, and date/mileage maintenance reminders (foreground + local scope).
+  - [`sensor-tests`](./features/sensor-tests.md) — standard Mode 06 + live single-sensor wiggle
+    tests; experimental CAN-only module sensors (e.g. ABS wheel-speed).
+  - [`coding`](./features/coding.md) — experimental, heavily-gated UDS write/coding (CAN only,
+    disabled by default, backup-mandatory).
+  - [`service-reset`](./features/service-reset.md) — experimental service-interval (oil/SRI) reset
+    via cluster UDS routine/adaptation (CAN) **or** KWP2000 (K-line Passat), gated.
 
 ## Verification
 

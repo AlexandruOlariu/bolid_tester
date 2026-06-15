@@ -9,6 +9,7 @@ import { isMarkerPid, decodePid, PID_REGISTRY } from '../obd/pids';
 import { parseDtcBytes, decodeDtcBytes, toDtc, Dtc } from '../obd/dtc';
 import { parseVin } from '../obd/vin';
 import { decodeMonitorStatus, MonitorStatus } from '../obd/readiness';
+import { decodeMode06, Mode06Result } from '../obd/mode06';
 
 export interface LiveValue {
   pid: string;
@@ -144,6 +145,29 @@ export class DiagnosticSession {
     const r = await this.client.command('22' + did);
     if (r.notice || r.bytes.length < 1) return null;
     return r.bytes.slice(1 + did.length / 2);
+  }
+
+  /** Low-level UDS/raw send: resolves with response bytes (service byte first) or null on a notice.
+   *  Used by the coding flow (obd-core/coding/udsCoding) and module sensor reads. */
+  async send(cmd: string): Promise<number[] | null> {
+    const r = await this.client.command(cmd);
+    return r.notice ? null : r.bytes;
+  }
+
+  /** Point subsequent requests at a specific module (custom CAN addressing). Pass null to clear. */
+  async setHeader(header: string | null): Promise<void> {
+    await this.client.command('ATSH' + (header ?? ''));
+  }
+
+  async setRxFilter(filter: string): Promise<void> {
+    await this.client.command('ATCRA' + filter);
+  }
+
+  /** Mode 06 — on-board monitor test results for a monitor id (e.g. '01'). */
+  async readMode06(mid: string): Promise<Mode06Result[]> {
+    const r = await this.client.command('06' + mid);
+    if (r.notice) return [];
+    return decodeMode06(r.bytes);
   }
 
   /** MIL state + readiness monitors (Mode 01 PID 01). */

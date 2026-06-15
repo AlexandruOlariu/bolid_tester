@@ -6,7 +6,7 @@ import { ProtocolId, elmNumberFromProtocol } from '../obd/protocols';
 import { encodeSupportedPids } from '../obd/supportedPids';
 import { encodeDtc } from '../obd/dtc';
 import { asciiToBytes, bytesToString, stringToBytes } from '../../lib/bytes';
-import { byteToHex, toHex } from '../../lib/hex';
+import { byteToHex, toHex, parseHexBytes } from '../../lib/hex';
 
 export interface SimScenario {
   protocol: ProtocolId;
@@ -17,39 +17,46 @@ export interface SimScenario {
   pendingDtcs?: string[];
   permanentDtcs?: string[];
   extendedDids?: Record<string, number[]>; // '1701' -> response data bytes (Mode 22)
+  /** Mode 06 monitor responses: mid -> full response bytes (including the 0x46 service byte). */
+  mode06?: Record<string, number[]>;
+  /** Module-scoped UDS 22 reads, keyed by the ATSH request header then DID -> data bytes. */
+  moduleDids?: Record<string, Record<string, number[]>>;
+  /** Codeable modules: ATSH header -> DID -> mutable coding bytes (read via 22, written via 2E). */
+  coding?: Record<string, Record<string, number[]>>;
   latencyMs?: number;
   emitSearching?: boolean;
 }
 
 /** Realistic raw data bytes per PID, chosen to decode to plausible idle values. */
 const SIM_PID_BYTES: Record<string, number[]> = {
-  '0104': [0x40], // load ~25%
-  '0105': [0x7d], // coolant 85°C
-  '0106': [0x80], // STFT 0%
-  '0107': [0x80], // LTFT 0%
-  '010a': [0x64], // fuel pressure 300 kPa
-  '010b': [0x64], // MAP 100 kPa
-  '010c': [0x0c, 0xd0], // RPM 820
-  '010d': [0x00], // speed 0
-  '010e': [0x94], // timing 10°
-  '010f': [0x46], // IAT 30°C
-  '0110': [0x01, 0x5e], // MAF 3.5 g/s
-  '0111': [0x24], // throttle 14%
-  '011f': [0x00, 0x78], // run time 120 s
-  '0121': [0x00, 0x00], // distance w/ MIL 0
-  '0131': [0x04, 0xd2], // distance since clear 1234 km
-  '012f': [0x80], // fuel level 50%
-  '0133': [0x64], // baro 100 kPa
-  '0142': [0x36, 0xb0], // voltage 14.0 V
-  '0146': [0x3e], // ambient 22°C
-  '015c': [0x82], // oil temp 90°C
-  '015e': [0x00, 0x1e], // fuel rate 1.5 L/h
+  '0104': [0x40],
+  '0105': [0x7d],
+  '0106': [0x80],
+  '0107': [0x80],
+  '010a': [0x64],
+  '010b': [0x64],
+  '010c': [0x0c, 0xd0],
+  '010d': [0x00],
+  '010e': [0x94],
+  '010f': [0x46],
+  '0110': [0x01, 0x5e],
+  '0111': [0x24],
+  '011f': [0x00, 0x78],
+  '0121': [0x00, 0x00],
+  '0131': [0x04, 0xd2],
+  '012f': [0x80],
+  '0133': [0x64],
+  '0142': [0x36, 0xb0],
+  '0146': [0x3e],
+  '015c': [0x82],
+  '015e': [0x00, 0x1e],
 };
 
 export class MockTransport implements Transport {
   status: TransportStatus = 'disconnected';
   private listeners = new Set<(b: Uint8Array) => void>();
   private searched = false;
+  private header: string | null = null; // current ATSH target (module addressing)
 
   constructor(public scenario: SimScenario) {}
 
@@ -88,10 +95,14 @@ export class MockTransport implements Transport {
     if (c === 'ATDPN') return elmNumberFromProtocol(this.scenario.protocol);
     if (c === 'ATRV') return '12.3V';
     if (c.startsWith('ATSP')) return 'OK';
+    if (c.startsWith('ATSH')) {
+      const hh = c.slice(4).trim();
+      this.header = hh === '' ? null : hh;
+      return 'OK';
+    }
     if (
       c.startsWith('ATCRA') ||
       c.startsWith('ATST') ||
-      c.startsWith('ATSH') ||
       ['ATE0', 'ATE1', 'ATL0', 'ATL1', 'ATS0', 'ATS1', 'ATH0', 'ATH1', 'ATAT0', 'ATAT1', 'ATAT2', 'ATCAF0', 'ATCAF1'].includes(c)
     ) {
       return 'OK';
@@ -136,13 +147,46 @@ export class MockTransport implements Transport {
       this.scenario.pendingDtcs = [];
       return '44';
     }
-    if (h.startsWith('22') && h.length >= 4) {
-      const did = h.slice(2);
+
+    // Mode 06: on-board monitor test results (06 <mid>).
+    if (h.startsWith('06') && h.length === 4) {
+      const mid = h.slice(2);
+      const resp = this.scenario.mode06?.[mid];
+      return resp ? toHex(resp) : 'NO DATA';
+    }
+
+    // UDS / KWP module services (coding, service reset).
+    if (h.startsWith('10') && h.length >= 4) return '50' + h.slice(2, 4); // (Start)DiagnosticSession
+    if (h === '3E00') return '7E00'; // TesterPresent
+    // RoutineControl / StartRoutine (UDS 31 <sub> <id> or KWP 31 <lid>) — echo a positive response.
+    if (h.startsWith('31') && h.length >= 4) {
+      return '71' + h.slice(2);
+    }
+    if (h.startsWith('27') && h.length >= 4) {
+      return h.slice(2, 4) === '01' ? '67010000' : '6702';
+    }
+    if (h.startsWith('2E') && h.length >= 6) {
+      const did = h.slice(2, 6);
+      const data = parseHexBytes(h.slice(6));
+      const store = this.header ? this.scenario.coding?.[this.header] : undefined;
+      if (store && did in store) {
+        store[did] = data;
+        return '6E' + did;
+      }
+      return '7F2E31';
+    }
+
+    if (h.startsWith('22') && h.length >= 6) {
+      const did = h.slice(2, 6);
+      const coding = this.header ? this.scenario.coding?.[this.header]?.[did] : undefined;
+      if (coding) return '62' + did + toHex(coding);
+      const moduleData = this.header ? this.scenario.moduleDids?.[this.header]?.[did] : undefined;
+      if (moduleData) return '62' + did + toHex(moduleData);
       const data = this.scenario.extendedDids?.[did];
       return data ? '62' + did + toHex(data) : 'NO DATA';
     }
 
-    // Mode 02 freeze frame: `02 <pid> <frame>` → `42 <pid> <frame> <data>` (only if a DTC is set).
+    // Mode 02 freeze frame.
     if (h.startsWith('02') && h.length === 6) {
       const stored = this.scenario.storedDtcs ?? [];
       if (stored.length === 0) return 'NO DATA';
@@ -164,7 +208,6 @@ export class MockTransport implements Transport {
       if (h === '0101') {
         const n = (this.scenario.storedDtcs ?? []).length;
         const a = (n > 0 ? 0x80 : 0) | (n & 0x7f);
-        // B=0x07: 3 continuous monitors supported & complete (spark); C/D: catalyst + O2 complete.
         return '4101' + toHex([a, 0x07, 0x21, 0x00]);
       }
       if (this.scenario.supportedPids.includes(h)) {
