@@ -4,7 +4,9 @@
     "module": "CommonJS",
     "moduleResolution": "Node",
     "ignoreDeprecations": "6.0",
-    "lib": ["ES2020"],
+    "lib": [
+      "ES2020"
+    ],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -14,10 +16,15 @@
     "noFallthroughCasesInSwitch": true,
     "declaration": false,
     "noEmit": true,
-    "types": ["node", "jest"],
+    "types": [
+      "node",
+      "jest"
+    ],
     "resolveJsonModule": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
   "//": "Scoped to the platform-agnostic core (tested in the container). Self-contained (no Expo base) so it can use Node module resolution for ts-jest. The RN app is typechecked with tsconfig.app.json.",
@@ -25,5 +32,6 @@
     "src/shared/lib/**/*.ts",
     "src/shared/obd-core/**/*.ts",
     "src/shared/vehicles/**/*.ts"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }

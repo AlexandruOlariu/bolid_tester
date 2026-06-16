@@ -11,6 +11,18 @@ export interface ExtendedPid {
   name: string;
   unit: string;
   experimental: boolean;
+  /** Optional grouping for feature screens — the DPF/diesel monitor filters to 'dpf' | 'diesel'. */
+  category?: 'general' | 'diesel' | 'dpf';
+  /** Optional semantic role so a feature can map a DID to a known quantity (DPF soot, EGT, …). */
+  role?:
+    | 'sootPct'
+    | 'sootMassG'
+    | 'ashMassG'
+    | 'kmSinceRegen'
+    | 'regenCount'
+    | 'egtC'
+    | 'oilTempC'
+    | 'egrPct';
   /** Bytes the simulator returns for this DID (after `62 <did>`). */
   sampleResponse: number[];
   decode: (data: number[]) => number;

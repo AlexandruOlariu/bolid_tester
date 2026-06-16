@@ -22,4 +22,12 @@ export function getVehicleProfile(id: string): VehicleProfile {
   return VEHICLE_REGISTRY[id] ?? generic;
 }
 
+/** Human label for a profile, used in dashboards and history (e.g. "VW Golf Plus 2009 (2009)"
+ *  or "Auto / Generic OBD2"). */
+export function vehicleLabel(profile: VehicleProfile): string {
+  return profile.id === 'generic'
+    ? 'Auto / Generic OBD2'
+    : `${profile.name}${profile.year ? ` (${profile.year})` : ''}`;
+}
+
 export * from './types';

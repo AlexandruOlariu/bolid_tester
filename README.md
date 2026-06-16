@@ -32,6 +32,7 @@ Phase-4 additions (reachable from the **More** tab):
 | Feature | What it does | Notes |
 |---|---|---|
 | [Diagnose (AI)](./docs/features/ai-diagnose.md) | One-tap AI health report from a local OpenAI-compatible LLM (e.g. LM Studio); reads + gated clear-DTC | falls back to on-device rules if no server |
+| [History](./docs/features/history.md) | Persistent log of past AI diagnoses & fault-code checks | unlimited, clearable; file-backed |
 | [Trips](./docs/features/trip-recording.md) | Record live data, export CSV/JSON, replay | — |
 | [Charts](./docs/features/live-charts.md) | Live PIDs plotted over time | — |
 | [Performance](./docs/features/performance-tests.md) | 0–100, ¼-mile, braking | closed-course |
@@ -40,6 +41,11 @@ Phase-4 additions (reachable from the **More** tab):
 | [Sensor tests](./docs/features/sensor-tests.md) | Mode 06 + experimental module sensors (ABS) | module reads CAN-only |
 | [Coding](./docs/features/coding.md) | Experimental UDS module coding | gated, backup-first |
 | [Service reset](./docs/features/service-reset.md) | Service-interval ("oil/SRI") reset | gated; CAN (Golf) **and** KWP2000 (Passat) |
+| [DPF / regen](./docs/features/dpf.md) | Diesel soot load, regeneration status, EGT/EGR | experimental Mode 22; **CAN diesel only** |
+| [Used-car inspection](./docs/features/used-car-inspection.md) | One-tap pre-purchase check incl. a "codes recently cleared?" tell | standard OBD2; any car |
+| [Battery & charging](./docs/features/battery-health.md) | Resting/cranking/charging voltage → health verdict | voltage-based, not a load test |
+| [VIN decoder](./docs/features/vin-decode.md) | WMI / country / year / check-digit from the VIN, offline | NA year/check conventions flagged |
+| [Maintenance log](./docs/features/maintenance-log.md) | Service logbook + what's-due by km/time | odometer user-entered |
 
 > ⚠️ Coding and service-reset are **experimental writes** to control modules. They ship gated
 > (explicit confirmation), are profile-driven, back up the current values first, and the shipped

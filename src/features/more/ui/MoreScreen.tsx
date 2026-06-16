@@ -11,6 +11,12 @@ import {
   Wrench,
   KeyRound,
   Stethoscope,
+  History,
+  Wind,
+  ClipboardCheck,
+  BatteryCharging,
+  ScanLine,
+  CalendarClock,
 } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
 
@@ -23,6 +29,12 @@ interface Entry {
 
 const ENTRIES: Entry[] = [
   { route: '/ai-diagnose', title: 'Diagnose (AI)', subtitle: 'One-tap AI health check', Icon: Stethoscope },
+  { route: '/history', title: 'History', subtitle: 'Past diagnoses & fault-code checks', Icon: History },
+  { route: '/inspection', title: 'Used-car inspection', subtitle: 'Pre-purchase health check', Icon: ClipboardCheck },
+  { route: '/dpf', title: 'DPF / regen', subtitle: 'Diesel soot & regeneration', Icon: Wind },
+  { route: '/battery', title: 'Battery & charging', subtitle: 'Voltage, cranking, alternator', Icon: BatteryCharging },
+  { route: '/vin-decode', title: 'VIN decoder', subtitle: 'Decode the VIN offline', Icon: ScanLine },
+  { route: '/maintenance', title: 'Maintenance log', subtitle: 'Service history & due items', Icon: CalendarClock },
   { route: '/charts', title: 'Charts', subtitle: 'Live parameters over time', Icon: LineChart },
   { route: '/performance', title: 'Performance', subtitle: '0–100, ¼-mile, braking', Icon: Timer },
   { route: '/trips', title: 'Trips', subtitle: 'Record & export live data', Icon: RouteIcon },

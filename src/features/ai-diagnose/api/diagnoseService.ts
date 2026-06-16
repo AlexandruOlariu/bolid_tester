@@ -14,7 +14,7 @@ import {
   parseAiReport,
 } from '@/shared/obd-core';
 import { chatCompletion } from '@/shared/ai';
-import { getVehicleProfile, type VehicleProfile } from '@/shared/vehicles';
+import { getVehicleProfile, vehicleLabel, type VehicleProfile } from '@/shared/vehicles';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
@@ -28,9 +28,8 @@ export interface AnalysisOutcome {
 /** Map the selected vehicle profile into the AI's default vehicle context. Always returns something
  *  (even for the generic profile) so the model knows what kind of car it is looking at. */
 function toVehicleContext(p: VehicleProfile): VehicleContext {
-  const generic = p.id === 'generic';
   return {
-    label: generic ? 'Auto / Generic OBD2' : `${p.name}${p.year ? ` (${p.year})` : ''}`,
+    label: vehicleLabel(p),
     year: p.year || undefined,
     engine: p.engine && p.engine !== '—' ? p.engine : undefined,
     fuel: p.fuel && p.fuel !== 'other' ? p.fuel : undefined,

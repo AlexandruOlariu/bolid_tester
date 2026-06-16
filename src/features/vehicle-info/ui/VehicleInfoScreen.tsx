@@ -53,6 +53,10 @@ export function VehicleInfoScreen() {
       <Button theme="blue" onPress={() => router.push('/extended')}>
         Extended PIDs (experimental)
       </Button>
+
+      <Button theme="blue" onPress={() => router.push('/vin-decode')}>
+        Decode VIN
+      </Button>
     </Screen>
   );
 }

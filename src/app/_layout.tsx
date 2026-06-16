@@ -102,9 +102,10 @@ export default function RootLayout() {
               tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
             }}
           />
-          {/* Reachable from the Info screen; hidden from the tab bar. */}
+          {/* Reachable from the Info / More screens; hidden from the tab bar. */}
           <Tabs.Screen name="extended" options={{ href: null, title: 'Extended PIDs' }} />
           <Tabs.Screen name="ai-diagnose" options={{ href: null, title: 'Diagnose (AI)' }} />
+          <Tabs.Screen name="history" options={{ href: null, title: 'History' }} />
           <Tabs.Screen name="charts" options={{ href: null, title: 'Charts' }} />
           <Tabs.Screen name="performance" options={{ href: null, title: 'Performance' }} />
           <Tabs.Screen name="trips" options={{ href: null, title: 'Trips' }} />
@@ -113,6 +114,11 @@ export default function RootLayout() {
           <Tabs.Screen name="coding" options={{ href: null, title: 'Coding' }} />
           <Tabs.Screen name="notifications" options={{ href: null, title: 'Notifications' }} />
           <Tabs.Screen name="service-reset" options={{ href: null, title: 'Service reset' }} />
+          <Tabs.Screen name="dpf" options={{ href: null, title: 'DPF / regen' }} />
+          <Tabs.Screen name="inspection" options={{ href: null, title: 'Used-car inspection' }} />
+          <Tabs.Screen name="battery" options={{ href: null, title: 'Battery & charging' }} />
+          <Tabs.Screen name="vin-decode" options={{ href: null, title: 'VIN decoder' }} />
+          <Tabs.Screen name="maintenance" options={{ href: null, title: 'Maintenance log' }} />
         </Tabs>
       </Theme>
     </TamaguiProvider>

@@ -14,14 +14,48 @@ export const golfPlus2009: VehicleProfile = {
   ],
   dtcModes: ['03', '07', '0A'],
   extendedPids: [
+    // --- Diesel / DPF pack: EXPERIMENTAL, illustrative VAG-style DIDs. Confirm on the real car.
+    // The DPF monitor (docs/features/dpf.md) maps these by `role`; the Extended-PIDs screen shows
+    // them raw. The simulator (scenarios.ts) auto-seeds each DID from its sampleResponse.
     {
-      // Illustrative DID — must be confirmed on the real car. See docs/features/extended-pids.md.
-      did: '1701',
-      name: 'DPF soot mass (experimental)',
-      unit: 'g',
-      experimental: true,
-      sampleResponse: [0x00, 0x2a],
-      decode: (d) => (d[0] * 256 + d[1]) / 100,
+      did: '1701', name: 'DPF soot mass (calc.)', unit: 'g', experimental: true,
+      category: 'dpf', role: 'sootMassG',
+      sampleResponse: [0x04, 0xb0], decode: (d) => (d[0] * 256 + d[1]) / 100, // 12.00 g
+    },
+    {
+      did: '1702', name: 'DPF soot load', unit: '%', experimental: true,
+      category: 'dpf', role: 'sootPct',
+      sampleResponse: [0x8c], decode: (d) => Math.round((d[0] * 100) / 255), // ~55 %
+    },
+    {
+      did: '1703', name: 'DPF ash load', unit: 'g', experimental: true,
+      category: 'dpf', role: 'ashMassG',
+      sampleResponse: [0x07, 0x08], decode: (d) => (d[0] * 256 + d[1]) / 100, // 18.00 g
+    },
+    {
+      did: '1704', name: 'Distance since regen', unit: 'km', experimental: true,
+      category: 'dpf', role: 'kmSinceRegen',
+      sampleResponse: [0x01, 0x2c], decode: (d) => d[0] * 256 + d[1], // 300 km
+    },
+    {
+      did: '1705', name: 'Successful regenerations', unit: '', experimental: true,
+      category: 'dpf', role: 'regenCount',
+      sampleResponse: [0x01, 0x38], decode: (d) => d[0] * 256 + d[1], // 312
+    },
+    {
+      did: '1706', name: 'Exhaust gas temp (DPF)', unit: '°C', experimental: true,
+      category: 'dpf', role: 'egtC',
+      sampleResponse: [0x09, 0xc4], decode: (d) => (d[0] * 256 + d[1]) / 10, // 250.0 °C
+    },
+    {
+      did: '1707', name: 'Oil temperature', unit: '°C', experimental: true,
+      category: 'diesel', role: 'oilTempC',
+      sampleResponse: [0x82], decode: (d) => d[0] - 40, // 90 °C
+    },
+    {
+      did: '1708', name: 'EGR valve position', unit: '%', experimental: true,
+      category: 'diesel', role: 'egrPct',
+      sampleResponse: [0x40], decode: (d) => Math.round((d[0] * 100) / 255), // ~25 %
     },
   ],
   mode06Tests: [

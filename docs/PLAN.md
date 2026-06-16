@@ -80,6 +80,19 @@ too.
   - [`service-reset`](./features/service-reset.md) — experimental service-interval (oil/SRI) reset
     via cluster UDS routine/adaptation (CAN) **or** KWP2000 (K-line Passat), gated.
 
+- **Phase 5 — Diesel, ownership & screening (built).** Five more feature slices on the same core +
+  simulator-first approach:
+  - [`dpf`](./features/dpf.md) — diesel particulate filter / regeneration monitor (experimental
+    Mode 22, CAN diesel only); adds a diesel extended-PID pack to the VAG profile.
+  - [`used-car-inspection`](./features/used-car-inspection.md) — one-tap pre-purchase screening with
+    the "codes recently cleared" readiness heuristic (standard OBD2, any car).
+  - [`battery-health`](./features/battery-health.md) — battery/charging assessment from a short
+    voltage capture (resting SoC, cranking dip, alternator voltage).
+  - [`vin-decode`](./features/vin-decode.md) — offline VIN decode (WMI, country, model year, check
+    digit), with North-American conventions flagged.
+  - [`maintenance-log`](./features/maintenance-log.md) — persistent service logbook + due-by-km/time
+    (odometer user-entered; complements the notifications reminders).
+
 ## Verification
 
 - **In-container / CI (no hardware):** unit tests (decoders, DTC, ELM327 parsing, simulator);

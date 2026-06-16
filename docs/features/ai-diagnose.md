@@ -6,7 +6,7 @@ plain-language report: an overall verdict, prioritised findings, and recommended
 server is configured or it can't be reached, it falls back to a deterministic on-device rule-based
 report, so the feature is always useful.
 
-Reachable from the **More** tab (`/ai-diagnose`).
+Reachable from the **More** tab (`/ai-diagnose`). Every run is saved to [History](./history.md).
 
 ## Scope & safety
 

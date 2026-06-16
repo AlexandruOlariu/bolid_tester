@@ -5,6 +5,58 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Phase 5 — Diesel, ownership & screening (5 features)
+
+**Status:** ✅ core + UI built, verified here (full suite **141 tests** green, `eslint` clean, full-app
+`tsc -p tsconfig.app.json` **0 errors**). Specs: [`dpf`](./features/dpf.md),
+[`used-car-inspection`](./features/used-car-inspection.md), [`battery-health`](./features/battery-health.md),
+[`vin-decode`](./features/vin-decode.md), [`maintenance-log`](./features/maintenance-log.md).
+
+Pure, unit-tested core (no hardware):
+- `obd-core/obd/vinDecode.ts` (+ test) — `decodeVin` (WMI dictionary, ISO-3780 country, char-10 year
+  with the char-7 rule, FMVSS-565 check digit). Verified against the three example VINs + a US case.
+- `obd-core/analysis/battery.ts` (+ test) — `analyzeBattery` / `socFromResting` (resting SoC, cranking
+  dip, alternator voltage, verdict + notes).
+- `obd-core/analysis/dpf.ts` (+ test) — `assessDpf` (soot %, regen status, EGT-driven regen detection).
+- `obd-core/analysis/maintenance.ts` (+ test) — `computeDue` / `dueStatus` / `projectOdometer` +
+  `DEFAULT_SERVICE_ITEMS` (diesel-biased: timing belt, fuel filter, DPF check).
+- `obd-core/analysis/inspection.ts` (+ test) — `assessInspection` incl. the "recently-cleared"
+  readiness heuristic. All exported from `obd-core/index.ts`.
+
+Vehicle data:
+- Golf TDI profile gains a **diesel/DPF extended-PID pack** (soot mass/%, ash, distance & count since
+  regen, EGT, oil temp, EGR), each `experimental` and tagged `category`/`role`; `ExtendedPid` gained
+  optional `category`/`role` fields. The simulator auto-seeds every DID from its `sampleResponse`.
+
+Feature slices (feature-sliced, Tamagui) + routes + **More** menu + hidden tabs:
+- `features/dpf` — CAN/diesel-gated DPF monitor (status banner + tiles), maps DID `role`s into
+  `assessDpf`.
+- `features/inspection` — one-tap used-car screening (readiness + DTC 03/07/0A + freeze frame +
+  distance-since-clear → verdict).
+- `features/battery-health` — `ATRV` voltage capture → `analyzeBattery`.
+- `features/vin-decode` — decodes the session VIN or a typed VIN; also linked from **Vehicle info**.
+- `features/maintenance` — persisted logbook (`bolid.maintenance`) + due list.
+
+---
+
+## History feature (feature: history)
+
+**Status:** ✅ added. A persistent, file-backed log of every AI auto-diagnose run and every
+fault-code check. Spec: [`features/history.md`](./features/history.md).
+
+- `src/shared/state/historyStore.ts` — persisted (expo-file-system, `bolid.history`) zustand store;
+  `AiHistoryEntry | DtcHistoryEntry`, `addAiRun` / `addDtcCheck` / `remove` / `clear`; unlimited.
+- Recorders: `useAiDiagnose` (AI runs) and `fault-codes/dtcService.readAll` (DTC checks); both use a
+  new shared `vehicleLabel()` helper in `shared/vehicles`.
+- `src/features/history/` — `HistoryScreen` (All/AI/Faults filter, colour-coded cards, Clear all) +
+  `/history` route, hidden tab, and a **More** menu entry.
+
+Also: settings + AI config + selected vehicle now persist across launches (zustand `persist` over the
+same file storage); the AI request no longer sends `temperature`; structured output is a 3-way
+schema/object/off control with auto-fallback when a server rejects `response_format`.
+
+---
+
 ## AI auto-diagnosis (feature: ai-diagnose)
 
 **Status:** ✅ core complete and verified (pure logic unit-tested here; 20 new tests, full core suite

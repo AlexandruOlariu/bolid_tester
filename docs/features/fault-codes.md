@@ -1,6 +1,6 @@
 # Feature: fault-codes
 
-Read and clear Diagnostic Trouble Codes (DTCs), show freeze frame and readiness monitors.
+Read and clear Diagnostic Trouble Codes (DTCs), show freeze frame and readiness monitors. Every read is saved to [History](./history.md).
 
 ## UI
 - **FaultCodesScreen** — three sections: **Stored** (Mode 03), **Pending** (Mode 07),

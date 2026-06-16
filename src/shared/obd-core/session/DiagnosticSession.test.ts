@@ -153,7 +153,8 @@ describe('DiagnosticSession (integration via simulator)', () => {
       commandTimeoutMs: 1000,
     });
     await golf.connect();
-    expect(await golf.readExtended('1701')).toEqual([0x00, 0x2a]);
+    // 1701 = DPF soot mass in the Golf's diesel pack (see vehicles/golf-plus-2009-20tdi.ts).
+    expect(await golf.readExtended('1701')).toEqual([0x04, 0xb0]);
 
     const passat = new DiagnosticSession(new MockTransport(buildScenario('passat-b55-19tdi')), {
       commandTimeoutMs: 1000,
