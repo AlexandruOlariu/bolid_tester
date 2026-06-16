@@ -12,6 +12,7 @@ import { getBleManager } from '@/shared/transports/ble/manager';
 import { requestBlePermissions } from '@/shared/transports/ble/permissions';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { logError } from '@/shared/state/errorLogStore';
 
 /** Tap the transport to mirror every command/response into the in-app log. */
 function withLog(inner: Transport): Transport {
@@ -70,6 +71,7 @@ export async function connect(target?: ConnectTarget): Promise<void> {
     const message = e instanceof Error ? e.message : String(e);
     useSessionStore.getState().setStatus('error');
     useSessionStore.getState().setError(message);
+    logError({ source: 'connection', error: e, context: { adapterSource } });
     throw e;
   }
 }

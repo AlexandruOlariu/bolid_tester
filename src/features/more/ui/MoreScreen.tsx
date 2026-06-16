@@ -17,6 +17,7 @@ import {
   BatteryCharging,
   ScanLine,
   CalendarClock,
+  Bug,
 } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
 
@@ -43,6 +44,7 @@ const ENTRIES: Entry[] = [
   { route: '/service-reset', title: 'Service reset', subtitle: 'Reset the service interval', Icon: Wrench },
   { route: '/coding', title: 'Coding', subtitle: 'Experimental module coding', Icon: KeyRound },
   { route: '/notifications', title: 'Notifications', subtitle: 'Alerts & reminders', Icon: BellRing },
+  { route: '/error-log', title: 'Error log', subtitle: 'Saved errors to export & fix later', Icon: Bug },
 ];
 
 export function MoreScreen() {

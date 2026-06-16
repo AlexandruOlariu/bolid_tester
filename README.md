@@ -46,6 +46,7 @@ Phase-4 additions (reachable from the **More** tab):
 | [Battery & charging](./docs/features/battery-health.md) | Resting/cranking/charging voltage → health verdict | voltage-based, not a load test |
 | [VIN decoder](./docs/features/vin-decode.md) | WMI / country / year / check-digit from the VIN, offline | NA year/check conventions flagged |
 | [Maintenance log](./docs/features/maintenance-log.md) | Service logbook + what's-due by km/time | odometer user-entered |
+| [Error log](./docs/features/error-log.md) | Saves caught & uncaught errors; export as Markdown/JSON to fix later | on-device, capped, clearable |
 
 > ⚠️ Coding and service-reset are **experimental writes** to control modules. They ship gated
 > (explicit confirmation), are profile-driven, back up the current values first, and the shipped

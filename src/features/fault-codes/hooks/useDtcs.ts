@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { logError } from '@/shared/state/errorLogStore';
 import { useDtcStore } from '../model/dtcStore';
 import * as dtcService from '../api/dtcService';
 
@@ -13,6 +14,7 @@ export function useDtcs() {
       set(await dtcService.readAll());
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+      logError({ source: 'fault-codes', error: e });
     } finally {
       setLoading(false);
     }

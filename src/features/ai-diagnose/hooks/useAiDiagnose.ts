@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useHistoryStore } from '@/shared/state/historyStore';
+import { logError } from '@/shared/state/errorLogStore';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { useAiDiagnoseStore } from '../model/aiDiagnoseStore';
 import * as diagnoseService from '../api/diagnoseService';
@@ -39,6 +40,7 @@ export function useAiDiagnose() {
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+      logError({ source: 'ai-diagnose', error: e });
     }
   }, [setPhase, setSnapshot, setReport, setError]);
 

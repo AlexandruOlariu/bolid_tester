@@ -14,6 +14,10 @@ import {
 } from 'lucide-react-native';
 import config from '../../tamagui.config';
 import { useSettingsStore } from '@/shared/state/settingsStore';
+import { installGlobalErrorHandlers } from '@/shared/state/errorLogStore';
+
+// Capture uncaught errors & unhandled rejections into the in-app error log, once, at app start.
+installGlobalErrorHandlers();
 
 const ACCENT   = '#2bb673';
 const INACTIVE = '#8B949E';
@@ -119,6 +123,7 @@ export default function RootLayout() {
           <Tabs.Screen name="battery" options={{ href: null, title: 'Battery & charging' }} />
           <Tabs.Screen name="vin-decode" options={{ href: null, title: 'VIN decoder' }} />
           <Tabs.Screen name="maintenance" options={{ href: null, title: 'Maintenance log' }} />
+          <Tabs.Screen name="error-log" options={{ href: null, title: 'Error log' }} />
         </Tabs>
       </Theme>
     </TamaguiProvider>

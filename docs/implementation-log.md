@@ -179,3 +179,20 @@ Implemented the feature-sliced UI over the tested core:
   **runtime characteristic discovery** (no hard-coded UUIDs); `permissions.ts`, `manager.ts`,
   and a dependency-free `src/shared/lib/base64.ts` (unit-tested) for BLE payloads.
 - `src/shared/state/*` — Zustand stores (`sessionStore`, `settingsStore` incl. the adapter I/O log)
+
+## Error log ("logging zone")
+
+**Status:** ✅ code complete; core verified here (`npm test`, `npm run lint`, `npm run typecheck`,
+`npm run typecheck:app` all green). See [`features/error-log.md`](./features/error-log.md).
+
+A persistent, capped on-device store of errors, reviewable and **exportable** (Markdown/JSON via the
+share sheet) to fix later.
+- `src/shared/lib/errorLog.ts` — pure, unit-tested core: `LoggedError` shape, `normalizeError`,
+  `buildLoggedError`, and the export renderers (`formatErrorsForExport`, `errorsToJson`).
+- `src/shared/state/errorLogStore.ts` — persisted Zustand store (`bolid.errors`, capped at 500) with
+  the module-level `logError(...)` convenience and `installGlobalErrorHandlers()` (chains RN
+  `ErrorUtils` + web `unhandledrejection`).
+- `src/features/error-log/*` — `ErrorLogScreen` (severity filter, expandable stack/context, delete,
+  clear, export) + `useErrorLogExport` (dependency-tolerant expo-file-system/expo-sharing). Wired
+  into the `connection`, `fault-codes` and `ai-diagnose` catch blocks and reachable from **More**
+  (`/error-log`). Partly addresses the earlier "log export/share" remaining item.
