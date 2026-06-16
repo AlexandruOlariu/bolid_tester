@@ -32,6 +32,5 @@
     "src/shared/lib/**/*.ts",
     "src/shared/obd-core/**/*.ts",
     "src/shared/vehicles/**/*.ts"
-  ],
-  "extends": "expo/tsconfig.base"
+  ]
 }
