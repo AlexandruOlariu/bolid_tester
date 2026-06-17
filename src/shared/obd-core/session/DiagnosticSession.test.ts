@@ -4,6 +4,32 @@ import { buildScenario } from '../transport/scenarios';
 import { getVehicleProfile } from '../../vehicles';
 import { ProtocolId } from '../obd/protocols';
 import { codeModule, serviceReset } from '../coding/udsCoding';
+import { Transport, TransportStatus } from '../transport/Transport';
+import { bytesToString, stringToBytes } from '../../lib/bytes';
+
+/** A transport that behaves like an ELM327 with no car attached: AT setup commands are answered by
+ *  the chip, but the `0100` probe to the vehicle returns "UNABLE TO CONNECT" (ignition off / not
+ *  plugged into a car). Used to assert connect() fails with an actionable message. */
+class NoVehicleTransport implements Transport {
+  status: TransportStatus = 'disconnected';
+  private listeners = new Set<(b: Uint8Array) => void>();
+  async connect(): Promise<void> {
+    this.status = 'connected';
+  }
+  async disconnect(): Promise<void> {
+    this.status = 'disconnected';
+  }
+  onData(listener: (b: Uint8Array) => void): () => void {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+  async write(bytes: Uint8Array): Promise<void> {
+    const cmd = bytesToString(bytes).replace(/[\r\n]+$/g, '').trim().toUpperCase();
+    const body = cmd.startsWith('AT') ? 'OK' : 'UNABLE TO CONNECT';
+    const out = stringToBytes(body + '\r\r>');
+    for (const l of [...this.listeners]) l(out);
+  }
+}
 
 interface Case {
   id: string;
@@ -47,6 +73,14 @@ describe('DiagnosticSession (integration via simulator)', () => {
       expect(await session.readDtcs('03')).toHaveLength(0);
     });
   }
+
+  it('fails with an actionable message when the adapter connects but the vehicle does not respond', async () => {
+    const session = new DiagnosticSession(new NoVehicleTransport(), {
+      commandTimeoutMs: 1000,
+      firstCommandTimeoutMs: 1000,
+    });
+    await expect(session.connect()).rejects.toThrow(/vehicle isn’t responding/);
+  });
 
   it('reads readiness monitors and a freeze frame after a DTC is set', async () => {
     const session = new DiagnosticSession(

@@ -70,7 +70,24 @@ export class DiagnosticSession {
     if (this.transport.status !== 'connected') await this.transport.connect();
     this.client.attach();
     await this.client.init();
-    await this.client.probe();
+
+    // The AT setup above is answered by the adapter itself; `0100` is the first request that has to
+    // reach the car's ECU. If it gets no reply, every later read would fail the same way — so stop
+    // here with an actionable message instead of grinding through more timeouts on "Initializing…".
+    let probed = false;
+    try {
+      probed = await this.client.probe();
+    } catch {
+      probed = false;
+    }
+    if (!probed) {
+      throw new Error(
+        'Connected to the adapter, but the vehicle isn’t responding (no reply to OBD2 “0100”). ' +
+          'Turn the ignition to ON — engine running is most reliable — and make sure the adapter is ' +
+          'fully seated in the OBD2 port, then reconnect.',
+      );
+    }
+
     this.protocol = await this.client.protocolNumber();
     const voltage = await this.client.voltage();
     const version = await this.client.version();
