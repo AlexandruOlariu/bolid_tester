@@ -1,7 +1,7 @@
 import React from 'react';
 import { useColorScheme } from 'react-native';
 import { Tabs } from 'expo-router';
-import { TamaguiProvider, Theme } from 'tamagui';
+import { TamaguiProvider, Theme, XStack, Text } from 'tamagui';
 import {
   Bluetooth,
   BluetoothConnected,
@@ -15,6 +15,7 @@ import {
 import config from '../../tamagui.config';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { installGlobalErrorHandlers } from '@/shared/state/errorLogStore';
+import { AppLogo } from '@/shared/ui';
 
 // Capture uncaught errors & unhandled rejections into the in-app error log, once, at app start.
 installGlobalErrorHandlers();
@@ -41,6 +42,14 @@ export default function RootLayout() {
             headerShown: true,
             headerStyle: { backgroundColor: nav.bg },
             headerTintColor: nav.tint,
+            headerTitle: ({ children }) => (
+              <XStack alignItems="center" gap="$2" maxWidth={240}>
+                <AppLogo size={28} />
+                <Text color={nav.tint} fontWeight="800" fontSize={17} numberOfLines={1}>
+                  {children}
+                </Text>
+              </XStack>
+            ),
             headerTitleStyle: { fontWeight: '700' },
             headerShadowVisible: false,
             tabBarStyle: {
