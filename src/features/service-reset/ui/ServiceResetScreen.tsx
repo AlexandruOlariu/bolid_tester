@@ -37,6 +37,20 @@ export function ServiceResetScreen() {
 
       {lastResult ? <Paragraph>{lastResult}</Paragraph> : null}
 
+      {descriptor.manualProcedure && descriptor.manualProcedure.length > 0 ? (
+        <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$4">
+          <H4>Manual procedure</H4>
+          <Paragraph theme="alt2" size="$2">
+            The reliable reset for this car. Use it if the OBD reset above does not complete.
+          </Paragraph>
+          {descriptor.manualProcedure.map((step, i) => (
+            <Paragraph key={i} size="$2">
+              {i + 1}. {step}
+            </Paragraph>
+          ))}
+        </YStack>
+      ) : null}
+
       {!confirming ? (
         <Button theme="red" onPress={() => setConfirming(true)} disabled={running}>
           Reset service interval

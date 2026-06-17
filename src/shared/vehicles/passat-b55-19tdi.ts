@@ -31,6 +31,16 @@ export const passatB55: VehicleProfile = {
     session: 0x85,
     method: 'routine',
     routineId: '01',
+    // A generic ELM327 reaches the engine ECU only — it cannot address the instrument cluster on
+    // this K-line B5.5, so the routine above will get "No response" on the real car. The reliable
+    // method is the dash stalk procedure below. The routine still succeeds against the simulator.
+    manualProcedure: [
+      'Switch the ignition OFF.',
+      'Press and hold the right-hand stalk reset button (trip/0.0 button on the instrument cluster).',
+      'While holding it, switch the ignition ON — "Service ----" or "SERVICE" appears.',
+      'Release the button, then turn the upper-left adjustment knob clockwise to reset the display.',
+      'Switch the ignition OFF to store, then ON to confirm the service interval is cleared.',
+    ],
     experimental: true,
   },
   notes:

@@ -3,7 +3,7 @@
 
 import { Elm327Client, Elm327Options } from '../elm327/Elm327Client';
 import { Transport } from '../transport/Transport';
-import { ProtocolId } from '../obd/protocols';
+import { ProtocolId, isKLine } from '../obd/protocols';
 import { decodeSupportedPids } from '../obd/supportedPids';
 import { isMarkerPid, decodePid, PID_REGISTRY } from '../obd/pids';
 import { parseDtcBytes, decodeDtcBytes, toDtc, Dtc } from '../obd/dtc';
@@ -89,6 +89,9 @@ export class DiagnosticSession {
     }
 
     this.protocol = await this.client.protocolNumber();
+    // K-line (ISO 9141-2 / KWP2000) is slower than CAN; give every command a longer timeout so
+    // Mode 03/07/04 and KWP routines don't reject prematurely.
+    if (isKLine(this.protocol)) this.client.setSlow();
     const voltage = await this.client.voltage();
     const version = await this.client.version();
     this.supported = await this.discoverSupportedPids();

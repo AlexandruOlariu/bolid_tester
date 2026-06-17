@@ -230,7 +230,7 @@ export function SettingsScreen() {
 
       <YStack gap="$2">
         <XStack justifyContent="space-between" alignItems="center">
-          <SectionLabel>Adapter log</SectionLabel>
+          <SectionLabel>Event log</SectionLabel>
           <Button size="$2" onPress={s.clearLog}>
             Clear
           </Button>
@@ -238,23 +238,37 @@ export function SettingsScreen() {
         <Card bordered padding="$2" height={220} backgroundColor="$backgroundStrong">
           <ScrollView>
             {s.log
-              .slice(-60)
+              .slice(-80)
               .reverse()
-              .map((e, i) => (
-                <Text
-                  key={i}
-                  fontSize="$1"
-                  fontFamily={monoFont}
-                  color={e.dir === 'tx' ? '$blue10' : '$green10'}
-                  numberOfLines={1}
-                >
-                  {e.dir === 'tx' ? '» ' : '« '}
-                  {e.text}
-                </Text>
-              ))}
+              .map((e, i) => {
+                const color =
+                  e.dir === 'tx'
+                    ? '$blue10'
+                    : e.dir === 'rx'
+                      ? '$green10'
+                      : e.dir === 'err'
+                        ? '$red10'
+                        : '$color11';
+                const prefix =
+                  e.dir === 'tx' ? '» ' : e.dir === 'rx' ? '« ' : e.dir === 'err' ? '✗ ' : 'ℹ ';
+                const isEvent = e.dir === 'info' || e.dir === 'err';
+                return (
+                  <Text
+                    key={i}
+                    fontSize="$1"
+                    fontFamily={monoFont}
+                    color={color}
+                    numberOfLines={isEvent ? undefined : 1}
+                  >
+                    {prefix}
+                    {isEvent && e.tag ? `[${e.tag}] ` : ''}
+                    {e.text}
+                  </Text>
+                );
+              })}
             {s.log.length === 0 ? (
               <Paragraph theme="alt2" fontSize="$2">
-                No adapter I/O yet.
+                No events yet — adapter I/O and feature events will appear here.
               </Paragraph>
             ) : null}
           </ScrollView>

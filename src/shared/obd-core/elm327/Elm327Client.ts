@@ -23,6 +23,8 @@ export class Elm327Client {
   } | null = null;
   private unsub: (() => void) | null = null;
   private firstObd = true;
+  /** Raised default per-command timeout for slow links (K-line). Overrides options.commandTimeoutMs. */
+  private slowTimeoutMs: number | null = null;
 
   constructor(
     private transport: Transport,
@@ -37,6 +39,12 @@ export class Elm327Client {
   detach(): void {
     this.unsub?.();
     this.unsub = null;
+  }
+
+  /** Switch the default per-command timeout to a slower value (e.g. K-line links where Mode 03/04
+   *  and KWP routines take longer than CAN). Pass null to revert to the configured default. */
+  setSlow(ms: number | null = 12000): void {
+    this.slowTimeoutMs = ms;
   }
 
   private onData = (bytes: Uint8Array): void => {
@@ -64,7 +72,7 @@ export class Elm327Client {
     return new Promise<string>((resolve, reject) => {
       this.attach();
       this.buffer = '';
-      const timeout = timeoutMs ?? this.options.commandTimeoutMs ?? 4000;
+      const timeout = timeoutMs ?? this.slowTimeoutMs ?? this.options.commandTimeoutMs ?? 4000;
       const timer = setTimeout(() => {
         if (this.pending) {
           this.pending = null;

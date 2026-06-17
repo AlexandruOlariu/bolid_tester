@@ -7,10 +7,14 @@ import { fileStateStorage } from './persistStorage';
 export type AdapterSource = 'mock' | 'ble';
 export type ThemePref = 'system' | 'light' | 'dark';
 
+/** A line in the event log. `tx`/`rx` are raw adapter I/O; `info`/`err` are feature-level events
+ *  (e.g. "fault read: 0 stored", "service reset failed: No response") so anything that might have
+ *  an issue leaves a trace here. `tag` is the originating feature (e.g. 'faults', 'service-reset'). */
 export interface LogEntry {
-  dir: 'tx' | 'rx';
+  dir: 'tx' | 'rx' | 'info' | 'err';
   text: string;
   ts: number;
+  tag?: string;
 }
 
 /** Structured-output mode for the AI request (see obd-core `buildChatRequestBody`). */
@@ -46,6 +50,8 @@ interface SettingsState {
   setTheme: (t: ThemePref) => void;
   setAi: (patch: Partial<AiSettings>) => void;
   appendLog: (e: LogEntry) => void;
+  /** Append a feature-level event (info or error) to the same event log. */
+  appendEvent: (text: string, opts?: { tag?: string; level?: 'info' | 'err' }) => void;
   clearLog: () => void;
 }
 
@@ -76,6 +82,10 @@ export const useSettingsStore = create<SettingsState>()(
       setTheme: (theme) => set({ theme }),
       setAi: (patch) => set((s) => ({ ai: { ...s.ai, ...patch } })),
       appendLog: (e) => set((s) => ({ log: [...s.log.slice(-300), e] })),
+      appendEvent: (text, opts) =>
+        set((s) => ({
+          log: [...s.log.slice(-300), { dir: opts?.level ?? 'info', text, ts: Date.now(), tag: opts?.tag }],
+        })),
       clearLog: () => set({ log: [] }),
     }),
     {

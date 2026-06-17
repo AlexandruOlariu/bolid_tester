@@ -80,6 +80,9 @@ export interface ServiceReset {
   /** For method 'adaptation': DIDs whose service values are written back to default. */
   adaptations?: { did: string; defaultBytes: number[] }[];
   security?: { level: number };
+  /** Manual fallback steps (e.g. dash-stalk SRI reset) shown to the user. Surfaced always, and
+   *  especially when the adapter cannot reach the target module (generic ELM327 K-line clusters). */
+  manualProcedure?: string[];
   experimental: true;
 }
 
