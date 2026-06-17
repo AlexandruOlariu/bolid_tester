@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { logError } from '@/shared/state/errorLogStore';
 import { getVehicleProfile } from '@/shared/vehicles';
 import { isCan } from '@/shared/obd-core/obd/protocols';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
@@ -41,6 +42,8 @@ export function useExtendedPids() {
         });
       }
       setReadings(out);
+    } catch (e) {
+      logError({ source: 'extended-pids', error: e, severity: 'warning' });
     } finally {
       setLoading(false);
     }

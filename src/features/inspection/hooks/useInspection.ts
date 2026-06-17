@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { assessInspection, decodeVin, InspectionInput } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { logError } from '@/shared/state/errorLogStore';
 import { useInspectionStore } from '../model/inspectionStore';
 
 /** Run a standard-OBD2 used-car snapshot and assess it. CAN or K-line — uses only standard modes. */
@@ -34,7 +35,8 @@ export function useInspection() {
         distanceSinceClearKm: dist ? dist.value : null,
       };
       set({ report: assessInspection(input), running: false, ranAt: Date.now() });
-    } catch {
+    } catch (e) {
+      logError({ source: 'inspection', error: e, severity: 'warning' });
       set({ running: false });
     }
   }, [session, info, set]);

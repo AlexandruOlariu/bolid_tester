@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { analyzeBattery, VSample } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { logError } from '@/shared/state/errorLogStore';
 import { useBatteryStore } from '../model/batteryStore';
 
 const SAMPLE_MS = 200;
@@ -44,6 +45,8 @@ export function useBatteryHealth() {
         setSamples(samples);
         setReport(analyzeBattery(samples));
       }
+    } catch (e) {
+      logError({ source: 'battery-health', error: e, severity: 'warning', context: { samples: samples.length } });
     } finally {
       setCapturing(false);
     }

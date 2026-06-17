@@ -3,6 +3,7 @@ import { Trip, toCsv, tripStats } from '@/shared/obd-core';
 import { useLiveDataStore } from '@/features/live-data/model/liveDataStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { logError } from '@/shared/state/errorLogStore';
 import { notify } from '@/shared/notify';
 import { useTripStore } from '../model/tripStore';
 
@@ -41,8 +42,9 @@ export async function stopRecording(): Promise<Trip> {
     const FileSystem = await import('expo-file-system' as string);
     const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
     await FileSystem.writeAsStringAsync(`${dir}trip-${trip.header.id}.csv`, toCsv(trip));
-  } catch {
-    // file system unavailable — the trip still lives in memory.
+  } catch (e) {
+    // file system unavailable — the trip still lives in memory, but record why the CSV didn't save.
+    logError({ source: 'trip-recording', error: e, severity: 'warning', context: { phase: 'csv-write', tripId: trip.header.id } });
   }
   useTripStore.getState().finish(trip);
   const stats = tripStats(trip);

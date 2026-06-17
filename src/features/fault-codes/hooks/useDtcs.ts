@@ -21,9 +21,15 @@ export function useDtcs() {
   }, [set, setLoading, setError]);
 
   const clear = useCallback(async () => {
-    const ok = await dtcService.clearAll();
-    if (ok) await refresh();
-    return ok;
+    try {
+      const ok = await dtcService.clearAll();
+      if (!ok) logError({ source: 'fault-codes/clear', error: 'Mode 04 not acknowledged (NO DATA / no response)', severity: 'warning' });
+      if (ok) await refresh();
+      return ok;
+    } catch (e) {
+      logError({ source: 'fault-codes/clear', error: e });
+      return false;
+    }
   }, [refresh]);
 
   useEffect(() => {

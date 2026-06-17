@@ -18,6 +18,7 @@ import { getVehicleProfile, vehicleLabel, type VehicleProfile } from '@/shared/v
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { logError } from '@/shared/state/errorLogStore';
 
 export interface AnalysisOutcome {
   report: AiReport;
@@ -93,6 +94,7 @@ export async function analyze(
     const content = await chatCompletion(buildDiagnosisMessages(snapshot), ai);
     return { report: parseAiReport(content, snapshot), notice: null };
   } catch (e) {
+    logError({ source: 'ai-diagnose', error: e, severity: 'warning', context: { phase: 'analyse', model: ai.model } });
     return {
       report: localHeuristicReport(snapshot),
       notice: `AI server unavailable — showing an on-device rule-based report instead. (${e instanceof Error ? e.message : String(e)})`,

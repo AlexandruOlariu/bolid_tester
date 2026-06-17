@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { codeModule, isCan, setBit, getBit, diffCoding } from '@/shared/obd-core';
 import type { CodingModule } from '@/shared/vehicles';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { logError } from '@/shared/state/errorLogStore';
 import { getVehicleProfile } from '@/shared/vehicles';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { useCodingStore } from '../model/codingStore';
@@ -23,12 +24,18 @@ export function useCoding() {
   const read = useCallback(
     async (mod: CodingModule) => {
       if (!session) return null;
-      await session.setHeader(mod.reqHeader);
-      await session.setRxFilter(mod.rxFilter);
-      const bytes = await session.readExtended(mod.codingDid);
-      await session.setHeader(null);
-      if (bytes) setCurrent(mod.module, bytes);
-      return bytes;
+      try {
+        await session.setHeader(mod.reqHeader);
+        await session.setRxFilter(mod.rxFilter);
+        const bytes = await session.readExtended(mod.codingDid);
+        if (bytes) setCurrent(mod.module, bytes);
+        return bytes;
+      } catch (e) {
+        logError({ source: 'coding/read', error: e, context: { module: mod.module, did: mod.codingDid } });
+        return null;
+      } finally {
+        await session.setHeader(null);
+      }
     },
     [session, setCurrent],
   );
@@ -54,9 +61,18 @@ export function useCoding() {
           security: mod.security ? { level: mod.security.level, seedToKey: (s) => s } : undefined,
         });
         addBackup({ module: mod.module, did: mod.codingDid, bytes: res.backup, at: Date.now() });
+        if (!res.verified) {
+          logError({
+            source: 'coding/write',
+            error: 'Write sent but verification failed',
+            severity: 'warning',
+            context: { module: mod.module, did: mod.codingDid },
+          });
+        }
         setLastResult(res.verified ? 'Write verified.' : 'Write sent but verification failed.');
         return res.verified;
       } catch (e) {
+        logError({ source: 'coding/write', error: e, context: { module: mod.module, did: mod.codingDid } });
         setLastResult(`Failed: ${(e as Error).message}`);
         return false;
       } finally {

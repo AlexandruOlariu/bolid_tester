@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { serviceReset, isCan, isKLine } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { logInfo, logError } from '@/shared/state/eventLog';
+import { logError } from '@/shared/state/errorLogStore';
 import { getVehicleProfile } from '@/shared/vehicles';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { useServiceResetStore } from '../model/serviceResetStore';
@@ -31,11 +31,7 @@ export function useServiceReset() {
     }
     setRunning(true);
     setLastResult(null);
-    logInfo(
-      'service-reset',
-      `start: ${descriptor.method} on ${descriptor.module} (${descriptor.transport ?? 'uds'}, ` +
-        `header ${descriptor.reqHeader})`,
-    );
+    const transport = descriptor.transport ?? 'uds';
     try {
       await session.setHeader(descriptor.reqHeader);
       if (descriptor.rxFilter) await session.setRxFilter(descriptor.rxFilter);
@@ -49,18 +45,29 @@ export function useServiceReset() {
           ? { level: descriptor.security.level, seedToKey: (s) => s }
           : undefined,
       });
-      if (res.ok) logInfo('service-reset', 'ok: module accepted the reset');
-      else logError('service-reset', 'reset did not complete');
+      if (!res.ok) {
+        logError({
+          source: 'service-reset',
+          error: 'Reset did not complete (no positive response from module)',
+          severity: 'warning',
+          context: { transport, module: descriptor.module, method: descriptor.method },
+        });
+      }
       setLastResult(res.ok ? 'Service interval reset — confirm on the cluster.' : 'Reset did not complete.');
       return res.ok;
     } catch (e) {
       const msg = (e as Error).message;
-      logError('service-reset', `failed: ${msg}`);
       // On a K-line car the target is the instrument cluster, which a generic ELM327 cannot reach
       // over the engine diagnostic channel — the cluster never answers ("No response"). Explain this
       // honestly and point to the manual procedure instead of a bare failure.
       const clusterUnreachable =
-        (descriptor.transport ?? 'uds') === 'kwp' && /no response|timeout|no data/i.test(msg);
+        transport === 'kwp' && /no response|timeout|no data/i.test(msg);
+      logError({
+        source: 'service-reset',
+        error: e,
+        severity: clusterUnreachable ? 'warning' : 'error',
+        context: { transport, module: descriptor.module, clusterUnreachable },
+      });
       setLastResult(
         clusterUnreachable
           ? 'The instrument cluster did not respond. A generic ELM327 can only reach the engine ' +

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { isCan } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { logError } from '@/shared/state/errorLogStore';
 import { getVehicleProfile } from '@/shared/vehicles';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { useSensorTestStore, ModuleReading } from '../model/sensorTestStore';
@@ -18,25 +19,30 @@ export function useSensorTests() {
 
   const refresh = useCallback(async () => {
     if (!session) return;
-    for (const t of profile.mode06Tests ?? []) {
-      const r = await session.readMode06(t.mid);
-      if (r.length) setMode06(r);
-    }
-    if (canModuleSensors) {
-      const out: ModuleReading[] = [];
-      for (const s of profile.moduleSensors ?? []) {
-        await session.setHeader(s.reqHeader);
-        await session.setRxFilter(s.rxFilter);
-        const data = await session.readExtended(s.did);
-        out.push({
-          name: s.name,
-          unit: s.unit,
-          value: data ? s.decode(data) : null,
-          raw: data ? data.map((b) => b.toString(16).padStart(2, '0')).join(' ') : 'no data',
-        });
+    try {
+      for (const t of profile.mode06Tests ?? []) {
+        const r = await session.readMode06(t.mid);
+        if (r.length) setMode06(r);
       }
+      if (canModuleSensors) {
+        const out: ModuleReading[] = [];
+        for (const s of profile.moduleSensors ?? []) {
+          await session.setHeader(s.reqHeader);
+          await session.setRxFilter(s.rxFilter);
+          const data = await session.readExtended(s.did);
+          out.push({
+            name: s.name,
+            unit: s.unit,
+            value: data ? s.decode(data) : null,
+            raw: data ? data.map((b) => b.toString(16).padStart(2, '0')).join(' ') : 'no data',
+          });
+        }
+        await session.setHeader(null);
+        setModuleReadings(out);
+      }
+    } catch (e) {
+      logError({ source: 'sensor-tests', error: e, severity: 'warning' });
       await session.setHeader(null);
-      setModuleReadings(out);
     }
   }, [session, profile, canModuleSensors, setMode06, setModuleReadings]);
 

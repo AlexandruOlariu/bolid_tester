@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { assessDpf, isCan, DpfInput } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { logError } from '@/shared/state/errorLogStore';
 import { getVehicleProfile } from '@/shared/vehicles';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { useDpfStore, DpfValue } from '../model/dpfStore';
@@ -41,7 +42,8 @@ export function useDpf() {
         }
       }
       set({ values: out, report: assessDpf(input), running: false });
-    } catch {
+    } catch (e) {
+      logError({ source: 'dpf', error: e, severity: 'warning' });
       set({ running: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

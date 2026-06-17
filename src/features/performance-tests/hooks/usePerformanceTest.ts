@@ -6,6 +6,7 @@ import {
   SpeedSample,
 } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { logError } from '@/shared/state/errorLogStore';
 import { usePerformanceStore } from '../model/performanceStore';
 
 const SPEED_PID = '010D';
@@ -26,17 +27,25 @@ export function usePerformanceTest() {
     let cancelled = false;
     samplesRef.current = [];
     let launched = state === 'running';
+    let loggedError = false;
 
     const loop = async () => {
       if (cancelled) return;
-      const v = await session.readValue(SPEED_PID);
-      const speed = v?.value ?? 0;
-      const now = Date.now();
-      if (!launched && speed > 0) {
-        launched = true;
-        setState('running');
+      try {
+        const v = await session.readValue(SPEED_PID);
+        const speed = v?.value ?? 0;
+        const now = Date.now();
+        if (!launched && speed > 0) {
+          launched = true;
+          setState('running');
+        }
+        if (launched) samplesRef.current.push({ t: now, speed });
+      } catch (e) {
+        if (!loggedError) {
+          loggedError = true;
+          logError({ source: 'performance-tests', error: e, severity: 'warning' });
+        }
       }
-      if (launched) samplesRef.current.push({ t: now, speed });
       if (!cancelled) setTimeout(loop, 100);
     };
     loop();
