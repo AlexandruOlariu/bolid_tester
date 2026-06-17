@@ -1,5 +1,6 @@
-import React from 'react';
-import { YStack, XStack, Button, Paragraph, Spinner, Text, Card } from 'tamagui';
+import React, { useState } from 'react';
+import { Platform } from 'react-native';
+import { YStack, XStack, Button, Paragraph, Spinner, Text, Card, Input } from 'tamagui';
 import { CheckCircle2, XCircle, Loader, CircleDashed } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
 import { useSettingsStore } from '@/shared/state/settingsStore';
@@ -50,6 +51,7 @@ export function ConnectionScreen() {
   const error = useSessionStore((s) => s.error);
   const { scanning, devices, start, stop } = useScan();
   const { connect, busy } = useConnect();
+  const [manualId, setManualId] = useState('');
 
   return (
     <Screen title="Connect" subtitle="Pair with your OBD2 adapter, or use the built-in simulator">
@@ -100,10 +102,43 @@ export function ConnectionScreen() {
             ))}
             {!scanning && devices.length === 0 ? (
               <Paragraph theme="alt2" fontSize="$3">
-                No devices yet. Plug in the adapter, switch ignition on, then scan.
+                No devices yet. Plug in the adapter, switch the ignition on, then scan. If the adapter
+                is already paired in Android’s Bluetooth settings it may have stopped advertising —
+                “Forget” it there first, or connect by address below.
               </Paragraph>
             ) : null}
           </YStack>
+
+          {Platform.OS === 'android' ? (
+            <Panel>
+              <YStack gap="$2">
+                <Text fontWeight="700" fontSize="$3">
+                  Connect by address
+                </Text>
+                <Paragraph theme="alt2" fontSize="$2">
+                  If the adapter never shows up in the scan, copy its Bluetooth MAC (from Android
+                  Settings → Bluetooth) and connect directly.
+                </Paragraph>
+                <XStack gap="$2" alignItems="center">
+                  <Input
+                    flex={1}
+                    value={manualId}
+                    onChangeText={setManualId}
+                    placeholder="AA:BB:CC:DD:EE:FF"
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                  />
+                  <Button
+                    theme="green"
+                    disabled={busy || manualId.trim().length === 0}
+                    onPress={() => connect({ deviceId: manualId.trim().toUpperCase() })}
+                  >
+                    Connect
+                  </Button>
+                </XStack>
+              </YStack>
+            </Panel>
+          ) : null}
         </YStack>
       )}
     </Screen>
