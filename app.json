@@ -3,7 +3,7 @@
     "name": "Bolid Tester",
     "slug": "bolid-tester",
     "version": "0.1.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "scheme": "bolidtester",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
