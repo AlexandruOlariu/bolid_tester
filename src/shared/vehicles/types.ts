@@ -11,8 +11,9 @@ export interface ExtendedPid {
   name: string;
   unit: string;
   experimental: boolean;
-  /** Optional grouping for feature screens — the DPF/diesel monitor filters to 'dpf' | 'diesel'. */
-  category?: 'general' | 'diesel' | 'dpf';
+  /** Optional grouping for feature screens — the DPF/diesel monitor filters to 'dpf' | 'diesel';
+   *  the sensor-readings screen surfaces 'injection' DIDs in its injection section. */
+  category?: 'general' | 'diesel' | 'dpf' | 'injection';
   /** Optional semantic role so a feature can map a DID to a known quantity (DPF soot, EGT, …). */
   role?:
     | 'sootPct'

@@ -57,6 +57,33 @@ export const golfPlus2009: VehicleProfile = {
       category: 'diesel', role: 'egrPct',
       sampleResponse: [0x40], decode: (d) => Math.round((d[0] * 100) / 255), // ~25 %
     },
+    // --- Injection pack: EXPERIMENTAL, illustrative VAG-style DIDs (per-injector data is enhanced,
+    // not generic OBD-II). Surfaced in the Sensor readings screen's injection section on CAN cars.
+    {
+      did: '1709', name: 'Injection quantity', unit: 'mg/str', experimental: true,
+      category: 'injection',
+      sampleResponse: [0x00, 0x96], decode: (d) => (d[0] * 256 + d[1]) / 100, // ~1.50 mg/str
+    },
+    {
+      did: '170A', name: 'Injector correction cyl 1', unit: 'mg/str', experimental: true,
+      category: 'injection',
+      sampleResponse: [0x80, 0x14], decode: (d) => (d[0] * 256 + d[1] - 0x8000) / 100, // +0.20
+    },
+    {
+      did: '170B', name: 'Injector correction cyl 2', unit: 'mg/str', experimental: true,
+      category: 'injection',
+      sampleResponse: [0x7f, 0xf6], decode: (d) => (d[0] * 256 + d[1] - 0x8000) / 100, // -0.10
+    },
+    {
+      did: '170C', name: 'Injector correction cyl 3', unit: 'mg/str', experimental: true,
+      category: 'injection',
+      sampleResponse: [0x80, 0x2d], decode: (d) => (d[0] * 256 + d[1] - 0x8000) / 100, // +0.45
+    },
+    {
+      did: '170D', name: 'Injector correction cyl 4', unit: 'mg/str', experimental: true,
+      category: 'injection',
+      sampleResponse: [0x7f, 0xce], decode: (d) => (d[0] * 256 + d[1] - 0x8000) / 100, // -0.50
+    },
   ],
   mode06Tests: [
     // Standardized Mode 06: illustrative O2-sensor monitor result. Simulator-canned.

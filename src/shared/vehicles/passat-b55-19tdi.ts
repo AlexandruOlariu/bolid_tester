@@ -8,7 +8,8 @@ export const passatB55: VehicleProfile = {
   year: 2004,
   engine: '1.9 TDI AVB-family (ECU 038 906 019 KC)',
   fuel: 'diesel',
-  expectedProtocol: 'ISO_14230_4_KWP_FAST',
+  // Confirmed on the real car: ISO 9141-2 (5-baud init, 10.4 kbaud). The adapter still auto-detects.
+  expectedProtocol: 'ISO_9141_2',
   supportedPids: [
     '0104',
     '0105',
@@ -44,14 +45,16 @@ export const passatB55: VehicleProfile = {
     experimental: true,
   },
   notes:
-    'K-line: slower and thinner than CAN. VCDS reports engine label 038-906-019-AVB and ECU ' +
-    '038 906 019 KC. Missing MAF/oil/fuel-rate via generic OBD2 is expected (that data lives in ' +
-    'VAG measuring blocks, out of scope). Mode 22 does not apply here.',
+    'K-line (ISO 9141-2, confirmed on the car): slower and thinner than CAN. Mode 09 IS answered by ' +
+    'this ECU — VIN (WVWZZZ3BZ4E342958) and Calibration ID (038906019KC 4896) read fine. VCDS ' +
+    'reports engine label 038-906-019-AVB and ECU 038 906 019 KC. Missing MAF/oil/fuel-rate via ' +
+    'generic OBD2 is expected (that data lives in VAG measuring blocks, out of scope), and per-' +
+    'injector values are measuring blocks too — not available over generic OBD2. Mode 22 does not apply here.',
   testChecklist: [
-    'Connect over BLE; expect a brief BUS INIT / SEARCHING. Confirm KWP2000 (fast) or ISO 9141-2.',
+    'Connect over BLE; expect a brief BUS INIT / SEARCHING. Confirm ISO 9141-2 (or KWP2000 fast).',
     'Read live data slowly: RPM ~850, coolant, MAP/boost, IAT, voltage.',
     'Some PIDs will show "not supported" — that is expected.',
-    'Read VIN (Mode 09 may be unsupported); if present, confirm it matches WVWZZZ3BZ4E342958.',
-    'Read engine DTCs; VCDS scan from 2025-05-17 had no engine faults.',
+    'Read VIN + Calibration ID (Mode 09); confirm VIN WVWZZZ3BZ4E342958 and CalID 038906019KC 4896.',
+    'Read engine DTCs; a pending P0234 (turbo overboost) can appear under load — it is intermittent.',
   ],
 };

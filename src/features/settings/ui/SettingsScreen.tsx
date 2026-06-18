@@ -221,7 +221,7 @@ export function SettingsScreen() {
         <SectionLabel>Poll interval</SectionLabel>
         <SegGroup>
           <XStack gap="$2">
-            {[500, 1000, 2000].map((ms) => (
+            {[250, 500, 1000, 2000].map((ms) => (
               <Seg key={ms} active={s.pollIntervalMs === ms} label={`${ms} ms`} onPress={() => s.setPollInterval(ms)} />
             ))}
           </XStack>

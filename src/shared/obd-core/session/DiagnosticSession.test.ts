@@ -41,7 +41,7 @@ const CASES: Case[] = [
   { id: 'generic', protocol: 'ISO_15765_4_CAN_11_500', vin: true },
   { id: 'golf-plus-2009-20tdi', protocol: 'ISO_15765_4_CAN_11_500', vin: true },
   { id: 'fiat-punto-2008-12', protocol: 'ISO_15765_4_CAN_11_500', vin: true },
-  { id: 'passat-b55-19tdi', protocol: 'ISO_14230_4_KWP_FAST', vin: false },
+  { id: 'passat-b55-19tdi', protocol: 'ISO_9141_2', vin: true },
 ];
 
 describe('DiagnosticSession (integration via simulator)', () => {
@@ -180,6 +180,15 @@ describe('DiagnosticSession (integration via simulator)', () => {
       routineId: sr.routineId,
     });
     expect(res.ok).toBe(true);
+  });
+
+  it('reads VIN and Calibration ID (Mode 09 PID 02/04) on the Passat', async () => {
+    const session = new DiagnosticSession(new MockTransport(buildScenario('passat-b55-19tdi')), {
+      commandTimeoutMs: 1000,
+    });
+    const info = await session.connect();
+    expect(info.vin).toBe('WVWZZZ3BZ4E342958');
+    expect(info.calibrationId).toBe('038906019KC 4896');
   });
 
   it('reads the experimental extended PID on the Golf, not on the Passat', async () => {

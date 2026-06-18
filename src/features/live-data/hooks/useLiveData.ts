@@ -30,6 +30,11 @@ export function useLiveData() {
 
     const loop = async () => {
       if (cancelled) return;
+      // Treat intervalMs as the target *period*, not an extra gap after each sweep: subtract the
+      // time the sweep itself took so updates arrive as close to real time as the link allows. On a
+      // slow K-line car a full sweep may already exceed the interval, so the next one fires
+      // immediately (gap 0) and the bus paces us.
+      const startedAt = Date.now();
       try {
         const snap = await session.pollOnce(pids);
         if (!cancelled) setValues(snap);
@@ -43,7 +48,10 @@ export function useLiveData() {
           logError({ source: 'live-data', error: e, severity: 'warning' });
         }
       }
-      if (!cancelled) timer = setTimeout(loop, intervalMs);
+      if (!cancelled) {
+        const elapsed = Date.now() - startedAt;
+        timer = setTimeout(loop, Math.max(0, intervalMs - elapsed));
+      }
     };
     loop();
 

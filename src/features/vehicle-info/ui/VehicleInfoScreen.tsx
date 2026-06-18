@@ -32,6 +32,8 @@ export function VehicleInfoScreen() {
       <Card bordered padding="$3">
         <Row label="VIN" value={info.vin ?? 'not available'} />
         <Separator />
+        <Row label="Calibration ID" value={info.calibrationId ?? 'not available'} />
+        <Separator />
         <Row label="Protocol" value={protocolLabel} />
         <Separator />
         <Row label="Adapter" value={deviceName ?? '—'} />

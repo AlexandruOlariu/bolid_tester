@@ -12,6 +12,14 @@ const SAMPLE_VINS: Record<string, string> = {
   'passat-b55-19tdi': 'WVWZZZ3BZ4E342958',
 };
 
+/** Mode 09 PID 04 calibration identifiers. Passat value is the real one read from the car. */
+const SAMPLE_CALIDS: Record<string, string> = {
+  generic: 'GENERIC-CAL-01',
+  'golf-plus-2009-20tdi': '03L906022LM',
+  'fiat-punto-2008-12': '55230047AA',
+  'passat-b55-19tdi': '038906019KC 4896',
+};
+
 export function buildScenario(profileId: string, overrides: Partial<SimScenario> = {}): SimScenario {
   const profile = getVehicleProfile(profileId);
   const protocol: ProtocolId =
@@ -40,8 +48,9 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
     protocol,
     supportedPids: profile.supportedPids,
     vin: SAMPLE_VINS[profileId] ?? SAMPLE_VINS.generic,
-    // Emulate older ECUs (the Passat) that don't answer Mode 09 VIN.
-    vinSupported: profileId !== 'passat-b55-19tdi',
+    // The B5.5's ECU does answer Mode 09 (VIN + Calibration ID) — confirmed on the real car.
+    vinSupported: true,
+    calibrationId: SAMPLE_CALIDS[profileId],
     storedDtcs: [],
     pendingDtcs: [],
     permanentDtcs: [],

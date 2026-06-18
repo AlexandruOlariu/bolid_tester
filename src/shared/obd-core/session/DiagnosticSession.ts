@@ -7,7 +7,7 @@ import { ProtocolId, isKLine } from '../obd/protocols';
 import { decodeSupportedPids } from '../obd/supportedPids';
 import { isMarkerPid, decodePid, PID_REGISTRY } from '../obd/pids';
 import { parseDtcBytes, decodeDtcBytes, toDtc, Dtc } from '../obd/dtc';
-import { parseVin } from '../obd/vin';
+import { parseVin, parseCalibrationId } from '../obd/vin';
 import { decodeMonitorStatus, MonitorStatus } from '../obd/readiness';
 import { decodeMode06, Mode06Result } from '../obd/mode06';
 
@@ -25,6 +25,7 @@ export interface SessionInfo {
   version: string;
   supportedPids: string[];
   vin: string | null;
+  calibrationId: string | null;
 }
 
 export type DtcKind = '03' | '07' | '0A';
@@ -96,7 +97,8 @@ export class DiagnosticSession {
     const version = await this.client.version();
     this.supported = await this.discoverSupportedPids();
     const vin = await this.readVin();
-    return { protocol: this.protocol, voltage, version, supportedPids: this.supported, vin };
+    const calibrationId = await this.readCalibrationId();
+    return { protocol: this.protocol, voltage, version, supportedPids: this.supported, vin, calibrationId };
   }
 
   /** Walk the 0100/0120/0140/0160 bitmaps, collecting the real (non-marker) supported PIDs. */
@@ -158,6 +160,15 @@ export class DiagnosticSession {
     if (r.notice || r.bytes.length < 3) return null;
     const vin = parseVin(r.bytes);
     return vin.length > 0 ? vin : null;
+  }
+
+  /** Calibration ID (Mode 09 PID 04) — the ECU software/calibration identifier (e.g. on the B5.5,
+   *  "038906019KC 4896"). Returns null when the ECU does not answer Mode 09 PID 04. */
+  async readCalibrationId(): Promise<string | null> {
+    const r = await this.client.command('0904');
+    if (r.notice || r.bytes.length < 3) return null;
+    const cal = parseCalibrationId(r.bytes);
+    return cal.length > 0 ? cal : null;
   }
 
   /** Experimental Mode 22 read; returns the data bytes after `62 <did>`. */

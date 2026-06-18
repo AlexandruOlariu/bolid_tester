@@ -124,6 +124,7 @@ export default function RootLayout() {
           <Tabs.Screen name="trips" options={{ href: null, title: 'Trips' }} />
           <Tabs.Screen name="alerts" options={{ href: null, title: 'Alerts' }} />
           <Tabs.Screen name="sensors" options={{ href: null, title: 'Sensor tests' }} />
+          <Tabs.Screen name="sensor-readings" options={{ href: null, title: 'Sensor readings' }} />
           <Tabs.Screen name="coding" options={{ href: null, title: 'Coding' }} />
           <Tabs.Screen name="notifications" options={{ href: null, title: 'Notifications' }} />
           <Tabs.Screen name="service-reset" options={{ href: null, title: 'Service reset' }} />

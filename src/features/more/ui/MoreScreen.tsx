@@ -40,6 +40,7 @@ const ENTRIES: Entry[] = [
   { route: '/performance', title: 'Performance', subtitle: '0–100, ¼-mile, braking', Icon: Timer },
   { route: '/trips', title: 'Trips', subtitle: 'Record & export live data', Icon: RouteIcon },
   { route: '/alerts', title: 'Alerts', subtitle: 'Threshold warnings', Icon: Bell },
+  { route: '/sensor-readings', title: 'Sensor readings', subtitle: 'Live sensors, grouped', Icon: GaugeIcon },
   { route: '/sensors', title: 'Sensor tests', subtitle: 'Mode 06 + module sensors', Icon: GaugeIcon },
   { route: '/service-reset', title: 'Service reset', subtitle: 'Reset the service interval', Icon: Wrench },
   { route: '/coding', title: 'Coding', subtitle: 'Experimental module coding', Icon: KeyRound },

@@ -1,7 +1,7 @@
 ---
 id: passat-b55-19tdi
 name: VW Passat B5.5 1.9 TDI AVB
-expectedProtocol: ISO_14230_4_KWP_FAST
+expectedProtocol: ISO_9141_2
 vin: WVWZZZ3BZ4E342958
 engineCode: AVB
 supportedPidCount: 9

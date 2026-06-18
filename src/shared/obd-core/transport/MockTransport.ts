@@ -13,6 +13,8 @@ export interface SimScenario {
   supportedPids: string[]; // '0104' etc — the PIDs this ECU reports
   vin?: string;
   vinSupported?: boolean; // default true if vin set
+  /** Calibration ID reported via Mode 09 PID 04 (0904); omitted -> "NO DATA". */
+  calibrationId?: string;
   storedDtcs?: string[];
   pendingDtcs?: string[];
   permanentDtcs?: string[];
@@ -43,10 +45,13 @@ const SIM_PID_BYTES: Record<string, number[]> = {
   '0111': [0x24],
   '011f': [0x00, 0x78],
   '0121': [0x00, 0x00],
+  '0122': [0x9e, 0x40],
+  '0123': [0x10, 0x68],
   '0131': [0x04, 0xd2],
   '012f': [0x80],
   '0133': [0x64],
   '0142': [0x36, 0xb0],
+  '0144': [0x80, 0x00],
   '0146': [0x3e],
   '015c': [0x82],
   '015e': [0x00, 0x1e],
@@ -138,6 +143,10 @@ export class MockTransport implements Transport {
     if (h === '0902') {
       const ok = this.scenario.vinSupported !== false && !!this.scenario.vin;
       return ok ? '4902' + '01' + toHex(asciiToBytes(this.scenario.vin as string)) : 'NO DATA';
+    }
+    if (h === '0904') {
+      const cal = this.scenario.calibrationId;
+      return cal ? '4904' + '01' + toHex(asciiToBytes(cal)) : 'NO DATA';
     }
     if (h === '03') return this.dtcResponse(0x43, this.scenario.storedDtcs ?? []);
     if (h === '07') return this.dtcResponse(0x47, this.scenario.pendingDtcs ?? []);
