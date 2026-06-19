@@ -1,0 +1,1742 @@
+{
+  "concept:ai-diagnose-flow": {
+    "path": null,
+    "summary": "AI Diagnose: snapshot fault codes + live readings -> aiDiagnosis builds the prompt -> AI client (OpenAI-compatible) -> human-readable diagnosis.",
+    "tokens": [
+      "advice",
+      "ai",
+      "diagnose",
+      "diagnosis",
+      "flow",
+      "llm",
+      "openai",
+      "prompt"
+    ],
+    "type": "concept"
+  },
+  "concept:app-settings": {
+    "path": null,
+    "summary": "Runtime + developer settings: units, behavior toggles, and the raw adapter I/O log (bytes for debugging). Backed by settingsStore.",
+    "tokens": [
+      "app",
+      "config",
+      "developer",
+      "io",
+      "options",
+      "preferences",
+      "settings",
+      "toggle",
+      "units"
+    ],
+    "type": "concept"
+  },
+  "concept:battery-charging": {
+    "path": null,
+    "summary": "12V battery and charging-system health from system voltage: resting voltage -> state of charge, the cranking dip on start, alternator voltage running\u2026",
+    "tokens": [
+      "12v",
+      "alternator",
+      "battery",
+      "charging",
+      "cranking",
+      "health",
+      "soc",
+      "voltage"
+    ],
+    "type": "concept"
+  },
+  "concept:connection-lifecycle": {
+    "path": null,
+    "summary": "Establishing a live link: BLE permission + scan -> BleTransport -> Elm327Client init (ATZ/ATSPn) -> DiagnosticSession; status flows into sessionStore.",
+    "tokens": [
+      "ble",
+      "bluetooth",
+      "connect",
+      "connection",
+      "elm327",
+      "lifecycle",
+      "pairing",
+      "session"
+    ],
+    "type": "concept"
+  },
+  "concept:diagnostic-history": {
+    "path": null,
+    "summary": "On-device, file-backed history of every AI auto-diagnose run and fault-code check, each linked to a car (VIN or profile). Unlimited retention until c\u2026",
+    "tokens": [
+      "car",
+      "diagnostic",
+      "history",
+      "logbook",
+      "past",
+      "persistent",
+      "record",
+      "retention"
+    ],
+    "type": "concept"
+  },
+  "concept:dpf-regen": {
+    "path": null,
+    "summary": "DPF / regeneration interpretation from experimental manufacturer Mode 22 PIDs; turns raw soot/ash figures into status + advice. EXPERIMENTAL and vehi\u2026",
+    "tokens": [
+      "ash",
+      "diesel",
+      "dpf",
+      "mode22",
+      "particulate",
+      "regen",
+      "regeneration",
+      "soot"
+    ],
+    "type": "concept"
+  },
+  "concept:dtc-faults": {
+    "path": null,
+    "summary": "Diagnostic Trouble Codes: read/clear (Mode 03/07/0A) + readiness monitors. dtc.ts encodes/decodes the P/C/B/U codes shown in Fault Codes.",
+    "tokens": [
+      "clear",
+      "code",
+      "dtc",
+      "fault",
+      "faults",
+      "mil",
+      "monitor",
+      "readiness",
+      "trouble"
+    ],
+    "type": "concept"
+  },
+  "concept:ecu-coding": {
+    "path": null,
+    "summary": "ECU coding / adaptations: writing DIDs over UDS. Higher-risk than reads \u2014 guarded paths live in the coding module.",
+    "tokens": [
+      "adaptation",
+      "code",
+      "coding",
+      "did",
+      "ecu",
+      "long",
+      "uds",
+      "write"
+    ],
+    "type": "concept"
+  },
+  "concept:error-resilience": {
+    "path": null,
+    "summary": "Resilience pattern: recoverable failures are captured via logError into errorLogStore (surfaced in the Error Log screen) rather than crashing the ses\u2026",
+    "tokens": [
+      "error",
+      "failure",
+      "fault",
+      "log",
+      "logging",
+      "recover",
+      "resilience"
+    ],
+    "type": "concept"
+  },
+  "concept:extended-pids-mode22": {
+    "path": null,
+    "summary": "Profile-driven manufacturer-specific reads over Mode 22 (UDS readDataByIdentifier); VAG is the first example. Opt-in, experimental, flagged.",
+    "tokens": [
+      "22",
+      "did",
+      "experimental",
+      "extended",
+      "manufacturer",
+      "mode",
+      "mode22",
+      "pid",
+      "pids",
+      "uds",
+      "vag"
+    ],
+    "type": "concept"
+  },
+  "concept:live-data-charts": {
+    "path": null,
+    "summary": "Live telemetry: poll Mode 01 PIDs, ring-buffer samples (chartBuffer) and render gauges/charts. The hot path for live-data and live-charts.",
+    "tokens": [
+      "buffer",
+      "chart",
+      "charts",
+      "data",
+      "gauge",
+      "live",
+      "poll",
+      "stream",
+      "telemetry"
+    ],
+    "type": "concept"
+  },
+  "concept:maintenance-log": {
+    "path": null,
+    "summary": "Service logbook: record work + odometer/date, then compute what is due (oil, filters, timing belt, brake fluid, coolant, DPF) by distance and time; f\u2026",
+    "tokens": [
+      "due",
+      "filter",
+      "interval",
+      "log",
+      "logbook",
+      "maintenance",
+      "odometer",
+      "oil",
+      "reminder",
+      "service"
+    ],
+    "type": "concept"
+  },
+  "concept:mock-simulator": {
+    "path": null,
+    "summary": "Offline/unit testing via a virtual ELM327: MockTransport replays scenarios so the whole stack runs with no hardware.",
+    "tokens": [
+      "fake",
+      "mock",
+      "offline",
+      "scenario",
+      "simulator",
+      "test",
+      "virtual"
+    ],
+    "type": "concept"
+  },
+  "concept:notifications-layer": {
+    "path": null,
+    "summary": "Single local-notification layer (no server/push): OS notifications + in-app banners fed by threshold alerts, connection/diagnostic events, and mainte\u2026",
+    "tokens": [
+      "banner",
+      "event",
+      "hours",
+      "layer",
+      "local",
+      "notification",
+      "notifications",
+      "notify",
+      "quiet",
+      "reminder"
+    ],
+    "type": "concept"
+  },
+  "concept:obd-request-pipeline": {
+    "path": null,
+    "summary": "How a read happens: command -> Elm327Client (waits for the '>' prompt) -> responseParser -> obd decoders (pids/dtc). The half-duplex request/response\u2026",
+    "tokens": [
+      "command",
+      "decode",
+      "elm327",
+      "pid",
+      "pipeline",
+      "request",
+      "response"
+    ],
+    "type": "concept"
+  },
+  "concept:performance-tests": {
+    "path": null,
+    "summary": "Performance runs from live OBD2 data: 0-100 km/h, custom intervals, standing quarter-mile/60ft, braking distance; built on the poll loop. The 'bolid'\u2026",
+    "tokens": [
+      "060",
+      "acceleration",
+      "braking",
+      "launch",
+      "mile",
+      "performance",
+      "quarter",
+      "speed",
+      "tests",
+      "track"
+    ],
+    "type": "concept"
+  },
+  "concept:sensor-monitoring": {
+    "path": null,
+    "summary": "Watch individual sensors live (wiggle/actuation test) and read standardized Mode 06 on-board monitor test results. Standard tier (any OBD2) + experim\u2026",
+    "tokens": [
+      "actuate",
+      "mode06",
+      "monitor",
+      "monitoring",
+      "onboard",
+      "reading",
+      "readings",
+      "sensor",
+      "sensors",
+      "wiggle"
+    ],
+    "type": "concept"
+  },
+  "concept:service-reset": {
+    "path": null,
+    "summary": "Reset the service interval / oil-service reminder (SRI). It writes to a control module, so it carries the same gating/guardrails as ECU coding.",
+    "tokens": [
+      "gated",
+      "interval",
+      "oil",
+      "reminder",
+      "reset",
+      "service",
+      "sri",
+      "write"
+    ],
+    "type": "concept"
+  },
+  "concept:state-architecture": {
+    "path": null,
+    "summary": "App state is zustand stores. sessionStore is the connection hub; persistStorage backs the durable ones (settings/history). Keep cross-cutting state h\u2026",
+    "tokens": [
+      "architecture",
+      "global",
+      "persist",
+      "session",
+      "settings",
+      "state",
+      "store",
+      "zustand"
+    ],
+    "type": "concept"
+  },
+  "concept:threshold-alerts": {
+    "path": null,
+    "summary": "User-defined threshold rules on live PIDs (coolant overheat, boost, low battery, over-rev) fire visual/haptic/audible alerts via edge detection on th\u2026",
+    "tokens": [
+      "alert",
+      "alerts",
+      "boost",
+      "haptic",
+      "limit",
+      "overheat",
+      "rule",
+      "threshold",
+      "warn"
+    ],
+    "type": "concept"
+  },
+  "concept:trip-recording": {
+    "path": null,
+    "summary": "Record a drive as a typed time-series of live PIDs (+ DTC snapshots), persist/replay/export it. Decoded data for analysis, unlike the raw adapter I/O\u2026",
+    "tokens": [
+      "csv",
+      "drive",
+      "export",
+      "journey",
+      "recording",
+      "replay",
+      "timeseries",
+      "trip"
+    ],
+    "type": "concept"
+  },
+  "concept:used-car-inspection": {
+    "path": null,
+    "summary": "One-tap pre-purchase check: runs a standard OBD2 snapshot (readiness, DTCs) and returns a pass/caution/fail verdict with a per-check breakdown for no\u2026",
+    "tokens": [
+      "buy",
+      "car",
+      "fail",
+      "inspection",
+      "pass",
+      "prepurchase",
+      "purchase",
+      "snapshot",
+      "used",
+      "verdict"
+    ],
+    "type": "concept"
+  },
+  "concept:vehicle-info": {
+    "path": null,
+    "summary": "Show vehicle + adapter identity: ELM327/adapter info, the active protocol, ECU(s), and supported-PID coverage for the connected car.",
+    "tokens": [
+      "about",
+      "adapter",
+      "ecu",
+      "identity",
+      "info",
+      "protocol",
+      "supported",
+      "vehicle"
+    ],
+    "type": "concept"
+  },
+  "concept:vehicle-profiles": {
+    "path": null,
+    "summary": "Per-car profiles drive supported PIDs and extended DIDs. Add a car = new profile in the registry + matching docs/vehicles/<id>.md (kept in sync by a\u2026",
+    "tokens": [
+      "car",
+      "did",
+      "make",
+      "model",
+      "profile",
+      "profiles",
+      "registry",
+      "supported",
+      "vehicle"
+    ],
+    "type": "concept"
+  },
+  "concept:vin-identify": {
+    "path": null,
+    "summary": "Vehicle identification: read VIN (Mode 09 PID 02) then decode to make/model/year \u2014 used to suggest a vehicle profile.",
+    "tokens": [
+      "decode",
+      "identify",
+      "manufacturer",
+      "vin",
+      "wmi",
+      "year"
+    ],
+    "type": "concept"
+  },
+  "core:analysis/aiDiagnosis": {
+    "path": "src/shared/obd-core/analysis/aiDiagnosis.ts",
+    "summary": "Pure logic for the AI auto-diagnosis feature.",
+    "tests": [
+      "src/shared/obd-core/analysis/aiDiagnosis.test.ts"
+    ],
+    "tokens": [
+      "ai",
+      "analysis",
+      "diagnosis"
+    ],
+    "type": "core"
+  },
+  "core:analysis/alerts": {
+    "path": "src/shared/obd-core/analysis/alerts.ts",
+    "summary": "Pure threshold-alert engine.",
+    "tests": [
+      "src/shared/obd-core/analysis/alerts.test.ts"
+    ],
+    "tokens": [
+      "alerts",
+      "analysis"
+    ],
+    "type": "core"
+  },
+  "core:analysis/battery": {
+    "path": "src/shared/obd-core/analysis/battery.ts",
+    "summary": "Pure battery / charging-system analysis from a system-voltage time series.",
+    "tests": [
+      "src/shared/obd-core/analysis/battery.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "battery"
+    ],
+    "type": "core"
+  },
+  "core:analysis/chartBuffer": {
+    "path": "src/shared/obd-core/analysis/chartBuffer.ts",
+    "summary": "Pure time-series ring buffer + decimation for the live charts.",
+    "tests": [
+      "src/shared/obd-core/analysis/chartBuffer.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "buffer",
+      "chart"
+    ],
+    "type": "core"
+  },
+  "core:analysis/dpf": {
+    "path": "src/shared/obd-core/analysis/dpf.ts",
+    "summary": "Pure DPF (diesel particulate filter) / regeneration interpretation.",
+    "tests": [
+      "src/shared/obd-core/analysis/dpf.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "dpf"
+    ],
+    "type": "core"
+  },
+  "core:analysis/inspection": {
+    "path": "src/shared/obd-core/analysis/inspection.ts",
+    "summary": "Pure \"used-car inspection\" assessment.",
+    "tests": [
+      "src/shared/obd-core/analysis/inspection.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "inspection"
+    ],
+    "type": "core"
+  },
+  "core:analysis/maintenance": {
+    "path": "src/shared/obd-core/analysis/maintenance.ts",
+    "summary": "Pure maintenance-logbook math: service items, log entries, and \"what's due\" computation from an odometer + dates.",
+    "tests": [
+      "src/shared/obd-core/analysis/maintenance.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "maintenance"
+    ],
+    "type": "core"
+  },
+  "core:analysis/notifications": {
+    "path": "src/shared/obd-core/analysis/notifications.ts",
+    "summary": "Pure notification logic: derive diagnostic/connection events via edge detection, and filter events through user prefs + quiet hours.",
+    "tests": [
+      "src/shared/obd-core/analysis/notifications.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "notifications"
+    ],
+    "type": "core"
+  },
+  "core:analysis/performance": {
+    "path": "src/shared/obd-core/analysis/performance.ts",
+    "summary": "Pure performance-test math: acceleration runs, distance runs (\u00bc-mile), and braking, computed from timestamped speed samples.",
+    "tests": [
+      "src/shared/obd-core/analysis/performance.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "performance"
+    ],
+    "type": "core"
+  },
+  "core:analysis/trip": {
+    "path": "src/shared/obd-core/analysis/trip.ts",
+    "summary": "Pure trip recording helpers: downsampling, stats, and CSV/JSON export.",
+    "tests": [
+      "src/shared/obd-core/analysis/trip.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "trip"
+    ],
+    "type": "core"
+  },
+  "core:coding/coding": {
+    "path": "src/shared/obd-core/coding/coding.ts",
+    "summary": "Pure byte/bit coding helpers: read a coding byte string, flip bits, decode a bit-field schema, and diff two codings for the before\u2192after preview.",
+    "tests": [
+      "src/shared/obd-core/coding/coding.test.ts"
+    ],
+    "tokens": [
+      "coding"
+    ],
+    "type": "core"
+  },
+  "core:coding/udsCoding": {
+    "path": "src/shared/obd-core/coding/udsCoding.ts",
+    "summary": "UDS coding sequence over an injectable byte sender.",
+    "tests": [
+      "src/shared/obd-core/coding/udsCoding.test.ts"
+    ],
+    "tokens": [
+      "coding",
+      "uds"
+    ],
+    "type": "core"
+  },
+  "core:elm327/Elm327Client": {
+    "path": "src/shared/obd-core/elm327/Elm327Client.ts",
+    "summary": "Half-duplex ELM327 command channel over a Transport.",
+    "tests": [
+      "src/shared/obd-core/elm327/Elm327Client.test.ts"
+    ],
+    "tokens": [
+      "327",
+      "client",
+      "elm"
+    ],
+    "type": "core"
+  },
+  "core:elm327/responseParser": {
+    "path": "src/shared/obd-core/elm327/responseParser.ts",
+    "summary": "Turn a raw ELM327 response string into either a notice or a list of data bytes.",
+    "tests": [
+      "src/shared/obd-core/elm327/responseParser.test.ts"
+    ],
+    "tokens": [
+      "327",
+      "elm",
+      "parser",
+      "response"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtc": {
+    "path": "src/shared/obd-core/obd/dtc.ts",
+    "summary": "Diagnostic Trouble Code (DTC) encoding/decoding.",
+    "tests": [
+      "src/shared/obd-core/obd/dtc.test.ts"
+    ],
+    "tokens": [
+      "dtc"
+    ],
+    "type": "core"
+  },
+  "core:obd/mode06": {
+    "path": "src/shared/obd-core/obd/mode06.ts",
+    "summary": "Mode 06 \u2014 On-Board Monitoring Test Results (SAE J1979).",
+    "tests": [
+      "src/shared/obd-core/obd/mode06.test.ts"
+    ],
+    "tokens": [
+      "06",
+      "mode"
+    ],
+    "type": "core"
+  },
+  "core:obd/pids": {
+    "path": "src/shared/obd-core/obd/pids.ts",
+    "summary": "Mode 01 PID registry: declarative descriptors with pure decoders.",
+    "tests": [
+      "src/shared/obd-core/obd/pids.test.ts"
+    ],
+    "tokens": [
+      "pids"
+    ],
+    "type": "core"
+  },
+  "core:obd/protocols": {
+    "path": "src/shared/obd-core/obd/protocols.ts",
+    "summary": "OBD2 transport protocols and ELM327 protocol-number mapping.",
+    "tokens": [
+      "protocols"
+    ],
+    "type": "core"
+  },
+  "core:obd/readiness": {
+    "path": "src/shared/obd-core/obd/readiness.ts",
+    "summary": "Decode Mode 01 PID 01 \u2014 \"monitor status since DTCs cleared\" (MIL, DTC count, readiness monitors).",
+    "tests": [
+      "src/shared/obd-core/obd/readiness.test.ts"
+    ],
+    "tokens": [
+      "readiness"
+    ],
+    "type": "core"
+  },
+  "core:obd/supportedPids": {
+    "path": "src/shared/obd-core/obd/supportedPids.ts",
+    "summary": "Supported-PID bitmap encode/decode (PIDs 0100/0120/0140/0160).",
+    "tests": [
+      "src/shared/obd-core/obd/supportedPids.test.ts"
+    ],
+    "tokens": [
+      "pids",
+      "supported"
+    ],
+    "type": "core"
+  },
+  "core:obd/vin": {
+    "path": "src/shared/obd-core/obd/vin.ts",
+    "summary": "VIN (Mode 09 PID 02) and Calibration ID (Mode 09 PID 04) assembly.",
+    "tests": [
+      "src/shared/obd-core/obd/vin.test.ts"
+    ],
+    "tokens": [
+      "vin"
+    ],
+    "type": "core"
+  },
+  "core:obd/vinDecode": {
+    "path": "src/shared/obd-core/obd/vinDecode.ts",
+    "summary": "VIN (ISO 3779 / 3780) decoding: WMI manufacturer, region & country, model year and check digit.",
+    "tests": [
+      "src/shared/obd-core/obd/vinDecode.test.ts"
+    ],
+    "tokens": [
+      "decode",
+      "vin"
+    ],
+    "type": "core"
+  },
+  "core:public-api": {
+    "path": "src/shared/obd-core/index.ts",
+    "summary": "Public surface of the platform-agnostic OBD2 core.",
+    "tokens": [
+      "api",
+      "obdcore",
+      "public"
+    ],
+    "type": "core"
+  },
+  "core:session/DiagnosticSession": {
+    "path": "src/shared/obd-core/session/DiagnosticSession.ts",
+    "summary": "High-level orchestration used by the UI: connect \u2192 init \u2192 identify \u2192 poll \u2192 read/clear DTCs.",
+    "tests": [
+      "src/shared/obd-core/session/DiagnosticSession.test.ts"
+    ],
+    "tokens": [
+      "diagnostic",
+      "session"
+    ],
+    "type": "core"
+  },
+  "core:transport/MockTransport": {
+    "path": "src/shared/obd-core/transport/MockTransport.ts",
+    "summary": "A virtual ELM327 that implements Transport, so the whole app/test-suite runs with no hardware.",
+    "tokens": [
+      "mock",
+      "transport"
+    ],
+    "type": "core"
+  },
+  "core:transport/Transport": {
+    "path": "src/shared/obd-core/transport/Transport.ts",
+    "summary": "The byte-pipe abstraction the whole stack sits on.",
+    "tokens": [
+      "transport"
+    ],
+    "type": "core"
+  },
+  "core:transport/scenarios": {
+    "path": "src/shared/obd-core/transport/scenarios.ts",
+    "summary": "Build a simulator scenario from a vehicle profile.",
+    "tokens": [
+      "scenarios",
+      "transport"
+    ],
+    "type": "core"
+  },
+  "doc:PLAN": {
+    "path": "docs/PLAN.md",
+    "summary": "Bolid Tester \u2014 OBD2 Diagnostics App (Plan)",
+    "tokens": [
+      "app",
+      "bolid",
+      "diagnostics",
+      "plan",
+      "tester"
+    ],
+    "type": "doc"
+  },
+  "doc:README": {
+    "path": "docs/README.md",
+    "summary": "Bolid Tester \u2014 Documentation",
+    "tokens": [
+      "bolid",
+      "documentation",
+      "readme",
+      "tester"
+    ],
+    "type": "doc"
+  },
+  "doc:adapter-vgate-icar-pro": {
+    "path": "docs/adapter-vgate-icar-pro.md",
+    "summary": "Adapter \u2014 Vgate iCar Pro Bluetooth 4.0 (BLE)",
+    "tokens": [
+      "adapter",
+      "ble",
+      "bluetooth",
+      "car",
+      "icar",
+      "pro",
+      "vgate"
+    ],
+    "type": "doc"
+  },
+  "doc:architecture": {
+    "path": "docs/architecture.md",
+    "summary": "Architecture",
+    "tokens": [
+      "architecture"
+    ],
+    "type": "doc"
+  },
+  "doc:features/ai-diagnose": {
+    "path": "docs/features/ai-diagnose.md",
+    "summary": "Feature: ai-diagnose",
+    "tokens": [
+      "ai",
+      "diagnose"
+    ],
+    "type": "doc"
+  },
+  "doc:features/alerts": {
+    "path": "docs/features/alerts.md",
+    "summary": "Feature: alerts",
+    "tokens": [
+      "alerts"
+    ],
+    "type": "doc"
+  },
+  "doc:features/battery-health": {
+    "path": "docs/features/battery-health.md",
+    "summary": "Feature: battery-health",
+    "tokens": [
+      "battery",
+      "health"
+    ],
+    "type": "doc"
+  },
+  "doc:features/coding": {
+    "path": "docs/features/coding.md",
+    "summary": "Feature: coding (experimental, write-capable, heavily gated)",
+    "tokens": [
+      "capable",
+      "coding",
+      "experimental",
+      "gated",
+      "heavily",
+      "write"
+    ],
+    "type": "doc"
+  },
+  "doc:features/connection": {
+    "path": "docs/features/connection.md",
+    "summary": "Feature: connection",
+    "tokens": [
+      "connection"
+    ],
+    "type": "doc"
+  },
+  "doc:features/dpf": {
+    "path": "docs/features/dpf.md",
+    "summary": "Feature: dpf \u2014 DPF / regeneration monitor (experimental, diesel, CAN-only)",
+    "tokens": [
+      "can",
+      "diesel",
+      "dpf",
+      "experimental",
+      "monitor",
+      "only",
+      "regeneration"
+    ],
+    "type": "doc"
+  },
+  "doc:features/error-log": {
+    "path": "docs/features/error-log.md",
+    "summary": "Feature: error log",
+    "tokens": [
+      "error",
+      "log"
+    ],
+    "type": "doc"
+  },
+  "doc:features/extended-pids": {
+    "path": "docs/features/extended-pids.md",
+    "summary": "Feature: extended-pids (experimental, flagged)",
+    "tokens": [
+      "experimental",
+      "extended",
+      "flagged",
+      "pids"
+    ],
+    "type": "doc"
+  },
+  "doc:features/fault-codes": {
+    "path": "docs/features/fault-codes.md",
+    "summary": "Feature: fault-codes",
+    "tokens": [
+      "codes",
+      "fault"
+    ],
+    "type": "doc"
+  },
+  "doc:features/history": {
+    "path": "docs/features/history.md",
+    "summary": "Feature: history",
+    "tokens": [
+      "history"
+    ],
+    "type": "doc"
+  },
+  "doc:features/live-charts": {
+    "path": "docs/features/live-charts.md",
+    "summary": "Feature: live-charts",
+    "tokens": [
+      "charts",
+      "live"
+    ],
+    "type": "doc"
+  },
+  "doc:features/live-data": {
+    "path": "docs/features/live-data.md",
+    "summary": "Feature: live-data",
+    "tokens": [
+      "data",
+      "live"
+    ],
+    "type": "doc"
+  },
+  "doc:features/maintenance-log": {
+    "path": "docs/features/maintenance-log.md",
+    "summary": "Feature: maintenance-log",
+    "tokens": [
+      "log",
+      "maintenance"
+    ],
+    "type": "doc"
+  },
+  "doc:features/notifications": {
+    "path": "docs/features/notifications.md",
+    "summary": "Feature: notifications",
+    "tokens": [
+      "notifications"
+    ],
+    "type": "doc"
+  },
+  "doc:features/performance-tests": {
+    "path": "docs/features/performance-tests.md",
+    "summary": "Feature: performance-tests",
+    "tokens": [
+      "performance",
+      "tests"
+    ],
+    "type": "doc"
+  },
+  "doc:features/sensor-tests": {
+    "path": "docs/features/sensor-tests.md",
+    "summary": "Feature: sensor-tests",
+    "tokens": [
+      "sensor",
+      "tests"
+    ],
+    "type": "doc"
+  },
+  "doc:features/service-reset": {
+    "path": "docs/features/service-reset.md",
+    "summary": "Feature: service-reset (experimental, write-capable, gated)",
+    "tokens": [
+      "capable",
+      "experimental",
+      "gated",
+      "reset",
+      "service",
+      "write"
+    ],
+    "type": "doc"
+  },
+  "doc:features/settings": {
+    "path": "docs/features/settings.md",
+    "summary": "Feature: settings",
+    "tokens": [
+      "settings"
+    ],
+    "type": "doc"
+  },
+  "doc:features/trip-recording": {
+    "path": "docs/features/trip-recording.md",
+    "summary": "Feature: trip-recording",
+    "tokens": [
+      "recording",
+      "trip"
+    ],
+    "type": "doc"
+  },
+  "doc:features/used-car-inspection": {
+    "path": "docs/features/used-car-inspection.md",
+    "summary": "Feature: used-car-inspection",
+    "tokens": [
+      "car",
+      "inspection",
+      "used"
+    ],
+    "type": "doc"
+  },
+  "doc:features/vehicle-info": {
+    "path": "docs/features/vehicle-info.md",
+    "summary": "Feature: vehicle-info",
+    "tokens": [
+      "info",
+      "vehicle"
+    ],
+    "type": "doc"
+  },
+  "doc:features/vehicle-select": {
+    "path": "docs/features/vehicle-select.md",
+    "summary": "Feature: vehicle-select",
+    "tokens": [
+      "select",
+      "vehicle"
+    ],
+    "type": "doc"
+  },
+  "doc:features/vin-decode": {
+    "path": "docs/features/vin-decode.md",
+    "summary": "Feature: vin-decode",
+    "tokens": [
+      "decode",
+      "vin"
+    ],
+    "type": "doc"
+  },
+  "doc:implementation-log": {
+    "path": "docs/implementation-log.md",
+    "summary": "Implementation Log",
+    "tokens": [
+      "implementation",
+      "log"
+    ],
+    "type": "doc"
+  },
+  "doc:obd2-reference": {
+    "path": "docs/obd2-reference.md",
+    "summary": "OBD2 / ELM327 Reference",
+    "tokens": [
+      "327",
+      "elm",
+      "reference"
+    ],
+    "type": "doc"
+  },
+  "doc:phase2-mobile-app": {
+    "path": "docs/phase2-mobile-app.md",
+    "summary": "Phase 2 \u2014 Mobile App (Expo + Tamagui + BLE)",
+    "tokens": [
+      "app",
+      "ble",
+      "expo",
+      "mobile",
+      "phase",
+      "tamagui"
+    ],
+    "type": "doc"
+  },
+  "doc:simulator": {
+    "path": "docs/simulator.md",
+    "summary": "OBD2 Simulator (virtual ELM327)",
+    "tokens": [
+      "327",
+      "elm",
+      "simulator",
+      "virtual"
+    ],
+    "type": "doc"
+  },
+  "doc:testing": {
+    "path": "docs/testing.md",
+    "summary": "Testing",
+    "tokens": [
+      "testing"
+    ],
+    "type": "doc"
+  },
+  "doc:vehicles/README": {
+    "path": "docs/vehicles/README.md",
+    "summary": "Vehicle Registry",
+    "tokens": [
+      "readme",
+      "registry",
+      "vehicle",
+      "vehicles"
+    ],
+    "type": "doc"
+  },
+  "doc:vehicles/fiat-punto-2008-12": {
+    "path": "docs/vehicles/fiat-punto-2008-12.md",
+    "summary": "Fiat Grande Punto 1.2 2008 \u2014 petrol, manual",
+    "tokens": [
+      "12",
+      "2008",
+      "fiat",
+      "grande",
+      "manual",
+      "petrol",
+      "punto",
+      "vehicles"
+    ],
+    "type": "doc"
+  },
+  "doc:vehicles/golf-plus-2009-20tdi": {
+    "path": "docs/vehicles/golf-plus-2009-20tdi.md",
+    "summary": "VW Golf Plus 2009 \u2014 2.0 TDI 81 kW / 109 cp (diesel)",
+    "tokens": [
+      "109",
+      "20",
+      "2009",
+      "81",
+      "cp",
+      "diesel",
+      "golf",
+      "plus",
+      "tdi",
+      "vehicles",
+      "vw"
+    ],
+    "type": "doc"
+  },
+  "doc:vehicles/passat-b55-19tdi": {
+    "path": "docs/vehicles/passat-b55-19tdi.md",
+    "summary": "VW Passat B5.5 \u2014 1.9 TDI AVB-family (diesel)",
+    "tokens": [
+      "19",
+      "55",
+      "avb",
+      "diesel",
+      "family",
+      "passat",
+      "tdi",
+      "vehicles",
+      "vw"
+    ],
+    "type": "doc"
+  },
+  "feature:ai-diagnose": {
+    "path": "src/features/ai-diagnose",
+    "summary": "**One-tap, AI-assisted health check.** Reads the car in one pass, sends a structured snapshot to a",
+    "tokens": [
+      "ai",
+      "diagnose"
+    ],
+    "type": "feature"
+  },
+  "feature:alerts": {
+    "path": "src/features/alerts",
+    "summary": "User-defined **thresholds** on live PIDs that fire visual + haptic (and optional audible) alerts \u2014",
+    "tokens": [
+      "alerts"
+    ],
+    "type": "feature"
+  },
+  "feature:battery-health": {
+    "path": "src/features/battery-health",
+    "summary": "Track the **12 V battery and charging system** from system voltage: resting voltage \u2192 state of",
+    "tokens": [
+      "battery",
+      "health"
+    ],
+    "type": "feature"
+  },
+  "feature:coding": {
+    "path": "src/features/coding",
+    "summary": "**Custom coding** = changing a control module's configuration (\"long coding\" / adaptation) rather",
+    "tokens": [
+      "coding"
+    ],
+    "type": "feature"
+  },
+  "feature:connection": {
+    "path": "src/features/connection",
+    "summary": "Scan for, connect to, and initialize the ELM327 BLE adapter.",
+    "tokens": [
+      "connection"
+    ],
+    "type": "feature"
+  },
+  "feature:dpf": {
+    "path": "src/features/dpf",
+    "summary": "A diesel-focused read-only view of the **diesel particulate filter**: soot load, ash load, distance",
+    "tokens": [
+      "dpf"
+    ],
+    "type": "feature"
+  },
+  "feature:error-log": {
+    "path": "src/features/error-log",
+    "summary": "A persistent, on-device **logging zone**: a capped store of the errors the app has hit, so they can",
+    "tokens": [
+      "error",
+      "log"
+    ],
+    "type": "feature"
+  },
+  "feature:extended-pids": {
+    "path": "src/features/extended-pids",
+    "summary": "Profile-driven **manufacturer-specific** reads via **Mode 22** (UDS `readDataByIdentifier`). **VAG is",
+    "tokens": [
+      "extended",
+      "pids"
+    ],
+    "type": "feature"
+  },
+  "feature:fault-codes": {
+    "path": "src/features/fault-codes",
+    "summary": "Read and clear Diagnostic Trouble Codes (DTCs), show freeze frame and readiness monitors. Every read is saved to [History](./history.md).",
+    "tokens": [
+      "codes",
+      "fault"
+    ],
+    "type": "feature"
+  },
+  "feature:history": {
+    "path": "src/features/history",
+    "summary": "A persistent, on-device **history** of diagnostic activity: every **AI auto-diagnose run** and every",
+    "tokens": [
+      "history"
+    ],
+    "type": "feature"
+  },
+  "feature:inspection": {
+    "path": "src/features/inspection",
+    "summary": "Inspection feature (screen + hooks + model).",
+    "tokens": [
+      "inspection"
+    ],
+    "type": "feature"
+  },
+  "feature:live-charts": {
+    "path": "src/features/live-charts",
+    "summary": "Plot live PIDs over **time** (line charts) alongside the gauges in [`live-data`](./live-data.md), and",
+    "tokens": [
+      "charts",
+      "live"
+    ],
+    "type": "feature"
+  },
+  "feature:live-data": {
+    "path": "src/features/live-data",
+    "summary": "Stream and display live engine parameters (Mode 01 PIDs).",
+    "tokens": [
+      "data",
+      "live"
+    ],
+    "type": "feature"
+  },
+  "feature:maintenance": {
+    "path": "src/features/maintenance",
+    "summary": "Maintenance feature (screen + hooks + model).",
+    "tokens": [
+      "maintenance"
+    ],
+    "type": "feature"
+  },
+  "feature:more": {
+    "path": "src/features/more",
+    "summary": "More feature (screen + hooks + model).",
+    "tokens": [
+      "more"
+    ],
+    "type": "feature"
+  },
+  "feature:notifications": {
+    "path": "src/features/notifications",
+    "summary": "A single **local notification** layer (no server, no push tokens) that surfaces important events to",
+    "tokens": [
+      "notifications"
+    ],
+    "type": "feature"
+  },
+  "feature:performance-tests": {
+    "path": "src/features/performance-tests",
+    "summary": "Measure vehicle performance from live OBD2 data: **0\u2013100 km/h** (and 0\u201360 mph), custom speed",
+    "tokens": [
+      "performance",
+      "tests"
+    ],
+    "type": "feature"
+  },
+  "feature:sensor-readings": {
+    "path": "src/features/sensor-readings",
+    "summary": "Sensor Readings feature (screen + hooks + model).",
+    "tokens": [
+      "readings",
+      "sensor"
+    ],
+    "type": "feature"
+  },
+  "feature:sensor-tests": {
+    "path": "src/features/sensor-tests",
+    "summary": "Inspect and **actively test individual sensors** \u2014 watch a single sensor live while you actuate it",
+    "tokens": [
+      "sensor",
+      "tests"
+    ],
+    "type": "feature"
+  },
+  "feature:service-reset": {
+    "path": "src/features/service-reset",
+    "summary": "Reset the **service interval / oil-service reminder** (\"SRI reset\" \u2014 the *service now / service in",
+    "tokens": [
+      "reset",
+      "service"
+    ],
+    "type": "feature"
+  },
+  "feature:settings": {
+    "path": "src/features/settings",
+    "summary": "Developer and runtime settings.",
+    "tokens": [
+      "settings"
+    ],
+    "type": "feature"
+  },
+  "feature:trip-recording": {
+    "path": "src/features/trip-recording",
+    "summary": "Record a drive as a typed **time-series** of live PIDs (plus DTC snapshots), persist it on the",
+    "tokens": [
+      "recording",
+      "trip"
+    ],
+    "type": "feature"
+  },
+  "feature:vehicle-info": {
+    "path": "src/features/vehicle-info",
+    "summary": "Show vehicle and adapter identity.",
+    "tokens": [
+      "info",
+      "vehicle"
+    ],
+    "type": "feature"
+  },
+  "feature:vehicle-select": {
+    "path": "src/features/vehicle-select",
+    "summary": "Choose which vehicle profile to use (or **Auto / Generic**).",
+    "tokens": [
+      "select",
+      "vehicle"
+    ],
+    "type": "feature"
+  },
+  "feature:vin-decode": {
+    "path": "src/features/vin-decode",
+    "summary": "Decode the **VIN** (read over Mode 09 PID 02, or typed in) into its meaning: **WMI** manufacturer,",
+    "tokens": [
+      "decode",
+      "vin"
+    ],
+    "type": "feature"
+  },
+  "lib:base64": {
+    "path": "src/shared/lib/base64.ts",
+    "summary": "Minimal base64 <-> bytes, used by the BLE transport (react-native-ble-plx exchanges base64).",
+    "tests": [
+      "src/shared/lib/base64.test.ts"
+    ],
+    "tokens": [
+      "64",
+      "base"
+    ],
+    "type": "lib"
+  },
+  "lib:bytes": {
+    "path": "src/shared/lib/bytes.ts",
+    "summary": "ASCII <-> byte helpers used to move text over the (byte-oriented) transport.",
+    "tokens": [
+      "bytes"
+    ],
+    "type": "lib"
+  },
+  "lib:errorLog": {
+    "path": "src/shared/lib/errorLog.ts",
+    "summary": "Pure, platform-agnostic core of the error log (\"logging zone\"): the record shape, normalising an unknown thrown value into a stable record, and rende\u2026",
+    "tests": [
+      "src/shared/lib/errorLog.test.ts"
+    ],
+    "tokens": [
+      "error",
+      "log"
+    ],
+    "type": "lib"
+  },
+  "lib:hex": {
+    "path": "src/shared/lib/hex.ts",
+    "summary": "Hex <-> byte helpers.",
+    "tests": [
+      "src/shared/lib/hex.test.ts"
+    ],
+    "tokens": [
+      "hex"
+    ],
+    "type": "lib"
+  },
+  "screen:_layout": {
+    "path": "src/app/_layout.tsx",
+    "summary": "Capture uncaught errors & unhandled rejections into the",
+    "tokens": [
+      "layout"
+    ],
+    "type": "screen"
+  },
+  "screen:ai-diagnose": {
+    "path": "src/app/ai-diagnose.tsx",
+    "summary": "Route screen 'ai diagnose' (expo-router).",
+    "tokens": [
+      "ai",
+      "diagnose"
+    ],
+    "type": "screen"
+  },
+  "screen:alerts": {
+    "path": "src/app/alerts.tsx",
+    "summary": "Route screen 'alerts' (expo-router).",
+    "tokens": [
+      "alerts"
+    ],
+    "type": "screen"
+  },
+  "screen:battery": {
+    "path": "src/app/battery.tsx",
+    "summary": "Route screen 'battery' (expo-router).",
+    "tokens": [
+      "battery"
+    ],
+    "type": "screen"
+  },
+  "screen:charts": {
+    "path": "src/app/charts.tsx",
+    "summary": "Route screen 'charts' (expo-router).",
+    "tokens": [
+      "charts"
+    ],
+    "type": "screen"
+  },
+  "screen:coding": {
+    "path": "src/app/coding.tsx",
+    "summary": "Route screen 'coding' (expo-router).",
+    "tokens": [
+      "coding"
+    ],
+    "type": "screen"
+  },
+  "screen:dashboard": {
+    "path": "src/app/dashboard.tsx",
+    "summary": "Route screen 'dashboard' (expo-router).",
+    "tokens": [
+      "dashboard"
+    ],
+    "type": "screen"
+  },
+  "screen:dpf": {
+    "path": "src/app/dpf.tsx",
+    "summary": "Route screen 'dpf' (expo-router).",
+    "tokens": [
+      "dpf"
+    ],
+    "type": "screen"
+  },
+  "screen:error-log": {
+    "path": "src/app/error-log.tsx",
+    "summary": "Route screen 'error log' (expo-router).",
+    "tokens": [
+      "error",
+      "log"
+    ],
+    "type": "screen"
+  },
+  "screen:extended": {
+    "path": "src/app/extended.tsx",
+    "summary": "Route screen 'extended' (expo-router).",
+    "tokens": [
+      "extended"
+    ],
+    "type": "screen"
+  },
+  "screen:faults": {
+    "path": "src/app/faults.tsx",
+    "summary": "Route screen 'faults' (expo-router).",
+    "tokens": [
+      "faults"
+    ],
+    "type": "screen"
+  },
+  "screen:history": {
+    "path": "src/app/history.tsx",
+    "summary": "Route screen 'history' (expo-router).",
+    "tokens": [
+      "history"
+    ],
+    "type": "screen"
+  },
+  "screen:index": {
+    "path": "src/app/index.tsx",
+    "summary": "Route screen 'index' (expo-router).",
+    "tokens": [],
+    "type": "screen"
+  },
+  "screen:info": {
+    "path": "src/app/info.tsx",
+    "summary": "Route screen 'info' (expo-router).",
+    "tokens": [
+      "info"
+    ],
+    "type": "screen"
+  },
+  "screen:inspection": {
+    "path": "src/app/inspection.tsx",
+    "summary": "Route screen 'inspection' (expo-router).",
+    "tokens": [
+      "inspection"
+    ],
+    "type": "screen"
+  },
+  "screen:maintenance": {
+    "path": "src/app/maintenance.tsx",
+    "summary": "Route screen 'maintenance' (expo-router).",
+    "tokens": [
+      "maintenance"
+    ],
+    "type": "screen"
+  },
+  "screen:more": {
+    "path": "src/app/more.tsx",
+    "summary": "Route screen 'more' (expo-router).",
+    "tokens": [
+      "more"
+    ],
+    "type": "screen"
+  },
+  "screen:notifications": {
+    "path": "src/app/notifications.tsx",
+    "summary": "Route screen 'notifications' (expo-router).",
+    "tokens": [
+      "notifications"
+    ],
+    "type": "screen"
+  },
+  "screen:performance": {
+    "path": "src/app/performance.tsx",
+    "summary": "Route screen 'performance' (expo-router).",
+    "tokens": [
+      "performance"
+    ],
+    "type": "screen"
+  },
+  "screen:sensor-readings": {
+    "path": "src/app/sensor-readings.tsx",
+    "summary": "Route screen 'sensor readings' (expo-router).",
+    "tokens": [
+      "readings",
+      "sensor"
+    ],
+    "type": "screen"
+  },
+  "screen:sensors": {
+    "path": "src/app/sensors.tsx",
+    "summary": "Route screen 'sensors' (expo-router).",
+    "tokens": [
+      "sensors"
+    ],
+    "type": "screen"
+  },
+  "screen:service-reset": {
+    "path": "src/app/service-reset.tsx",
+    "summary": "Route screen 'service reset' (expo-router).",
+    "tokens": [
+      "reset",
+      "service"
+    ],
+    "type": "screen"
+  },
+  "screen:settings": {
+    "path": "src/app/settings.tsx",
+    "summary": "Route screen 'settings' (expo-router).",
+    "tokens": [
+      "settings"
+    ],
+    "type": "screen"
+  },
+  "screen:trips": {
+    "path": "src/app/trips.tsx",
+    "summary": "Route screen 'trips' (expo-router).",
+    "tokens": [
+      "trips"
+    ],
+    "type": "screen"
+  },
+  "screen:vehicle": {
+    "path": "src/app/vehicle.tsx",
+    "summary": "Route screen 'vehicle' (expo-router).",
+    "tokens": [
+      "vehicle"
+    ],
+    "type": "screen"
+  },
+  "screen:vin-decode": {
+    "path": "src/app/vin-decode.tsx",
+    "summary": "Route screen 'vin decode' (expo-router).",
+    "tokens": [
+      "decode",
+      "vin"
+    ],
+    "type": "screen"
+  },
+  "service:ai": {
+    "path": "src/shared/ai",
+    "summary": "AI client (OpenAI-compatible) for the diagnose feature.",
+    "tokens": [
+      "ai",
+      "client",
+      "compatible",
+      "diagnose",
+      "open"
+    ],
+    "type": "service"
+  },
+  "service:notify": {
+    "path": "src/shared/notify",
+    "summary": "Thin, dependency-tolerant wrapper around expo-notifications.",
+    "tokens": [
+      "local",
+      "notifications",
+      "notify",
+      "permission",
+      "wrapper"
+    ],
+    "type": "service"
+  },
+  "store:errorLogStore": {
+    "path": "src/shared/state/errorLogStore.ts",
+    "summary": "The \"logging zone\": a persistent, capped store of errors the app has hit, so they can be reviewed and exported to fix later.",
+    "tokens": [
+      "error",
+      "log"
+    ],
+    "type": "store"
+  },
+  "store:eventLog": {
+    "path": "src/shared/state/eventLog.ts",
+    "summary": "@deprecated Use `logError` from '@/shared/state/errorLogStore' \u2014 the app's single logging zone (the error-log feature).",
+    "tokens": [
+      "event",
+      "log"
+    ],
+    "type": "store"
+  },
+  "store:historyStore": {
+    "path": "src/shared/state/historyStore.ts",
+    "summary": "Persistent history of diagnostic activity: every AI auto-diagnose run and every fault-code check, each **linked to a car**.",
+    "tokens": [
+      "history"
+    ],
+    "type": "store"
+  },
+  "store:persistStorage": {
+    "path": "src/shared/state/persistStorage.ts",
+    "summary": "A zustand `StateStorage` backed by a JSON file in the app's document directory, using the already-installed **expo-file-system** (no extra native dep\u2026",
+    "tokens": [
+      "persist",
+      "storage"
+    ],
+    "type": "store"
+  },
+  "store:sessionStore": {
+    "path": "src/shared/state/sessionStore.ts",
+    "summary": "Cross-cutting connection lifecycle + the active DiagnosticSession.",
+    "tokens": [
+      "session"
+    ],
+    "type": "store"
+  },
+  "store:settingsStore": {
+    "path": "src/shared/state/settingsStore.ts",
+    "summary": "Cross-cutting runtime settings + the adapter I/O log.",
+    "tokens": [
+      "settings"
+    ],
+    "type": "store"
+  },
+  "transport:BleTransport": {
+    "path": "src/shared/transports/ble/BleTransport.ts",
+    "summary": "Transport implementation over react-native-ble-plx.",
+    "tokens": [
+      "ble",
+      "transport"
+    ],
+    "type": "transport"
+  },
+  "transport:manager": {
+    "path": "src/shared/transports/ble/manager.ts",
+    "summary": "Lazily-created singleton BleManager (react-native-ble-plx).",
+    "tokens": [
+      "manager"
+    ],
+    "type": "transport"
+  },
+  "transport:permissions": {
+    "path": "src/shared/transports/ble/permissions.ts",
+    "summary": "Runtime BLE permissions.",
+    "tokens": [
+      "permissions"
+    ],
+    "type": "transport"
+  },
+  "ui:AppLogo": {
+    "path": "src/shared/ui/AppLogo.tsx",
+    "summary": "exports AppLogo",
+    "tokens": [
+      "app",
+      "logo"
+    ],
+    "type": "ui"
+  },
+  "ui:Gauge": {
+    "path": "src/shared/ui/Gauge.tsx",
+    "summary": "A 270\u00b0 arc gauge (react-native-svg).",
+    "tokens": [
+      "gauge"
+    ],
+    "type": "ui"
+  },
+  "ui:Screen": {
+    "path": "src/shared/ui/Screen.tsx",
+    "summary": "Standard scrollable screen frame with safe-area + optional pull-to-refresh.",
+    "tokens": [],
+    "type": "ui"
+  },
+  "ui:StatusBadge": {
+    "path": "src/shared/ui/StatusBadge.tsx",
+    "summary": "exports StatusBadge",
+    "tokens": [
+      "badge",
+      "status"
+    ],
+    "type": "ui"
+  },
+  "ui:ValueCard": {
+    "path": "src/shared/ui/ValueCard.tsx",
+    "summary": "Compact live-parameter tile.",
+    "tokens": [
+      "card",
+      "value"
+    ],
+    "type": "ui"
+  },
+  "vehicle:fiat-punto-2008-12": {
+    "path": "src/shared/vehicles/fiat-punto-2008-12.ts",
+    "summary": "Fiat Grande Punto 1.2 2008 (petrol) \u2014 199-body CAN.",
+    "tokens": [
+      "12",
+      "2008",
+      "fiat",
+      "punto"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:generic": {
+    "path": "src/shared/vehicles/generic.ts",
+    "summary": "Built-in fallback profile: works for any OBD2 car.",
+    "tokens": [
+      "generic"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:golf-plus-2009-20tdi": {
+    "path": "src/shared/vehicles/golf-plus-2009-20tdi.ts",
+    "summary": "VW Golf Plus 2009 2.0 TDI 81 kW \u2014 modern CAN diesel.",
+    "tokens": [
+      "20",
+      "2009",
+      "golf",
+      "plus",
+      "tdi"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:passat-b55-19tdi": {
+    "path": "src/shared/vehicles/passat-b55-19tdi.ts",
+    "summary": "VW Passat B5.5 1.9 TDI AVB \u2014 older K-line diesel (the hard case).",
+    "tokens": [
+      "19",
+      "55",
+      "passat",
+      "tdi"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:registry": {
+    "path": "src/shared/vehicles/index.ts",
+    "summary": "The vehicle registry.",
+    "tokens": [
+      "profile",
+      "registry",
+      "vehicle"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:types": {
+    "path": "src/shared/vehicles/types.ts",
+    "summary": "Vehicle profile types.",
+    "tokens": [
+      "types"
+    ],
+    "type": "vehicle"
+  }
+}
