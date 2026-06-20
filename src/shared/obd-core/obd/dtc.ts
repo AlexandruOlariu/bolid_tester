@@ -30,6 +30,23 @@ export function encodeDtc(code: string): [number, number] {
 }
 
 /**
+ * Manufacturer cross-reference for VAG (VW / Audi / Škoda / SEAT): the 5-digit fault number printed
+ * by VCDS and OBD2 apps is simply the DTC's two raw bytes read as a decimal number — the same bytes
+ * encodeDtc()/decodeDtcBytes() use. e.g. P2183 -> 0x21 0x83 -> 0x2183 -> 8579 -> "08579".
+ *
+ * Verified against a real Car Scanner OBD2 export of a VW Golf, which printed the identical hex for
+ * both forms: P2183=08579, P2015=08213, P0121=000289 (VCDS pads to 6, here normalised to the natural
+ * 2-byte width of 5). Only meaningful for VAG cars and for the classic 2-byte powertrain DTCs the
+ * engine ECU exposes over generic OBD2. Returns '' for the empty/padding code.
+ */
+export function vagCodeForDtc(code: string): string {
+  // Powertrain (P) codes only — without this guard a C/B/U code yields a bogus 5-digit "VAG" number.
+  if (!code || code[0].toUpperCase() !== 'P') return '';
+  const [b0, b1] = encodeDtc(code);
+  return ((b0 << 8) | b1).toString().padStart(5, '0');
+}
+
+/**
  * Parse the DTC payload of a Mode 03/07/0A response, AFTER the service byte is removed.
  * Handles both the CAN style (leading count byte → odd length) and the K-line style
  * (2-byte pairs with 00 00 padding → even length).
@@ -49,6 +66,7 @@ export function parseDtcBytes(dataAfterService: number[]): string[] {
 const DTC_DICTIONARY: Record<string, string> = {
   P0101: 'Mass air flow (MAF) circuit range/performance',
   P0113: 'Intake air temperature sensor circuit high',
+  P0121: 'Throttle/pedal position sensor/switch A circuit range/performance',
   P0128: 'Coolant thermostat (below regulating temperature)',
   P0131: 'O2 sensor circuit low voltage (B1S1)',
   P0133: 'O2 sensor circuit slow response (B1S1)',
@@ -64,6 +82,8 @@ const DTC_DICTIONARY: Record<string, string> = {
   P0500: 'Vehicle speed sensor malfunction',
   P0606: 'ECM/PCM processor fault',
   P2002: 'Diesel particulate filter efficiency below threshold (Bank 1)',
+  P2015: 'Intake manifold runner position sensor/switch circuit range/performance (Bank 1)',
+  P2183: 'Engine coolant temperature (ECT) sensor 2 circuit range/performance',
   U0100: 'Lost communication with ECM/PCM',
 };
 

@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { deriveDiagnosticEvents, DiagSnapshot } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { notify, setNotifPrefs } from '@/shared/notify';
+import { logError } from '@/shared/state/errorLogStore';
 import { useNotificationsStore } from '../model/notificationsStore';
 
 /** Watch session/diagnostic state and fire OS notifications on rising edges (MIL, connect, etc.). */
@@ -17,13 +18,17 @@ export function useNotifications() {
   }, [prefs]);
 
   useEffect(() => {
-    const cur: DiagSnapshot = {
-      status: status === 'initializing' ? 'connecting' : status,
-      milOn: false,
-      dtcCount: 0,
-    };
-    const events = deriveDiagnosticEvents(prevRef.current, cur);
-    prevRef.current = cur;
-    for (const e of events) void notify(e);
+    try {
+      const cur: DiagSnapshot = {
+        status: status === 'initializing' ? 'connecting' : status,
+        milOn: false,
+        dtcCount: 0,
+      };
+      const events = deriveDiagnosticEvents(prevRef.current, cur);
+      prevRef.current = cur;
+      for (const e of events) void notify(e);
+    } catch (e) {
+      logError({ source: 'notifications', error: e, severity: 'warning' });
+    }
   }, [status, info]);
 }

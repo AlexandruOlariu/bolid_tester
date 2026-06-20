@@ -7,8 +7,20 @@ it survives app restarts. Reachable from the **More** tab (`/error-log`).
 ## What gets recorded
 - **Caught feature errors** — wired into the existing `catch` blocks via `logError(...)`:
   `connection` (connect failures, incl. the chosen adapter source), `fault-codes` (DTC read
-  failures), `ai-diagnose` (gather/analyse failures). Each call keeps the feature's own
-  user-facing error handling and *additionally* records the error in the zone.
+  failures), `ai-diagnose` (gather/analyse failures), `battery-health`, `coding/read`,
+  `coding/write`, `dpf`, `extended-pids`, `inspection`, `live-data`, `performance-tests`,
+  `sensor-readings`, `sensor-tests`, `service-reset`, `trip-recording`, `settings/ai-test`
+  (AI server connection test), and the `alerts` / `notifications` watcher effects. Each call keeps
+  the feature's own user-facing error handling and *additionally* records the error in the zone.
+- **Shared-service failures** — the cross-cutting services that every feature leans on log on behalf
+  of their callers, so no feature can fail silently through them:
+  - `persist` — a failed file read/write/delete in `shared/state/persistStorage` (silent data loss
+    for any persisted store: settings, history, maintenance, notifications, vehicle-select, …),
+    with `context: { store, op }`. The error-log store's own file (`bolid.errors`) is deliberately
+    **excluded** to avoid an infinite log→write→log loop.
+  - `notifications` / `notifications/schedule` / `notifications/permission` — a notification that
+    fails to deliver when expo-notifications *is* present. A simply-absent module (tests / web)
+    stays a silent no-op and is **not** logged.
 - **Uncaught errors** — `installGlobalErrorHandlers()` (called once at app start in
   `app/_layout.tsx`) chains React Native's `ErrorUtils` global handler and the web
   `unhandledrejection` event, so crashes and unhandled promise rejections are captured as `global` /
@@ -41,8 +53,11 @@ logError({ source: 'my-feature', error: e, severity: 'warning', context: { id } 
 - `shared/state/errorLogStore.ts` — Zustand store **persisted** to `bolid.errors` via
   `shared/state/persistStorage`: `errors: LoggedError[]` plus `log`, `remove`, `clear`. Lives in
   `shared/state` so any feature can record without depending on another feature. Exposes the
-  module-level `logError(...)` convenience (best-effort — never throws, mirrors to the console) and
-  `installGlobalErrorHandlers()`.
+  module-level `logError(...)` convenience (best-effort — never throws, mirrors to the console,
+  and **coalesces bursts of the identical error** within a short window so a hot-path throw or a
+  failing-every-write persist can't flood the capped store) and `installGlobalErrorHandlers()`.
+  `persistStorage` receives `logError` by injection (`setPersistLogger`) rather than importing it, to
+  avoid a module-init cycle.
 
 ## Retention
 - **Capped at `MAX_ERRORS` (500)** — newest kept, oldest dropped, so the persisted file can't grow

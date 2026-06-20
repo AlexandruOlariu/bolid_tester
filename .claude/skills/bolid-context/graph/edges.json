@@ -1361,6 +1361,11 @@
   ],
   [
     "feature:alerts",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:alerts",
     "store:sessionStore",
     "imports"
   ],
@@ -1746,6 +1751,11 @@
   ],
   [
     "feature:notifications",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:notifications",
     "store:sessionStore",
     "imports"
   ],
@@ -1902,6 +1912,11 @@
   [
     "feature:settings",
     "service:ai",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "store:errorLogStore",
     "imports"
   ],
   [
@@ -2285,6 +2300,11 @@
     "imports"
   ],
   [
+    "service:notify",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
     "store:errorLogStore",
     "lib:errorLog",
     "imports"
@@ -2317,6 +2337,11 @@
   [
     "store:historyStore",
     "store:persistStorage",
+    "imports"
+  ],
+  [
+    "store:persistStorage",
+    "lib:errorLog",
     "imports"
   ],
   [

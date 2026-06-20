@@ -56,7 +56,12 @@ export async function connect(target?: ConnectTarget): Promise<void> {
       transport = new BleTransport(getBleManager(), target.deviceId);
       device = { id: target.deviceId, name: target.deviceName ?? null };
     } else {
-      transport = new MockTransport(buildScenario(simulatedVehicleId, { storedDtcs: injectedDtcs }));
+      // The in-app injector is the single source of truth for simulated faults: it sets the stored
+      // codes and pins pending/permanent empty, so a profile's seeded knownFaults can't leak past the
+      // user's choice (e.g. "None" really means none, even for a profile with pending/permanent faults).
+      transport = new MockTransport(
+        buildScenario(simulatedVehicleId, { storedDtcs: injectedDtcs, pendingDtcs: [], permanentDtcs: [] }),
+      );
       device = { id: 'mock', name: `Simulator · ${simulatedVehicleId}` };
     }
 

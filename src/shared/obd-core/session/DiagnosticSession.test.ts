@@ -99,6 +99,24 @@ describe('DiagnosticSession (integration via simulator)', () => {
     expect(ff.values.find((v) => v.pid === '010C')?.value).toBeCloseTo(820, 0);
   });
 
+  it('seeds the Golf simulator with the car’s known real faults by default', async () => {
+    const profile = getVehicleProfile('golf-plus-2009-20tdi');
+    expect(profile.knownFaults?.length).toBeGreaterThan(0);
+    // No DTC override -> the scenario should expose the profile's real, persistent engine faults.
+    const session = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')), {
+      commandTimeoutMs: 1000,
+    });
+    await session.connect();
+    const stored = (await session.readDtcs('03')).map((d) => d.code);
+    expect(stored).toEqual(expect.arrayContaining(['P2183', 'P2015']));
+    // And a generic profile stays clean.
+    const generic = new DiagnosticSession(new MockTransport(buildScenario('generic')), {
+      commandTimeoutMs: 1000,
+    });
+    await generic.connect();
+    expect(await generic.readDtcs('03')).toHaveLength(0);
+  });
+
   it('reads Mode 06 monitors on the Golf', async () => {
     const session = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')), {
       commandTimeoutMs: 1000,

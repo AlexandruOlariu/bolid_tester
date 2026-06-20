@@ -7,6 +7,7 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { VEHICLE_PROFILES } from '@/shared/vehicles';
 import { normalizeBaseUrl } from '@/shared/obd-core';
 import { listModels, AiClientError } from '@/shared/ai';
+import { logError } from '@/shared/state/errorLogStore';
 import { connectionService } from '@/features/connection';
 
 const ACCENT = '#2bb673';
@@ -55,6 +56,7 @@ function AiSection() {
       }
     } catch (e) {
       setStatusText(`Failed: ${e instanceof AiClientError || e instanceof Error ? e.message : String(e)}`);
+      logError({ source: 'settings/ai-test', error: e, severity: 'warning', context: { baseUrl: ai.baseUrl } });
     } finally {
       setTesting(false);
     }

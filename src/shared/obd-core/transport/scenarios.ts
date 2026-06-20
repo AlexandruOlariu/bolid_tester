@@ -44,6 +44,12 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
       }, {})
     : undefined;
 
+  // Seed the car's real, known faults (from its diagnostic history) so the default scenario is
+  // realistic. Callers — the tests and the in-app DTC injector — can still override any DTC store.
+  const known = profile.knownFaults ?? [];
+  const faultCodes = (kind: 'stored' | 'pending' | 'permanent') =>
+    known.filter((f) => (f.kind ?? 'stored') === kind).map((f) => f.code);
+
   const base: SimScenario = {
     protocol,
     supportedPids: profile.supportedPids,
@@ -51,9 +57,9 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
     // The B5.5's ECU does answer Mode 09 (VIN + Calibration ID) — confirmed on the real car.
     vinSupported: true,
     calibrationId: SAMPLE_CALIDS[profileId],
-    storedDtcs: [],
-    pendingDtcs: [],
-    permanentDtcs: [],
+    storedDtcs: faultCodes('stored'),
+    pendingDtcs: faultCodes('pending'),
+    permanentDtcs: faultCodes('permanent'),
     extendedDids,
     mode06,
     moduleDids,

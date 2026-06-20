@@ -13,6 +13,26 @@ export const golfPlus2009: VehicleProfile = {
     '011F', '0121', '0131', '0133', '0142', '0146', '015C', '015E',
   ],
   dtcModes: ['03', '07', '0A'],
+  knownFaults: [
+    // Ground truth from a year of VCDS scans (212k→224k km, 2025–2026) plus a 2026-05 Car Scanner
+    // OBD2 export of THIS car. Only engine-ECU P-codes appear here — the generic OBD2 path the app
+    // uses cannot reach the body/chassis modules VCDS also shows (HVAC flap, infotainment bus, etc.).
+    {
+      code: 'P2183', vagCode: '08579', kind: 'stored',
+      description: 'Engine coolant temperature sensor 2 (radiator outlet, G83) — range/performance',
+      note: 'Persistent, MIL on for most of 2025; cleared in the last VCDS scans but back (confirmed) in the 2026-05 OBD2 scan.',
+    },
+    {
+      code: 'P2015', vagCode: '08213', kind: 'stored',
+      description: 'Intake manifold runner/flap position sensor (bank 1) — range/performance',
+      note: 'Persistent across the year, oscillating intermittent↔confirmed; archived/inactive in the latest scans.',
+    },
+    {
+      code: 'P0121', vagCode: '00289', kind: 'stored',
+      description: 'Throttle/pedal position sensor (G69) — range/performance / implausible signal',
+      note: 'Transient: appeared only in the ~220k–223k km window (late 2025–early 2026). VCDS printed it as both P0121 and 000289.',
+    },
+  ],
   extendedPids: [
     // --- Diesel / DPF pack: EXPERIMENTAL, illustrative VAG-style DIDs. Confirm on the real car.
     // The DPF monitor (docs/features/dpf.md) maps these by `role`; the Extended-PIDs screen shows

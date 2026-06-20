@@ -87,6 +87,22 @@ export interface ServiceReset {
   experimental: true;
 }
 
+/** A fault this exact car is known to report, taken from real diagnostic history (VCDS / OBD2
+ *  scans). This documents the car and lets the simulator seed a realistic DTC set — it is per-car
+ *  ground truth, NOT the generic DTC dictionary in obd-core/obd/dtc.ts. */
+export interface KnownFault {
+  /** Generic OBD-II code as the engine ECU reports it over Mode 03/07/0A, e.g. 'P2183'. */
+  code: string;
+  /** Manufacturer (VAG) 5-digit code for the same fault, if known, e.g. '08579'. For VAG this is
+   *  just the DTC's two raw bytes read as a decimal number — see `vagCodeForDtc` in obd/dtc.ts. */
+  vagCode?: string;
+  description: string;
+  /** Which DTC store the simulator should place it in. Defaults to 'stored' (Mode 03). */
+  kind?: 'stored' | 'pending' | 'permanent';
+  /** Observed real-world behaviour (e.g. persistence across scans), for docs/UI. */
+  note?: string;
+}
+
 export interface VehicleProfile {
   id: string;
   name: string;
@@ -98,6 +114,9 @@ export interface VehicleProfile {
   /** Mode 01 PIDs we surface for this car (request strings, e.g. '010C'). */
   supportedPids: string[];
   dtcModes: DtcMode[];
+  /** Faults this exact car is known to report, from real diagnostic history (VCDS/OBD2). Documents
+   *  the car and seeds the simulator (transport/scenarios.ts). Omitted for generic profiles. */
+  knownFaults?: KnownFault[];
   extendedPids?: ExtendedPid[];
   /** Standardized Mode 06 monitors (any OBD2 car may support these). */
   mode06Tests?: Mode06Test[];

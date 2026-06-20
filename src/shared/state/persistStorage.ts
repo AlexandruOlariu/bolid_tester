@@ -14,8 +14,28 @@ import {
   writeAsStringAsync,
   deleteAsync,
 } from 'expo-file-system/legacy';
+import type { LogErrorInput } from '@/shared/lib/errorLog';
 
 const DIR = documentDirectory ?? cacheDirectory ?? '';
+
+/** The error logger is *injected* (errorLogStore calls `setPersistLogger` when it loads) rather than
+ *  imported, to avoid a persistStorage <-> errorLogStore module-init cycle. Null until wired, in which
+ *  case a persist failure stays a silent no-op — best-effort, exactly as before. */
+let persistLogger: ((input: LogErrorInput) => void) | null = null;
+export function setPersistLogger(fn: ((input: LogErrorInput) => void) | null): void {
+  persistLogger = fn;
+}
+
+/** The error-log store persists through this same storage (key below). Logging a failure for *that*
+ *  key would re-enter the store and re-trigger this write, so we never log for it — otherwise a broken
+ *  filesystem would spin an infinite write/log loop. Other keys log a `persist` warning so a silent
+ *  data-loss (settings, history, maintenance, etc. failing to save) shows up in the Error Log. */
+const ERROR_STORE_KEY = 'bolid.errors';
+
+function logPersistFailure(name: string, op: 'read' | 'write' | 'remove', error: unknown): void {
+  if (name === ERROR_STORE_KEY) return;
+  persistLogger?.({ source: 'persist', error, severity: 'warning', context: { store: name, op } });
+}
 
 function fileFor(name: string): string {
   return `${DIR}${name.replace(/[^a-zA-Z0-9._-]/g, '_')}.json`;
@@ -29,7 +49,9 @@ export const fileStateStorage: StateStorage = {
       const info = await getInfoAsync(uri);
       if (!info.exists) return null;
       return await readAsStringAsync(uri);
-    } catch {
+    } catch (e) {
+      // Degrades to "no persisted state", but a corrupt/unreadable file is worth surfacing.
+      logPersistFailure(name, 'read', e);
       return null;
     }
   },
@@ -37,16 +59,17 @@ export const fileStateStorage: StateStorage = {
     if (!DIR) return;
     try {
       await writeAsStringAsync(fileFor(name), value);
-    } catch {
-      // best-effort persistence — ignore write failures
+    } catch (e) {
+      // best-effort persistence — the write is lost, so record it rather than fail silently.
+      logPersistFailure(name, 'write', e);
     }
   },
   removeItem: async (name) => {
     if (!DIR) return;
     try {
       await deleteAsync(fileFor(name), { idempotent: true });
-    } catch {
-      // ignore
+    } catch (e) {
+      logPersistFailure(name, 'remove', e);
     }
   },
 };
