@@ -40,6 +40,26 @@
     "relates"
   ],
   [
+    "concept:app-shell",
+    "concept:diagnostic-history",
+    "relates"
+  ],
+  [
+    "concept:app-shell",
+    "feature:more",
+    "relates"
+  ],
+  [
+    "concept:app-shell",
+    "screen:_layout",
+    "relates"
+  ],
+  [
+    "concept:app-shell",
+    "screen:more",
+    "relates"
+  ],
+  [
     "concept:battery-charging",
     "core:analysis/battery",
     "relates"
@@ -71,7 +91,17 @@
   ],
   [
     "concept:connection-lifecycle",
+    "doc:features/connection",
+    "relates"
+  ],
+  [
+    "concept:connection-lifecycle",
     "feature:connection",
+    "relates"
+  ],
+  [
+    "concept:connection-lifecycle",
+    "lib:base64",
     "relates"
   ],
   [
@@ -125,6 +155,26 @@
     "relates"
   ],
   [
+    "concept:documentation-driven",
+    "doc:PLAN",
+    "relates"
+  ],
+  [
+    "concept:documentation-driven",
+    "doc:README",
+    "relates"
+  ],
+  [
+    "concept:documentation-driven",
+    "doc:architecture",
+    "relates"
+  ],
+  [
+    "concept:documentation-driven",
+    "doc:implementation-log",
+    "relates"
+  ],
+  [
     "concept:dpf-regen",
     "core:analysis/dpf",
     "relates"
@@ -147,6 +197,11 @@
   [
     "concept:dtc-faults",
     "core:obd/readiness",
+    "relates"
+  ],
+  [
+    "concept:dtc-faults",
+    "doc:features/fault-codes",
     "relates"
   ],
   [
@@ -186,6 +241,11 @@
   ],
   [
     "concept:error-resilience",
+    "doc:features/error-log",
+    "relates"
+  ],
+  [
+    "concept:error-resilience",
     "feature:error-log",
     "relates"
   ],
@@ -197,6 +257,11 @@
   [
     "concept:error-resilience",
     "store:errorLogStore",
+    "relates"
+  ],
+  [
+    "concept:error-resilience",
+    "store:eventLog",
     "relates"
   ],
   [
@@ -241,6 +306,11 @@
   ],
   [
     "concept:live-data-charts",
+    "doc:features/live-charts",
+    "relates"
+  ],
+  [
+    "concept:live-data-charts",
     "doc:features/live-data",
     "relates"
   ],
@@ -272,6 +342,21 @@
   [
     "concept:maintenance-log",
     "feature:maintenance",
+    "relates"
+  ],
+  [
+    "concept:mobile-build-adapter",
+    "concept:connection-lifecycle",
+    "relates"
+  ],
+  [
+    "concept:mobile-build-adapter",
+    "doc:adapter-vgate-icar-pro",
+    "relates"
+  ],
+  [
+    "concept:mobile-build-adapter",
+    "doc:phase2-mobile-app",
     "relates"
   ],
   [
@@ -351,7 +436,17 @@
   ],
   [
     "concept:obd-request-pipeline",
+    "core:public-api",
+    "relates"
+  ],
+  [
+    "concept:obd-request-pipeline",
     "doc:obd2-reference",
+    "relates"
+  ],
+  [
+    "concept:obd-request-pipeline",
+    "lib:bytes",
     "relates"
   ],
   [
@@ -422,6 +517,41 @@
   [
     "concept:service-reset",
     "feature:service-reset",
+    "relates"
+  ],
+  [
+    "concept:shared-ui-kit",
+    "concept:connection-lifecycle",
+    "relates"
+  ],
+  [
+    "concept:shared-ui-kit",
+    "concept:live-data-charts",
+    "relates"
+  ],
+  [
+    "concept:shared-ui-kit",
+    "ui:AppLogo",
+    "relates"
+  ],
+  [
+    "concept:shared-ui-kit",
+    "ui:Gauge",
+    "relates"
+  ],
+  [
+    "concept:shared-ui-kit",
+    "ui:Screen",
+    "relates"
+  ],
+  [
+    "concept:shared-ui-kit",
+    "ui:StatusBadge",
+    "relates"
+  ],
+  [
+    "concept:shared-ui-kit",
+    "ui:ValueCard",
     "relates"
   ],
   [
@@ -556,7 +686,27 @@
   ],
   [
     "concept:vehicle-profiles",
+    "doc:features/vehicle-select",
+    "relates"
+  ],
+  [
+    "concept:vehicle-profiles",
     "doc:vehicles/README",
+    "relates"
+  ],
+  [
+    "concept:vehicle-profiles",
+    "doc:vehicles/fiat-punto-2008-12",
+    "relates"
+  ],
+  [
+    "concept:vehicle-profiles",
+    "doc:vehicles/golf-plus-2009-20tdi",
+    "relates"
+  ],
+  [
+    "concept:vehicle-profiles",
+    "doc:vehicles/passat-b55-19tdi",
     "relates"
   ],
   [
@@ -587,6 +737,11 @@
   [
     "concept:vehicle-profiles",
     "vehicle:registry",
+    "relates"
+  ],
+  [
+    "concept:vehicle-profiles",
+    "vehicle:types",
     "relates"
   ],
   [

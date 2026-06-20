@@ -3,7 +3,7 @@
 // This is the durable payoff: domain concepts and relationships that the code
 // structure cannot express. Auto-derived edges (imports / serves / documents)
 // are table-stakes; THIS file is what makes the graph smarter than grep.
-// (25 concepts — every feature except the `more` nav menu is covered.)
+// (29 concepts. Coverage goal: every non-trivial node has a concept neighbour.)
 //
 // Format:
 //   concepts[]      { id, summary, tokens[] }      -> becomes a concept:<id> node
@@ -36,7 +36,7 @@
       "summary": "AI Diagnose: snapshot fault codes + live readings -> aiDiagnosis builds the prompt -> AI client (OpenAI-compatible) -> human-readable diagnosis.",
       "tokens": ["ai","diagnose","diagnosis","llm","openai","prompt","advice"] },
     { "id": "error-resilience",
-      "summary": "Resilience pattern: recoverable failures are captured via logError into errorLogStore (surfaced in the Error Log screen) rather than crashing the session.",
+      "summary": "Resilience pattern: recoverable failures are captured via logError into errorLogStore (the single logging zone, shown in the Error Log screen) rather than crashing the session.",
       "tokens": ["error","resilience","logging","recover","failure","fault","log"] },
     { "id": "state-architecture",
       "summary": "App state is zustand stores. sessionStore is the connection hub; persistStorage backs the durable ones (settings/history). Keep cross-cutting state here, not in features.",
@@ -88,7 +88,19 @@
       "tokens": ["trip","recording","drive","timeseries","replay","export","csv","journey"] },
     { "id": "app-settings",
       "summary": "Runtime + developer settings: units, behavior toggles, and the raw adapter I/O log (bytes for debugging). Backed by settingsStore.",
-      "tokens": ["settings","config","units","preferences","developer","io","options","toggle"] }
+      "tokens": ["settings","config","units","preferences","developer","io","options","toggle"] },
+    { "id": "app-shell",
+      "summary": "Expo-router app shell: the root _layout (navigation/tabs) and the More tab — a hub listing secondary screens (history, maintenance, settings, etc.).",
+      "tokens": ["navigation","nav","layout","tab","shell","more","menu","router","routing","home","drawer"] },
+    { "id": "shared-ui-kit",
+      "summary": "Shared Tamagui UI components reused across screens: Screen (scroll + pull-to-refresh frame), Gauge and ValueCard (live readouts), StatusBadge (connection state), AppLogo.",
+      "tokens": ["ui","component","components","tamagui","gauge","card","valuecard","badge","statusbadge","widget","reusable","svg"] },
+    { "id": "mobile-build-adapter",
+      "summary": "Building/running the app: Expo dev-client + local Gradle APK (see the android-apk skill), and the reference BLE adapter (Vgate iCar Pro) used for bring-up.",
+      "tokens": ["build","apk","gradle","expo","android","mobile","adapter","vgate","icar","install","run","devclient"] },
+    { "id": "documentation-driven",
+      "summary": "Documentation-driven workflow: docs/ is the source of truth. PLAN is the approved plan, implementation-log tracks progress, architecture.md is the map, every feature has a doc.",
+      "tokens": ["documentation","docs","plan","process","implementation","log","readme","architecture","spec","sourceoftruth"] }
   ],
   "links": [
     ["concept:connection-lifecycle", "transport:BleTransport", "relates"],
@@ -98,6 +110,8 @@
     ["concept:connection-lifecycle", "core:session/DiagnosticSession", "relates"],
     ["concept:connection-lifecycle", "store:sessionStore", "relates"],
     ["concept:connection-lifecycle", "feature:connection", "relates"],
+    ["concept:connection-lifecycle", "doc:features/connection", "relates"],
+    ["concept:connection-lifecycle", "lib:base64", "relates"],
     ["concept:connection-lifecycle", "doc:architecture", "relates"],
 
     ["concept:obd-request-pipeline", "core:elm327/Elm327Client", "relates"],
@@ -105,6 +119,8 @@
     ["concept:obd-request-pipeline", "core:obd/pids", "relates"],
     ["concept:obd-request-pipeline", "core:obd/dtc", "relates"],
     ["concept:obd-request-pipeline", "core:obd/protocols", "relates"],
+    ["concept:obd-request-pipeline", "core:public-api", "relates"],
+    ["concept:obd-request-pipeline", "lib:bytes", "relates"],
     ["concept:obd-request-pipeline", "doc:obd2-reference", "relates"],
 
     ["concept:mock-simulator", "core:transport/MockTransport", "relates"],
@@ -122,8 +138,13 @@
     ["concept:vehicle-profiles", "vehicle:golf-plus-2009-20tdi", "relates"],
     ["concept:vehicle-profiles", "vehicle:fiat-punto-2008-12", "relates"],
     ["concept:vehicle-profiles", "vehicle:passat-b55-19tdi", "relates"],
+    ["concept:vehicle-profiles", "vehicle:types", "relates"],
     ["concept:vehicle-profiles", "feature:vehicle-select", "relates"],
+    ["concept:vehicle-profiles", "doc:features/vehicle-select", "relates"],
     ["concept:vehicle-profiles", "doc:vehicles/README", "relates"],
+    ["concept:vehicle-profiles", "doc:vehicles/golf-plus-2009-20tdi", "relates"],
+    ["concept:vehicle-profiles", "doc:vehicles/fiat-punto-2008-12", "relates"],
+    ["concept:vehicle-profiles", "doc:vehicles/passat-b55-19tdi", "relates"],
 
     ["concept:ecu-coding", "core:coding/coding", "relates"],
     ["concept:ecu-coding", "core:coding/udsCoding", "relates"],
@@ -136,8 +157,10 @@
     ["concept:ai-diagnose-flow", "doc:features/ai-diagnose", "relates"],
 
     ["concept:error-resilience", "store:errorLogStore", "relates"],
+    ["concept:error-resilience", "store:eventLog", "relates"],
     ["concept:error-resilience", "lib:errorLog", "relates"],
     ["concept:error-resilience", "feature:error-log", "relates"],
+    ["concept:error-resilience", "doc:features/error-log", "relates"],
     ["concept:error-resilience", "doc:architecture", "relates"],
 
     ["concept:state-architecture", "store:sessionStore", "relates"],
@@ -149,6 +172,7 @@
     ["concept:dtc-faults", "core:obd/dtc", "relates"],
     ["concept:dtc-faults", "core:obd/readiness", "relates"],
     ["concept:dtc-faults", "feature:fault-codes", "relates"],
+    ["concept:dtc-faults", "doc:features/fault-codes", "relates"],
     ["concept:dtc-faults", "doc:obd2-reference", "relates"],
 
     ["concept:vin-identify", "core:obd/vin", "relates"],
@@ -161,6 +185,7 @@
     ["concept:live-data-charts", "feature:live-data", "relates"],
     ["concept:live-data-charts", "feature:live-charts", "relates"],
     ["concept:live-data-charts", "doc:features/live-data", "relates"],
+    ["concept:live-data-charts", "doc:features/live-charts", "relates"],
 
     ["concept:threshold-alerts", "core:analysis/alerts", "relates"],
     ["concept:threshold-alerts", "feature:alerts", "relates"],
@@ -236,7 +261,29 @@
     ["concept:app-settings", "feature:settings", "relates"],
     ["concept:app-settings", "store:settingsStore", "relates"],
     ["concept:app-settings", "doc:features/settings", "relates"],
-    ["concept:app-settings", "concept:state-architecture", "relates"]
+    ["concept:app-settings", "concept:state-architecture", "relates"],
+
+    ["concept:app-shell", "screen:_layout", "relates"],
+    ["concept:app-shell", "screen:more", "relates"],
+    ["concept:app-shell", "feature:more", "relates"],
+    ["concept:app-shell", "concept:diagnostic-history", "relates"],
+
+    ["concept:shared-ui-kit", "ui:Screen", "relates"],
+    ["concept:shared-ui-kit", "ui:Gauge", "relates"],
+    ["concept:shared-ui-kit", "ui:ValueCard", "relates"],
+    ["concept:shared-ui-kit", "ui:StatusBadge", "relates"],
+    ["concept:shared-ui-kit", "ui:AppLogo", "relates"],
+    ["concept:shared-ui-kit", "concept:live-data-charts", "relates"],
+    ["concept:shared-ui-kit", "concept:connection-lifecycle", "relates"],
+
+    ["concept:mobile-build-adapter", "doc:phase2-mobile-app", "relates"],
+    ["concept:mobile-build-adapter", "doc:adapter-vgate-icar-pro", "relates"],
+    ["concept:mobile-build-adapter", "concept:connection-lifecycle", "relates"],
+
+    ["concept:documentation-driven", "doc:PLAN", "relates"],
+    ["concept:documentation-driven", "doc:implementation-log", "relates"],
+    ["concept:documentation-driven", "doc:README", "relates"],
+    ["concept:documentation-driven", "doc:architecture", "relates"]
   ],
   "summaries": {}
 }

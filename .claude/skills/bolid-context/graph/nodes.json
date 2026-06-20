@@ -30,6 +30,25 @@
     ],
     "type": "concept"
   },
+  "concept:app-shell": {
+    "path": null,
+    "summary": "Expo-router app shell: the root _layout (navigation/tabs) and the More tab \u2014 a hub listing secondary screens (history, maintenance, settings, etc.).",
+    "tokens": [
+      "app",
+      "drawer",
+      "home",
+      "layout",
+      "menu",
+      "more",
+      "nav",
+      "navigation",
+      "router",
+      "routing",
+      "shell",
+      "tab"
+    ],
+    "type": "concept"
+  },
   "concept:battery-charging": {
     "path": null,
     "summary": "12V battery and charging-system health from system voltage: resting voltage -> state of charge, the cranking dip on start, alternator voltage running\u2026",
@@ -72,6 +91,24 @@
       "persistent",
       "record",
       "retention"
+    ],
+    "type": "concept"
+  },
+  "concept:documentation-driven": {
+    "path": null,
+    "summary": "Documentation-driven workflow: docs/ is the source of truth. PLAN is the approved plan, implementation-log tracks progress, architecture.md is the ma\u2026",
+    "tokens": [
+      "architecture",
+      "docs",
+      "documentation",
+      "driven",
+      "implementation",
+      "log",
+      "plan",
+      "process",
+      "readme",
+      "sourceoftruth",
+      "spec"
     ],
     "type": "concept"
   },
@@ -123,7 +160,7 @@
   },
   "concept:error-resilience": {
     "path": null,
-    "summary": "Resilience pattern: recoverable failures are captured via logError into errorLogStore (surfaced in the Error Log screen) rather than crashing the ses\u2026",
+    "summary": "Resilience pattern: recoverable failures are captured via logError into errorLogStore (the single logging zone, shown in the Error Log screen) rather\u2026",
     "tokens": [
       "error",
       "failure",
@@ -183,6 +220,25 @@
       "oil",
       "reminder",
       "service"
+    ],
+    "type": "concept"
+  },
+  "concept:mobile-build-adapter": {
+    "path": null,
+    "summary": "Building/running the app: Expo dev-client + local Gradle APK (see the android-apk skill), and the reference BLE adapter (Vgate iCar Pro) used for bri\u2026",
+    "tokens": [
+      "adapter",
+      "android",
+      "apk",
+      "build",
+      "devclient",
+      "expo",
+      "gradle",
+      "icar",
+      "install",
+      "mobile",
+      "run",
+      "vgate"
     ],
     "type": "concept"
   },
@@ -277,6 +333,26 @@
       "service",
       "sri",
       "write"
+    ],
+    "type": "concept"
+  },
+  "concept:shared-ui-kit": {
+    "path": null,
+    "summary": "Shared Tamagui UI components reused across screens: Screen (scroll + pull-to-refresh frame), Gauge and ValueCard (live readouts), StatusBadge (connec\u2026",
+    "tokens": [
+      "badge",
+      "card",
+      "component",
+      "components",
+      "gauge",
+      "kit",
+      "reusable",
+      "statusbadge",
+      "svg",
+      "tamagui",
+      "ui",
+      "valuecard",
+      "widget"
     ],
     "type": "concept"
   },
