@@ -1,12 +1,17 @@
 import React from 'react';
 import { Alert } from 'react-native';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner } from 'tamagui';
+import { Share2 } from 'lucide-react-native';
 import { Screen, ValueCard } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { getVehicleProfile, vehicleLabel } from '@/shared/vehicles';
+import { formatDtcReport, type DtcCheckReport } from '@/shared/lib/dtcReport';
 import type { Dtc } from '@/shared/obd-core/obd/dtc';
 import type { MonitorStatus } from '@/shared/obd-core/obd/readiness';
 import type { FreezeFrame } from '@/shared/obd-core/session/DiagnosticSession';
 import { useDtcs } from '../hooks/useDtcs';
+import { useDtcExport } from '../hooks/useDtcExport';
 
 function Section({ title, codes }: { title: string; codes: Dtc[] }) {
   return (
@@ -77,8 +82,37 @@ function FreezeFrameView({ ff }: { ff: FreezeFrame }) {
 
 export function FaultCodesScreen() {
   const status = useSessionStore((s) => s.status);
+  const info = useSessionStore((s) => s.info);
+  const selectedProfileId = useVehicleStore((s) => s.selectedProfileId);
   const { stored, pending, permanent, readiness, freezeFrame, loading, error, refresh, clear } =
     useDtcs();
+  const { exportReport, busy: exporting } = useDtcExport();
+
+  const onExport = async () => {
+    const profile = getVehicleProfile(selectedProfileId);
+    const supported = readiness ? readiness.monitors.filter((m) => m.supported) : [];
+    const check: DtcCheckReport = {
+      ts: Date.now(),
+      vehicleLabel: vehicleLabel(profile),
+      vin: info?.vin ?? null,
+      milOn: readiness ? readiness.milOn : null,
+      stored,
+      pending,
+      permanent,
+      monitorsComplete: readiness ? supported.filter((m) => m.complete).length : null,
+      monitorsTotal: readiness ? supported.length : null,
+      notReady: readiness ? supported.filter((m) => !m.complete).map((m) => m.name) : [],
+      freezeFrame: freezeFrame
+        ? {
+            triggerDtc: freezeFrame.triggerDtc,
+            values: freezeFrame.values.map((v) => ({ name: v.name, value: v.value, unit: v.unit })),
+          }
+        : null,
+    };
+    const body = formatDtcReport([check], { title: 'Bolid Tester — fault codes' });
+    const uri = await exportReport('bolid-fault-codes', body);
+    if (!uri) Alert.alert('Export unavailable', 'Sharing is not available on this device.');
+  };
 
   const confirmClear = () =>
     Alert.alert(
@@ -115,6 +149,14 @@ export function FaultCodesScreen() {
           Clear codes
         </Button>
       </XStack>
+      <Button
+        marginTop="$2"
+        onPress={onExport}
+        disabled={exporting}
+        icon={exporting ? () => <Spinner /> : () => <Share2 size={18} color="#2bb673" />}
+      >
+        Export report
+      </Button>
     </Screen>
   );
 }

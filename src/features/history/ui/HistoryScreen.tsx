@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { YStack, XStack, Card, Text, Paragraph, Button } from 'tamagui';
-import { Sparkles, Shield, TriangleAlert, Trash2, Car } from 'lucide-react-native';
+import { Sparkles, Shield, TriangleAlert, Trash2, Car, Share2 } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
 import { useHistoryStore, historyVehicleKey, historyVehicleChipLabel } from '@/shared/state/historyStore';
 import type { AiHistoryEntry, DtcHistoryEntry } from '@/shared/state/historyStore';
 import type { OverallHealth } from '@/shared/obd-core';
+import { useDtcExport } from '@/features/fault-codes';
+import { formatDtcReport, type DtcCheckReport } from '@/shared/lib/dtcReport';
 
 const OVERALL_COLOR: Record<OverallHealth, string> = {
   ok: '#2bb673',
@@ -101,6 +103,7 @@ export function HistoryScreen() {
   const clear = useHistoryStore((s) => s.clear);
   const [carKey, setCarKey] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const { exportReport, busy: exporting } = useDtcExport();
 
   // Distinct cars, most-recent first (entries are already newest-first).
   const cars = useMemo(() => {
@@ -124,6 +127,28 @@ export function HistoryScreen() {
       }),
     [entries, carKey, typeFilter],
   );
+
+  const dtcShown = useMemo(
+    () => shown.filter((e): e is DtcHistoryEntry => e.kind === 'dtc'),
+    [shown],
+  );
+
+  const onExport = async () => {
+    const checks: DtcCheckReport[] = dtcShown.map((e) => ({
+      ts: e.ts,
+      vehicleLabel: e.vehicle.label,
+      vin: e.vehicle.vin,
+      milOn: e.milOn,
+      stored: e.stored,
+      pending: e.pending,
+      permanent: e.permanent,
+      monitorsComplete: e.monitorsComplete,
+      monitorsTotal: e.monitorsTotal,
+    }));
+    const body = formatDtcReport(checks, { title: 'Bolid Tester — fault-code history' });
+    const uri = await exportReport('bolid-fault-history', body);
+    if (!uri) Alert.alert('Export unavailable', 'Sharing is not available on this device.');
+  };
 
   const confirmClear = () =>
     Alert.alert(
@@ -159,6 +184,16 @@ export function HistoryScreen() {
         <Chip active={typeFilter === 'ai'} label="AI" onPress={() => setTypeFilter('ai')} />
         <Chip active={typeFilter === 'dtc'} label="Faults" onPress={() => setTypeFilter('dtc')} />
         <XStack flex={1} />
+        {dtcShown.length > 0 ? (
+          <Button
+            size="$2"
+            onPress={onExport}
+            disabled={exporting}
+            icon={() => <Share2 size={15} color="#2bb673" />}
+          >
+            Export
+          </Button>
+        ) : null}
         {entries.length > 0 ? (
           <Button size="$2" theme="red" onPress={confirmClear} icon={() => <Trash2 size={15} color="#fff" />}>
             Clear

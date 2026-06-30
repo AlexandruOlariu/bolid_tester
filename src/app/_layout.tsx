@@ -1,5 +1,5 @@
 import React from 'react';
-import { useColorScheme } from 'react-native';
+import { useColorScheme, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { TamaguiProvider, Theme, XStack, Text } from 'tamagui';
 import {
@@ -16,6 +16,7 @@ import config from '../../tamagui.config';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { installGlobalErrorHandlers } from '@/shared/state/errorLogStore';
 import { AppLogo } from '@/shared/ui';
+import { AppSplash } from '@/shared/ui/AppSplash';
 
 // Capture uncaught errors & unhandled rejections into the in-app error log, once, at app start.
 installGlobalErrorHandlers();
@@ -37,6 +38,7 @@ export default function RootLayout() {
   return (
     <TamaguiProvider config={config} defaultTheme={scheme}>
       <Theme name={scheme}>
+        <View style={{ flex: 1 }}>
         <Tabs
           screenOptions={{
             headerShown: true,
@@ -135,6 +137,8 @@ export default function RootLayout() {
           <Tabs.Screen name="maintenance" options={{ href: null, title: 'Maintenance log' }} />
           <Tabs.Screen name="error-log" options={{ href: null, title: 'Error log' }} />
         </Tabs>
+        <AppSplash />
+        </View>
       </Theme>
     </TamaguiProvider>
   );
