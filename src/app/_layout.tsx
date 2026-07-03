@@ -136,6 +136,10 @@ export default function RootLayout() {
           <Tabs.Screen name="vin-decode" options={{ href: null, title: 'VIN decoder' }} />
           <Tabs.Screen name="maintenance" options={{ href: null, title: 'Maintenance log' }} />
           <Tabs.Screen name="error-log" options={{ href: null, title: 'Error log' }} />
+          <Tabs.Screen name="module-scan" options={{ href: null, title: 'Module scan' }} />
+          <Tabs.Screen name="adaptations" options={{ href: null, title: 'Adaptations' }} />
+          <Tabs.Screen name="routines" options={{ href: null, title: 'Routines & output tests' }} />
+          <Tabs.Screen name="sniffer" options={{ href: null, title: 'Bus sniffer' }} />
         </Tabs>
         <AppSplash />
         </View>
