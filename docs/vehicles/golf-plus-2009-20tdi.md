@@ -110,3 +110,20 @@ See [`../features/extended-pids.md`](../features/extended-pids.md) and the `exte
 ## Notes
 
 CAN makes this the reference "happy path". If the generic flow works anywhere, it works here.
+
+## VCDS-parity features on this profile (all experimental / illustrative)
+
+This car is the reference target for the VCDS-parity work (see
+[`../vcds-parity-roadmap.md`](../vcds-parity-roadmap.md)). Its profile now seeds:
+
+- **Module scan** ([`../features/module-scan.md`](../features/module-scan.md)) — engine (UDS, real
+  `7E0/7E8`), ABS and cluster (UDS, illustrative addresses), and the gateway as a TP2.0 module.
+- **TP2.0** ([`../features/tp20.md`](../features/tp20.md)) — a gateway installation list plus
+  cluster/comfort/gateway pre-UDS modules, so the full-car scan runs in the simulator.
+- **Adaptations** ([`../features/adaptations.md`](../features/adaptations.md)) — idle-speed offset
+  and EGR base-duty channels (bounded, with a label pack).
+- **Guided routines** ([`../features/routines.md`](../features/routines.md)) — stationary DPF
+  regeneration, intake-flap adaptation, and an EGR output test (with live interlocks).
+
+All addresses/DIDs/routine ids except the standard OBD engine pair are **illustrative** and must be
+confirmed on the real car before the values or writes are trusted.

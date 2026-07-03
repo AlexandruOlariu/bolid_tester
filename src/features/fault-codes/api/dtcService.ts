@@ -9,7 +9,7 @@ const EMPTY: DtcResult = {
   pending: [],
   permanent: [],
   readiness: null,
-  freezeFrame: null,
+  freezeFrames: [],
 };
 
 export async function readAll(): Promise<DtcResult> {
@@ -21,8 +21,8 @@ export async function readAll(): Promise<DtcResult> {
   const pending = modes.includes('07') ? await session.readDtcs('07') : [];
   const permanent = modes.includes('0A') ? await session.readDtcs('0A') : [];
   const readiness = await session.readReadiness();
-  const freezeFrame = stored.length > 0 ? await session.readFreezeFrame() : null;
-  const result: DtcResult = { stored, pending, permanent, readiness, freezeFrame };
+  const freezeFrames = stored.length > 0 ? await session.readFreezeFrames() : [];
+  const result: DtcResult = { stored, pending, permanent, readiness, freezeFrames };
 
   // Record this fault-code check in the persistent, per-car history.
   const supported = readiness ? readiness.monitors.filter((m) => m.supported) : [];

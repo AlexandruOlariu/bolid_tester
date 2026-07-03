@@ -8,6 +8,7 @@ export const golfPlus2009: VehicleProfile = {
   engine: '2.0 TDI CBD, 81 kW / 109 cp (ECU 03L 906 022 LM)',
   fuel: 'diesel',
   expectedProtocol: 'ISO_15765_4_CAN_11_500',
+  vinPatterns: ['WVWZZZ1K'],
   supportedPids: [
     '0104', '0105', '010B', '010C', '010D', '010F', '0110', '0111',
     '011F', '0121', '0131', '0133', '0142', '0146', '015C', '015E',
@@ -143,6 +144,107 @@ export const golfPlus2009: VehicleProfile = {
     routineId: '0203',
     experimental: true,
   },
+  routines: [
+    // EXPERIMENTAL / illustrative guided routines (engine EDC17). IDs must be confirmed on the
+    // real car; the simulator answers positively so the whole flow is testable risk-free.
+    {
+      module: 'Engine (EDC17)', reqHeader: '7E0', rxFilter: '7E8',
+      kind: 'basicSetting', service: '31', id: '0201',
+      name: 'DPF service regeneration (stationary)',
+      description:
+        'Starts a stationary forced DPF regeneration. Engine idling, vehicle stationary, OUTDOORS ' +
+        '— the exhaust becomes extremely hot. Takes 20–40 min; do not switch off mid-regen.',
+      liveDids: ['1702', '1706'],
+      interlocks: { requireIdle: true, maxSpeedKmh: 0 },
+      experimental: true,
+    },
+    {
+      module: 'Engine (EDC17)', reqHeader: '7E0', rxFilter: '7E8',
+      kind: 'basicSetting', service: '31', id: '0301',
+      name: 'Intake flap adaptation',
+      description:
+        'Re-learns the intake manifold flap end stops (the P2015 fix check). Engine idling, ' +
+        'vehicle stationary.',
+      liveDids: ['1708'],
+      interlocks: { requireIdle: true, maxSpeedKmh: 0 },
+      experimental: true,
+    },
+    {
+      module: 'Engine (EDC17)', reqHeader: '7E0', rxFilter: '7E8',
+      kind: 'outputTest', service: '2F', id: '0130',
+      name: 'EGR valve output test',
+      description:
+        'Drives the EGR valve to 50% duty and holds it until stopped. Ignition on, ENGINE OFF.',
+      controlData: [0x40],
+      liveDids: ['1708'],
+      interlocks: { requireEngineOff: true },
+      experimental: true,
+    },
+  ],
+  adaptations: [
+    // EXPERIMENTAL / illustrative adaptation channels (engine EDC17). Bounds are deliberately
+    // tight; the label pack vag-edc17-03L906022 carries the descriptions. Confirm on the real car.
+    {
+      module: 'Engine (EDC17)', reqHeader: '7E0', rxFilter: '7E8',
+      did: '3001', name: 'Idle speed offset', unit: 'rpm',
+      byteCount: 2, min: 750, max: 950, defaultRaw: [0x03, 0x52],
+      experimental: true, sampleValue: [0x03, 0x52], // 850 rpm
+    },
+    {
+      module: 'Engine (EDC17)', reqHeader: '7E0', rxFilter: '7E8',
+      did: '3002', name: 'EGR base duty', unit: '%',
+      byteCount: 1, scale: 0.5, min: 0, max: 100, defaultRaw: [0x64],
+      experimental: true, sampleValue: [0x64], // 50 %
+    },
+  ],
+  modules: [
+    // Per-module scan ("auto-scan") registry. UDS addressing below is ILLUSTRATIVE (except the
+    // standard OBD engine pair 7E0/7E8) and must be confirmed on the real car. TP2.0 modules are
+    // listed but skipped until the TP2.0 transport lands. Sample data feeds the simulator.
+    {
+      address: '01', name: 'Engine (EDC17)', transport: 'uds',
+      reqHeader: '7E0', rxFilter: '7E8', experimental: false,
+      sampleIdent: { F187: '03L906022LM', F189: '4023', F197: 'R4 2,0L EDC G000AG' },
+      sampleDtcs: [
+        { bytes: [0x21, 0x83, 0x00], status: 0x09 }, // P2183 coolant sensor 2 — confirmed
+        { bytes: [0x20, 0x15, 0x00], status: 0x0c }, // P2015 manifold flap — confirmed+pending
+        { bytes: [0x01, 0x21, 0x00], status: 0x04 }, // P0121 throttle pos — pending
+      ],
+    },
+    {
+      address: '03', name: 'ABS/ESP (MK60)', transport: 'uds',
+      reqHeader: '760', rxFilter: '768', experimental: true,
+      sampleIdent: { F187: '1K0907379AC', F197: 'ESP FRONT MK60' },
+      sampleDtcs: [{ bytes: [0x41, 0x30, 0x00], status: 0x88 }], // C0130 — confirmed, MIL/warning
+    },
+    {
+      address: '17', name: 'Instrument cluster', transport: 'uds',
+      reqHeader: '714', rxFilter: '77E', experimental: true,
+      sampleIdent: { F187: '5M0920861B', F197: 'KOMBIINSTRUMENT' },
+      sampleDtcs: [],
+    },
+    {
+      address: '19', name: 'CAN gateway (J533)', transport: 'tp20', experimental: true,
+      // Pre-UDS PQ35 module: reachable only via VW TP2.0. The gateway install list (below) is what
+      // the TP2.0 scan reads to enumerate the rest of the car. See docs/features/tp20.md.
+      tp20Address: 0x19, tp20SampleIdent: '7N0909901 Gateway',
+    },
+    {
+      address: '17', name: 'Instrument cluster (TP2.0)', transport: 'tp20', experimental: true,
+      tp20Address: 0x17, tp20SampleIdent: '5M0920861B KOMBIINSTRUMENT',
+    },
+    {
+      address: '46', name: 'Central conv. / comfort', transport: 'tp20', experimental: true,
+      tp20Address: 0x46, tp20SampleIdent: '1K0959433 Komfortgeraet',
+      // Illustrative comfort-system faults for the simulator (VCDS-style 5-digit VAG codes).
+      tp20SampleDtcs: [
+        { code: 928, status: 0x22 }, // 00928 locking module, driver door
+        { code: 1330, status: 0x08 }, // 01330 central control module for comfort system
+      ],
+    },
+  ],
+  // Modules the simulated PQ35 gateway reports as installed (addresses), for the TP2.0 scan.
+  gatewayInstallList: [0x01, 0x03, 0x08, 0x09, 0x15, 0x17, 0x19, 0x25, 0x46],
   notes:
     'Reference happy-path car: conventional diesel Golf Plus, CAN, fast, full generic data. VCDS reports engine code CBD and ECU 03L 906 022 LM. Not an e-Golf.',
   testChecklist: [

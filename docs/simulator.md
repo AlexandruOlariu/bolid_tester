@@ -12,7 +12,15 @@ from a vehicle profile.
 
 ## What it models
 - **AT commands:** `ATZ` (version banner), `ATE0/L0/S0/H1`, `ATSP0`, `ATDPN` (returns the scenario's
-  protocol number), `ATRV` (voltage), `ATI` (version), `ATCRA` (accepted). Unknown → `?`.
+  protocol number), `ATRV` (voltage), `ATI` (version). Unknown → `?`.
+- **Addressing, realistically:** bare `ATSH` is rejected with `?` (like real firmware — restoring
+  default addressing requires the protocol's functional header, e.g. `ATSH7DF`); `ATCRA` is
+  **tracked**, bare `ATCRA` clears it, and a stale specific filter blocks default-address replies
+  with `NO DATA` — the regression guard for `DiagnosticSession.resetAddressing()`.
+- **Multi-frame printout, realistically:** CAN responses longer than 7 bytes are printed the way a
+  real ELM327 prints reassembled ISO-TP messages — a hex length line, then `N:`-prefixed segment
+  lines — so the app's de-framing (`responseParser.reassembleIsoTp`) is exercised by every
+  integration test (module idents, `19 02` DTC lists, VIN, multi-PID batches).
 - **Protocol negotiation:** first OBD request may emit `SEARCHING...` then data; K-line scenarios add
   latency and may emit a `BUS INIT` notice.
 - **Supported-PID bitmaps:** `0100/0120/0140/0160` computed from the scenario's PID set.

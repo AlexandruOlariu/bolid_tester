@@ -29,6 +29,8 @@ export interface DtcCheckReport {
   notReady?: string[];
   /** Freeze-frame snapshot captured when a code set (live read only). */
   freezeFrame?: { triggerDtc: string | null; values: DtcFreezeValue[] } | null;
+  /** All captured frames (one per stored code) — preferred over `freezeFrame` when present. */
+  freezeFrames?: { triggerDtc: string | null; values: DtcFreezeValue[] }[];
 }
 
 export interface DtcReportOptions {
@@ -83,10 +85,16 @@ export function formatDtcCheck(check: DtcCheckReport): string {
   lines.push(...codeLines('Pending', check.pending));
   lines.push(...codeLines('Permanent', check.permanent));
 
-  if (check.freezeFrame && check.freezeFrame.values.length > 0) {
+  const frames = check.freezeFrames?.length
+    ? check.freezeFrames
+    : check.freezeFrame
+      ? [check.freezeFrame]
+      : [];
+  for (const [i, frame] of frames.entries()) {
+    if (!frame.values.length) continue;
     lines.push('');
-    lines.push(`- Freeze frame (captured when ${check.freezeFrame.triggerDtc ?? 'a code'} set):`);
-    for (const v of check.freezeFrame.values) {
+    lines.push(`- Freeze frame ${frames.length > 1 ? `${i + 1}/${frames.length} ` : ''}(captured when ${frame.triggerDtc ?? 'a code'} set):`);
+    for (const v of frame.values) {
       lines.push(`  - ${v.name}: ${v.value} ${v.unit}`.trimEnd());
     }
   }

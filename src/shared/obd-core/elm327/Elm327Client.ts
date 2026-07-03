@@ -23,6 +23,9 @@ export class Elm327Client {
   } | null = null;
   private unsub: (() => void) | null = null;
   private firstObd = true;
+  /** Monitor mode (ATMA): lines stream to this listener, bypassing the command queue. */
+  private monitorListener: ((line: string) => void) | null = null;
+  private monitorRelease: (() => void) | null = null;
   /** Raised default per-command timeout for slow links (K-line). Overrides options.commandTimeoutMs. */
   private slowTimeoutMs: number | null = null;
 
@@ -49,6 +52,15 @@ export class Elm327Client {
 
   private onData = (bytes: Uint8Array): void => {
     this.buffer += bytesToString(bytes);
+    if (this.monitorListener) {
+      let nl: number;
+      while ((nl = this.buffer.search(/[\r\n]/)) >= 0) {
+        const line = this.buffer.slice(0, nl).trim();
+        this.buffer = this.buffer.slice(nl + 1);
+        if (line && line !== PROMPT) this.monitorListener(line);
+      }
+      return;
+    }
     const idx = this.buffer.indexOf(PROMPT);
     if (idx >= 0 && this.pending) {
       const chunk = this.buffer.slice(0, idx);
@@ -96,6 +108,34 @@ export class Elm327Client {
     const raw = await this.raw(cmd, timeout);
     if (isObd) this.firstObd = false;
     return parseElmResponse(raw);
+  }
+
+  /** Start ELM327 monitor mode (default `ATMA`): frames stream to `listener` until
+   *  stopMonitor(). The command queue is held meanwhile — monitor mode owns the channel. */
+  async startMonitor(listener: (line: string) => void, cmd = 'ATMA'): Promise<void> {
+    if (this.monitorListener) return;
+    this.attach();
+    const hold = new Promise<void>((res) => (this.monitorRelease = res));
+    this.queue = this.queue.then(() => hold);
+    this.monitorListener = listener;
+    this.buffer = '';
+    await this.transport.write(stringToBytes(cmd + '\r'));
+  }
+
+  /** Stop monitor mode: any character interrupts ATMA; wait briefly for the prompt, then release
+   *  the command queue. Safe to call when not monitoring. */
+  async stopMonitor(): Promise<void> {
+    if (!this.monitorListener) return;
+    await this.transport.write(stringToBytes('\r'));
+    await new Promise((r) => setTimeout(r, 120));
+    this.monitorListener = null;
+    this.buffer = '';
+    this.monitorRelease?.();
+    this.monitorRelease = null;
+  }
+
+  get monitoring(): boolean {
+    return this.monitorListener !== null;
   }
 
   /** Run the standard initialization sequence. */

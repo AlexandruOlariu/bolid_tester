@@ -5,6 +5,46 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Real-adapter hardening pass (2026-07-03)
+
+**Status:** ✅ complete — full suite **272 tests** green (16 new), `eslint` 0, core + full-app
+`tsc` 0. A code review of the VCDS-parity expansion found four real-hardware gaps the simulator
+could not catch; all fixed simulator-first, with the simulator upgraded to REPRODUCE the real
+adapter behaviors so the whole test suite now exercises them.
+
+- **ISO-TP multi-frame de-framing** (was P0) — real ELM327s print >7-byte CAN responses as a hex
+  length line + `N:`-prefixed segment lines; `parseElmResponse` treated those prefix digits as
+  payload hex, garbling module idents, `19 02` DTC lists, `19 04` snapshots and long DIDs on real
+  hardware (VIN survived only via its `49 02` marker resync). New
+  `responseParser.reassembleIsoTp` strips the prefixes and uses the length line to truncate clone
+  padding; `MockTransport.shapeResponse` now prints the real multi-line format on CAN, so every
+  integration test exercises the de-framing (datasheet VIN example pinned in unit tests).
+- **Addressing restore** (was P0) — `setHeader(null)` used to send bare `ATSH` (invalid on real
+  firmware: `?`, old header kept) and `ATCRA` was never cleared, leaving the adapter deaf to
+  standard replies after ANY module-scoped work. New `DiagnosticSession.resetAddressing()` —
+  protocol-aware functional header (`7DF` 11-bit CAN / `686AF1` ISO 9141 / `C233F1` KWP) + bare
+  `ATCRA` — is called in the `finally` of every module path: module-scan, adaptations, routines,
+  coding, sensor-tests, service-reset. The simulator now rejects bare `ATSH` and models a stale
+  receive filter blocking replies; regression tests pin both directions.
+- **NRC 0x78 responsePending** (was P1) — `checkNegative` (deduplicated into `udsCoding`, shared
+  by `udsModule`/`guidedRoutine` — was 3 copies) strips repeated `7F <svc> 78` echoes before
+  judging a response, so slow operations (forced DPF regen start, security access, clears) no
+  longer fail spuriously; pending-only responses throw a distinct 0x78-tagged `UdsError`.
+  `securityAccess` retries once after NRC 0x37 (boot lockout) and never retries 0x36.
+- **Interlocks fail closed + run continuously** (was P1) — an unreadable RPM/speed now BLOCKS a
+  routine instead of silently passing (`requireEngineOff`/`maxSpeedKmh` were fail-open), and
+  `useRoutines` re-checks interlocks during the run on the same periodic tick as the keep-alive
+  (single interval → deterministic ordering; `checkInterlocksDuringRun` switches to the functional
+  address and back), auto-stopping on violation. Spec: [`features/routines.md`](./features/routines.md).
+
+Smaller, from the same review: `Tp20Channel` serializes requests + keep-alive channel tests
+through an op queue (the `busy` flag was check-then-act racy — a keep-alive could inject `0xA3`
+mid-packet); adaptation values support **signed** (two's-complement) channels; `writeChannel`
+enforces min/max bounds at the service layer (was UI-only); the module-scan "skipped" copy now
+points at the shipped TP2.0 gateway scan instead of calling it future work.
+
+---
+
 ## Phase 5 — Diesel, ownership & screening (5 features)
 
 **Status:** ✅ core + UI built, verified here (full suite **141 tests** green, `eslint` clean, full-app
@@ -196,3 +236,37 @@ share sheet) to fix later.
   clear, export) + `useErrorLogExport` (dependency-tolerant expo-file-system/expo-sharing). Wired
   into the `connection`, `fault-codes` and `ai-diagnose` catch blocks and reachable from **More**
   (`/error-log`). Partly addresses the earlier "log export/share" remaining item.
+
+## VCDS-parity expansion (2026-07)
+
+A large parity pass toward "do what VCDS does on the VW cars", plus OBD2 gap-fillers. All
+simulator-first and unit-tested; app compiles (`typecheck`, `typecheck:app`, `lint` green; full
+`npm test` green). New docs under `docs/features/` and a roadmap at
+[`vcds-parity-roadmap.md`](./vcds-parity-roadmap.md).
+
+**Passat service reset** — root-caused: the B5.5 instrument cluster speaks **KWP1281**, which a
+generic ELM327 cannot address, so the OBD reset returns "No response" ("Failed: No response" on the
+car). The profile now carries an honest `obdUnreachable` reason; the screen **leads with the
+dash-stalk manual procedure** and demotes the OBD attempt to an explicit "try anyway".
+`isModuleUnreachableError` widens error matching (No response / NO DATA / timeout / UNABLE TO
+CONNECT / BUS INIT).
+
+**New obd-core modules** (all pure, unit-tested): `uds/udsModule` (0x19 read / 0x14 clear / 0x19 04
+snapshot / ident DIDs + status decode), `uds/vagDtcs` (VAG 5-digit dictionary), `uds/guidedRoutine`
+(2F/31), `coding/adaptationValue`, `obd/multiPid`, `obd/iupr`, `obd/mode05`, `obd/canMonitor`,
+`transport/logReplay`, and the **`tp20/`** stack (framing, `Tp20Channel`, `scanTp20`, an in-memory
+`FakeTp20Bus`, `Elm327RawCanLink`, VAG address names).
+
+**New features** (feature-sliced + routes + More entries + docs): `module-scan` (VCDS-style
+auto-scan incl. TP2.0 gateway list), `adaptations` (channel browser with label packs), `routines`
+(output tests / basic settings with live interlocks), `can-sniffer` (ATMA monitor). Plus:
+multi-PID batching in `pollOnce` (CAN), a freeze frame per stored DTC, IUPR in `used-car-inspection`,
+Mode 05 in `sensor-tests`, VIN→profile suggestion in `vehicle-select`, and adapter-log→replay-fixture
+export in Settings.
+
+**Label packs** (`src/shared/labels/`) — the open equivalent of VCDS label files, keyed by module
+part-number prefix.
+
+**Honest limits kept explicit:** the Passat (KWP1281) stays out of module scan / adaptations /
+routines; every non-standard address/DID/routine id is badged illustrative; TP2.0 over a generic
+ELM327 is documented as timing-sensitive and adapter-dependent.

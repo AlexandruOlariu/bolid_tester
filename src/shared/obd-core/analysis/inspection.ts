@@ -9,6 +9,7 @@
 
 import type { MonitorStatus } from '../obd/readiness';
 import type { Dtc } from '../obd/dtc';
+import { IuprReport } from '../obd/iupr';
 
 export interface InspectionInput {
   vinValid: boolean | null;
@@ -19,6 +20,8 @@ export interface InspectionInput {
   freezeFramePresent?: boolean | null;
   /** Mode 01 PID 31 — distance travelled since DTCs were cleared (km), if available. */
   distanceSinceClearKm?: number | null;
+  /** In-use performance ratios (Mode 09 08/0B), if the ECU answers. */
+  iupr?: IuprReport | null;
 }
 
 export type CheckStatus = 'pass' | 'warn' | 'fail' | 'info';
@@ -109,6 +112,35 @@ export function assessInspection(i: InspectionInput): InspectionReport {
   // Freeze frame indicates a fault was captured at some point.
   if (i.freezeFramePresent) {
     checks.push({ id: 'freeze', label: 'Freeze frame', status: 'info', detail: 'A freeze frame is present — a fault was recorded at some point.' });
+  }
+
+  // IUPR — in-use counters are hard to fake: near-zero general denominators on a used car mean
+  // the OBD memory was recently cleared, even when readiness has been driven back to complete.
+  if (i.iupr) {
+    const fitted = i.iupr.monitors.filter((m) => m.conditions > 0);
+    const lowRatios = fitted.filter((m) => m.ratio !== null && m.ratio < 0.1);
+    if (i.iupr.obdConditions < 50) {
+      checks.push({
+        id: 'iupr',
+        label: 'In-use counters (IUPR)',
+        status: 'warn',
+        detail: `Only ${i.iupr.obdConditions} OBD monitoring cycles counted (${i.iupr.ignitionCycles} ignition cycles) — the OBD memory looks recently cleared. On a genuinely driven car these counters are in the hundreds.`,
+      });
+    } else if (lowRatios.length) {
+      checks.push({
+        id: 'iupr',
+        label: 'In-use counters (IUPR)',
+        status: 'info',
+        detail: `${lowRatios.length} monitor(s) with low completion ratios (${lowRatios.map((m) => m.name).join(', ')}) — worth a longer test drive and re-check.`,
+      });
+    } else {
+      checks.push({
+        id: 'iupr',
+        label: 'In-use counters (IUPR)',
+        status: 'pass',
+        detail: `${i.iupr.obdConditions} monitoring cycles / ${i.iupr.ignitionCycles} ignition cycles — consistent with a driven car.`,
+      });
+    }
   }
 
   // VIN read.

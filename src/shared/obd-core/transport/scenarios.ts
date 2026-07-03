@@ -37,6 +37,26 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
         return acc;
       }, {})
     : undefined;
+  const adaptationSeeds = profile.adaptations?.length
+    ? profile.adaptations.reduce<Record<string, Record<string, number[]>>>((acc, a) => {
+        (acc[a.reqHeader] ??= {})[a.did] = a.sampleValue.slice();
+        return acc;
+      }, {})
+    : undefined;
+  const udsModules = (profile.modules ?? []).filter((m) => m.transport === 'uds' && m.reqHeader);
+  const moduleDtcs = udsModules.length
+    ? udsModules.reduce<NonNullable<SimScenario['moduleDtcs']>>((acc, m) => {
+        acc[m.reqHeader as string] = (m.sampleDtcs ?? []).map((d) => ({ bytes: [...d.bytes] as [number, number, number], status: d.status }));
+        return acc;
+      }, {})
+    : undefined;
+  const moduleIdent = udsModules.length
+    ? udsModules.reduce<NonNullable<SimScenario['moduleIdent']>>((acc, m) => {
+        if (m.sampleIdent) acc[m.reqHeader as string] = { ...m.sampleIdent };
+        return acc;
+      }, {})
+    : undefined;
+
   const coding = profile.codingModules?.length
     ? profile.codingModules.reduce<Record<string, Record<string, number[]>>>((acc, m) => {
         (acc[m.reqHeader] ??= {})[m.codingDid] = m.sampleCoding.slice();
@@ -49,6 +69,29 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
   const known = profile.knownFaults ?? [];
   const faultCodes = (kind: 'stored' | 'pending' | 'permanent') =>
     known.filter((f) => (f.kind ?? 'stored') === kind).map((f) => f.code);
+
+  // IUPR seeds (CAN cars): plausible driven-car counters; diesel -> 090B, petrol -> 0908.
+  const item = (n: number) => [Math.floor(n / 256), n % 256];
+  const iuprCompression = !kline && profile.fuel === 'diesel'
+    ? [0x10, ...item(1500), ...item(1800), ...item(300), ...item(400), ...item(250), ...item(400),
+       ...item(0), ...item(0), ...item(120), ...item(140), ...item(400), ...item(410),
+       ...item(390), ...item(400), ...item(380), ...item(400)]
+    : undefined;
+  const iuprSpark = !kline && profile.fuel !== 'diesel'
+    ? [0x10, ...item(900), ...item(1000), ...item(400), ...item(500), ...item(0), ...item(0),
+       ...item(420), ...item(500), ...item(0), ...item(0), ...item(380), ...item(500),
+       ...item(0), ...item(0), ...item(200), ...item(500)]
+    : undefined;
+
+  const monitorFrames = kline
+    ? ['48 6B 10 41 0C 0C D0 5A']
+    : [
+        '7E8 04 41 0C 0C D0',
+        '1A0 08 12 34 56 78 9A BC DE F0',
+        '2C3 04 00 11 22 33',
+        '7E8 03 41 0D 00',
+        '5D0 05 AA BB CC DD EE',
+      ];
 
   const base: SimScenario = {
     protocol,
@@ -63,9 +106,29 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
     extendedDids,
     mode06,
     moduleDids,
-    coding,
+    coding: mergeCoding(coding, adaptationSeeds),
+    moduleDtcs,
+    moduleIdent,
+    iuprSpark,
+    iuprCompression,
+    monitorFrames,
     latencyMs: kline ? 5 : 0,
     emitSearching: kline,
   };
   return { ...base, ...overrides };
+}
+
+function mergeCoding(
+  a?: Record<string, Record<string, number[]>>,
+  b?: Record<string, Record<string, number[]>>,
+): Record<string, Record<string, number[]>> | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  const out: Record<string, Record<string, number[]>> = {};
+  for (const src of [a, b]) {
+    for (const [header, dids] of Object.entries(src)) {
+      out[header] = { ...(out[header] ?? {}), ...dids };
+    }
+  }
+  return out;
 }

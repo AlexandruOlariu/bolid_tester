@@ -84,7 +84,7 @@ export function FaultCodesScreen() {
   const status = useSessionStore((s) => s.status);
   const info = useSessionStore((s) => s.info);
   const selectedProfileId = useVehicleStore((s) => s.selectedProfileId);
-  const { stored, pending, permanent, readiness, freezeFrame, loading, error, refresh, clear } =
+  const { stored, pending, permanent, readiness, freezeFrames, loading, error, refresh, clear } =
     useDtcs();
   const { exportReport, busy: exporting } = useDtcExport();
 
@@ -102,12 +102,16 @@ export function FaultCodesScreen() {
       monitorsComplete: readiness ? supported.filter((m) => m.complete).length : null,
       monitorsTotal: readiness ? supported.length : null,
       notReady: readiness ? supported.filter((m) => !m.complete).map((m) => m.name) : [],
-      freezeFrame: freezeFrame
+      freezeFrame: freezeFrames[0]
         ? {
-            triggerDtc: freezeFrame.triggerDtc,
-            values: freezeFrame.values.map((v) => ({ name: v.name, value: v.value, unit: v.unit })),
+            triggerDtc: freezeFrames[0].triggerDtc,
+            values: freezeFrames[0].values.map((v) => ({ name: v.name, value: v.value, unit: v.unit })),
           }
         : null,
+      freezeFrames: freezeFrames.map((ff) => ({
+        triggerDtc: ff.triggerDtc,
+        values: ff.values.map((v) => ({ name: v.name, value: v.value, unit: v.unit })),
+      })),
     };
     const body = formatDtcReport([check], { title: 'Bolid Tester — fault codes' });
     const uri = await exportReport('bolid-fault-codes', body);
@@ -139,7 +143,9 @@ export function FaultCodesScreen() {
       <Section title="Stored" codes={stored} />
       <Section title="Pending" codes={pending} />
       <Section title="Permanent" codes={permanent} />
-      {freezeFrame ? <FreezeFrameView ff={freezeFrame} /> : null}
+      {freezeFrames.map((ff) => (
+        <FreezeFrameView key={ff.frame ?? ff.triggerDtc ?? 0} ff={ff} />
+      ))}
 
       <XStack gap="$3" marginTop="$2">
         <Button flex={1} onPress={refresh} icon={loading ? () => <Spinner /> : undefined}>

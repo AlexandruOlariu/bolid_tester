@@ -67,3 +67,14 @@ export function isCan(id: ProtocolId): boolean {
 export function isKLine(id: ProtocolId): boolean {
   return id === 'ISO_9141_2' || id.startsWith('ISO_14230');
 }
+
+/** The default *functional* request header for a protocol — what `ATSH` must be set back to
+ *  after module-scoped work (bare `ATSH` is not a valid ELM327 command). 11-bit CAN: 0x7DF.
+ *  ISO 9141-2: 68 6A F1. KWP2000: C2 33 F1. Null = unknown/29-bit (no safe generic restore;
+ *  29-bit would need ATSH DB33F1 + ATCP 18, and no 29-bit profile exists yet). */
+export function functionalHeader(id: ProtocolId): string | null {
+  if (id === 'ISO_15765_4_CAN_11_500' || id === 'ISO_15765_4_CAN_11_250') return '7DF';
+  if (id === 'ISO_9141_2') return '686AF1';
+  if (id.startsWith('ISO_14230')) return 'C233F1';
+  return null;
+}

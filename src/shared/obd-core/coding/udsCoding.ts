@@ -16,17 +16,44 @@ export class UdsError extends Error {
   }
 }
 
-function hex(bytes: number[]): string {
+/** Format bytes as a compact hex string (shared by the UDS/KWP helpers). */
+export function hexBytes(bytes: number[]): string {
   return bytes.map((b) => (b & 0xff).toString(16).padStart(2, '0')).join('');
 }
 
-function checkNegative(req: number, res: number[] | null): number[] {
+const hex = hexBytes;
+
+/** NRC 0x78 requestCorrectlyReceived-ResponsePending. Slow operations (routine starts — DPF regen
+ *  in particular — security access, DTC clears) answer `7F <svc> 78` one or more times before the
+ *  final response; each repeat also keeps the ELM327's receive window open, so the real answer
+ *  usually lands in the SAME response, after the echoes. Strip every leading echo. */
+export function stripResponsePending(req: number, res: number[]): number[] {
+  let out = res;
+  while (out.length >= 3 && out[0] === 0x7f && out[1] === req && out[2] === 0x78) out = out.slice(3);
+  return out;
+}
+
+/** Validate a UDS/KWP response for request service `req`: tolerate response-pending echoes, throw
+ *  a UdsError on a negative or unexpected response, and return the (cleaned) positive response.
+ *  The single implementation shared by udsCoding / udsModule / guidedRoutine. */
+export function checkNegative(req: number, res: number[] | null): number[] {
   if (!res || res.length === 0) throw new UdsError('No response');
-  if (res[0] === 0x7f) throw new UdsError(`Negative response (NRC 0x${(res[2] ?? 0).toString(16)})`, res[2]);
+  const cleaned = stripResponsePending(req, res);
+  if (cleaned.length === 0) {
+    throw new UdsError(
+      'Module is still processing (response pending) — no final answer arrived in time. ' +
+        'Wait a moment and retry.',
+      0x78,
+    );
+  }
+  if (cleaned[0] === 0x7f)
+    throw new UdsError(`Negative response (NRC 0x${(cleaned[2] ?? 0).toString(16)})`, cleaned[2]);
   const expected = req + 0x40;
-  if (res[0] !== expected)
-    throw new UdsError(`Unexpected response 0x${res[0].toString(16)} (wanted 0x${expected.toString(16)})`);
-  return res;
+  if (cleaned[0] !== expected)
+    throw new UdsError(
+      `Unexpected response 0x${cleaned[0].toString(16)} (wanted 0x${expected.toString(16)})`,
+    );
+  return cleaned;
 }
 
 /** 0x10 DiagnosticSessionControl — enter the given session (default 0x03 extended). */
@@ -55,17 +82,33 @@ export async function writeDataByIdentifier(
   checkNegative(0x2e, await send('2E' + did + hex(data)));
 }
 
-/** 0x27 SecurityAccess seed/key. `seedToKey` is profile-supplied; none ship by default. */
+/** 0x27 SecurityAccess seed/key. `seedToKey` is profile-supplied; none ship by default.
+ *  NRC 0x37 (requiredTimeDelayNotExpired) — the post-boot / post-failed-attempt lockout most VAG
+ *  modules enforce — is retried once after `retryDelayMs`. NRC 0x36 (exceedNumberOfAttempts) is
+ *  NOT retried: hammering a locked module only extends the lockout. */
 export async function securityAccess(
   send: UdsSend,
   level: number,
   seedToKey: (seed: number[]) => number[],
+  opts: { retryDelayMs?: number } = {},
 ): Promise<void> {
-  const seedRes = checkNegative(0x27, await send('27' + hex([level])));
-  const seed = seedRes.slice(2); // 0x67 <level> <seed...>
-  if (seed.every((b) => b === 0)) return; // already unlocked
-  const key = seedToKey(seed);
-  checkNegative(0x27, await send('27' + hex([level + 1]) + hex(key)));
+  const attempt = async (): Promise<void> => {
+    const seedRes = checkNegative(0x27, await send('27' + hex([level])));
+    const seed = seedRes.slice(2); // 0x67 <level> <seed...>
+    if (seed.every((b) => b === 0)) return; // already unlocked
+    const key = seedToKey(seed);
+    checkNegative(0x27, await send('27' + hex([level + 1]) + hex(key)));
+  };
+  try {
+    await attempt();
+  } catch (e) {
+    if (e instanceof UdsError && e.nrc === 0x37) {
+      await new Promise((r) => setTimeout(r, opts.retryDelayMs ?? 1100));
+      await attempt();
+    } else {
+      throw e;
+    }
+  }
 }
 
 export interface CodeModuleOptions {
@@ -103,6 +146,14 @@ export async function routineControl(
   data: number[] = [],
 ): Promise<number[]> {
   return checkNegative(0x31, await send('31' + hex([sub]) + routineId + hex(data)));
+}
+
+/** True when an error message means "the module never answered" (as opposed to a negative response
+ *  or a genuine protocol error): No response / NO DATA / timeouts ("timeout", "timed out") /
+ *  UNABLE TO CONNECT / BUS INIT ERROR. Used to explain unreachable modules honestly (a generic
+ *  ELM327 cannot address e.g. a KWP1281 instrument cluster — see docs/features/service-reset.md). */
+export function isModuleUnreachableError(message: string): boolean {
+  return /no response|no data|timed?\s?-?\s?out|unable\s*to\s*connect|bus\s*init/i.test(message);
 }
 
 export interface ServiceResetDescriptor {

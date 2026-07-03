@@ -8,6 +8,7 @@ import { VEHICLE_PROFILES } from '@/shared/vehicles';
 import { normalizeBaseUrl } from '@/shared/obd-core';
 import { listModels, AiClientError } from '@/shared/ai';
 import { logError } from '@/shared/state/errorLogStore';
+import { useLogFixtureExport } from '../hooks/useLogFixtureExport';
 import { connectionService } from '@/features/connection';
 
 const ACCENT = '#2bb673';
@@ -155,6 +156,7 @@ function AiSection() {
 }
 
 export function SettingsScreen() {
+  const { exportFixture, busy: exportingFixture } = useLogFixtureExport();
   const s = useSettingsStore();
   const status = useSessionStore((st) => st.status);
   const monoFont = Platform.select({ ios: 'Courier', android: 'monospace', default: 'monospace' });
@@ -233,9 +235,18 @@ export function SettingsScreen() {
       <YStack gap="$2">
         <XStack justifyContent="space-between" alignItems="center">
           <SectionLabel>Adapter log</SectionLabel>
-          <Button size="$2" onPress={s.clearLog}>
-            Clear
-          </Button>
+          <XStack gap="$2">
+            <Button
+              size="$2"
+              disabled={exportingFixture || s.log.length === 0}
+              onPress={() => void exportFixture(s.log, 'adapter session')}
+            >
+              Export as replay fixture
+            </Button>
+            <Button size="$2" onPress={s.clearLog}>
+              Clear
+            </Button>
+          </XStack>
         </XStack>
         <Card bordered padding="$2" height={220} backgroundColor="$backgroundStrong">
           <ScrollView>

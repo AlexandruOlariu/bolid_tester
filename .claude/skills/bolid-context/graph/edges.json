@@ -1,5 +1,10 @@
 [
   [
+    "concept:adaptation-channels",
+    "concept:ecu-coding",
+    "relates"
+  ],
+  [
     "concept:ai-diagnose-flow",
     "core:analysis/aiDiagnosis",
     "relates"
@@ -295,6 +300,16 @@
     "relates"
   ],
   [
+    "concept:guided-routines",
+    "concept:dpf-regen",
+    "relates"
+  ],
+  [
+    "concept:iupr-inspection",
+    "concept:vehicle-profiles",
+    "relates"
+  ],
+  [
     "concept:live-data-charts",
     "core:analysis/chartBuffer",
     "relates"
@@ -382,6 +397,16 @@
   [
     "concept:mock-simulator",
     "doc:testing",
+    "relates"
+  ],
+  [
+    "concept:module-scan",
+    "concept:ecu-coding",
+    "relates"
+  ],
+  [
+    "concept:module-scan",
+    "concept:tp20-transport",
     "relates"
   ],
   [
@@ -610,6 +635,11 @@
     "relates"
   ],
   [
+    "concept:tp20-transport",
+    "concept:mock-simulator",
+    "relates"
+  ],
+  [
     "concept:trip-recording",
     "concept:diagnostic-history",
     "relates"
@@ -806,6 +836,11 @@
   ],
   [
     "core:analysis/inspection",
+    "core:obd/iupr",
+    "imports"
+  ],
+  [
+    "core:analysis/inspection",
     "core:obd/readiness",
     "imports"
   ],
@@ -827,6 +862,11 @@
   [
     "core:analysis/trip",
     "doc:features/trip-recording",
+    "named"
+  ],
+  [
+    "core:coding/adaptationValue",
+    "ui:ValueCard",
     "named"
   ],
   [
@@ -877,6 +917,16 @@
   [
     "core:elm327/responseParser",
     "lib:hex",
+    "imports"
+  ],
+  [
+    "core:obd/canMonitor",
+    "doc:features/dpf",
+    "named"
+  ],
+  [
+    "core:obd/multiPid",
+    "core:obd/pids",
     "imports"
   ],
   [
@@ -946,6 +996,11 @@
   ],
   [
     "core:public-api",
+    "core:coding/adaptationValue",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:coding/coding",
     "imports"
   ],
@@ -966,12 +1021,32 @@
   ],
   [
     "core:public-api",
+    "core:obd/canMonitor",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:obd/dtc",
     "imports"
   ],
   [
     "core:public-api",
+    "core:obd/iupr",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:obd/mode05",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:obd/mode06",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:obd/multiPid",
     "imports"
   ],
   [
@@ -1006,6 +1081,31 @@
   ],
   [
     "core:public-api",
+    "core:tp20/elmRawCan",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:tp20/fakeTp20Bus",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:tp20/tp20",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:tp20/tp20Scan",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:tp20/vagModules",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:transport/MockTransport",
     "imports"
   ],
@@ -1016,7 +1116,27 @@
   ],
   [
     "core:public-api",
+    "core:transport/logReplay",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:transport/scenarios",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:uds/guidedRoutine",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:uds/udsModule",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:uds/vagDtcs",
     "imports"
   ],
   [
@@ -1031,7 +1151,22 @@
   ],
   [
     "core:session/DiagnosticSession",
+    "core:obd/iupr",
+    "imports"
+  ],
+  [
+    "core:session/DiagnosticSession",
+    "core:obd/mode05",
+    "imports"
+  ],
+  [
+    "core:session/DiagnosticSession",
     "core:obd/mode06",
+    "imports"
+  ],
+  [
+    "core:session/DiagnosticSession",
+    "core:obd/multiPid",
     "imports"
   ],
   [
@@ -1065,6 +1200,46 @@
     "imports"
   ],
   [
+    "core:tp20/elmRawCan",
+    "core:elm327/Elm327Client",
+    "imports"
+  ],
+  [
+    "core:tp20/elmRawCan",
+    "core:tp20/tp20",
+    "imports"
+  ],
+  [
+    "core:tp20/fakeTp20Bus",
+    "core:tp20/tp20",
+    "imports"
+  ],
+  [
+    "core:tp20/fakeTp20Bus",
+    "core:tp20/tp20Scan",
+    "imports"
+  ],
+  [
+    "core:tp20/fakeTp20Bus",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "core:tp20/tp20Scan",
+    "core:tp20/tp20",
+    "imports"
+  ],
+  [
+    "core:tp20/tp20Scan",
+    "core:tp20/vagModules",
+    "imports"
+  ],
+  [
+    "core:tp20/tp20Scan",
+    "doc:features/module-scan",
+    "named"
+  ],
+  [
     "core:transport/MockTransport",
     "core:obd/dtc",
     "imports"
@@ -1095,9 +1270,14 @@
     "imports"
   ],
   [
-    "core:transport/MockTransport",
-    "transport:BleTransport",
-    "named"
+    "core:transport/logReplay",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "core:transport/logReplay",
+    "lib:bytes",
+    "imports"
   ],
   [
     "core:transport/scenarios",
@@ -1111,13 +1291,33 @@
   ],
   [
     "core:transport/scenarios",
-    "transport:BleTransport",
-    "named"
-  ],
-  [
-    "core:transport/scenarios",
     "vehicle:registry",
     "imports"
+  ],
+  [
+    "core:uds/guidedRoutine",
+    "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "core:uds/udsModule",
+    "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "core:uds/udsModule",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "core:uds/udsModule",
+    "core:uds/vagDtcs",
+    "imports"
+  ],
+  [
+    "doc:features/adaptations",
+    "feature:adaptations",
+    "documents"
   ],
   [
     "doc:features/ai-diagnose",
@@ -1200,6 +1400,11 @@
     "documents"
   ],
   [
+    "doc:features/module-scan",
+    "feature:module-scan",
+    "documents"
+  ],
+  [
     "doc:features/notifications",
     "feature:notifications",
     "documents"
@@ -1212,6 +1417,11 @@
   [
     "doc:features/performance-tests",
     "feature:sensor-tests",
+    "documents"
+  ],
+  [
+    "doc:features/routines",
+    "feature:routines",
     "documents"
   ],
   [
@@ -1283,6 +1493,61 @@
     "doc:vehicles/passat-b55-19tdi",
     "vehicle:passat-b55-19tdi",
     "documents"
+  ],
+  [
+    "feature:adaptations",
+    "core:coding/adaptationValue",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "doc:features/adaptations",
+    "named"
+  ],
+  [
+    "feature:adaptations",
+    "feature:module-scan",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "vehicle:types",
+    "imports"
   ],
   [
     "feature:ai-diagnose",
@@ -1386,6 +1651,21 @@
   ],
   [
     "feature:battery-health",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "core:obd/canMonitor",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
     "store:sessionStore",
     "imports"
   ],
@@ -1606,6 +1886,11 @@
   ],
   [
     "feature:fault-codes",
+    "lib:dtcReport",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
     "store:errorLogStore",
     "imports"
   ],
@@ -1633,6 +1918,16 @@
     "feature:history",
     "doc:features/history",
     "named"
+  ],
+  [
+    "feature:history",
+    "feature:fault-codes",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "lib:dtcReport",
+    "imports"
   ],
   [
     "feature:history",
@@ -1740,6 +2035,76 @@
     "imports"
   ],
   [
+    "feature:module-scan",
+    "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:tp20/elmRawCan",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:tp20/fakeTp20Bus",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:tp20/tp20Scan",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:uds/udsModule",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "doc:features/module-scan",
+    "named"
+  ],
+  [
+    "feature:module-scan",
+    "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "vehicle:types",
+    "imports"
+  ],
+  [
     "feature:notifications",
     "core:analysis/notifications",
     "imports"
@@ -1771,17 +2136,62 @@
   ],
   [
     "feature:performance-tests",
-    "doc:features/sensor-tests",
-    "named"
-  ],
-  [
-    "feature:performance-tests",
     "store:errorLogStore",
     "imports"
   ],
   [
     "feature:performance-tests",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:routines",
+    "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "feature:routines",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:routines",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "feature:routines",
+    "core:uds/guidedRoutine",
+    "imports"
+  ],
+  [
+    "feature:routines",
+    "doc:features/routines",
+    "named"
+  ],
+  [
+    "feature:routines",
+    "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:routines",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:routines",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:routines",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:routines",
+    "vehicle:types",
     "imports"
   ],
   [
@@ -1821,6 +2231,11 @@
   ],
   [
     "feature:sensor-tests",
+    "core:obd/mode05",
+    "imports"
+  ],
+  [
+    "feature:sensor-tests",
     "core:obd/mode06",
     "imports"
   ],
@@ -1828,11 +2243,6 @@
     "feature:sensor-tests",
     "core:obd/protocols",
     "imports"
-  ],
-  [
-    "feature:sensor-tests",
-    "doc:features/performance-tests",
-    "named"
   ],
   [
     "feature:sensor-tests",
@@ -1901,8 +2311,8 @@
   ],
   [
     "feature:settings",
-    "doc:features/settings",
-    "named"
+    "core:transport/logReplay",
+    "imports"
   ],
   [
     "feature:settings",
@@ -2001,7 +2411,17 @@
   ],
   [
     "feature:vehicle-select",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
     "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "vehicle:vinSuggest",
     "imports"
   ],
   [
@@ -2020,6 +2440,11 @@
     "imports"
   ],
   [
+    "lib:dtcReport",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
     "screen:_layout",
     "store:errorLogStore",
     "imports"
@@ -2028,6 +2453,21 @@
     "screen:_layout",
     "store:settingsStore",
     "imports"
+  ],
+  [
+    "screen:_layout",
+    "ui:AppSplash",
+    "imports"
+  ],
+  [
+    "screen:adaptations",
+    "doc:features/adaptations",
+    "named"
+  ],
+  [
+    "screen:adaptations",
+    "feature:adaptations",
+    "serves"
   ],
   [
     "screen:ai-diagnose",
@@ -2190,6 +2630,21 @@
     "serves"
   ],
   [
+    "screen:module-scan",
+    "core:tp20/tp20Scan",
+    "named"
+  ],
+  [
+    "screen:module-scan",
+    "doc:features/module-scan",
+    "named"
+  ],
+  [
+    "screen:module-scan",
+    "feature:module-scan",
+    "serves"
+  ],
+  [
     "screen:more",
     "feature:more",
     "serves"
@@ -2212,6 +2667,16 @@
   [
     "screen:performance",
     "feature:performance-tests",
+    "serves"
+  ],
+  [
+    "screen:routines",
+    "doc:features/routines",
+    "named"
+  ],
+  [
+    "screen:routines",
+    "feature:routines",
     "serves"
   ],
   [
@@ -2246,18 +2711,13 @@
   ],
   [
     "screen:settings",
-    "doc:features/settings",
-    "named"
-  ],
-  [
-    "screen:settings",
     "feature:settings",
     "serves"
   ],
   [
-    "screen:settings",
-    "store:settingsStore",
-    "named"
+    "screen:sniffer",
+    "feature:can-sniffer",
+    "serves"
   ],
   [
     "screen:trips",
@@ -2356,11 +2816,6 @@
   ],
   [
     "store:settingsStore",
-    "doc:features/settings",
-    "named"
-  ],
-  [
-    "store:settingsStore",
     "store:persistStorage",
     "imports"
   ],
@@ -2392,6 +2847,46 @@
   [
     "ui:AppLogo",
     "doc:phase2-mobile-app",
+    "named"
+  ],
+  [
+    "ui:AppSplash",
+    "doc:PLAN",
+    "named"
+  ],
+  [
+    "ui:AppSplash",
+    "doc:phase2-mobile-app",
+    "named"
+  ],
+  [
+    "ui:AppSplash",
+    "feature:maintenance",
+    "imports"
+  ],
+  [
+    "ui:AppSplash",
+    "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "ui:AppSplash",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "ui:AppSplash",
+    "store:settingsStore",
+    "imports"
+  ],
+  [
+    "ui:AppSplash",
+    "ui:AppLogo",
+    "imports"
+  ],
+  [
+    "ui:StatusBadge",
+    "doc:vcds-parity-roadmap",
     "named"
   ],
   [
@@ -2475,8 +2970,18 @@
     "imports"
   ],
   [
+    "vehicle:registry",
+    "vehicle:vinSuggest",
+    "imports"
+  ],
+  [
     "vehicle:types",
     "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "vehicle:vinSuggest",
+    "vehicle:types",
     "imports"
   ]
 ]

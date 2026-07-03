@@ -14,6 +14,24 @@
 // Find exact node ids with:  python3 scripts/graph.py find <term>
 {
   "concepts": [
+    { "id": "module-scan",
+      "summary": "VCDS-style auto-scan: per-module ident + fault codes over UDS (19 02 read / 14 clear / 19 04 snapshot), VAG code numbers. CAN-only; engine pair is standard, other addresses illustrative.",
+      "tokens": ["module","scan","autoscan","auto-scan","vcds","clear","ident","dtc","fault"] },
+    { "id": "tp20-transport",
+      "summary": "VW TP2.0 channel layer carrying KWP2000 to PRE-UDS modules (cluster/comfort/gateway) + the gateway installation list. Pure RawCanLink core, tested against an in-memory VW bus; real ELM327 raw-CAN link for hardware. Experimental, CAN-only, the hardest path.",
+      "tokens": ["tp20","transport","channel","gateway","kwp2000","raw","can","install","vag"] },
+    { "id": "adaptation-channels",
+      "summary": "VCDS-style adaptation channels: numeric module values read via 22, written via 2E with backup+verify and display-bounds. Label packs (part-number-keyed, the open VCDS-label-file equivalent) name channels/measurements.",
+      "tokens": ["adaptation","channel","label","pack","vcds","write","backup","bounds"] },
+    { "id": "guided-routines",
+      "summary": "Output tests (UDS 2F) and basic settings (UDS 31) as guided routines with live interlocks (engine/speed) + keep-alive; includes forced DPF regen. Gated like coding.",
+      "tokens": ["routine","output","test","basic","setting","actuator","regen","interlock"] },
+    { "id": "iupr-inspection",
+      "summary": "In-use performance ratios (Mode 09 08/0B) feed the used-car inspection: near-zero general denominators reveal a recently-cleared OBD memory even when readiness was driven back to complete.",
+      "tokens": ["iupr","inuse","performance","ratio","inspection","used","car","readiness"] },
+    { "id": "can-sniffer",
+      "summary": "Raw bus monitor (ELM327 ATMA) with per-arbitration-id aggregation; monitor mode owns the command channel until stopped. Multi-PID batching + log->replay-fixture live near here.",
+      "tokens": ["sniffer","monitor","atma","bus","raw","frame","canmonitor","multipid","replay"] },
     { "id": "connection-lifecycle",
       "summary": "Establishing a live link: BLE permission + scan -> BleTransport -> Elm327Client init (ATZ/ATSPn) -> DiagnosticSession; status flows into sessionStore.",
       "tokens": ["connection","connect","ble","bluetooth","lifecycle","elm327","session","pairing"] },
@@ -103,6 +121,12 @@
       "tokens": ["documentation","docs","plan","process","implementation","log","readme","architecture","spec","sourceoftruth"] }
   ],
   "links": [
+    ["concept:module-scan", "concept:tp20-transport", "relates"],
+    ["concept:module-scan", "concept:ecu-coding", "relates"],
+    ["concept:adaptation-channels", "concept:ecu-coding", "relates"],
+    ["concept:guided-routines", "concept:dpf-regen", "relates"],
+    ["concept:tp20-transport", "concept:mock-simulator", "relates"],
+    ["concept:iupr-inspection", "concept:vehicle-profiles", "relates"],
     ["concept:connection-lifecycle", "transport:BleTransport", "relates"],
     ["concept:connection-lifecycle", "transport:manager", "relates"],
     ["concept:connection-lifecycle", "transport:permissions", "relates"],

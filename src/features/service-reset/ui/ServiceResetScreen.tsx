@@ -21,6 +21,54 @@ export function ServiceResetScreen() {
     );
   }
 
+  // When the profile KNOWS the OBD path cannot reach the module on the real car (e.g. a KWP1281
+  // cluster over a generic ELM327), lead with the manual procedure and demote the OBD attempt.
+  const obdUnreachable = descriptor.obdUnreachable;
+
+  const manualProcedure =
+    descriptor.manualProcedure && descriptor.manualProcedure.length > 0 ? (
+      <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$4">
+        <H4>Manual procedure{obdUnreachable ? ' (recommended)' : ''}</H4>
+        <Paragraph theme="alt2" size="$2">
+          {obdUnreachable
+            ? 'The reliable reset for this car.'
+            : 'The reliable reset for this car. Use it if the OBD reset above does not complete.'}
+        </Paragraph>
+        {descriptor.manualProcedure.map((step, i) => (
+          <Paragraph key={i} size="$2">
+            {i + 1}. {step}
+          </Paragraph>
+        ))}
+      </YStack>
+    ) : null;
+
+  const resetButton = !confirming ? (
+    <Button
+      theme={obdUnreachable ? undefined : 'red'}
+      onPress={() => setConfirming(true)}
+      disabled={running}
+    >
+      {obdUnreachable ? 'Try OBD reset anyway (not expected to work)' : 'Reset service interval'}
+    </Button>
+  ) : (
+    <XStack gap="$2">
+      <Button
+        flex={1}
+        theme="red"
+        disabled={running}
+        onPress={async () => {
+          setConfirming(false);
+          await run();
+        }}
+      >
+        {running ? 'Resetting…' : 'Confirm reset'}
+      </Button>
+      <Button flex={1} onPress={() => setConfirming(false)} disabled={running}>
+        Cancel
+      </Button>
+    </XStack>
+  );
+
   return (
     <Screen
       title="Service reset"
@@ -33,45 +81,25 @@ export function ServiceResetScreen() {
           {descriptor.routineId ? ` · routine ${descriptor.routineId}` : ''} · header{' '}
           {descriptor.reqHeader}
         </Paragraph>
+        {obdUnreachable ? (
+          <Paragraph theme="alt1" size="$2">
+            ⚠ {obdUnreachable}
+          </Paragraph>
+        ) : null}
       </YStack>
 
       {lastResult ? <Paragraph>{lastResult}</Paragraph> : null}
 
-      {descriptor.manualProcedure && descriptor.manualProcedure.length > 0 ? (
-        <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$4">
-          <H4>Manual procedure</H4>
-          <Paragraph theme="alt2" size="$2">
-            The reliable reset for this car. Use it if the OBD reset above does not complete.
-          </Paragraph>
-          {descriptor.manualProcedure.map((step, i) => (
-            <Paragraph key={i} size="$2">
-              {i + 1}. {step}
-            </Paragraph>
-          ))}
-        </YStack>
-      ) : null}
-
-      {!confirming ? (
-        <Button theme="red" onPress={() => setConfirming(true)} disabled={running}>
-          Reset service interval
-        </Button>
+      {obdUnreachable ? (
+        <>
+          {manualProcedure}
+          {resetButton}
+        </>
       ) : (
-        <XStack gap="$2">
-          <Button
-            flex={1}
-            theme="red"
-            disabled={running}
-            onPress={async () => {
-              setConfirming(false);
-              await run();
-            }}
-          >
-            {running ? 'Resetting…' : 'Confirm reset'}
-          </Button>
-          <Button flex={1} onPress={() => setConfirming(false)} disabled={running}>
-            Cancel
-          </Button>
-        </XStack>
+        <>
+          {resetButton}
+          {manualProcedure}
+        </>
       )}
     </Screen>
   );

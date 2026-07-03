@@ -18,6 +18,10 @@ import {
   ScanLine,
   CalendarClock,
   Bug,
+  Network,
+  SlidersHorizontal,
+  Zap,
+  Radio,
 } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
 
@@ -42,9 +46,13 @@ const ENTRIES: Entry[] = [
   { route: '/alerts', title: 'Alerts', subtitle: 'Threshold warnings', Icon: Bell },
   { route: '/sensor-readings', title: 'Sensor readings', subtitle: 'Live sensors, grouped', Icon: GaugeIcon },
   { route: '/sensors', title: 'Sensor tests', subtitle: 'Mode 06 + module sensors', Icon: GaugeIcon },
+  { route: '/module-scan', title: 'Module scan', subtitle: 'VCDS-style auto-scan: all modules', Icon: Network },
   { route: '/service-reset', title: 'Service reset', subtitle: 'Reset the service interval', Icon: Wrench },
   { route: '/coding', title: 'Coding', subtitle: 'Experimental module coding', Icon: KeyRound },
+  { route: '/adaptations', title: 'Adaptations', subtitle: 'Channel read/write with backup', Icon: SlidersHorizontal },
+  { route: '/routines', title: 'Routines & output tests', subtitle: 'Basic settings, actuator tests, DPF regen', Icon: Zap },
   { route: '/notifications', title: 'Notifications', subtitle: 'Alerts & reminders', Icon: BellRing },
+  { route: '/sniffer', title: 'Bus sniffer', subtitle: 'Raw CAN/K-line monitor (ATMA)', Icon: Radio },
   { route: '/error-log', title: 'Error log', subtitle: 'Saved errors to export & fix later', Icon: Bug },
 ];
 

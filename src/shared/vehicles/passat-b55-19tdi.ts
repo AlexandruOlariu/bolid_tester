@@ -10,6 +10,7 @@ export const passatB55: VehicleProfile = {
   fuel: 'diesel',
   // Confirmed on the real car: ISO 9141-2 (5-baud init, 10.4 kbaud). The adapter still auto-detects.
   expectedProtocol: 'ISO_9141_2',
+  vinPatterns: ['WVWZZZ3B'],
   supportedPids: [
     '0104',
     '0105',
@@ -32,9 +33,13 @@ export const passatB55: VehicleProfile = {
     session: 0x85,
     method: 'routine',
     routineId: '01',
-    // A generic ELM327 reaches the engine ECU only — it cannot address the instrument cluster on
-    // this K-line B5.5, so the routine above will get "No response" on the real car. The reliable
-    // method is the dash stalk procedure below. The routine still succeeds against the simulator.
+    // The cluster on the B5.5 speaks KWP1281, which a generic ELM327 cannot address (per-byte
+    // ACK link layer). The KWP2000 routine above therefore gets "No response" on the real car —
+    // it exists for the simulator and for adapters that can genuinely reach the cluster.
+    obdUnreachable:
+      'On this car the instrument cluster speaks KWP1281, which a generic ELM327 adapter ' +
+      'physically cannot address — the OBD reset will not work. Use the dash-stalk procedure ' +
+      'below; it is the reliable method for the B5.5.',
     manualProcedure: [
       'Switch the ignition OFF.',
       'Press and hold the right-hand stalk reset button (trip/0.0 button on the instrument cluster).',

@@ -3,7 +3,10 @@
 
 import { Elm327Client, Elm327Options } from '../elm327/Elm327Client';
 import { Transport } from '../transport/Transport';
-import { ProtocolId, isKLine } from '../obd/protocols';
+import { ProtocolId, isKLine, isCan, functionalHeader } from '../obd/protocols';
+import { chunkPids, buildMultiPidRequest, parseMultiPidResponse } from '../obd/multiPid';
+import { decodeIupr, IuprReport } from '../obd/iupr';
+import { decodeMode05, Mode05Result } from '../obd/mode05';
 import { decodeSupportedPids } from '../obd/supportedPids';
 import { isMarkerPid, decodePid, PID_REGISTRY } from '../obd/pids';
 import { parseDtcBytes, decodeDtcBytes, toDtc, Dtc } from '../obd/dtc';
@@ -33,6 +36,8 @@ export type DtcKind = '03' | '07' | '0A';
 export interface FreezeFrame {
   triggerDtc: string | null;
   values: LiveValue[];
+  /** Mode 02 frame index this snapshot came from (0 = first). */
+  frame?: number;
 }
 
 /** Default PIDs captured in the freeze frame view. */
@@ -133,13 +138,49 @@ export class DiagnosticSession {
     return { pid, name: d.name, unit: d.unit, value, ts: Date.now() };
   }
 
+  /** Poll a set of PIDs once. On CAN links Mode 01 PIDs are batched (up to 6 per request,
+   *  ISO 15765-4) — a ~3–6× faster loop for live data/charts. Any chunk that cannot be parsed
+   *  falls back to serial single-PID polling, so clone quirks degrade gracefully. */
   async pollOnce(pids: string[]): Promise<Record<string, LiveValue>> {
     const out: Record<string, LiveValue> = {};
-    for (const pid of pids) {
+    const serial: string[] = [];
+    const batchable = isCan(this.protocol) ? pids.filter((p) => p.startsWith('01')) : [];
+    for (const pid of pids) if (!batchable.includes(pid)) serial.push(pid);
+
+    if (batchable.length >= 2) {
+      for (const chunk of chunkPids(batchable)) {
+        const entries = await this.pollChunk(chunk);
+        if (entries === null) {
+          serial.push(...chunk);
+          continue;
+        }
+        const ts = Date.now();
+        for (const { pid, data } of entries) {
+          if (!chunk.includes(pid)) continue;
+          const value = decodePid(pid, data);
+          const d = PID_REGISTRY[pid];
+          if (value !== null && d) out[pid] = { pid, name: d.name, unit: d.unit, value, ts };
+        }
+      }
+    } else {
+      serial.push(...batchable);
+    }
+
+    for (const pid of serial) {
       const v = await this.readValue(pid);
       if (v) out[pid] = v;
     }
     return out;
+  }
+
+  private async pollChunk(chunk: string[]): Promise<{ pid: string; data: number[] }[] | null> {
+    try {
+      const r = await this.client.command(buildMultiPidRequest(chunk));
+      if (r.notice) return null;
+      return parseMultiPidResponse(r.bytes);
+    } catch {
+      return null;
+    }
   }
 
   async readDtcs(kind: DtcKind = '03'): Promise<Dtc[]> {
@@ -185,13 +226,29 @@ export class DiagnosticSession {
     return r.notice ? null : r.bytes;
   }
 
-  /** Point subsequent requests at a specific module (custom CAN addressing). Pass null to clear. */
+  /** Point subsequent requests at a specific module (physical addressing). Pass null to restore
+   *  the protocol's default functional header: bare `ATSH` is NOT a valid ELM327 command — real
+   *  adapters answer `?` and keep the old header, which used to leave the adapter stuck on the
+   *  last-scanned module while the simulator (which accepted bare ATSH) hid it. */
   async setHeader(header: string | null): Promise<void> {
-    await this.client.command('ATSH' + (header ?? ''));
+    const target = header ?? functionalHeader(this.protocol);
+    if (!target) return; // unknown/29-bit protocol: nothing safe to restore to
+    await this.client.command('ATSH' + target);
   }
 
-  async setRxFilter(filter: string): Promise<void> {
-    await this.client.command('ATCRA' + filter);
+  /** Narrow the adapter's receive filter to one CAN id (`ATCRA hhh`). Pass null to clear it
+   *  (bare `ATCRA`, v1.4b+) — a stale filter blocks every other ECU's replies. CAN only. */
+  async setRxFilter(filter: string | null): Promise<void> {
+    if (!isCan(this.protocol) && filter === null) return; // ATCRA is a CAN command
+    await this.client.command('ATCRA' + (filter ?? ''));
+  }
+
+  /** Restore default addressing after module-scoped work (scan, adaptations, routines, coding):
+   *  functional header + no receive filter. Call in a `finally` — leaving either set kills all
+   *  standard OBD2 reads until reconnect. */
+  async resetAddressing(): Promise<void> {
+    await this.setHeader(null);
+    await this.setRxFilter(null);
   }
 
   /** Mode 06 — on-board monitor test results for a monitor id (e.g. '01'). */
@@ -201,6 +258,23 @@ export class DiagnosticSession {
     return decodeMode06(r.bytes);
   }
 
+  /** Start the CAN sniffer: headers on, then ATMA streaming raw frames to the listener. The
+   *  command channel is exclusively the monitor's until stopSniffer(). */
+  async startSniffer(onLine: (line: string) => void): Promise<void> {
+    await this.client.raw('ATH1');
+    await this.client.startMonitor(onLine);
+  }
+
+  /** Stop the sniffer and restore normal (headers-off) operation. */
+  async stopSniffer(): Promise<void> {
+    await this.client.stopMonitor();
+    await this.client.raw('ATH0');
+  }
+
+  get sniffing(): boolean {
+    return this.client.monitoring;
+  }
+
   /** MIL state + readiness monitors (Mode 01 PID 01). */
   async readReadiness(): Promise<MonitorStatus | null> {
     const r = await this.client.command('0101');
@@ -208,23 +282,62 @@ export class DiagnosticSession {
     return decodeMonitorStatus(r.bytes.slice(2));
   }
 
-  /** Freeze-frame snapshot (Mode 02): the triggering DTC + a few captured PIDs at frame 0. */
+  /** Freeze-frame snapshot (Mode 02) at frame 0 — kept for compatibility. */
   async readFreezeFrame(pids: string[] = FREEZE_PIDS): Promise<FreezeFrame> {
-    const trigger = await this.client.command('020200');
+    return this.readFreezeFrameAt(0, pids);
+  }
+
+  /** One freeze frame by index: its triggering DTC + the captured PIDs. */
+  async readFreezeFrameAt(frame: number, pids: string[] = FREEZE_PIDS): Promise<FreezeFrame> {
+    const fh = frame.toString(16).padStart(2, '0').toUpperCase();
+    const trigger = await this.client.command('0202' + fh);
     let triggerDtc: string | null = null;
     if (!trigger.notice && trigger.bytes.length >= 5) {
       triggerDtc = decodeDtcBytes(trigger.bytes[3], trigger.bytes[4]) || null;
     }
     const values: LiveValue[] = [];
-    for (const pid of pids) {
-      const v = await this.readFreezeValue(pid);
-      if (v) values.push(v);
+    if (triggerDtc) {
+      for (const pid of pids) {
+        const v = await this.readFreezeValue(pid, fh);
+        if (v) values.push(v);
+      }
     }
-    return { triggerDtc, values };
+    return { triggerDtc, values, frame };
   }
 
-  private async readFreezeValue(pid: string): Promise<LiveValue | null> {
-    const r = await this.client.command('02' + pid.slice(2) + '00');
+  /** Every stored freeze frame (one per stored DTC on most CAN ECUs), stopping at the first
+   *  frame with no trigger DTC. */
+  async readFreezeFrames(pids: string[] = FREEZE_PIDS, maxFrames = 5): Promise<FreezeFrame[]> {
+    const frames: FreezeFrame[] = [];
+    for (let f = 0; f < maxFrames; f++) {
+      const frame = await this.readFreezeFrameAt(f, pids);
+      if (!frame.triggerDtc) break;
+      frames.push(frame);
+    }
+    return frames;
+  }
+
+  /** In-use performance ratios: Mode 09 PID 08 (spark) / 0B (compression). Null if unsupported. */
+  async readIupr(): Promise<IuprReport | null> {
+    for (const pid of ['0908', '090B']) {
+      const r = await this.client.command(pid);
+      if (r.notice || r.bytes.length < 3) continue;
+      const report = decodeIupr(r.bytes);
+      if (report) return report;
+    }
+    return null;
+  }
+
+  /** Mode 05 O2 monitoring result (non-CAN links only — CAN cars use Mode 06). */
+  async readMode05(tid: string, sensor = '01'): Promise<Mode05Result | null> {
+    if (isCan(this.protocol)) return null;
+    const r = await this.client.command('05' + tid + sensor);
+    if (r.notice) return null;
+    return decodeMode05(r.bytes);
+  }
+
+  private async readFreezeValue(pid: string, frame = '00'): Promise<LiveValue | null> {
+    const r = await this.client.command('02' + pid.slice(2) + frame);
     if (r.notice || r.bytes.length < 4) return null;
     const value = decodePid(pid, r.bytes.slice(3));
     if (value === null) return null;

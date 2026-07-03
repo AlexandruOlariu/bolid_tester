@@ -103,3 +103,46 @@ describe('used-car inspection', () => {
     expect(r.verdict).toBe('pass');
   });
 });
+
+
+describe('IUPR checks', () => {
+  const baseInput = {
+    vinValid: true,
+    readiness: null,
+    stored: [],
+    pending: [],
+    permanent: [],
+  };
+  const monitors = (ratio: number | null, conditions = 400) => [
+    { name: 'PM filter', completions: ratio === null ? 0 : Math.round(ratio * conditions), conditions, ratio },
+  ];
+
+  it('warns on near-zero counters (recently cleared memory)', () => {
+    const r = assessInspection({
+      ...baseInput,
+      iupr: { variant: 'compression', obdConditions: 8, ignitionCycles: 12, monitors: monitors(0.5) },
+    });
+    const c = r.checks.find((c) => c.id === 'iupr');
+    expect(c?.status).toBe('warn');
+    expect(c?.detail).toMatch(/recently cleared/i);
+  });
+
+  it('passes with healthy counters and flags low ratios as info', () => {
+    const pass = assessInspection({
+      ...baseInput,
+      iupr: { variant: 'compression', obdConditions: 1500, ignitionCycles: 1800, monitors: monitors(0.75) },
+    });
+    expect(pass.checks.find((c) => c.id === 'iupr')?.status).toBe('pass');
+
+    const info = assessInspection({
+      ...baseInput,
+      iupr: { variant: 'spark', obdConditions: 800, ignitionCycles: 900, monitors: monitors(0.02) },
+    });
+    expect(info.checks.find((c) => c.id === 'iupr')?.status).toBe('info');
+  });
+
+  it('adds no IUPR check when the ECU does not answer', () => {
+    const r = assessInspection({ ...baseInput, iupr: null });
+    expect(r.checks.find((c) => c.id === 'iupr')).toBeUndefined();
+  });
+});

@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { serviceReset, isCan, isKLine } from '@/shared/obd-core';
+import { serviceReset, isCan, isKLine, isModuleUnreachableError } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
 import { getVehicleProfile } from '@/shared/vehicles';
@@ -57,27 +57,30 @@ export function useServiceReset() {
       return res.ok;
     } catch (e) {
       const msg = (e as Error).message;
-      // On a K-line car the target is the instrument cluster, which a generic ELM327 cannot reach
-      // over the engine diagnostic channel — the cluster never answers ("No response"). Explain this
-      // honestly and point to the manual procedure instead of a bare failure.
-      const clusterUnreachable =
-        transport === 'kwp' && /no response|timeout|no data/i.test(msg);
+      // The target module never answered (No response / NO DATA / timeout / UNABLE TO CONNECT /
+      // BUS INIT ERROR). On any transport this usually means the adapter cannot reach the module
+      // (e.g. a KWP1281 cluster over a generic ELM327) — explain honestly instead of a bare failure.
+      const moduleUnreachable = isModuleUnreachableError(msg);
       logError({
         source: 'service-reset',
         error: e,
-        severity: clusterUnreachable ? 'warning' : 'error',
-        context: { transport, module: descriptor.module, clusterUnreachable },
+        severity: moduleUnreachable ? 'warning' : 'error',
+        context: { transport, module: descriptor.module, moduleUnreachable },
       });
+      const manualHint = descriptor.manualProcedure?.length
+        ? ' Use the manual procedure below instead.'
+        : '';
       setLastResult(
-        clusterUnreachable
-          ? 'The instrument cluster did not respond. A generic ELM327 can only reach the engine ' +
-              'ECU on this car, so it cannot perform this reset over OBD. Use the manual dash-stalk ' +
-              'procedure below instead.'
+        moduleUnreachable
+          ? `${descriptor.module} did not respond (${msg}). ` +
+              (descriptor.obdUnreachable ??
+                'The adapter could not reach this module over the current link.') +
+              manualHint
           : `Failed: ${msg}`,
       );
       return false;
     } finally {
-      await session.setHeader(null);
+      await session.resetAddressing();
       setRunning(false);
     }
   }, [session, descriptor, setRunning, setLastResult]);

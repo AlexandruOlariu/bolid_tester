@@ -5,7 +5,8 @@ import { useSensorTestStore } from '../model/sensorTestStore';
 import { useSensorTests } from '../hooks/useSensorTests';
 
 export function SensorTestScreen() {
-  const { refresh, canModuleSensors, hasMode06 } = useSensorTests();
+  const { refresh, canModuleSensors, kline, fuel, hasMode06 } = useSensorTests();
+  const mode05 = useSensorTestStore((s) => s.mode05);
   const mode06 = useSensorTestStore((s) => s.mode06);
   const moduleReadings = useSensorTestStore((s) => s.moduleReadings);
 
@@ -24,6 +25,24 @@ export function SensorTestScreen() {
               {r.max.toFixed(1)}) · {r.pass ? 'PASS' : 'FAIL'}
             </Paragraph>
           ))}
+        </YStack>
+      ) : null}
+
+      {kline && fuel !== 'diesel' ? (
+        <YStack gap="$1">
+          <H4>Mode 05 (O2 sensors, pre-CAN)</H4>
+          {mode05.length ? (
+            mode05.map((r, i) => (
+              <Paragraph key={i}>
+                {r.name} · sensor {r.sensor} ·{' '}
+                {r.volts !== null ? `${r.volts.toFixed(3)} V` : `raw ${r.values.map((b) => b.toString(16).padStart(2, '0')).join(' ')}`}
+              </Paragraph>
+            ))
+          ) : (
+            <Paragraph theme="alt2" size="$2">
+              No Mode 05 results yet — run tests (many ECUs do not support it).
+            </Paragraph>
+          )}
         </YStack>
       ) : null}
 

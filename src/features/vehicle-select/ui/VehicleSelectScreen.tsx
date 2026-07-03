@@ -3,7 +3,8 @@ import { useRouter } from 'expo-router';
 import { Card, YStack, XStack, Text, Paragraph } from 'tamagui';
 import { CheckCircle2 } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
-import { VEHICLE_PROFILES } from '@/shared/vehicles';
+import { VEHICLE_PROFILES, suggestProfilesForVin } from '@/shared/vehicles';
+import { useSessionStore } from '@/shared/state/sessionStore';
 import { PROTOCOL_LABELS } from '@/shared/obd-core/obd/protocols';
 import { useVehicleStore } from '../model/vehicleStore';
 
@@ -11,10 +12,30 @@ export function VehicleSelectScreen() {
   const router = useRouter();
   const selectedProfileId = useVehicleStore((s) => s.selectedProfileId);
   const select = useVehicleStore((s) => s.select);
+  const vin = useSessionStore((s) => s.info?.vin ?? null);
+  const suggestion = suggestProfilesForVin(vin, VEHICLE_PROFILES)[0];
+  const suggestDifferent = suggestion && suggestion.profile.id !== selectedProfileId;
 
   return (
     <Screen title="Vehicle" subtitle="Pick a profile, or use Auto / Generic for any OBD2 car">
       <YStack gap="$3">
+        {suggestDifferent ? (
+          <Card
+            bordered
+            padding="$3"
+            borderColor="#2bb673"
+            pressStyle={{ opacity: 0.85 }}
+            onPress={() => {
+              select(suggestion.profile.id);
+              router.push('/dashboard');
+            }}
+          >
+            <Paragraph size="$2">
+              The connected car's VIN ({vin}) matches <Text fontWeight="800">{suggestion.profile.name}</Text> —
+              tap to switch to that profile.
+            </Paragraph>
+          </Card>
+        ) : null}
         {VEHICLE_PROFILES.map((p) => {
           const active = p.id === selectedProfileId;
           return (

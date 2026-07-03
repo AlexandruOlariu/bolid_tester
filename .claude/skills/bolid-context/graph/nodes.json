@@ -1,4 +1,20 @@
 {
+  "concept:adaptation-channels": {
+    "path": null,
+    "summary": "VCDS-style adaptation channels: numeric module values read via 22, written via 2E with backup+verify and display-bounds. Label packs (part-number-key\u2026",
+    "tokens": [
+      "adaptation",
+      "backup",
+      "bounds",
+      "channel",
+      "channels",
+      "label",
+      "pack",
+      "vcds",
+      "write"
+    ],
+    "type": "concept"
+  },
   "concept:ai-diagnose-flow": {
     "path": null,
     "summary": "AI Diagnose: snapshot fault codes + live readings -> aiDiagnosis builds the prompt -> AI client (OpenAI-compatible) -> human-readable diagnosis.",
@@ -61,6 +77,23 @@
       "health",
       "soc",
       "voltage"
+    ],
+    "type": "concept"
+  },
+  "concept:can-sniffer": {
+    "path": null,
+    "summary": "Raw bus monitor (ELM327 ATMA) with per-arbitration-id aggregation; monitor mode owns the command channel until stopped. Multi-PID batching + log->rep\u2026",
+    "tokens": [
+      "atma",
+      "bus",
+      "can",
+      "canmonitor",
+      "frame",
+      "monitor",
+      "multipid",
+      "raw",
+      "replay",
+      "sniffer"
     ],
     "type": "concept"
   },
@@ -190,6 +223,38 @@
     ],
     "type": "concept"
   },
+  "concept:guided-routines": {
+    "path": null,
+    "summary": "Output tests (UDS 2F) and basic settings (UDS 31) as guided routines with live interlocks (engine/speed) + keep-alive; includes forced DPF regen. Gat\u2026",
+    "tokens": [
+      "actuator",
+      "basic",
+      "guided",
+      "interlock",
+      "output",
+      "regen",
+      "routine",
+      "routines",
+      "setting",
+      "test"
+    ],
+    "type": "concept"
+  },
+  "concept:iupr-inspection": {
+    "path": null,
+    "summary": "In-use performance ratios (Mode 09 08/0B) feed the used-car inspection: near-zero general denominators reveal a recently-cleared OBD memory even when\u2026",
+    "tokens": [
+      "car",
+      "inspection",
+      "inuse",
+      "iupr",
+      "performance",
+      "ratio",
+      "readiness",
+      "used"
+    ],
+    "type": "concept"
+  },
   "concept:live-data-charts": {
     "path": null,
     "summary": "Live telemetry: poll Mode 01 PIDs, ring-buffer samples (chartBuffer) and render gauges/charts. The hot path for live-data and live-charts.",
@@ -253,6 +318,22 @@
       "simulator",
       "test",
       "virtual"
+    ],
+    "type": "concept"
+  },
+  "concept:module-scan": {
+    "path": null,
+    "summary": "VCDS-style auto-scan: per-module ident + fault codes over UDS (19 02 read / 14 clear / 19 04 snapshot), VAG code numbers. CAN-only; engine pair is st\u2026",
+    "tokens": [
+      "auto-scan",
+      "autoscan",
+      "clear",
+      "dtc",
+      "fault",
+      "ident",
+      "module",
+      "scan",
+      "vcds"
     ],
     "type": "concept"
   },
@@ -384,6 +465,24 @@
       "rule",
       "threshold",
       "warn"
+    ],
+    "type": "concept"
+  },
+  "concept:tp20-transport": {
+    "path": null,
+    "summary": "VW TP2.0 channel layer carrying KWP2000 to PRE-UDS modules (cluster/comfort/gateway) + the gateway installation list. Pure RawCanLink core, tested ag\u2026",
+    "tokens": [
+      "20",
+      "can",
+      "channel",
+      "gateway",
+      "install",
+      "kwp2000",
+      "raw",
+      "tp",
+      "tp20",
+      "transport",
+      "vag"
     ],
     "type": "concept"
   },
@@ -585,6 +684,19 @@
     ],
     "type": "core"
   },
+  "core:coding/adaptationValue": {
+    "path": "src/shared/obd-core/coding/adaptationValue.ts",
+    "summary": "Pure adaptation-value math: raw big-endian bytes <-> display value with scale/offset.",
+    "tests": [
+      "src/shared/obd-core/coding/adaptationValue.test.ts"
+    ],
+    "tokens": [
+      "adaptation",
+      "coding",
+      "value"
+    ],
+    "type": "core"
+  },
   "core:coding/coding": {
     "path": "src/shared/obd-core/coding/coding.ts",
     "summary": "Pure byte/bit coding helpers: read a coding byte string, flip bits, decode a bit-field schema, and diff two codings for the before\u2192after preview.",
@@ -635,6 +747,18 @@
     ],
     "type": "core"
   },
+  "core:obd/canMonitor": {
+    "path": "src/shared/obd-core/obd/canMonitor.ts",
+    "summary": "CAN bus monitor (ELM327 `ATMA` with headers on): line parsing + per-id aggregation for the sniffer screen.",
+    "tests": [
+      "src/shared/obd-core/obd/canMonitor.test.ts"
+    ],
+    "tokens": [
+      "can",
+      "monitor"
+    ],
+    "type": "core"
+  },
   "core:obd/dtc": {
     "path": "src/shared/obd-core/obd/dtc.ts",
     "summary": "Diagnostic Trouble Code (DTC) encoding/decoding.",
@@ -643,6 +767,29 @@
     ],
     "tokens": [
       "dtc"
+    ],
+    "type": "core"
+  },
+  "core:obd/iupr": {
+    "path": "src/shared/obd-core/obd/iupr.ts",
+    "summary": "IUPR \u2014 In-Use Performance Ratios (Mode 09 PID 08 spark / PID 0B compression).",
+    "tests": [
+      "src/shared/obd-core/obd/iupr.test.ts"
+    ],
+    "tokens": [
+      "iupr"
+    ],
+    "type": "core"
+  },
+  "core:obd/mode05": {
+    "path": "src/shared/obd-core/obd/mode05.ts",
+    "summary": "Mode 05 \u2014 O2 sensor monitoring test results (non-CAN protocols only; CAN cars expose the same through Mode 06).",
+    "tests": [
+      "src/shared/obd-core/obd/mode05.test.ts"
+    ],
+    "tokens": [
+      "05",
+      "mode"
     ],
     "type": "core"
   },
@@ -655,6 +802,18 @@
     "tokens": [
       "06",
       "mode"
+    ],
+    "type": "core"
+  },
+  "core:obd/multiPid": {
+    "path": "src/shared/obd-core/obd/multiPid.ts",
+    "summary": "CAN multi-PID batching: ISO 15765-4 allows up to 6 Mode 01 PIDs per request, cutting live-data latency ~3\u20136\u00d7 vs one-PID-at-a-time.",
+    "tests": [
+      "src/shared/obd-core/obd/multiPid.test.ts"
+    ],
+    "tokens": [
+      "multi",
+      "pid"
     ],
     "type": "core"
   },
@@ -745,6 +904,65 @@
     ],
     "type": "core"
   },
+  "core:tp20/elmRawCan": {
+    "path": "src/shared/obd-core/tp20/elmRawCan.ts",
+    "summary": "RawCanLink over a real ELM327 in raw-CAN mode, for TP2.0 on hardware.",
+    "tokens": [
+      "20",
+      "can",
+      "elm",
+      "raw",
+      "tp"
+    ],
+    "type": "core"
+  },
+  "core:tp20/fakeTp20Bus": {
+    "path": "src/shared/obd-core/tp20/fakeTp20Bus.ts",
+    "summary": "In-memory VW TP2.0 bus for tests and the simulator: a gateway + a few pre-UDS modules that answer channel setup, parameters, and a small KWP2000 appl\u2026",
+    "tokens": [
+      "20",
+      "bus",
+      "fake",
+      "tp"
+    ],
+    "type": "core"
+  },
+  "core:tp20/tp20": {
+    "path": "src/shared/obd-core/tp20/tp20.ts",
+    "summary": "VW/VAG Transport Protocol 2.0 (TP2.0) \u2014 the channel layer that carries KWP2000 to PRE-UDS modules (cluster, comfort, gateway\u2026) on PQ-platform CAN car\u2026",
+    "tests": [
+      "src/shared/obd-core/tp20/tp20.test.ts"
+    ],
+    "tokens": [
+      "20",
+      "tp"
+    ],
+    "type": "core"
+  },
+  "core:tp20/tp20Scan": {
+    "path": "src/shared/obd-core/tp20/tp20Scan.ts",
+    "summary": "TP2.0 scan: open a channel to the gateway, read its installation list, then read ident from each pre-UDS module present.",
+    "tests": [
+      "src/shared/obd-core/tp20/tp20Scan.test.ts"
+    ],
+    "tokens": [
+      "20",
+      "scan",
+      "tp"
+    ],
+    "type": "core"
+  },
+  "core:tp20/vagModules": {
+    "path": "src/shared/obd-core/tp20/vagModules.ts",
+    "summary": "VAG diagnostic-address \u2192 common module name, for labelling TP2.0 scans / gateway install lists (the two-digit addresses VCDS shows).",
+    "tokens": [
+      "20",
+      "modules",
+      "tp",
+      "vag"
+    ],
+    "type": "core"
+  },
   "core:transport/MockTransport": {
     "path": "src/shared/obd-core/transport/MockTransport.ts",
     "summary": "A virtual ELM327 that implements Transport, so the whole app/test-suite runs with no hardware.",
@@ -762,12 +980,60 @@
     ],
     "type": "core"
   },
+  "core:transport/logReplay": {
+    "path": "src/shared/obd-core/transport/logReplay.ts",
+    "summary": "Turn a captured adapter I/O log (Settings \u2192 adapter log) into a replayable simulator fixture: every tx command maps to the rx text that followed it o\u2026",
+    "tests": [
+      "src/shared/obd-core/transport/logReplay.test.ts"
+    ],
+    "tokens": [
+      "log",
+      "replay",
+      "transport"
+    ],
+    "type": "core"
+  },
   "core:transport/scenarios": {
     "path": "src/shared/obd-core/transport/scenarios.ts",
     "summary": "Build a simulator scenario from a vehicle profile.",
     "tokens": [
       "scenarios",
       "transport"
+    ],
+    "type": "core"
+  },
+  "core:uds/guidedRoutine": {
+    "path": "src/shared/obd-core/uds/guidedRoutine.ts",
+    "summary": "Guided routines: UDS output tests (0x2F InputOutputControlByIdentifier) and basic settings (0x31 RoutineControl) with start/stop/results primitives.",
+    "tests": [
+      "src/shared/obd-core/uds/guidedRoutine.test.ts"
+    ],
+    "tokens": [
+      "guided",
+      "routine",
+      "uds"
+    ],
+    "type": "core"
+  },
+  "core:uds/udsModule": {
+    "path": "src/shared/obd-core/uds/udsModule.ts",
+    "summary": "UDS (ISO 14229) per-module diagnostics used by the module scan (\"auto-scan\") and fault-code features: ReadDTCInformation (0x19), ClearDiagnosticInfor\u2026",
+    "tests": [
+      "src/shared/obd-core/uds/udsModule.test.ts"
+    ],
+    "tokens": [
+      "module",
+      "uds"
+    ],
+    "type": "core"
+  },
+  "core:uds/vagDtcs": {
+    "path": "src/shared/obd-core/uds/vagDtcs.ts",
+    "summary": "Seed dictionary of common VAG 5-digit fault-code texts (the numbers VCDS shows for component/module faults).",
+    "tokens": [
+      "dtcs",
+      "uds",
+      "vag"
     ],
     "type": "core"
   },
@@ -813,6 +1079,20 @@
     "summary": "Architecture",
     "tokens": [
       "architecture"
+    ],
+    "type": "doc"
+  },
+  "doc:features/adaptations": {
+    "path": "docs/features/adaptations.md",
+    "summary": "Feature: adaptations \u2014 channel browser (experimental, write-capable, gated)",
+    "tokens": [
+      "adaptations",
+      "browser",
+      "capable",
+      "channel",
+      "experimental",
+      "gated",
+      "write"
     ],
     "type": "doc"
   },
@@ -941,6 +1221,21 @@
     ],
     "type": "doc"
   },
+  "doc:features/module-scan": {
+    "path": "docs/features/module-scan.md",
+    "summary": "Feature: module-scan \u2014 VCDS-style auto-scan (experimental, CAN/UDS)",
+    "tokens": [
+      "auto",
+      "can",
+      "experimental",
+      "module",
+      "scan",
+      "style",
+      "uds",
+      "vcds"
+    ],
+    "type": "doc"
+  },
   "doc:features/notifications": {
     "path": "docs/features/notifications.md",
     "summary": "Feature: notifications",
@@ -955,6 +1250,22 @@
     "tokens": [
       "performance",
       "tests"
+    ],
+    "type": "doc"
+  },
+  "doc:features/routines": {
+    "path": "docs/features/routines.md",
+    "summary": "Feature: routines \u2014 output tests & basic settings (experimental, write-capable, gated)",
+    "tokens": [
+      "basic",
+      "capable",
+      "experimental",
+      "gated",
+      "output",
+      "routines",
+      "settings",
+      "tests",
+      "write"
     ],
     "type": "doc"
   },
@@ -985,6 +1296,22 @@
     "summary": "Feature: settings",
     "tokens": [
       "settings"
+    ],
+    "type": "doc"
+  },
+  "doc:features/tp20": {
+    "path": "docs/features/tp20.md",
+    "summary": "Feature: TP2.0 \u2014 pre-UDS module access (experimental, CAN, the moonshot)",
+    "tokens": [
+      "20",
+      "access",
+      "can",
+      "experimental",
+      "module",
+      "moonshot",
+      "pre",
+      "tp",
+      "uds"
     ],
     "type": "doc"
   },
@@ -1085,6 +1412,20 @@
     ],
     "type": "doc"
   },
+  "doc:vcds-parity-roadmap": {
+    "path": "docs/vcds-parity-roadmap.md",
+    "summary": "VCDS parity & nice-to-haves (roadmap + status)",
+    "tokens": [
+      "haves",
+      "nice",
+      "parity",
+      "roadmap",
+      "status",
+      "to",
+      "vcds"
+    ],
+    "type": "doc"
+  },
   "doc:vehicles/README": {
     "path": "docs/vehicles/README.md",
     "summary": "Vehicle Registry",
@@ -1145,6 +1486,14 @@
     ],
     "type": "doc"
   },
+  "feature:adaptations": {
+    "path": "src/features/adaptations",
+    "summary": "VCDS-style **adaptation channels**: small numeric module values (idle offset, base duties, service",
+    "tokens": [
+      "adaptations"
+    ],
+    "type": "feature"
+  },
   "feature:ai-diagnose": {
     "path": "src/features/ai-diagnose",
     "summary": "**One-tap, AI-assisted health check.** Reads the car in one pass, sends a structured snapshot to a",
@@ -1168,6 +1517,15 @@
     "tokens": [
       "battery",
       "health"
+    ],
+    "type": "feature"
+  },
+  "feature:can-sniffer": {
+    "path": "src/features/can-sniffer",
+    "summary": "Can Sniffer feature (screen + hooks + model).",
+    "tokens": [
+      "can",
+      "sniffer"
     ],
     "type": "feature"
   },
@@ -1264,6 +1622,15 @@
     ],
     "type": "feature"
   },
+  "feature:module-scan": {
+    "path": "src/features/module-scan",
+    "summary": "Scan every control module the profile declares: identification (part number, software version,",
+    "tokens": [
+      "module",
+      "scan"
+    ],
+    "type": "feature"
+  },
   "feature:more": {
     "path": "src/features/more",
     "summary": "More feature (screen + hooks + model).",
@@ -1286,6 +1653,14 @@
     "tokens": [
       "performance",
       "tests"
+    ],
+    "type": "feature"
+  },
+  "feature:routines": {
+    "path": "src/features/routines",
+    "summary": "VCDS-style **output tests** (UDS `2F` InputOutputControlByIdentifier) and **basic settings**",
+    "tokens": [
+      "routines"
     ],
     "type": "feature"
   },
@@ -1380,6 +1755,18 @@
     ],
     "type": "lib"
   },
+  "lib:dtcReport": {
+    "path": "src/shared/lib/dtcReport.ts",
+    "summary": "Pure, dependency-free formatting of fault-code (DTC) checks into a human-readable Markdown report for export/sharing.",
+    "tests": [
+      "src/shared/lib/dtcReport.test.ts"
+    ],
+    "tokens": [
+      "dtc",
+      "report"
+    ],
+    "type": "lib"
+  },
   "lib:errorLog": {
     "path": "src/shared/lib/errorLog.ts",
     "summary": "Pure, platform-agnostic core of the error log (\"logging zone\"): the record shape, normalising an unknown thrown value into a stable record, and rende\u2026",
@@ -1405,9 +1792,17 @@
   },
   "screen:_layout": {
     "path": "src/app/_layout.tsx",
-    "summary": "Capture uncaught errors & unhandled rejections into the",
+    "summary": "exports RootLayout",
     "tokens": [
       "layout"
+    ],
+    "type": "screen"
+  },
+  "screen:adaptations": {
+    "path": "src/app/adaptations.tsx",
+    "summary": "Route screen 'adaptations' (expo-router).",
+    "tokens": [
+      "adaptations"
     ],
     "type": "screen"
   },
@@ -1531,6 +1926,15 @@
     ],
     "type": "screen"
   },
+  "screen:module-scan": {
+    "path": "src/app/module-scan.tsx",
+    "summary": "Route screen 'module scan' (expo-router).",
+    "tokens": [
+      "module",
+      "scan"
+    ],
+    "type": "screen"
+  },
   "screen:more": {
     "path": "src/app/more.tsx",
     "summary": "Route screen 'more' (expo-router).",
@@ -1552,6 +1956,14 @@
     "summary": "Route screen 'performance' (expo-router).",
     "tokens": [
       "performance"
+    ],
+    "type": "screen"
+  },
+  "screen:routines": {
+    "path": "src/app/routines.tsx",
+    "summary": "Route screen 'routines' (expo-router).",
+    "tokens": [
+      "routines"
     ],
     "type": "screen"
   },
@@ -1586,6 +1998,14 @@
     "summary": "Route screen 'settings' (expo-router).",
     "tokens": [
       "settings"
+    ],
+    "type": "screen"
+  },
+  "screen:sniffer": {
+    "path": "src/app/sniffer.tsx",
+    "summary": "Route screen 'sniffer' (expo-router).",
+    "tokens": [
+      "sniffer"
     ],
     "type": "screen"
   },
@@ -1723,6 +2143,15 @@
     ],
     "type": "ui"
   },
+  "ui:AppSplash": {
+    "path": "src/shared/ui/AppSplash.tsx",
+    "summary": "Keep the splash up at least this long so the animation is actually seen, never a one-frame flash.",
+    "tokens": [
+      "app",
+      "splash"
+    ],
+    "type": "ui"
+  },
   "ui:Gauge": {
     "path": "src/shared/ui/Gauge.tsx",
     "summary": "A 270\u00b0 arc gauge (react-native-svg).",
@@ -1812,6 +2241,18 @@
     "summary": "Vehicle profile types.",
     "tokens": [
       "types"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:vinSuggest": {
+    "path": "src/shared/vehicles/vinSuggest.ts",
+    "summary": "Suggest registry profiles for a VIN read live from the car (WMI/model prefixes).",
+    "tests": [
+      "src/shared/vehicles/vinSuggest.test.ts"
+    ],
+    "tokens": [
+      "suggest",
+      "vin"
     ],
     "type": "vehicle"
   }

@@ -2,7 +2,7 @@
  *  See docs/simulator.md. */
 
 import { Transport, TransportStatus } from './Transport';
-import { ProtocolId, elmNumberFromProtocol } from '../obd/protocols';
+import { ProtocolId, elmNumberFromProtocol, functionalHeader, isCan } from '../obd/protocols';
 import { encodeSupportedPids } from '../obd/supportedPids';
 import { encodeDtc } from '../obd/dtc';
 import { asciiToBytes, bytesToString, stringToBytes } from '../../lib/bytes';
@@ -25,6 +25,18 @@ export interface SimScenario {
   moduleDids?: Record<string, Record<string, number[]>>;
   /** Codeable modules: ATSH header -> DID -> mutable coding bytes (read via 22, written via 2E). */
   coding?: Record<string, Record<string, number[]>>;
+  /** Per-module UDS DTC stores for the module scan: ATSH header -> 3-byte DTCs + status.
+   *  Served via 0x19 0x02, cleared via 0x14. */
+  moduleDtcs?: Record<string, { bytes: [number, number, number]; status: number }[]>;
+  /** Per-module ident DIDs (ASCII), served via 22 F1xx: ATSH header -> DID -> text. */
+  moduleIdent?: Record<string, Record<string, string>>;
+  /** IUPR (Mode 09 08/0B) payload after the 0x49 0x08/0x0B echo: [itemCount, ...2-byte items]. */
+  iuprSpark?: number[];
+  iuprCompression?: number[];
+  /** Mode 05 responses keyed by tid+sensor (e.g. '0101') -> full response bytes (0x45 …). */
+  mode05?: Record<string, number[]>;
+  /** Raw monitor lines the simulator streams cyclically during ATMA (CAN sniffer). */
+  monitorFrames?: string[];
   latencyMs?: number;
   emitSearching?: boolean;
 }
@@ -62,6 +74,11 @@ export class MockTransport implements Transport {
   private listeners = new Set<(b: Uint8Array) => void>();
   private searched = false;
   private header: string | null = null; // current ATSH target (module addressing)
+  /** Current ATCRA receive filter — modelled so a stale filter breaks reads like on a real
+   *  adapter (regression guard for the restore-addressing paths). */
+  private craFilter: string | null = null;
+  private monitorTimer: ReturnType<typeof setInterval> | null = null;
+  private monitorIdx = 0;
 
   constructor(public scenario: SimScenario) {}
 
@@ -81,13 +98,59 @@ export class MockTransport implements Transport {
 
   async write(bytes: Uint8Array): Promise<void> {
     const cmd = bytesToString(bytes).replace(/[\r\n]+$/g, '').trim();
+    // Any byte interrupts monitor mode (like a real ELM327), answering with a prompt.
+    if (this.monitorTimer) {
+      clearInterval(this.monitorTimer);
+      this.monitorTimer = null;
+      if (!cmd) {
+        const out = stringToBytes('\r>');
+        setTimeout(() => {
+          for (const l of [...this.listeners]) l(out);
+        }, this.scenario.latencyMs ?? 0);
+        return;
+      }
+    }
     if (!cmd) return;
-    const body = this.respond(cmd);
+    // ATMA starts streaming monitor lines with NO prompt until interrupted.
+    if (cmd.toUpperCase() === 'ATMA') {
+      const frames = this.scenario.monitorFrames ?? [];
+      this.monitorIdx = 0;
+      this.monitorTimer = setInterval(() => {
+        if (!frames.length) return;
+        const line = frames[this.monitorIdx % frames.length];
+        this.monitorIdx += 1;
+        const out = stringToBytes(line + '\r');
+        for (const l of [...this.listeners]) l(out);
+      }, 30);
+      return;
+    }
+    const body = this.shapeResponse(cmd, this.respond(cmd));
     const out = stringToBytes(body + '\r\r' + '>');
     const delay = this.scenario.latencyMs ?? 0;
     setTimeout(() => {
       for (const l of [...this.listeners]) l(out);
     }, delay);
+  }
+
+  /** Print CAN payloads > 7 bytes the way a REAL ELM327 does: a hex length line, then
+   *  `N:`-prefixed ISO-TP segment lines (6 bytes on line 0, 7 after, counter wraps at 0xF).
+   *  Single-line answers used to hide the app's missing de-framing — see responseParser. */
+  private shapeResponse(cmd: string, body: string): string {
+    if (/^AT|^ST/i.test(cmd)) return body;
+    if (!isCan(this.scenario.protocol)) return body;
+    if (!/^[0-9A-F]+$/i.test(body)) return body; // notices / SEARCHING-prefixed bodies
+    const bytes = parseHexBytes(body);
+    if (bytes.length <= 7) return body;
+    const lines = [bytes.length.toString(16).toUpperCase().padStart(3, '0')];
+    let i = 0;
+    let seg = 0;
+    while (i < bytes.length) {
+      const take = seg === 0 ? 6 : 7;
+      lines.push(`${(seg & 0xf).toString(16).toUpperCase()}:${toHex(bytes.slice(i, i + take))}`);
+      i += take;
+      seg += 1;
+    }
+    return lines.join('\r');
   }
 
   private respond(cmd: string): string {
@@ -102,11 +165,17 @@ export class MockTransport implements Transport {
     if (c.startsWith('ATSP')) return 'OK';
     if (c.startsWith('ATSH')) {
       const hh = c.slice(4).trim();
-      this.header = hh === '' ? null : hh;
+      if (!hh) return '?'; // like a real ELM327: bare ATSH is invalid — the old header STAYS
+      // Setting the protocol's functional header restores default addressing.
+      this.header = hh === (functionalHeader(this.scenario.protocol) ?? '7DF') ? null : hh;
+      return 'OK';
+    }
+    if (c.startsWith('ATCRA')) {
+      const f = c.slice(5).trim();
+      this.craFilter = f === '' ? null : f; // bare ATCRA clears the filter (v1.4b+)
       return 'OK';
     }
     if (
-      c.startsWith('ATCRA') ||
       c.startsWith('ATST') ||
       ['ATE0', 'ATE1', 'ATL0', 'ATL1', 'ATS0', 'ATS1', 'ATH0', 'ATH1', 'ATAT0', 'ATAT1', 'ATAT2', 'ATCAF0', 'ATCAF1'].includes(c)
     ) {
@@ -139,6 +208,19 @@ export class MockTransport implements Transport {
 
   private respondObd(h0: string): string {
     const h = h0.replace(/\s+/g, '');
+
+    // A stale receive filter blocks replies, exactly like on a real adapter: with default
+    // (functional) addressing the engine answers on 0x7E8 — any other specific ATCRA left over
+    // from module work makes every standard read time out. This is the regression guard for
+    // resetAddressing().
+    if (
+      isCan(this.scenario.protocol) &&
+      !this.header &&
+      this.craFilter &&
+      this.craFilter.toUpperCase() !== '7E8'
+    ) {
+      return 'NO DATA';
+    }
 
     if (h === '0902') {
       const ok = this.scenario.vinSupported !== false && !!this.scenario.vin;
@@ -174,6 +256,34 @@ export class MockTransport implements Transport {
     if (h.startsWith('27') && h.length >= 4) {
       return h.slice(2, 4) === '01' ? '67010000' : '6702';
     }
+    // UDS ReadDTCInformation (module scan). 0x19 0x02 <mask> -> 0x59 0x02 <mask> + records.
+    if (h.startsWith('1902') && h.length === 6) {
+      const store = this.header ? this.scenario.moduleDtcs?.[this.header] : undefined;
+      if (!store) return 'NO DATA';
+      const mask = parseInt(h.slice(4, 6), 16);
+      const hits = store.filter((d) => mask === 0xff || (d.status & mask) !== 0);
+      return '5902' + h.slice(4, 6) + hits.map((d) => toHex([...d.bytes, d.status])).join('');
+    }
+    // UDS reportDTCSnapshotRecordByDTCNumber. 0x19 0x04 <3B dtc> <rec> -> canned snapshot (RPM DID).
+    if (h.startsWith('1904') && h.length === 12) {
+      const store = this.header ? this.scenario.moduleDtcs?.[this.header] : undefined;
+      const dtcHex = h.slice(4, 10);
+      const known = store?.some((d) => toHex(d.bytes).toUpperCase() === dtcHex);
+      if (!known) return 'NO DATA';
+      const status = store?.find((d) => toHex(d.bytes).toUpperCase() === dtcHex)?.status ?? 0;
+      return '5904' + dtcHex + toHex([status]) + '01' + '01' + '010C' + '0CD0';
+    }
+    // UDS InputOutputControlByIdentifier (output tests). 2F <did> <mode> [<data>] -> 6F echo.
+    if (h.startsWith('2F') && h.length >= 8) {
+      return '6F' + h.slice(2, 8);
+    }
+    // UDS ClearDiagnosticInformation for the addressed module. 0x14 FFFFFF -> 0x54.
+    if (h.startsWith('14') && h.length === 8) {
+      const store = this.header ? this.scenario.moduleDtcs?.[this.header] : undefined;
+      if (!store) return 'NO DATA';
+      store.length = 0;
+      return '54';
+    }
     if (h.startsWith('2E') && h.length >= 6) {
       const did = h.slice(2, 6);
       const data = parseHexBytes(h.slice(6));
@@ -191,22 +301,55 @@ export class MockTransport implements Transport {
       if (coding) return '62' + did + toHex(coding);
       const moduleData = this.header ? this.scenario.moduleDids?.[this.header]?.[did] : undefined;
       if (moduleData) return '62' + did + toHex(moduleData);
+      const identText = this.header ? this.scenario.moduleIdent?.[this.header]?.[did] : undefined;
+      if (identText) return '62' + did + toHex(asciiToBytes(identText));
       const data = this.scenario.extendedDids?.[did];
       return data ? '62' + did + toHex(data) : 'NO DATA';
     }
 
-    // Mode 02 freeze frame.
+    // Mode 02 freeze frames — one per stored DTC (frame n belongs to stored[n]).
     if (h.startsWith('02') && h.length === 6) {
       const stored = this.scenario.storedDtcs ?? [];
-      if (stored.length === 0) return 'NO DATA';
       const pid = h.slice(2, 4);
       const frame = h.slice(4, 6);
+      const idx = parseInt(frame, 16);
+      if (Number.isNaN(idx) || idx >= stored.length) return 'NO DATA';
       if (pid === '02') {
-        const [b0, b1] = encodeDtc(stored[0]);
+        const [b0, b1] = encodeDtc(stored[idx]);
         return '42' + '02' + frame + toHex([b0, b1]);
       }
       const data = SIM_PID_BYTES[('01' + pid).toLowerCase()] ?? [0x00];
       return '42' + pid + frame + toHex(data);
+    }
+
+    // Mode 09 08/0B — IUPR.
+    if (h === '0908') {
+      const d = this.scenario.iuprSpark;
+      return d ? '4908' + toHex(d) : 'NO DATA';
+    }
+    if (h === '090B') {
+      const d = this.scenario.iuprCompression;
+      return d ? '490B' + toHex(d) : 'NO DATA';
+    }
+
+    // Mode 05 — O2 monitoring results (tid + sensor).
+    if (h.startsWith('05') && h.length === 6) {
+      const resp = this.scenario.mode05?.[h.slice(2)];
+      return resp ? toHex(resp) : 'NO DATA';
+    }
+
+    // Multi-PID Mode 01 request (CAN): 01 + up to six PID bytes -> 41 + [pid data]* for the
+    // supported ones (unsupported PIDs are omitted, like a real ECU).
+    if (h.startsWith('01') && h.length > 4 && h.length <= 14 && h.length % 2 === 0) {
+      const pids = h.slice(2).match(/../g) ?? [];
+      let body = '';
+      for (const pb of pids) {
+        const full = '01' + pb;
+        if (!this.scenario.supportedPids.includes(full)) continue;
+        const data = SIM_PID_BYTES[full.toLowerCase()] ?? [0x00];
+        body += pb + toHex(data);
+      }
+      return body ? '41' + body : 'NO DATA';
     }
 
     if (h.length === 4 && h.startsWith('01')) {

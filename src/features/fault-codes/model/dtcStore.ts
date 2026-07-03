@@ -8,7 +8,8 @@ export interface DtcResult {
   pending: Dtc[];
   permanent: Dtc[];
   readiness: MonitorStatus | null;
-  freezeFrame: FreezeFrame | null;
+  /** One freeze frame per stored code (frame n belongs to stored[n] on most ECUs). */
+  freezeFrames: FreezeFrame[];
 }
 
 interface DtcState extends DtcResult {
@@ -24,7 +25,7 @@ export const useDtcStore = create<DtcState>((set) => ({
   pending: [],
   permanent: [],
   readiness: null,
-  freezeFrame: null,
+  freezeFrames: [],
   loading: false,
   error: null,
   set: (r) => set({ ...r }),

@@ -23,6 +23,7 @@ export function useInspection() {
       const permanent = await session.readDtcs('0A');
       const freeze = await session.readFreezeFrame();
       const dist = await session.readValue('0131');
+      const iupr = await session.readIupr();
       const vin = info?.vin ?? (await session.readVin());
 
       const input: InspectionInput = {
@@ -33,6 +34,7 @@ export function useInspection() {
         permanent,
         freezeFramePresent: !!freeze && (freeze.triggerDtc != null || freeze.values.length > 0),
         distanceSinceClearKm: dist ? dist.value : null,
+        iupr,
       };
       set({ report: assessInspection(input), running: false, ranAt: Date.now() });
     } catch (e) {

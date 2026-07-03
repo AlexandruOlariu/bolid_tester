@@ -34,7 +34,7 @@ export function useCoding() {
         logError({ source: 'coding/read', error: e, context: { module: mod.module, did: mod.codingDid } });
         return null;
       } finally {
-        await session.setHeader(null);
+        await session.resetAddressing();
       }
     },
     [session, setCurrent],
@@ -76,7 +76,7 @@ export function useCoding() {
         setLastResult(`Failed: ${(e as Error).message}`);
         return false;
       } finally {
-        await session.setHeader(null);
+        await session.resetAddressing();
       }
     },
     [session, unlocked, addBackup, setLastResult],
