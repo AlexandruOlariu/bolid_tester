@@ -7,6 +7,7 @@ import {
   startGuidedRoutine,
   stopGuidedRoutine,
   testerPresent,
+  UdsError,
 } from '@/shared/obd-core';
 import type { GuidedRoutine, ExtendedPid } from '@/shared/vehicles';
 
@@ -77,7 +78,58 @@ export async function startRoutine(session: DiagnosticSession, routine: GuidedRo
     id: routine.id,
     controlData: routine.controlData,
     session: routine.session,
+    security: routine.security,
   });
+}
+
+/** Turn a start failure into guidance the user can act on. Guided-routine IDs and any security
+ *  requirement are per-ECU and, for the shipped profiles, unverified — so a negative response most
+ *  often means "wrong ID for this car" or "this module wants security access", not a bug. Map the
+ *  common ISO 14229 NRCs to that framing; fall back to the raw message otherwise. */
+export function describeRoutineFailure(err: unknown, routine: GuidedRoutine): string {
+  if (err instanceof UdsError && err.nrc !== undefined) {
+    switch (err.nrc) {
+      case 0x33: // securityAccessDenied
+        return (
+          `The ${routine.module} refused this ${routine.kind === 'outputTest' ? 'output test' : 'basic setting'} ` +
+          'without security access (NRC 0x33). VAG basic settings usually need the ECU unlocked ' +
+          '(UDS 0x27 seed/key), and this app does not carry the seed→key algorithm for your ECU. ' +
+          'The routine cannot run until that algorithm is supplied for this profile.'
+        );
+      case 0x35: // invalidKey
+        return 'Security unlock was rejected (NRC 0x35 invalid key) — the seed→key algorithm is wrong for this ECU.';
+      case 0x36: // exceedNumberOfAttempts
+        return 'Too many failed security-unlock attempts (NRC 0x36) — the module is locked out. Cycle the ignition and wait before retrying.';
+      case 0x37: // requiredTimeDelayNotExpired
+        return 'The module is enforcing a security lockout delay (NRC 0x37). Wait a moment and retry.';
+      case 0x11: // serviceNotSupported
+      case 0x12: // subFunctionNotSupported
+      case 0x31: // requestOutOfRange
+      case 0x7e: // subFunctionNotSupportedInActiveSession
+      case 0x7f: // serviceNotSupportedInActiveSession
+        return (
+          `The ${routine.module} does not recognise this routine (id ${routine.id}, NRC 0x${err.nrc.toString(16)}). ` +
+          'This routine ID is unverified for your exact car — it needs confirming from a VCDS "Basic Settings" ' +
+          'session or a UDS capture on the real ECU before it will run.'
+        );
+      case 0x22: // conditionsNotCorrect
+        return (
+          `The ${routine.module} rejected the routine because conditions are not correct (NRC 0x22). ` +
+          'The engine usually must be warm and at a steady idle with no active faults. Clear stored faults, ' +
+          'let it reach operating temperature, and retry.'
+        );
+      case 0x24: // requestSequenceError
+        return (
+          `The ${routine.module} rejected the routine as out of sequence (NRC 0x24) — a required step ` +
+          'is missing before it, most often a security-access unlock or a specific diagnostic ' +
+          'session. The exact start sequence for this routine is unverified for your car and needs ' +
+          'confirming from a VCDS session or a UDS capture.'
+        );
+      default:
+        return err.message;
+    }
+  }
+  return err instanceof Error ? err.message : String(err);
 }
 
 /** Stop + always restore default addressing (header AND rx filter), even when the stop fails. */

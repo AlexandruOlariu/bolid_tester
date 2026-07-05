@@ -129,6 +129,10 @@ export interface GuidedRoutine {
   name: string;
   /** What it does + what the user should expect/observe. Shown before the confirm. */
   description: string;
+  /** VCDS measuring-block "Basic Settings" group this maps to (e.g. 121), when known from a real
+   *  scan. Documentation/cross-reference only — VCDS hides the raw bus request behind its label
+   *  file, so this does NOT give the UDS routine id / KWP sequence; it anchors what to look for. */
+  vcdsGroup?: number;
   controlData?: number[];
   session?: number;
   /** Live values (profile extendedPids DIDs) polled and shown while the routine runs. */
@@ -139,7 +143,18 @@ export interface GuidedRoutine {
     requireIdle?: boolean;
     maxSpeedKmh?: number;
   };
-  security?: { level: number };
+  /** SecurityAccess this routine needs. `level` alone documents the requirement; the ECU is only
+   *  actually unlocked when `seedToKey` is also supplied (the algorithm is per-ECU and not shipped
+   *  by default). Without it the routine is attempted unlocked and a real module that needs access
+   *  answers NRC 0x33 — the UI explains that. */
+  security?: { level: number; seedToKey?: (seed: number[]) => number[] };
+  /** Set when the routine is KNOWN not to be executable over the app's current transport on the real
+   *  car (e.g. it is a VCDS measuring-block "Basic Settings" that rides on VW TP2.0 / KWP, which a
+   *  generic ELM327 cannot drive and the app's TP2.0 transport does not yet implement). Mirrors
+   *  `ServiceReset.obdUnreachable`: the UI leads with this reason and demotes the start to an
+   *  explicit "attempt anyway (unverified)". The simulator still answers, so the flow stays
+   *  demoable. */
+  unavailableReason?: string;
   experimental: true;
 }
 

@@ -21,9 +21,15 @@ function RoutineRow({ routine }: { routine: GuidedRoutine }) {
       <H4>{routine.name}</H4>
       <Paragraph theme="alt2" size="$2">
         {routine.module} · {routine.kind === 'outputTest' ? 'output test (2F)' : 'basic setting (31)'} ·
-        id {routine.id} · ⚠ experimental
+        id {routine.id}
+        {routine.vcdsGroup !== undefined ? ` · VCDS group ${routine.vcdsGroup}` : ''} · ⚠ experimental
       </Paragraph>
       <Paragraph size="$2">{routine.description}</Paragraph>
+      {routine.unavailableReason ? (
+        <Paragraph theme="alt1" size="$2">
+          ⚠ {routine.unavailableReason}
+        </Paragraph>
+      ) : null}
 
       {isActive && phase === 'running' ? (
         <YStack gap="$2">
@@ -44,7 +50,11 @@ function RoutineRow({ routine }: { routine: GuidedRoutine }) {
         </YStack>
       ) : !confirming ? (
         <Button disabled={!unlocked || busy} onPress={() => setConfirming(true)}>
-          {unlocked ? 'Start…' : 'Locked'}
+          {!unlocked
+            ? 'Locked'
+            : routine.unavailableReason
+              ? 'Attempt anyway (unverified — not expected to work)'
+              : 'Start…'}
         </Button>
       ) : (
         <YStack gap="$2" backgroundColor="$color1" padding="$2" borderRadius="$3">

@@ -8,6 +8,7 @@ import {
   securityAccess,
   serviceReset,
   isModuleUnreachableError,
+  nrcName,
 } from './udsCoding';
 
 /** A fake module that stores coding for one DID and answers the UDS services we use. */
@@ -132,6 +133,30 @@ describe('checkNegative / response pending (NRC 0x78)', () => {
     const e = caught(() => checkNegative(0x31, [0x7f, 0x2e, 0x78]));
     expect(e?.message).toContain('Negative response');
   });
+
+  it('names a known NRC in the error message and keeps the raw code', () => {
+    const e = caught(() => checkNegative(0x31, [0x7f, 0x31, 0x33]));
+    expect(e?.nrc).toBe(0x33);
+    expect(e?.message).toBe('Negative response: securityAccessDenied (NRC 0x33)');
+  });
+
+  it('falls back to the raw code for an unknown NRC', () => {
+    const e = caught(() => checkNegative(0x31, [0x7f, 0x31, 0xa5]));
+    expect(e?.message).toBe('Negative response (NRC 0xa5)');
+  });
+});
+
+describe('nrcName', () => {
+  it('names the diagnostic NRCs the UI relies on', () => {
+    expect(nrcName(0x33)).toBe('securityAccessDenied');
+    expect(nrcName(0x31)).toBe('requestOutOfRange');
+    expect(nrcName(0x22)).toBe('conditionsNotCorrect');
+    expect(nrcName(0x12)).toBe('subFunctionNotSupported');
+  });
+
+  it('returns null for an unknown code', () => {
+    expect(nrcName(0xa5)).toBeNull();
+  });
 });
 
 describe('securityAccess lockout handling', () => {
@@ -176,7 +201,7 @@ describe('isModuleUnreachableError', () => {
   });
 
   it.each([
-    'Negative response (NRC 0x31)',
+    'Negative response: requestOutOfRange (NRC 0x31)',
     'Unexpected response 0x50 (wanted 0x71)',
     'BLE write failed',
   ])('does NOT flag "%s"', (msg) => {

@@ -10,6 +10,7 @@ import {
   enterSession,
   hexBytes as hex,
   routineControl,
+  securityAccess,
 } from '../coding/udsCoding';
 
 /** 0x2F <did> 0x03 <data> — shortTermAdjustment: force an output to the given state. */
@@ -33,14 +34,23 @@ export interface GuidedRoutineDescriptor {
   controlData?: number[];
   /** Diagnostic session to enter first (default 0x03 extended). */
   session?: number;
+  /** SecurityAccess to perform after the session, before the routine. Only run when a `seedToKey`
+   *  algorithm is supplied — the `level` alone (as a profile may declare) is not enough to unlock,
+   *  so without the algorithm the routine is attempted unlocked and the ECU decides (NRC 0x33 if it
+   *  needed access). See docs/features/routines.md. */
+  security?: { level: number; seedToKey?: (seed: number[]) => number[] };
 }
 
-/** Enter the diagnostic session and start the routine / output control. */
+/** Enter the diagnostic session, optionally unlock (SecurityAccess), then start the routine /
+ *  output control. */
 export async function startGuidedRoutine(
   send: UdsSend,
   d: GuidedRoutineDescriptor,
 ): Promise<void> {
   await enterSession(send, d.session ?? 0x03);
+  if (d.security?.seedToKey) {
+    await securityAccess(send, d.security.level, d.security.seedToKey);
+  }
   if (d.service === '31') await routineControl(send, 0x01, d.id, d.controlData ?? []);
   else await startOutputControl(send, d.id, d.controlData ?? []);
 }

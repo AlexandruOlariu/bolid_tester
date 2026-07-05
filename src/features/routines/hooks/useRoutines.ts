@@ -8,6 +8,7 @@ import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import {
   checkInterlocks,
   checkInterlocksDuringRun,
+  describeRoutineFailure,
   hasInterlocks,
   startRoutine,
   stopRoutine,
@@ -98,9 +99,8 @@ export function useRoutines() {
           }
         }, TICK_MS);
       } catch (e) {
-        const msg = (e as Error).message;
         logError({ source: 'routines', error: e, context: { routine: routine.name, id: routine.id } });
-        await stop(routine, 'error', `Failed: ${msg}`);
+        await stop(routine, 'error', describeRoutineFailure(e, routine));
       }
     },
     [session, store.unlocked, profileId, stop],

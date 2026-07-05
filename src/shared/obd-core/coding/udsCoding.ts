@@ -23,6 +23,37 @@ export function hexBytes(bytes: number[]): string {
 
 const hex = hexBytes;
 
+/** ISO 14229 negative-response codes we can name. Kept small and diagnostic-focused: the ones a
+ *  user actually hits driving coding / routines / adaptations. Anything else falls back to the raw
+ *  hex. Used to turn `7F <svc> <nrc>` into a legible message instead of a bare code. */
+const NRC_NAMES: Record<number, string> = {
+  0x10: 'generalReject',
+  0x11: 'serviceNotSupported',
+  0x12: 'subFunctionNotSupported',
+  0x13: 'incorrectMessageLengthOrInvalidFormat',
+  0x14: 'responseTooLong',
+  0x21: 'busyRepeatRequest',
+  0x22: 'conditionsNotCorrect',
+  0x24: 'requestSequenceError',
+  0x31: 'requestOutOfRange',
+  0x33: 'securityAccessDenied',
+  0x35: 'invalidKey',
+  0x36: 'exceedNumberOfAttempts',
+  0x37: 'requiredTimeDelayNotExpired',
+  0x70: 'uploadDownloadNotAccepted',
+  0x72: 'generalProgrammingFailure',
+  0x78: 'requestCorrectlyReceived-ResponsePending',
+  0x7e: 'subFunctionNotSupportedInActiveSession',
+  0x7f: 'serviceNotSupportedInActiveSession',
+  0x92: 'voltageTooHigh',
+  0x93: 'voltageTooLow',
+};
+
+/** Human name for an ISO 14229 negative-response code, or `null` if we don't have one. */
+export function nrcName(nrc: number): string | null {
+  return NRC_NAMES[nrc] ?? null;
+}
+
 /** NRC 0x78 requestCorrectlyReceived-ResponsePending. Slow operations (routine starts — DPF regen
  *  in particular — security access, DTC clears) answer `7F <svc> 78` one or more times before the
  *  final response; each repeat also keeps the ELM327's receive window open, so the real answer
@@ -46,8 +77,14 @@ export function checkNegative(req: number, res: number[] | null): number[] {
       0x78,
     );
   }
-  if (cleaned[0] === 0x7f)
-    throw new UdsError(`Negative response (NRC 0x${(cleaned[2] ?? 0).toString(16)})`, cleaned[2]);
+  if (cleaned[0] === 0x7f) {
+    const nrc = cleaned[2] ?? 0;
+    const name = nrcName(nrc);
+    throw new UdsError(
+      `Negative response${name ? `: ${name}` : ''} (NRC 0x${nrc.toString(16).padStart(2, '0')})`,
+      nrc,
+    );
+  }
   const expected = req + 0x40;
   if (cleaned[0] !== expected)
     throw new UdsError(

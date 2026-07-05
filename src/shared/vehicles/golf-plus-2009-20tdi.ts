@@ -78,6 +78,19 @@ export const golfPlus2009: VehicleProfile = {
       category: 'diesel', role: 'egrPct',
       sampleResponse: [0x40], decode: (d) => Math.round((d[0] * 100) / 255), // ~25 %
     },
+    // Intake manifold runner/flap (V157) feedback — the values VCDS shows during the Group 121
+    // basic setting (position deviation settling near 0 %, potentiometer ~1.0 V). Illustrative
+    // VAG-style DIDs; the real DIDs are unconfirmed (see the flap routine's unavailableReason).
+    {
+      did: '170E', name: 'Intake flap position', unit: '%', experimental: true,
+      category: 'diesel',
+      sampleResponse: [0x00], decode: (d) => Math.round((d[0] * 100) / 255), // ~0 % (learned stop)
+    },
+    {
+      did: '170F', name: 'Intake flap potentiometer', unit: 'V', experimental: true,
+      category: 'diesel',
+      sampleResponse: [0x04, 0x28], decode: (d) => (d[0] * 256 + d[1]) / 1000, // 1.064 V
+    },
     // --- Injection pack: EXPERIMENTAL, illustrative VAG-style DIDs (per-injector data is enhanced,
     // not generic OBD-II). Surfaced in the Sensor readings screen's injection section on CAN cars.
     {
@@ -159,14 +172,32 @@ export const golfPlus2009: VehicleProfile = {
       experimental: true,
     },
     {
+      // Ground truth from the owner's VCDS 20.4.2 (label file 03L-906-022-CBA.CLB): this is
+      // "Intake Manifold Runner/Motor (V157) Adaptation", run as Basic Settings on measuring-block
+      // GROUP 121. During the run VCDS shows four fields — a position deviation (0.0 %), a second
+      // deviation (~-7.9 %), a status byte (bin 01000110), and the flap potentiometer feedback
+      // (~1.064 V). VCDS hides the raw bus request behind its label file, so the actual UDS routine
+      // id / KWP measuring-block sequence is still unconfirmed — see `unavailableReason`.
       module: 'Engine (EDC17)', reqHeader: '7E0', rxFilter: '7E8',
       kind: 'basicSetting', service: '31', id: '0301',
-      name: 'Intake flap adaptation',
+      name: 'Intake Manifold Runner/Motor (V157) adaptation',
+      vcdsGroup: 121,
       description:
-        'Re-learns the intake manifold flap end stops (the P2015 fix check). Engine idling, ' +
-        'vehicle stationary.',
-      liveDids: ['1708'],
+        'Re-learns the intake manifold runner/flap end stops driven by the V157 motor — the VCDS ' +
+        '"Basic Settings → Group 121" you run after cleaning or replacing the manifold, and the ' +
+        'check for a P2015 (intake flap position, VAG 08213) fault on this car. The ECU sweeps the ' +
+        'flap and stores the learned stops; VCDS shows the position deviation settling near 0 % and ' +
+        'the potentiometer around 1.0 V. Engine warm and at a steady idle, vehicle stationary, no ' +
+        'active faults.',
+      liveDids: ['170E', '170F'],
       interlocks: { requireIdle: true, maxSpeedKmh: 0 },
+      unavailableReason:
+        'VCDS drives this as a measuring-block Basic Setting (Group 121), which on this PQ35 car ' +
+        'most likely rides on VW TP2.0 / KWP — a generic ELM327 cannot drive it and the app\'s ' +
+        'TP2.0 transport is not implemented yet. The exact request is also unconfirmed because ' +
+        'VCDS hides it behind its label file. To capture the real sequence: run the Bus Sniffer ' +
+        'here while VCDS performs the Group 121 basic setting, read off the frames on 7E0→7E8 (or ' +
+        'the TP2.0 channel), then the routine id / KWP steps can be wired into this profile.',
       experimental: true,
     },
     {

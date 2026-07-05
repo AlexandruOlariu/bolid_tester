@@ -41,6 +41,41 @@ describe('guidedRoutine primitives', () => {
     expect(log).toContain('31020201');
   });
 
+  it('runs SecurityAccess before the routine when a seedToKey is supplied', async () => {
+    const seen: string[] = [];
+    const send: UdsSend = async (cmd) => {
+      const c = cmd.toUpperCase();
+      seen.push(c);
+      if (c.startsWith('10')) return [0x50, 0x03];
+      if (c === '2703') return [0x67, 0x03, 0x11, 0x22]; // seed
+      if (c.startsWith('2704')) return [0x67, 0x04]; // key accepted
+      if (c.startsWith('31')) return [0x71, ...c.slice(2).match(/../g)!.map((h) => parseInt(h, 16))];
+      return null;
+    };
+    await startGuidedRoutine(send, {
+      service: '31',
+      id: '0301',
+      security: { level: 0x03, seedToKey: (s) => s.map((b) => b ^ 0xff) },
+    });
+    expect(seen[0]).toBe('1003');
+    expect(seen[1]).toBe('2703'); // requestSeed
+    expect(seen[2]).toBe('2704EEDD'); // sendKey = seed XOR 0xFF
+    expect(seen[3]).toBe('31010301'); // routine only after unlock
+  });
+
+  it('skips SecurityAccess when only a level is declared (no algorithm)', async () => {
+    const seen: string[] = [];
+    const send: UdsSend = async (cmd) => {
+      const c = cmd.toUpperCase();
+      seen.push(c);
+      if (c.startsWith('10')) return [0x50, 0x03];
+      if (c.startsWith('31')) return [0x71, ...c.slice(2).match(/../g)!.map((h) => parseInt(h, 16))];
+      return null;
+    };
+    await startGuidedRoutine(send, { service: '31', id: '0301', security: { level: 0x03 } });
+    expect(seen).toEqual(['1003', '31010301']); // no 27xx sent
+  });
+
   it('results are refused for 2F descriptors and stop never throws', async () => {
     await expect(guidedRoutineResults(echoSend, { service: '2F', id: '0130' })).rejects.toBeInstanceOf(
       UdsError,

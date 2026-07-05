@@ -907,6 +907,9 @@
   "core:tp20/elmRawCan": {
     "path": "src/shared/obd-core/tp20/elmRawCan.ts",
     "summary": "RawCanLink over a real ELM327 in raw-CAN mode, for TP2.0 on hardware.",
+    "tests": [
+      "src/shared/obd-core/tp20/elmRawCan.test.ts"
+    ],
     "tokens": [
       "20",
       "can",
@@ -918,7 +921,7 @@
   },
   "core:tp20/fakeTp20Bus": {
     "path": "src/shared/obd-core/tp20/fakeTp20Bus.ts",
-    "summary": "In-memory VW TP2.0 bus for tests and the simulator: a gateway + a few pre-UDS modules that answer channel setup, parameters, and a small KWP2000 appl\u2026",
+    "summary": "In-memory VW TP2.0 bus for tests and the simulator: a gateway + a few pre-UDS modules that answer channel setup, parameters, keep-alives, and a small\u2026",
     "tokens": [
       "20",
       "bus",
@@ -929,7 +932,7 @@
   },
   "core:tp20/tp20": {
     "path": "src/shared/obd-core/tp20/tp20.ts",
-    "summary": "VW/VAG Transport Protocol 2.0 (TP2.0) \u2014 the channel layer that carries KWP2000 to PRE-UDS modules (cluster, comfort, gateway\u2026) on PQ-platform CAN car\u2026",
+    "summary": "exports RawFrame",
     "tests": [
       "src/shared/obd-core/tp20/tp20.test.ts"
     ],
@@ -941,7 +944,7 @@
   },
   "core:tp20/tp20Scan": {
     "path": "src/shared/obd-core/tp20/tp20Scan.ts",
-    "summary": "TP2.0 scan: open a channel to the gateway, read its installation list, then read ident from each pre-UDS module present.",
+    "summary": "TP2.0 scan: open a channel to the gateway, read its installation list, then per pre-UDS module start a diagnostic session, read ident (KWP 0x1A) and\u2026",
     "tests": [
       "src/shared/obd-core/tp20/tp20Scan.test.ts"
     ],
@@ -1659,6 +1662,9 @@
   "feature:routines": {
     "path": "src/features/routines",
     "summary": "VCDS-style **output tests** (UDS `2F` InputOutputControlByIdentifier) and **basic settings**",
+    "tests": [
+      "src/features/routines/api/routineService.test.ts"
+    ],
     "tokens": [
       "routines"
     ],

@@ -2066,6 +2066,11 @@
   ],
   [
     "feature:module-scan",
+    "core:tp20/vagModules",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
     "core:uds/udsModule",
     "imports"
   ],
