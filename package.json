@@ -2,7 +2,7 @@
   "name": "bolid-tester",
   "version": "0.1.0",
   "private": true,
-  "description": "Generic OBD2/EOBD diagnostics app (React Native/Expo). Documentation-driven \u2014 see docs/.",
+  "description": "Generic OBD2/EOBD diagnostics app (React Native/Expo). Documentation-driven — see docs/.",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start --dev-client",
@@ -30,8 +30,14 @@
     "@tamagui/config": "^1.144.4",
     "expo": "^56.0.9",
     "expo-dev-client": "~56.0.19",
+    "expo-file-system": "~56.0.8",
+    "expo-haptics": "~56.0.3",
     "expo-linking": "~56.0.13",
+    "expo-location": "~56.0.18",
+    "expo-notifications": "~56.0.18",
     "expo-router": "~56.2.9",
+    "expo-sharing": "~56.0.18",
+    "expo-splash-screen": "~56.0.12",
     "expo-status-bar": "~56.0.4",
     "lucide-react-native": "^1.17.0",
     "react": "19.2.3",
@@ -41,12 +47,7 @@
     "react-native-screens": "4.25.2",
     "react-native-svg": "15.15.4",
     "tamagui": "^1.144.4",
-    "zustand": "^5.0.3",
-    "expo-notifications": "~56.0.18",
-    "expo-file-system": "~56.0.8",
-    "expo-haptics": "~56.0.3",
-    "expo-location": "~56.0.18",
-    "expo-sharing": "~56.0.18"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@tamagui/babel-plugin": "^1.144.4",
@@ -64,5 +65,5 @@
     "ts-jest": "^29.1.2",
     "typescript": "~6.0.3"
   },
-  "_note": "Core tooling (ts/jest/eslint) is installed and verified in CI/container. The RN runtime deps require a native build; install on a dev machine with `npm install` (or `npx expo install` to align native versions) \u2014 see docs/phase2-mobile-app.md."
+  "_note": "Core tooling (ts/jest/eslint) is installed and verified in CI/container. The RN runtime deps require a native build; install on a dev machine with `npm install` (or `npx expo install` to align native versions) — see docs/phase2-mobile-app.md."
 }
