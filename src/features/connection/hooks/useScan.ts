@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react';
+import { State } from 'react-native-ble-plx';
 import { getBleManager, looksLikeAdapter, OBD_SERVICE_UUIDS } from '@/shared/transports/ble/manager';
 import { requestBlePermissions } from '@/shared/transports/ble/permissions';
 import { useSessionStore } from '@/shared/state/sessionStore';
@@ -10,6 +11,8 @@ const SCAN_TIMEOUT_MS = 12000;
 const PERMISSION_DENIED_MSG =
   'Bluetooth permission denied. Allow “Nearby devices” (Android 12+) or Location (Android 11 and ' +
   'below) for Bolid Tester in system settings, turn Bluetooth on, then scan again.';
+
+const BLUETOOTH_OFF_MSG = 'Bluetooth is off. Turn Bluetooth on, then scan again.';
 
 /** Drive a BLE scan, filling the scan store. Sorts likely adapters first by RSSI. */
 export function useScan() {
@@ -25,6 +28,14 @@ export function useScan() {
       setScanning(false);
       useSessionStore.getState().setError(PERMISSION_DENIED_MSG);
       logError({ source: 'connection/scan', error: PERMISSION_DENIED_MSG, severity: 'warning' });
+      return;
+    }
+    // The radio can turn off between the button check and here — fail with clear guidance instead of
+    // a raw "BluetoothLE is powered off" scan error.
+    if ((await getBleManager().state()) !== State.PoweredOn) {
+      setScanning(false);
+      useSessionStore.getState().setError(BLUETOOTH_OFF_MSG);
+      logError({ source: 'connection/scan', error: BLUETOOTH_OFF_MSG, severity: 'warning' });
       return;
     }
     useSessionStore.getState().setError(null);

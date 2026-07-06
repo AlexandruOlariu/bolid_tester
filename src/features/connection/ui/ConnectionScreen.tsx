@@ -8,7 +8,9 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import type { ConnState } from '@/shared/state/sessionStore';
 import { useScan } from '../hooks/useScan';
 import { useConnect } from '../hooks/useConnect';
+import { useBluetoothState } from '../hooks/useBluetoothState';
 import { DeviceRow } from './DeviceRow';
+import { BluetoothPrompt } from './BluetoothPrompt';
 import { Panel } from '../styles/connection.styles';
 
 const STATUS_CONFIG: Record<ConnState, { icon: React.ElementType; color: string; label: string }> = {
@@ -51,7 +53,12 @@ export function ConnectionScreen() {
   const error = useSessionStore((s) => s.error);
   const { scanning, devices, start, stop } = useScan();
   const { connect, busy } = useConnect();
+  const bt = useBluetoothState(adapterSource !== 'mock');
   const [manualId, setManualId] = useState('');
+
+  // Positively-known "not ready" states block scanning; while still settling we let the scan run and
+  // rely on useScan's own guard, so a slow/unknown adapter state can't wedge the button forever.
+  const btBlocked = bt.poweredOff || bt.unauthorized || bt.unsupported;
 
   return (
     <Screen title="Connect" subtitle="Pair with your OBD2 adapter, or use the built-in simulator">
@@ -83,9 +90,12 @@ export function ConnectionScreen() {
         </YStack>
       ) : (
         <YStack gap="$3" marginTop="$2">
+          <BluetoothPrompt bt={bt} />
+
           <Button
             theme="blue"
             size="$5"
+            disabled={btBlocked && !scanning}
             onPress={scanning ? stop : start}
             icon={scanning ? () => <Spinner /> : undefined}
           >

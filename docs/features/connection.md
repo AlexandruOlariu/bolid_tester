@@ -9,9 +9,13 @@ Scan for, connect to, and initialize the ELM327 BLE adapter.
   error` and the negotiated protocol once known.
 
 ## hooks
-- `useScan()` — start/stop scanning, returns discovered devices.
+- `useScan()` — start/stop scanning, returns discovered devices. Guards on the radio being
+  `PoweredOn` before scanning, so a powered-off adapter fails with clear guidance, not a raw error.
 - `useConnect()` — connect to a chosen device, run the ELM327 init, expose progress/errors.
 - `useAdapterStatus()` — read connection status + protocol from the store.
+- `useBluetoothState(enabled?)` — subscribe to the phone's live Bluetooth radio state
+  (`onStateChange`): `ready / poweredOff / unauthorized / unsupported / checking`. Pass `false` in
+  simulator mode so the `BleManager` is never constructed. Drives `BluetoothPrompt`.
 
 ## api (service layer)
 - `connectionService` — builds the `Transport` (BLE or Mock per Settings), constructs the
@@ -22,6 +26,11 @@ Scan for, connect to, and initialize the ELM327 BLE adapter.
   `voltage`, `error`.
 
 ## Behavior
+0. Detect the Bluetooth **radio** state. When it isn't `PoweredOn`, the Connect screen shows a
+   `BluetoothPrompt` banner and disables scanning: **off** → one-tap "Turn on Bluetooth" on Android
+   (`BleManager.enable()`; iOS points to Control Center), **unauthorized** → "Open settings",
+   **unsupported** → guidance to use the simulator. The banner clears itself the moment the radio
+   comes on (state subscription).
 1. Request BLE permissions (Android 12+ scan/connect; iOS usage description).
 2. Scan; user picks a device (or auto-connect to the last used).
 3. `BleTransport` connects, **discovers** services/characteristics, selects the notify + write pair.
@@ -47,6 +56,8 @@ the app never lists it." The connection flow handles it as follows:
 
 ## Acceptance
 - Connects to the simulator in dev with no hardware (Settings → mock).
+- With Bluetooth off, the Connect screen prompts to enable it (one-tap on Android) and re-enables
+  scanning automatically once the radio is on — never a raw "powered off" scan error.
 - Surfaces a clear error on permission denial, no device, or failed init.
 - Already-connected/bonded adapters are listed (or reachable by address) even when not advertising.
 - Never hard-codes characteristic UUIDs.

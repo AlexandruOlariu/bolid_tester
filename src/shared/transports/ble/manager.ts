@@ -1,4 +1,5 @@
 /** Lazily-created singleton BleManager (react-native-ble-plx). Native only. */
+import { Platform } from 'react-native';
 import { BleManager } from 'react-native-ble-plx';
 
 let manager: BleManager | null = null;
@@ -6,6 +7,20 @@ let manager: BleManager | null = null;
 export function getBleManager(): BleManager {
   if (!manager) manager = new BleManager();
   return manager;
+}
+
+/** Best-effort: ask the OS to power the Bluetooth radio on. `enable()` is **Android-only** — it
+ *  shows the system enable dialog and resolves once BLE reaches PoweredOn. iOS has no public API to
+ *  toggle the radio (the user must use Control Center/Settings), so this resolves `false` there.
+ *  Returns whether the radio ended up on; callers fall back to manual guidance when `false`. */
+export async function enableBluetooth(): Promise<boolean> {
+  if (Platform.OS !== 'android') return false;
+  try {
+    await getBleManager().enable();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /** Device name hints commonly advertised by ELM327 BLE clones (incl. the Vgate iCar Pro). */
