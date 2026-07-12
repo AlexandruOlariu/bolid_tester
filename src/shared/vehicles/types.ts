@@ -80,7 +80,11 @@ export interface ServiceReset {
   routineId?: string;
   /** For method 'adaptation': DIDs whose service values are written back to default. */
   adaptations?: { did: string; defaultBytes: number[] }[];
-  security?: { level: number };
+  /** SecurityAccess this reset needs. `level` alone documents the requirement; the ECU is only
+   *  actually unlocked when `seedToKey` is also supplied (the algorithm is per-ECU and not shipped
+   *  by default). Without it the reset is attempted unlocked and a real module that needs access
+   *  answers NRC 0x33 — the UI explains that. */
+  security?: { level: number; seedToKey?: (seed: number[]) => number[] };
   /** Manual fallback steps (e.g. dash-stalk SRI reset) shown to the user. Surfaced always, and
    *  especially when the adapter cannot reach the target module (generic ELM327 K-line clusters). */
   manualProcedure?: string[];
