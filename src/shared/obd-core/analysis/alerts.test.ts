@@ -50,6 +50,17 @@ describe('AlertEngine', () => {
     expect(e.evaluate([rule], { '0142': 11 }).fired).toHaveLength(1);
   });
 
+  it('lets an outside alert clear even when hysteresis is wider than half the band', () => {
+    const e = new AlertEngine();
+    // Band [20,80] (width 60); hysteresis 40 > half (30). Un-clamped, the clear zone inverts to
+    // empty and the alert could never clear.
+    const rule: AlertRule = { id: 'x', pid: '0105', op: 'outside', value: 20, value2: 80, hysteresis: 40, severity: 'warn' };
+    expect(e.evaluate([rule], { '0105': { value: 10 } }).fired).toHaveLength(1);
+    const back = e.evaluate([rule], { '0105': { value: 50 } });
+    expect(back.cleared).toHaveLength(1);
+    expect(e.current).toHaveLength(0);
+  });
+
   it('seeds sensible default rules from the effective PID set', () => {
     const rules = defaultRules(['0105', '0142', '010C']);
     expect(rules.map((r) => r.id)).toEqual(['coolant-hot', 'low-voltage', 'over-rev']);

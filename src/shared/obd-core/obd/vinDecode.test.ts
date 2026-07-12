@@ -49,4 +49,9 @@ describe('VIN decode', () => {
     expect(decodeModelYear('WVWZZZ1KZ9W903398')).toBe(2009); // numeric char-7 ⇒ 1980–2009
     expect(decodeModelYear('1HGCM82633A004352')).toBe(2003);
   });
+
+  it('decodeModelYear returns null (not 1980) for a VIN with no char-10', () => {
+    expect(decodeModelYear('WVWZZZ')).toBeNull(); // too short — ''.indexOf('') used to give 0 → 1980
+    expect(decodeModelYear('')).toBeNull();
+  });
 });

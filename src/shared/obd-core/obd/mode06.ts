@@ -32,19 +32,18 @@ function applyScale(uasid: number, raw: number): { value: number; unit: string }
 }
 
 /** Decode a CAN Mode 06 response. `bytes` includes the `0x46` service byte. Each result group is
- *  7 bytes: MID, TID, UASID, testValue(2), min(2), max(2). */
+ *  9 bytes: MID, TID, UASID, testValue(2), min(2), max(2). */
 export function decodeMode06(bytes: number[]): Mode06Result[] {
   if (bytes.length < 1 || bytes[0] !== 0x46) return [];
   const body = bytes.slice(1);
   const out: Mode06Result[] = [];
-  for (let i = 0; i + 7 <= body.length; i += 7) {
+  for (let i = 0; i + 9 <= body.length; i += 9) {
     const mid = body[i];
     const tid = body[i + 1];
     const uasid = body[i + 2];
     const rawVal = u16(body[i + 3], body[i + 4]);
     const rawMin = u16(body[i + 5], body[i + 6]);
-    // Some responses pack max in a following group; when absent, treat min/max from this group.
-    const rawMax = i + 9 <= body.length ? u16(body[i + 7], body[i + 8]) : rawMin;
+    const rawMax = u16(body[i + 7], body[i + 8]);
     const v = applyScale(uasid, rawVal);
     const lo = applyScale(uasid, rawMin).value;
     const hi = applyScale(uasid, rawMax).value;

@@ -24,6 +24,9 @@ export function base64ToBytes(b64: string): number[] {
   const clean = b64.replace(/[^A-Za-z0-9+/]/g, '');
   const bytes: number[] = [];
   for (let i = 0; i < clean.length; i += 4) {
+    // A lone trailing char (cleaned length ≡ 1 mod 4) can't encode even one byte — ignore it
+    // instead of defaulting the missing sextet to 0 and emitting a phantom byte.
+    if (clean[i + 1] === undefined) break;
     const c0 = LOOKUP[clean[i]] ?? 0;
     const c1 = LOOKUP[clean[i + 1]] ?? 0;
     const c2 = clean[i + 2] !== undefined ? LOOKUP[clean[i + 2]] : undefined;

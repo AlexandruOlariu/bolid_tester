@@ -41,7 +41,10 @@ export function normalizeError(error: unknown): { message: string; stack?: strin
   if (typeof error === 'string') return { message: error };
   if (error == null) return { message: 'Unknown error' };
   try {
-    return { message: JSON.stringify(error) };
+    // JSON.stringify returns `undefined` for a function/symbol value — fall back so `message` is
+    // always a string, never undefined (the interface promises a string).
+    const s = JSON.stringify(error);
+    return { message: s ?? String(error) };
   } catch {
     return { message: String(error) };
   }

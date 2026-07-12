@@ -75,7 +75,7 @@ export const useSettingsStore = create<SettingsState>()(
       setPollInterval: (pollIntervalMs) => set({ pollIntervalMs }),
       setTheme: (theme) => set({ theme }),
       setAi: (patch) => set((s) => ({ ai: { ...s.ai, ...patch } })),
-      appendLog: (e) => set((s) => ({ log: [...s.log.slice(-300), e] })),
+      appendLog: (e) => set((s) => ({ log: [...s.log.slice(-299), e] })),
       clearLog: () => set({ log: [] }),
     }),
     {

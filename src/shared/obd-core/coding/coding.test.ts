@@ -32,4 +32,11 @@ describe('coding byte/bit helpers', () => {
     expect(diffCoding([1, 2, 3], [1, 9, 3])).toEqual([{ index: 1, before: 2, after: 9 }]);
     expect(bytesToHexString([0x0a, 0xff])).toBe('0A FF');
   });
+
+  it('pads instead of leaving sparse holes for an out-of-range index', () => {
+    const b = setByte([0x00, 0x00], 4, 0xab);
+    expect(b).toEqual([0x00, 0x00, 0x00, 0x00, 0xab]);
+    expect(bytesToHexString(b)).toBe('00 00 00 00 AB'); // no blank gaps from array holes
+    expect(setBit([0x00], 3, 1, 1)).toEqual([0x00, 0x00, 0x00, 0b0000_0010]);
+  });
 });

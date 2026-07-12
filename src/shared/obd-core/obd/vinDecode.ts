@@ -37,7 +37,11 @@ const YEAR_CODES = 'ABCDEFGHJKLMNPRSTVWXY123456789';
 /** Decode the model year (char 10). A numeric char-7 ⇒ 1980–2009; an alpha char-7 ⇒ 2010–2039.
  *  Returns null when char 10 is not a valid year code (common on European VINs). */
 export function decodeModelYear(vin: string): number | null {
-  const idx = YEAR_CODES.indexOf((vin[9] ?? '').toUpperCase());
+  const code = (vin[9] ?? '').toUpperCase();
+  // Guard the empty char explicitly: ''.indexOf('') is 0 (not -1), which would mis-decode a VIN
+  // shorter than 10 chars as model-year code 'A' → 1980 instead of "unknown".
+  if (!code) return null;
+  const idx = YEAR_CODES.indexOf(code);
   if (idx < 0) return null;
   const seventhAlpha = /[A-Z]/.test(vin[6] ?? '');
   return (seventhAlpha ? 2010 : 1980) + idx;

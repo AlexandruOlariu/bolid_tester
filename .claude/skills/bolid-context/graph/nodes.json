@@ -2118,6 +2118,9 @@
   "transport:BleTransport": {
     "path": "src/shared/transports/ble/BleTransport.ts",
     "summary": "Transport implementation over react-native-ble-plx.",
+    "tests": [
+      "src/shared/transports/ble/BleTransport.test.ts"
+    ],
     "tokens": [
       "ble",
       "transport"

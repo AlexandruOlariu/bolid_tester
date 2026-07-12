@@ -23,6 +23,9 @@ export function getBit(bytes: number[], byteIndex: number, bit: number): 0 | 1 {
 /** Immutably set a single bit. */
 export function setBit(bytes: number[], byteIndex: number, bit: number, value: 0 | 1): number[] {
   const out = bytes.slice();
+  // Pad rather than leave sparse-array holes if byteIndex is past the end — holes render as blanks
+  // in bytesToHexString and misalign downstream byte handling.
+  while (out.length <= byteIndex) out.push(0);
   const cur = out[byteIndex] ?? 0;
   out[byteIndex] = value ? cur | (1 << bit) : cur & ~(1 << bit);
   out[byteIndex] &= 0xff;
@@ -32,6 +35,7 @@ export function setBit(bytes: number[], byteIndex: number, bit: number, value: 0
 /** Immutably set a whole byte. */
 export function setByte(bytes: number[], byteIndex: number, value: number): number[] {
   const out = bytes.slice();
+  while (out.length <= byteIndex) out.push(0); // avoid sparse-array holes for an out-of-range index
   out[byteIndex] = value & 0xff;
   return out;
 }

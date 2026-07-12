@@ -21,4 +21,9 @@ describe('base64', () => {
     expect(bytesToBase64([0x41])).toBe('QQ==');
     expect(base64ToBytes('QVRaDQ==')).toEqual([0x41, 0x54, 0x5a, 0x0d]); // "ATZ\r"
   });
+
+  it('ignores a lone trailing char (length ≡ 1 mod 4) rather than emitting a phantom byte', () => {
+    // 5 base64 chars is invalid (needs ≥2 chars per byte); the 5th can't form a byte.
+    expect(base64ToBytes('AAAAA')).toEqual([0, 0, 0]); // 3 bytes, not 4
+  });
 });

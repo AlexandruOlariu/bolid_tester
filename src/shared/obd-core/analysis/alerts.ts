@@ -67,8 +67,13 @@ function stillTripped(rule: AlertRule, v: number): boolean {
       return v > rule.value - h;
     case 'lt':
       return v < rule.value + h;
-    case 'outside':
-      return v < rule.value + h || v > (rule.value2 ?? rule.value) - h;
+    case 'outside': {
+      // Clamp hysteresis to half the band so the clear zone [value+h, value2-h] can't invert to
+      // empty (which would make an active 'outside' alert impossible to ever clear).
+      const hi = rule.value2 ?? rule.value;
+      const hh = Math.min(h, Math.max(0, (hi - rule.value) / 2));
+      return v < rule.value + hh || v > hi - hh;
+    }
     case 'inside':
       return v >= rule.value - h && v <= (rule.value2 ?? rule.value) + h;
   }

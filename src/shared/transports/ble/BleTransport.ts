@@ -19,6 +19,9 @@ export class BleTransport implements Transport {
   private disconnectSub: Subscription | null = null;
   private writeTarget: WriteTarget | null = null;
   private listeners = new Set<(b: Uint8Array) => void>();
+  /** Bumped by disconnect() (and each connect()) so an in-flight connect() can detect it was
+   *  superseded and tear its half-built connection back down instead of leaking it. */
+  private connectSeq = 0;
 
   constructor(
     private manager: BleManager,
@@ -26,18 +29,34 @@ export class BleTransport implements Transport {
   ) {}
 
   async connect(): Promise<void> {
+    const token = ++this.connectSeq;
     this.status = 'connecting';
     try {
       const device = await this.manager.connectToDevice(this.deviceId, { requestMTU: 247 });
       await device.discoverAllServicesAndCharacteristics();
       this.device = device;
       await this.selectCharacteristics(device);
+      if (token !== this.connectSeq) {
+        // A disconnect() (or a newer connect()) landed while we were connecting — the live
+        // connection + monitor we just wired up would otherwise leak. Tear it back down.
+        await this.teardown();
+        return;
+      }
       this.disconnectSub = device.onDisconnected(() => {
         this.status = 'disconnected';
       });
       this.status = 'connected';
     } catch (e) {
       this.status = 'error';
+      // The OS-level GATT connection may have been established before discovery / characteristic
+      // selection threw; cancel it so it doesn't leak and block later reconnects.
+      await this.manager.cancelDeviceConnection(this.deviceId).catch(() => undefined);
+      this.monitor?.remove();
+      this.monitor = null;
+      this.disconnectSub?.remove();
+      this.disconnectSub = null;
+      this.device = null;
+      this.writeTarget = null;
       throw e;
     }
   }
@@ -91,6 +110,11 @@ export class BleTransport implements Transport {
   }
 
   async disconnect(): Promise<void> {
+    this.connectSeq++; // invalidate any connect() still in flight so it tears itself down
+    await this.teardown();
+  }
+
+  private async teardown(): Promise<void> {
     this.monitor?.remove();
     this.disconnectSub?.remove();
     this.monitor = null;

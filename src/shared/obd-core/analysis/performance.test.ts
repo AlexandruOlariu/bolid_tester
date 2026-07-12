@@ -57,4 +57,21 @@ describe('performance math', () => {
     expect(r.timeMs).not.toBeNull();
     expect(r.distanceM).toBeGreaterThan(0);
   });
+
+  it('measures braking from the downward crossing of fromKmh, ignoring overshoot/cruise', () => {
+    // Overshoot to 120 and cruise above 100 before braking. Time/distance must start at the DOWNWARD
+    // 100 crossing (t=4000), not the first time 100 was reached on the way up (t=1000).
+    const samples: SpeedSample[] = [
+      { t: 0, speed: 0 },
+      { t: 1000, speed: 100 },
+      { t: 2000, speed: 120 },
+      { t: 3000, speed: 120 },
+      { t: 4000, speed: 100 },
+      { t: 5000, speed: 50 },
+      { t: 6000, speed: 0 },
+    ];
+    const r = computeBrakeRun(samples, 100, 0);
+    expect(r.timeMs).toBe(2000); // 6000 − 4000, not the contaminated 6000 − 1000
+    expect(r.distanceM).toBeGreaterThan(0);
+  });
 });

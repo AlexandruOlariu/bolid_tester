@@ -31,6 +31,14 @@ describe('errorLog core', () => {
     it('JSON-stringifies an object value', () => {
       expect(normalizeError({ code: 42 }).message).toBe('{"code":42}');
     });
+
+    it('yields a non-empty string message for a thrown function or symbol', () => {
+      // JSON.stringify returns undefined for these — message must not become undefined.
+      const fnMsg = normalizeError(() => 42).message;
+      expect(typeof fnMsg).toBe('string');
+      expect(fnMsg.length).toBeGreaterThan(0);
+      expect(normalizeError(Symbol('boom')).message).toContain('boom');
+    });
   });
 
   describe('buildLoggedError', () => {

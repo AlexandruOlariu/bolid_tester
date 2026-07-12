@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { State } from 'react-native-ble-plx';
 import { getBleManager, looksLikeAdapter, OBD_SERVICE_UUIDS } from '@/shared/transports/ble/manager';
 import { requestBlePermissions } from '@/shared/transports/ble/permissions';
@@ -17,8 +17,13 @@ const BLUETOOTH_OFF_MSG = 'Bluetooth is off. Turn Bluetooth on, then scan again.
 /** Drive a BLE scan, filling the scan store. Sorts likely adapters first by RSSI. */
 export function useScan() {
   const { scanning, devices, setScanning, upsert, clear } = useScanStore();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stop = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
     getBleManager().stopDeviceScan();
     setScanning(false);
   }, [setScanning]);
@@ -71,7 +76,8 @@ export function useScan() {
         isLikelyAdapter: looksLikeAdapter(device.name ?? device.localName),
       });
     });
-    setTimeout(stop, SCAN_TIMEOUT_MS);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(stop, SCAN_TIMEOUT_MS);
   }, [clear, setScanning, upsert, stop]);
 
   useEffect(() => () => stop(), [stop]);

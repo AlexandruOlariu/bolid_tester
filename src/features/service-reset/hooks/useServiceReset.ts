@@ -42,7 +42,12 @@ export function useServiceReset() {
         routineId: descriptor.routineId,
         adaptations: descriptor.adaptations,
         security: descriptor.security
-          ? { level: descriptor.security.level, seedToKey: (s) => s }
+          ? {
+              level: descriptor.security.level,
+              // Use the profile's real seed→key algorithm when it ships one; never override a
+              // supplied algorithm with the identity fallback (which can't actually unlock a module).
+              seedToKey: descriptor.security.seedToKey ?? ((s) => s),
+            }
           : undefined,
       });
       if (!res.ok) {

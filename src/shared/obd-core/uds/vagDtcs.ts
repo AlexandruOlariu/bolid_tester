@@ -7,6 +7,10 @@ export const VAG_DTC_TEXTS: Record<string, string> = {
   '00522': 'Engine coolant temperature sensor (G62) — open/short circuit',
   '00532': 'Supply voltage B+ — signal too low / implausible',
   '00550': 'Start of injection regulation — control deviation',
+  // Keys are the app's VAG code = the DTC's two raw bytes as decimal (see vagCodeForDtc). P0234 →
+  // 0x0234-encoded bytes → 00564; P1557 → 05463. (The VCDS *legacy* numbers 16618/17965 are a
+  // different scheme and can never be produced by vagCodeForDtc, so those keys were dead.)
+  '00564': 'Boost condition: overboost (P0234)',
   '00575': 'Intake manifold pressure — implausible signal / control deviation',
   '00668': 'Supply voltage terminal 30 — signal too low',
   '00779': 'Outside air temperature sensor (G17) — open/short circuit',
@@ -14,8 +18,7 @@ export const VAG_DTC_TEXTS: Record<string, string> = {
   '01299': 'Diagnostic interface for data bus (J533) — no communication',
   '01312': 'Powertrain data bus — defective',
   '01314': 'Engine control module — no communication',
-  '16618': 'Boost condition: overboost (P0234)',
-  '17965': 'Charge pressure control: positive deviation (P1557)',
+  '05463': 'Charge pressure control: positive deviation (P1557)',
   '65535': 'Internal control module memory error',
 };
 

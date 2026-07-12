@@ -13,6 +13,13 @@ describe('ChartBuffer', () => {
     for (let i = 0; i < 10; i++) b.push({ t: i * 1000, v: i });
     expect(b.window(3000, 9000).every((p) => p.t >= 6000)).toBe(true);
   });
+
+  it('excludes points after `now` (upper bound)', () => {
+    const b = new ChartBuffer();
+    b.push({ t: 1000, v: 1 });
+    b.push({ t: 5000, v: 5 }); // "future" relative to now=3000
+    expect(b.window(10000, 3000).map((p) => p.t)).toEqual([1000]);
+  });
 });
 
 describe('decimate', () => {

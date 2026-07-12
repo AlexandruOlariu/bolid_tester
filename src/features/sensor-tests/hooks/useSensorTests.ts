@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { isCan, isKLine, Mode05Result } from '@/shared/obd-core';
+import { isCan, isKLine, Mode05Result, Mode06Result } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
 import { getVehicleProfile } from '@/shared/vehicles';
@@ -22,10 +22,14 @@ export function useSensorTests() {
   const refresh = useCallback(async () => {
     if (!session) return;
     try {
+      // Accumulate across all monitors — setMode06 REPLACES the store array, so calling it per MID
+      // in the loop would keep only the last monitor's results.
+      const mode06: Mode06Result[] = [];
       for (const t of profile.mode06Tests ?? []) {
         const r = await session.readMode06(t.mid);
-        if (r.length) setMode06(r);
+        if (r.length) mode06.push(...r);
       }
+      if (mode06.length) setMode06(mode06);
       // Mode 05 — the pre-CAN counterpart of Mode 06 (O2 thresholds/switch times). Petrol
       // K-line cars only; a small TID sweep, tolerant of NO DATA.
       if (kline && profile.fuel !== 'diesel') {

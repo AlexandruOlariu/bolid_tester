@@ -548,9 +548,13 @@ function sanitizeActions(v: unknown): AiAction[] {
 }
 
 function coerceOverall(v: unknown, findings: AiFinding[]): OverallHealth {
-  return (OVERALL_HEALTH as readonly string[]).includes(v as string)
+  const derived = overallFromFindings(findings);
+  const model = (OVERALL_HEALTH as readonly string[]).includes(v as string)
     ? (v as OverallHealth)
-    : overallFromFindings(findings);
+    : derived;
+  // Never let the model UNDER-report: if the findings imply a worse state than the model claimed
+  // (e.g. a `critical` finding but `overall: "ok"`), surface the worse of the two.
+  return OVERALL_HEALTH.indexOf(derived) > OVERALL_HEALTH.indexOf(model) ? derived : model;
 }
 
 /** Parse the model's answer into an AiReport. Falls back to {@link localHeuristicReport} when the

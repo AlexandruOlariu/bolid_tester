@@ -30,7 +30,7 @@ export class ChartBuffer {
     if (this.buf.length === 0) return [];
     const end = now ?? this.buf[this.buf.length - 1].t;
     const start = end - windowMs;
-    return this.buf.filter((p) => p.t >= start);
+    return this.buf.filter((p) => p.t >= start && p.t <= end);
   }
 
   all(): Point[] {

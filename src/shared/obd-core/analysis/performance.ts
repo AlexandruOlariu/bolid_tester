@@ -110,18 +110,34 @@ export interface BrakeResult {
   distanceM: number | null;
 }
 
-/** Braking from the first sample at/above `fromKmh` down to `toKmh` (default 0). */
+/** Braking down to `toKmh` (default 0), measured from the DOWNWARD crossing of `fromKmh` — the
+ *  actual start of the braking phase. Starting at the *first* sample ≥ fromKmh (the old behaviour)
+ *  wrongly counted any acceleration / overshoot / cruise above fromKmh in the time and distance. */
 export function computeBrakeRun(samples: SpeedSample[], fromKmh = 100, toKmh = 0): BrakeResult {
-  const startIdx = samples.findIndex((s) => s.speed >= fromKmh);
-  if (startIdx < 0) return { fromKmh, toKmh, timeMs: null, distanceM: null };
-  const slice = samples.slice(startIdx);
-  const t0 = slice[0].t;
-  for (let i = 1; i < slice.length; i++) {
-    if (slice[i - 1].speed > toKmh && slice[i].speed <= toKmh) {
-      const seg = slice.slice(0, i + 1);
-      const dist = cumulativeDistance(seg);
-      return { fromKmh, toKmh, timeMs: slice[i].t - t0, distanceM: dist[dist.length - 1] };
+  // End of the run: the first time speed drops to/below toKmh.
+  let endIdx = -1;
+  for (let i = 1; i < samples.length; i++) {
+    if (samples[i - 1].speed > toKmh && samples[i].speed <= toKmh) {
+      endIdx = i;
+      break;
     }
   }
-  return { fromKmh, toKmh, timeMs: null, distanceM: null };
+  if (endIdx < 0) return { fromKmh, toKmh, timeMs: null, distanceM: null };
+  // Start of braking: the last sample at/above fromKmh before that end.
+  let startIdx = -1;
+  for (let i = endIdx - 1; i >= 0; i--) {
+    if (samples[i].speed >= fromKmh) {
+      startIdx = i;
+      break;
+    }
+  }
+  if (startIdx < 0) return { fromKmh, toKmh, timeMs: null, distanceM: null };
+  const seg = samples.slice(startIdx, endIdx + 1);
+  const dist = cumulativeDistance(seg);
+  return {
+    fromKmh,
+    toKmh,
+    timeMs: samples[endIdx].t - samples[startIdx].t,
+    distanceM: dist[dist.length - 1],
+  };
 }

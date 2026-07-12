@@ -25,6 +25,10 @@ const NOTICE_PATTERNS: { match: RegExp; notice: ElmNotice }[] = [
   { match: /CAN\s*ERROR/i, notice: 'CAN ERROR' },
   { match: /BUFFER\s*FULL/i, notice: 'BUFFER FULL' },
   { match: /STOPPED/i, notice: 'STOPPED' },
+  // Generic catch-all — MUST stay last so the specific patterns above win. Covers bare `ERROR`,
+  // `DATA ERROR`, `<RX ERROR`, `FB ERROR`, etc. Without it these fall through to hex parsing, where
+  // the letters that happen to be hex (D, A, E, …) fabricate phantom data bytes and phantom DTCs.
+  { match: /\bERROR\b/i, notice: 'ERROR' },
 ];
 
 /** Remove the prompt, transient notices, and collapse whitespace. */
@@ -84,10 +88,18 @@ export function reassembleIsoTp(raw: string): number[] | null {
 }
 
 export function parseElmResponse(raw: string): ParsedResponse {
-  const text = normalize(raw);
+  // Classify notices on a lightly-cleaned copy that KEEPS notice words: normalize() strips
+  // "BUS INIT" (so the "BUS" letters can't fabricate hex on the data path), which would otherwise
+  // hide a "BUS INIT ERROR" and let it be mis-read as an empty, successful response.
+  const noticeText = raw
+    .replace(/SEARCHING\.\.\./gi, ' ')
+    .replace(/>/g, ' ')
+    .replace(/[\r\n\t]+/g, ' ')
+    .trim();
   for (const { match, notice } of NOTICE_PATTERNS) {
-    if (match.test(text)) return { raw, notice, bytes: [] };
+    if (match.test(noticeText)) return { raw, notice, bytes: [] };
   }
+  const text = normalize(raw);
   if (text === '?' || /(^|\s)\?($|\s)/.test(text)) return { raw, notice: '?', bytes: [] };
   const multiFrame = reassembleIsoTp(raw);
   if (multiFrame) return { raw, notice: null, bytes: multiFrame };

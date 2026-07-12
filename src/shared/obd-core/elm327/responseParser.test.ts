@@ -27,6 +27,30 @@ describe('parseElmResponse', () => {
     expect(r.bytes).toEqual([]);
   });
 
+  it('classifies DATA ERROR as a notice, not phantom hex bytes', () => {
+    // "DATA ERROR" used to fall through to hex parsing, where D,A,A,E → bytes [0xDA,0xAE] (a fake
+    // frame that even decodes to a phantom DTC).
+    const r = parseElmResponse('DATA ERROR\r>');
+    expect(r.notice).toBe('ERROR');
+    expect(r.bytes).toEqual([]);
+  });
+
+  it('classifies a bare ERROR as a notice', () => {
+    expect(parseElmResponse('ERROR\r>').notice).toBe('ERROR');
+  });
+
+  it('detects a K-line BUS INIT ERROR instead of an empty success', () => {
+    const r = parseElmResponse('BUS INIT: ERROR\r>');
+    expect(r.notice).toBe('BUS INIT ERROR');
+    expect(r.bytes).toEqual([]);
+  });
+
+  it('still parses K-line data that follows a BUS INIT: OK progress line', () => {
+    const r = parseElmResponse('BUS INIT: OK\r41 0C 1A F8\r>');
+    expect(r.notice).toBeNull();
+    expect(r.bytes).toEqual([0x41, 0x0c, 0x1a, 0xf8]);
+  });
+
   // Multi-frame (ISO-TP) printouts — the format a REAL ELM327 uses for responses > 7 bytes.
   describe('multi-frame reassembly', () => {
     it('reassembles the datasheet VIN example (spaces on)', () => {

@@ -8,6 +8,7 @@ import {
 } from './udsModule';
 import { UdsError, UdsSend } from '../coding/udsCoding';
 import { vagDtcText } from './vagDtcs';
+import { vagCodeForDtc } from '../obd/dtc';
 
 const senderFor = (map: Record<string, number[] | null>): UdsSend => {
   return async (cmd) => {
@@ -103,5 +104,12 @@ describe('vagDtcText', () => {
   it('knows a seed code and pads short ones', () => {
     expect(vagDtcText('532')).toMatch(/Supply voltage/i);
     expect(vagDtcText('99999')).toBeNull();
+  });
+
+  it('resolves P0234/P1557 via the app VAG code (2 bytes as decimal), not the legacy VCDS numbers', () => {
+    // vagCodeForDtc('P0234') === '00564' (0x0234 bytes → 564), not the VCDS legacy 16618.
+    expect(vagCodeForDtc('P0234')).toBe('00564');
+    expect(vagDtcText(vagCodeForDtc('P0234'))).toMatch(/overboost/i);
+    expect(vagDtcText(vagCodeForDtc('P1557'))).toMatch(/Charge pressure/i);
   });
 });

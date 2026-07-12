@@ -199,6 +199,16 @@ describe('parseAiReport', () => {
     expect(r.actions[0].type).toBe('inspect');
   });
 
+  it('does not let the model under-report severity below its own findings', () => {
+    const content = JSON.stringify({
+      overall: 'ok', // model claims OK…
+      summary: 'Looks fine.',
+      findings: [{ title: 'Coolant overheating', severity: 'critical', detail: 'Very hot.' }], // …but a critical finding
+      actions: [],
+    });
+    expect(parseAiReport(content, snap).overall).toBe('urgent'); // worst of model + findings wins
+  });
+
   it('handles a ```json fenced answer', () => {
     const r = parseAiReport('```json\n{"summary":"ok","findings":[]}\n```', snap);
     expect(r.source).toBe('ai');
