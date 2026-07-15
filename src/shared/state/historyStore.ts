@@ -1,9 +1,16 @@
 /** Persistent history of diagnostic activity: every AI auto-diagnose run and every fault-code check,
  *  each **linked to a car**. File-backed (expo-file-system) via the shared persist storage, so it
- *  survives launches. Unlimited retention until the user clears it. See docs/features/history.md. */
+ *  survives launches.
+ *
+ *  Retention is capped at `MAX_HISTORY` newest entries (oldest evicted) so the file can't grow
+ *  without bound — each AI entry embeds a full `AiReport`, so unbounded growth meant an
+ *  ever-larger `JSON.stringify` on every save and slow hydration at launch (finding F7). Writes are
+ *  debounced (see `debouncedStorage`) so a burst of adds/removes rewrites the file once, not once
+ *  per mutation. The embedded `AiReport` is kept intact — the detail view re-opens it. See
+ *  docs/features/history.md. */
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { fileStateStorage } from './persistStorage';
+import { fileStateStorage, debouncedStorage } from './persistStorage';
 import type { AiReport, Dtc } from '@/shared/obd-core';
 
 /** Identity of the car an entry belongs to. `vin` is the true per-car key when the ECU reports it;
@@ -54,6 +61,14 @@ export interface DtcHistoryEntry {
 
 export type HistoryEntry = AiHistoryEntry | DtcHistoryEntry;
 
+/** Hard cap on retained entries — newest kept, oldest dropped (mirrors `MAX_ERRORS` in
+ *  errorLogStore), so the file and the launch-time hydration stay bounded. */
+export const MAX_HISTORY = 200;
+
+/** Coalesce persist writes: a burst of adds/removes rewrites the JSON file once, ~500 ms after the
+ *  last mutation, instead of once per mutation. */
+const HISTORY_PERSIST_DEBOUNCE_MS = 500;
+
 interface HistoryState {
   entries: HistoryEntry[];
   addAiRun: (e: Omit<AiHistoryEntry, 'kind' | 'id' | 'ts'> & { ts?: number }) => void;
@@ -66,21 +81,30 @@ function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Prepend an entry and evict the oldest beyond the cap. */
+function withEntry(entries: HistoryEntry[], entry: HistoryEntry): HistoryEntry[] {
+  return [entry, ...entries].slice(0, MAX_HISTORY);
+}
+
 export const useHistoryStore = create<HistoryState>()(
   persist(
     (set) => ({
       entries: [],
       addAiRun: ({ ts, ...rest }) =>
-        set((s) => ({ entries: [{ kind: 'ai', id: newId(), ts: ts ?? Date.now(), ...rest }, ...s.entries] })),
+        set((s) => ({
+          entries: withEntry(s.entries, { kind: 'ai', id: newId(), ts: ts ?? Date.now(), ...rest }),
+        })),
       addDtcCheck: ({ ts, ...rest }) =>
-        set((s) => ({ entries: [{ kind: 'dtc', id: newId(), ts: ts ?? Date.now(), ...rest }, ...s.entries] })),
+        set((s) => ({
+          entries: withEntry(s.entries, { kind: 'dtc', id: newId(), ts: ts ?? Date.now(), ...rest }),
+        })),
       remove: (id) => set((s) => ({ entries: s.entries.filter((x) => x.id !== id) })),
       clear: () => set({ entries: [] }),
     }),
     {
       name: 'bolid.history',
       version: 2,
-      storage: createJSONStorage(() => fileStateStorage),
+      storage: createJSONStorage(() => debouncedStorage(fileStateStorage, HISTORY_PERSIST_DEBOUNCE_MS)),
       // v1 entries had a flat `vehicleLabel`; lift it into a `vehicle` descriptor.
       migrate: (persisted, version) => {
         const s = (persisted ?? {}) as { entries?: unknown };
@@ -99,6 +123,23 @@ export const useHistoryStore = create<HistoryState>()(
           return { entries } as unknown as HistoryState;
         }
         return s as unknown as HistoryState;
+      },
+      // Entries added during the async (file-backed) rehydration window live in `current.entries`;
+      // the default merge would discard them by overwriting with the persisted array. Concatenate
+      // instead — newest first (current before persisted), deduped by id, capped — mirroring the
+      // errorLogStore safety net so an early add still survives.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<HistoryState>;
+        const persistedEntries = Array.isArray(p.entries) ? p.entries : [];
+        const seen = new Set<string>();
+        const entries: HistoryEntry[] = [];
+        for (const e of [...current.entries, ...persistedEntries]) {
+          if (e && !seen.has(e.id)) {
+            seen.add(e.id);
+            entries.push(e);
+          }
+        }
+        return { ...current, ...p, entries: entries.slice(0, MAX_HISTORY) };
       },
     },
   ),

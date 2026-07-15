@@ -5,14 +5,41 @@ import {
   buildTp20BusFromProfile,
   Elm327RawCanLink,
   probeTp20Capability,
+  testerPresentBurst,
+  functionalHeader,
+  PROTOCOL_LABELS,
+  type DiagnosticSession,
+  type ProtocolId,
 } from '@/shared/obd-core';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile } from '@/shared/vehicles';
+import { getVehicleProfile, vehicleLabel } from '@/shared/vehicles';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { scanModule, clearModule } from '../api/moduleScanService';
 import { useModuleScanStore } from '../model/moduleScanStore';
+import { useScanHistoryStore, buildSavedScan } from '../model/scanHistoryStore';
+
+/** Best-effort bus wake before a scan (roadmap 6b.10): a short functional TesterPresent (0x3E00)
+ *  burst to nudge a parked VW bus awake so the first physically-addressed request doesn't time out.
+ *  Fully swallowed — a sleeping bus, a clone that NAKs, or a header error must NEVER fail the scan
+ *  that follows; bounded to ~1 s (3 frames × 150 ms + I/O). */
+async function busWake(session: DiagnosticSession, proto: ProtocolId): Promise<void> {
+  const fh = functionalHeader(proto);
+  if (!fh) return;
+  try {
+    await session.setHeader(fh);
+    await testerPresentBurst((cmd) => session.send(cmd), { count: 3, gapMs: 150 });
+  } catch {
+    // best-effort — swallow everything.
+  } finally {
+    try {
+      await session.resetAddressing();
+    } catch {
+      // ignore — the per-module loop re-addresses anyway.
+    }
+  }
+}
 
 /** Scan every profile-declared module (VCDS-style "auto-scan"): ident + per-module fault codes.
  *  CAN-only; K-line cars keep the engine-only Fault codes screen. */
@@ -34,6 +61,8 @@ export function useModuleScan() {
     store.setResults([]);
     store.setProgress({ done: 0, total: modules.length });
     try {
+      // Wake a possibly-asleep bus first (best-effort; never fails the scan).
+      await busWake(session, proto);
       for (let i = 0; i < modules.length; i++) {
         const result = await scanModule(session, modules[i]);
         store.upsertResult(result);
@@ -48,10 +77,27 @@ export function useModuleScan() {
         }
       }
       store.setLastScanTs(Date.now());
+      // Auto-save the completed scan (vehicle-keyed, incl. VIN when known) so it can be diffed
+      // against a later scan, re-shared, or searched — the same history idiom historyStore uses.
+      try {
+        const st = useModuleScanStore.getState();
+        const info = useSessionStore.getState().info;
+        useScanHistoryStore.getState().saveScan(
+          buildSavedScan({
+            vehicle: { id: profile.id, label: vehicleLabel(profile), vin: info?.vin ?? null },
+            protocol: PROTOCOL_LABELS[proto] ?? proto,
+            results: st.results,
+            tp20: st.tp20,
+          }),
+        );
+      } catch (e) {
+        logError({ source: 'module-scan/save', error: e, severity: 'warning' });
+      }
     } finally {
       store.setProgress(null);
       store.setRunning(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; modules/proto/profile derive from the listed session+profileId
   }, [session, profileId]);
 
   const clearOne = useCallback(
@@ -68,6 +114,7 @@ export function useModuleScan() {
         store.setRunning(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; modules derive from the listed session+profileId
     [session, profileId],
   );
 
@@ -114,6 +161,7 @@ export function useModuleScan() {
     } finally {
       store.setRunning(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; profile/tp20Modules derive from the listed session+profileId
   }, [session, profileId]);
 
   return { available, canScanTp20, modules, proto, scanAll, clearOne, scanGateway };

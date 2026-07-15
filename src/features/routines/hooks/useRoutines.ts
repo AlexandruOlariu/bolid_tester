@@ -49,6 +49,7 @@ export function useRoutines() {
       store.setLiveValues([]);
       if (message) store.setMessage(message);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; session is the only reactive input
     [session],
   );
 
@@ -103,6 +104,7 @@ export function useRoutines() {
         await stop(routine, 'error', describeRoutineFailure(e, routine));
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable; profile.extendedPids derives from the listed profileId
     [session, store.unlocked, profileId, stop],
   );
 
@@ -116,6 +118,7 @@ export function useRoutines() {
       }
       clearTimers();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- routines derives from the listed profileId; cleanup reads it via getState at unmount
   }, [session, profileId]);
 
   return { available, routines, start, stop };

@@ -15,7 +15,18 @@ export type ElmNotice =
 export interface ParsedResponse {
   raw: string;
   notice: ElmNotice | null;
+  /** Data bytes of the PRIMARY (first) response frame — see `frames`. Back-compat decision: for the
+   *  common single-ECU reply this is the whole response, so every existing single-frame caller is
+   *  unchanged. On a MULTI-ECU (functional, headers-off) reply, `bytes` is the FIRST responding
+   *  ECU's frame — never the concatenation of all ECUs, which is what fabricated phantom bytes/DTCs.
+   *  Multi-ECU-aware callers (readDtcs, discoverSupportedPids) read `frames` instead.
+   *  Invariant: `bytes === (frames[0] ?? [])`. */
   bytes: number[];
+  /** Every response frame, one array per plain hex line. A single-frame reply — including a
+   *  reassembled ISO-TP message, which is ONE logical message from ONE ECU — yields a single
+   *  element; a functional request answered by several ECUs (Mode 03 / `0100` on engine+aux cars)
+   *  yields one element per ECU. Empty for notices, `?`, and non-hex AT replies (`OK`). */
+  frames: number[][];
 }
 
 const NOTICE_PATTERNS: { match: RegExp; notice: ElmNotice }[] = [
@@ -87,6 +98,32 @@ export function reassembleIsoTp(raw: string): number[] | null {
   return bytes;
 }
 
+/** Split a raw response into per-line data frames — one entry per plain hex line. Non-hex progress
+ *  / status lines (`SEARCHING...`, `BUS INIT: OK`, a bare `OK`, stray prompts) are dropped, exactly
+ *  as `normalize()` strips them on the single-byte path, so they can never fabricate hex bytes.
+ *
+ *  Runs ONLY after the ISO-TP reassembly path has been ruled out, so `N:`-prefixed segment lines
+ *  and their length line never reach here: a single ECU's >7-byte answer is one reassembled
+ *  message (handled by reassembleIsoTp), whereas several PLAIN hex lines mean several ECUs answered
+ *  the same functional (broadcast) request with headers off — the real-adapter multi-ECU format
+ *  the simulator now emits (see MockTransport / docs/simulator.md). */
+function splitDataFrames(raw: string): number[][] {
+  const frames: number[][] = [];
+  const lines = raw
+    .replace(/SEARCHING\.\.\./gi, '\n')
+    .replace(/BUS\s*INIT:?/gi, '\n')
+    .replace(/>/g, ' ')
+    .split(/[\r\n]+/);
+  for (const line of lines) {
+    const cleaned = line.replace(/\s+/g, '');
+    // Only pure-hex lines carrying at least one whole byte are data frames — this drops `OK`, any
+    // leftover notice words, and a stray odd nibble a clone might emit.
+    if (cleaned.length < 2 || !/^[0-9A-Fa-f]+$/.test(cleaned)) continue;
+    frames.push(parseHexBytes(line));
+  }
+  return frames;
+}
+
 export function parseElmResponse(raw: string): ParsedResponse {
   // Classify notices on a lightly-cleaned copy that KEEPS notice words: normalize() strips
   // "BUS INIT" (so the "BUS" letters can't fabricate hex on the data path), which would otherwise
@@ -97,12 +134,16 @@ export function parseElmResponse(raw: string): ParsedResponse {
     .replace(/[\r\n\t]+/g, ' ')
     .trim();
   for (const { match, notice } of NOTICE_PATTERNS) {
-    if (match.test(noticeText)) return { raw, notice, bytes: [] };
+    if (match.test(noticeText)) return { raw, notice, bytes: [], frames: [] };
   }
   const text = normalize(raw);
-  if (text === '?' || /(^|\s)\?($|\s)/.test(text)) return { raw, notice: '?', bytes: [] };
+  if (text === '?' || /(^|\s)\?($|\s)/.test(text)) return { raw, notice: '?', bytes: [], frames: [] };
   const multiFrame = reassembleIsoTp(raw);
-  if (multiFrame) return { raw, notice: null, bytes: multiFrame };
-  // 'OK' and other non-hex AT replies yield an empty byte list (no notice).
-  return { raw, notice: null, bytes: parseHexBytes(text) };
+  // A reassembled ISO-TP response is ONE logical message (one ECU's >7-byte answer), so it is a
+  // single frame — never split per segment line.
+  if (multiFrame) return { raw, notice: null, bytes: multiFrame, frames: [multiFrame] };
+  // Plain hex line(s): one frame per line. Single-ECU → one frame (bytes === it); multi-ECU
+  // functional reply → one frame per responding ECU. 'OK'/non-hex AT replies → no frames, [] bytes.
+  const frames = splitDataFrames(raw);
+  return { raw, notice: null, bytes: frames[0] ?? [], frames };
 }

@@ -19,6 +19,7 @@ export class BleTransport implements Transport {
   private disconnectSub: Subscription | null = null;
   private writeTarget: WriteTarget | null = null;
   private listeners = new Set<(b: Uint8Array) => void>();
+  private statusListeners = new Set<(s: TransportStatus) => void>();
   /** Bumped by disconnect() (and each connect()) so an in-flight connect() can detect it was
    *  superseded and tear its half-built connection back down instead of leaking it. */
   private connectSeq = 0;
@@ -28,9 +29,21 @@ export class BleTransport implements Transport {
     private deviceId: string,
   ) {}
 
+  /** Move to a new link status, notifying subscribers only on an actual transition. */
+  private setStatus(status: TransportStatus): void {
+    if (this.status === status) return;
+    this.status = status;
+    for (const l of [...this.statusListeners]) l(status);
+  }
+
+  onStatusChange(listener: (s: TransportStatus) => void): () => void {
+    this.statusListeners.add(listener);
+    return () => this.statusListeners.delete(listener);
+  }
+
   async connect(): Promise<void> {
     const token = ++this.connectSeq;
-    this.status = 'connecting';
+    this.setStatus('connecting');
     try {
       const device = await this.manager.connectToDevice(this.deviceId, { requestMTU: 247 });
       await device.discoverAllServicesAndCharacteristics();
@@ -43,11 +56,13 @@ export class BleTransport implements Transport {
         return;
       }
       this.disconnectSub = device.onDisconnected(() => {
-        this.status = 'disconnected';
+        // Unsolicited link loss (adapter pulled, out of range). Emit so the session layer can
+        // flip the app to disconnected instead of grinding through per-command timeouts.
+        this.setStatus('disconnected');
       });
-      this.status = 'connected';
+      this.setStatus('connected');
     } catch (e) {
-      this.status = 'error';
+      this.setStatus('error');
       // The OS-level GATT connection may have been established before discovery / characteristic
       // selection threw; cancel it so it doesn't leak and block later reconnects.
       await this.manager.cancelDeviceConnection(this.deviceId).catch(() => undefined);
@@ -126,6 +141,6 @@ export class BleTransport implements Transport {
     }
     this.device = null;
     this.writeTarget = null;
-    this.status = 'disconnected';
+    this.setStatus('disconnected');
   }
 }

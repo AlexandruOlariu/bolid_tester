@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, StyleSheet, Text } from 'react-native';
 import { AppLogo } from './AppLogo';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useHistoryStore } from '@/shared/state/historyStore';

@@ -9,5 +9,10 @@ export interface Transport {
   write(bytes: Uint8Array): Promise<void>;
   /** Subscribe to inbound bytes. Returns an unsubscribe function. */
   onData(listener: (bytes: Uint8Array) => void): () => void;
+  /** Subscribe to link status transitions (connecting / connected / disconnected / error).
+   *  Fires only when `status` actually changes — including an unsolicited drop (e.g. the BLE
+   *  adapter is pulled), which is otherwise invisible to the layers above. Returns an unsubscribe
+   *  function. */
+  onStatusChange(listener: (status: TransportStatus) => void): () => void;
   readonly status: TransportStatus;
 }

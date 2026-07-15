@@ -27,7 +27,12 @@ export const fiatPunto2008: VehicleProfile = {
   dtcModes: ['03', '07'],
   notes:
     'Grande Punto (199 body) on CAN 11/500 — behaves like the Golf reference. The 1.2 8v FIRE is ' +
-    'MAP/speed-density (no MAF). Mode 0A permanent DTCs are often absent on this EU generation.',
+    'MAP/speed-density (no MAF). Mode 0A permanent DTCs are often absent on this EU generation. ' +
+    'The simulator models this profile as a MULTI-ECU car: with headers off, functional 0100 and ' +
+    'Mode 03/07 are answered by a second ECU on its own line (the real-adapter format), pinning ' +
+    'the multi-ECU response-parsing fix (see transport/scenarios.ts SIM_SECONDARY_ECUS and ' +
+    'docs/simulator.md). The second responder is a simulator construct for regression coverage, ' +
+    'not a claim about a specific physical module on this manual-gearbox car.',
   testChecklist: [
     'Connect over BLE with ignition on; confirm protocol is CAN 11/500.',
     'Read VIN (Mode 09) and confirm it matches the windscreen.',

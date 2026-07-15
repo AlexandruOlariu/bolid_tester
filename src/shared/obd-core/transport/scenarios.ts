@@ -12,6 +12,21 @@ const SAMPLE_VINS: Record<string, string> = {
   'passat-b55-19tdi': 'WVWZZZ3BZ4E342958',
 };
 
+/** Secondary ECUs that answer FUNCTIONAL 0100 / Mode 03 on their OWN line, modelling a real
+ *  multi-ECU car (see docs/simulator.md and the Phase 3 / F4 fix in
+ *  docs/improvement-plan-2026-07.md). The Punto stands in for the engine+aux-module class that fix
+ *  targets: a headers-off functional request returns one line per ECU, which the response parser
+ *  must keep as separate frames instead of hex-parsing the concatenation into phantom DTCs/PIDs.
+ *
+ *  Kept here (not on the typed VehicleProfile) so it is purely a SIMULATOR construct — it does not
+ *  claim the physical car has this module; it pins the parsing regression. The secondary's PID set
+ *  is a subset of the Punto's, so the discovered UNION is unchanged; it carries no default DTCs, so
+ *  it answers `43 00` and cannot perturb the default DTC set. Tests inject secondary DTCs via a
+ *  `secondaryEcus` override to exercise the merge path. */
+const SIM_SECONDARY_ECUS: Record<string, NonNullable<SimScenario['secondaryEcus']>> = {
+  'fiat-punto-2008-12': [{ supportedPids: ['0104', '0105', '010C', '010D', '0111'] }],
+};
+
 /** Mode 09 PID 04 calibration identifiers. Passat value is the real one read from the car. */
 const SAMPLE_CALIDS: Record<string, string> = {
   generic: 'GENERIC-CAL-01',
@@ -112,6 +127,7 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
     iuprSpark,
     iuprCompression,
     monitorFrames,
+    secondaryEcus: SIM_SECONDARY_ECUS[profileId],
     latencyMs: kline ? 5 : 0,
     emitSearching: kline,
   };

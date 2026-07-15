@@ -4,6 +4,7 @@ import { Screen } from '@/shared/ui';
 import { vagModuleName } from '@/shared/obd-core';
 import { useModuleScan } from '../hooks/useModuleScan';
 import { useModuleScanStore, ModuleScanResult } from '../model/moduleScanStore';
+import { ScanHistorySection } from './ScanHistorySection';
 
 const hex2 = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
 
@@ -228,6 +229,8 @@ export function ModuleScanScreen() {
           ) : null}
         </YStack>
       ) : null}
+      <ScanHistorySection />
+
       {!results.length && !running ? (
         <Paragraph theme="alt2">
           Scans every declared module for identification (part number, software) and fault codes

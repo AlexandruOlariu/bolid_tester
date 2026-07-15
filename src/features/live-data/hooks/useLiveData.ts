@@ -1,66 +1,42 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { useSettingsStore } from '@/shared/state/settingsStore';
-import { logError } from '@/shared/state/errorLogStore';
 import { getVehicleProfile } from '@/shared/vehicles';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { useLiveDataStore } from '../model/liveDataStore';
 
-// Dedupe repeated poll-loop errors so a persistent fault doesn't flood the capped error log.
-let lastPollErrorMsg: string | null = null;
+// Unique subscriber id per hook instance so two mounted screens don't clobber each other's
+// registration (and releasing one never releases the other).
+let nextRegId = 0;
 
-/** Round-robin poll the effective PID set into the live-data store while mounted. */
-export function useLiveData() {
+/** Subscribe a screen to live data. The app-wide poll loop lives in EngineHost; this hook only
+ *  (a) registers the screen's PID interest so those PIDs get polled while it is mounted, and
+ *  (b) reads the latest values/polling flag from the shared store. Mounting it in several screens
+ *  no longer spawns several loops — the union is polled once per interval by EngineHost.
+ *
+ *  Pass `pids` to register an explicit set (e.g. the Dashboard's customized/visible items) instead of
+ *  the whole effective PID set — the poll loop then reads only what the screen actually shows. Omit it
+ *  to register the effective PID set (the default for every other screen). */
+export function useLiveData(pids?: string[]) {
   const session = useSessionStore((s) => s.session);
   const selectedId = useVehicleStore((s) => s.selectedProfileId);
-  const intervalMs = useSettingsStore((s) => s.pollIntervalMs);
   const values = useLiveDataStore((s) => s.values);
   const polling = useLiveDataStore((s) => s.polling);
-  const setValues = useLiveDataStore((s) => s.setValues);
-  const setPolling = useLiveDataStore((s) => s.setPolling);
+  const acquire = useLiveDataStore((s) => s.acquire);
+  const idRef = useRef<string>(`live-data-${nextRegId++}`);
+  // Stable dependency for an explicit PID set so the effect only re-registers when it truly changes.
+  const pidKey = pids ? pids.join(',') : null;
 
   useEffect(() => {
     if (!session) return;
-    const profile = getVehicleProfile(selectedId);
-    const pids = session.effectivePids(profile.id === 'generic' ? undefined : profile.supportedPids);
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
-    setPolling(true);
-    lastPollErrorMsg = null;
-
-    const loop = async () => {
-      if (cancelled) return;
-      // Treat intervalMs as the target *period*, not an extra gap after each sweep: subtract the
-      // time the sweep itself took so updates arrive as close to real time as the link allows. On a
-      // slow K-line car a full sweep may already exceed the interval, so the next one fires
-      // immediately (gap 0) and the bus paces us.
-      const startedAt = Date.now();
-      try {
-        const snap = await session.pollOnce(pids);
-        if (!cancelled) setValues(snap);
-        lastPollErrorMsg = null;
-      } catch (e) {
-        // Transient read errors keep the loop going, but log the first of each distinct kind so a
-        // persistent polling fault is visible in the error log without flooding it every interval.
-        const msg = e instanceof Error ? e.message : String(e);
-        if (msg !== lastPollErrorMsg) {
-          lastPollErrorMsg = msg;
-          logError({ source: 'live-data', error: e, severity: 'warning' });
-        }
-      }
-      if (!cancelled) {
-        const elapsed = Date.now() - startedAt;
-        timer = setTimeout(loop, Math.max(0, intervalMs - elapsed));
-      }
-    };
-    loop();
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-      setPolling(false);
-    };
-  }, [session, selectedId, intervalMs, setValues, setPolling]);
+    let wanted: string[];
+    if (pidKey !== null) {
+      wanted = pidKey.length > 0 ? pidKey.split(',') : [];
+    } else {
+      const profile = getVehicleProfile(selectedId);
+      wanted = session.effectivePids(profile.id === 'generic' ? undefined : profile.supportedPids);
+    }
+    return acquire(idRef.current, wanted);
+  }, [session, selectedId, acquire, pidKey]);
 
   return { values, polling };
 }

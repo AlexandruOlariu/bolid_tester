@@ -29,6 +29,11 @@ loop; no new device protocol.
 - `alertsStore` (Zustand, persisted): `rules: AlertRule[]`, plus ephemeral `activeAlerts`.
 
 ## Behavior
+- **Hosted app-wide by `EngineHost`** (mounted once in `_layout.tsx`): default-rule seeding and
+  `AlertEngine` evaluation + `warn`/`critical` OS notifications run on every snapshot whether or not
+  the Alerts screen is mounted — so an overheat fires while the user sits on the Live tab. `useAlerts`
+  is now just a subscription to `alertsStore.active`. Enabled rules' PIDs are added to the poll union
+  so they're always read.
 - Evaluation is decoupled from rendering and runs on every snapshot, so alerts work the same on BLE
   and the simulator.
 - Hysteresis + debounce prevent alert flapping near a threshold.

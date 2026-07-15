@@ -8,6 +8,14 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/TODO-eas-project-id",
+      "fallbackToCacheTimeout": 0,
+      "_comment": "EAS Update / OTA. Replace the placeholder URL with your project's `https://u.expo.dev/<projectId>` (run `eas update:configure` on the dev machine, which also fills the `extra.eas.projectId`). Until then expo-updates reports isEnabled=false and 'Check for updates' is a safe no-op."
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bolidtester.app",

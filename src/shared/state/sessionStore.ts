@@ -19,6 +19,10 @@ interface SessionState {
     info: SessionInfo,
     device: { id: string | null; name: string | null },
   ) => void;
+  /** Drop the live session after an *unexpected* link loss: clear the session/info so nothing keeps
+   *  issuing commands down a dead link, but keep deviceId/deviceName so the UI (and auto-reconnect)
+   *  can offer to reconnect. */
+  markDisconnected: (error: string) => void;
   reset: () => void;
 }
 
@@ -40,6 +44,8 @@ export const useSessionStore = create<SessionState>((set) => ({
       deviceName: device.name,
       error: null,
     }),
+  markDisconnected: (error) =>
+    set({ status: 'disconnected', session: null, info: null, error }),
   reset: () =>
     set({
       status: 'disconnected',

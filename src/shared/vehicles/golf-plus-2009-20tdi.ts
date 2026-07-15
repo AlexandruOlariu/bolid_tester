@@ -137,14 +137,48 @@ export const golfPlus2009: VehicleProfile = {
       reqHeader: '70E',
       rxFilter: '77E',
       codingDid: 'F1A0',
+      // Illustrative PQ35 BCM part number so the long-coding helper resolves the vag-bcm-pq35 label
+      // pack for extra bit names (merged additively over the schema below). Confirm on the real car.
+      partNumber: '1K0937087D',
       byteCount: 4,
       schema: [
         { byte: 0, bit: 0, name: 'Daytime running lights' },
         { byte: 0, bit: 1, name: 'Coming-home lights' },
         { byte: 1, bit: 0, name: 'Needle sweep on start' },
+        // Low nibble of byte 2 = comfort one-touch (lane-change) turn-signal blink count.
+        { byte: 2, mask: 0x0f, name: 'One-touch turn signal blinks' },
       ],
       sampleCoding: [0x01, 0x00, 0x10, 0x00],
       experimental: true,
+    },
+  ],
+  codingPresets: [
+    // EXPERIMENTAL one-tap "tweaks", compiled to the gated BCM (70E) coding write. All reversible;
+    // each round-trips against the simulator (scenarios.ts seeds coding['70E']['F1A0']). Illustrative
+    // bit/byte positions — confirm on the real car before trusting.
+    {
+      id: 'golf-drl',
+      title: 'Daytime running lights',
+      description: 'Enable the always-on daytime running lights (BCM byte 0, bit 0).',
+      reqHeader: '70E',
+      edits: [{ byte: 0, bit: 0, mask: 0x01, onValue: 0x01, offValue: 0x00 }],
+      reversible: true,
+    },
+    {
+      id: 'golf-needle-sweep',
+      title: 'Gauge needle sweep on start',
+      description: 'Sweep the instrument-cluster needles once when the ignition comes on (BCM byte 1, bit 0).',
+      reqHeader: '70E',
+      edits: [{ byte: 1, bit: 0, mask: 0x01, onValue: 0x01, offValue: 0x00 }],
+      reversible: true,
+    },
+    {
+      id: 'golf-comfort-blink',
+      title: 'One-touch turn signals (3 blinks)',
+      description: 'Set the comfort lane-change flasher to 3 blinks per tap (BCM byte 2, low nibble). Revert restores off (0).',
+      reqHeader: '70E',
+      edits: [{ byte: 2, mask: 0x0f, onValue: 0x03, offValue: 0x00 }],
+      reversible: true,
     },
   ],
   serviceReset: {

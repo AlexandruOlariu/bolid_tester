@@ -37,6 +37,17 @@ export interface SimScenario {
   mode05?: Record<string, number[]>;
   /** Raw monitor lines the simulator streams cyclically during ATMA (CAN sniffer). */
   monitorFrames?: string[];
+  /** Additional ECUs that answer FUNCTIONAL (broadcast, headers-off) requests on their OWN line,
+   *  exactly as a real multi-ECU car does (e.g. engine + transmission). Only the requests a
+   *  secondary emissions module actually answers are modelled: the supported-PID bitmaps
+   *  (0100/0120/0140/0160) and stored/pending DTCs (Mode 03 / 07). Physically-addressed (ATSH) work
+   *  is unaffected — that targets a single module. Undefined ⇒ the classic single-ECU simulator,
+   *  unchanged. See docs/simulator.md. */
+  secondaryEcus?: {
+    supportedPids: string[];
+    storedDtcs?: string[];
+    pendingDtcs?: string[];
+  }[];
   latencyMs?: number;
   emitSearching?: boolean;
 }
@@ -72,6 +83,7 @@ const SIM_PID_BYTES: Record<string, number[]> = {
 export class MockTransport implements Transport {
   status: TransportStatus = 'disconnected';
   private listeners = new Set<(b: Uint8Array) => void>();
+  private statusListeners = new Set<(s: TransportStatus) => void>();
   private searched = false;
   private header: string | null = null; // current ATSH target (module addressing)
   /** Current ATCRA receive filter — modelled so a stale filter breaks reads like on a real
@@ -82,18 +94,45 @@ export class MockTransport implements Transport {
 
   constructor(public scenario: SimScenario) {}
 
+  /** Move to a new link status, notifying subscribers only on an actual transition. */
+  private setStatus(status: TransportStatus): void {
+    if (this.status === status) return;
+    this.status = status;
+    for (const l of [...this.statusListeners]) l(status);
+  }
+
   async connect(): Promise<void> {
-    this.status = 'connecting';
-    this.status = 'connected';
+    this.setStatus('connecting');
+    this.setStatus('connected');
   }
 
   async disconnect(): Promise<void> {
-    this.status = 'disconnected';
+    if (this.monitorTimer) {
+      clearInterval(this.monitorTimer);
+      this.monitorTimer = null;
+    }
+    this.setStatus('disconnected');
+  }
+
+  /** Test/sim hook: simulate an unsolicited link drop (adapter pulled, out of range) so the
+   *  status-event path — and the app's disconnect handling / auto-reconnect — can be exercised
+   *  with no hardware. Mirrors BleTransport's `onDisconnected` emission. */
+  simulateDisconnect(): void {
+    if (this.monitorTimer) {
+      clearInterval(this.monitorTimer);
+      this.monitorTimer = null;
+    }
+    this.setStatus('disconnected');
   }
 
   onData(listener: (b: Uint8Array) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
+  }
+
+  onStatusChange(listener: (s: TransportStatus) => void): () => void {
+    this.statusListeners.add(listener);
+    return () => this.statusListeners.delete(listener);
   }
 
   async write(bytes: Uint8Array): Promise<void> {
@@ -206,6 +245,18 @@ export class MockTransport implements Transport {
     return byteToHex(service) + byteToHex(codes.length) + toHex(bytes);
   }
 
+  /** Build a functional DTC response: the primary ECU's line, then one line per secondary ECU
+   *  (each answers even with no codes → `43 00`), joined with `\r` so the app sees the real
+   *  multi-ECU ATH0 format (one line per responding ECU). With no secondary ECUs this is a single
+   *  line, identical to a classic single-ECU response. */
+  private dtcLines(service: number, primary: string[], pick: (e: NonNullable<SimScenario['secondaryEcus']>[number]) => string[] | undefined): string {
+    const lines = [this.dtcResponse(service, primary)];
+    for (const ecu of this.scenario.secondaryEcus ?? []) {
+      lines.push(this.dtcResponse(service, pick(ecu) ?? []));
+    }
+    return lines.join('\r');
+  }
+
   private respondObd(h0: string): string {
     const h = h0.replace(/\s+/g, '');
 
@@ -230,12 +281,16 @@ export class MockTransport implements Transport {
       const cal = this.scenario.calibrationId;
       return cal ? '4904' + '01' + toHex(asciiToBytes(cal)) : 'NO DATA';
     }
-    if (h === '03') return this.dtcResponse(0x43, this.scenario.storedDtcs ?? []);
-    if (h === '07') return this.dtcResponse(0x47, this.scenario.pendingDtcs ?? []);
+    if (h === '03') return this.dtcLines(0x43, this.scenario.storedDtcs ?? [], (e) => e.storedDtcs);
+    if (h === '07') return this.dtcLines(0x47, this.scenario.pendingDtcs ?? [], (e) => e.pendingDtcs);
     if (h === '0A') return this.dtcResponse(0x4a, this.scenario.permanentDtcs ?? []);
     if (h === '04') {
       this.scenario.storedDtcs = [];
       this.scenario.pendingDtcs = [];
+      for (const ecu of this.scenario.secondaryEcus ?? []) {
+        ecu.storedDtcs = [];
+        ecu.pendingDtcs = [];
+      }
       return '44';
     }
 
@@ -354,8 +409,16 @@ export class MockTransport implements Transport {
 
     if (h.length === 4 && h.startsWith('01')) {
       if (h === '0100' || h === '0120' || h === '0140' || h === '0160') {
-        const data = encodeSupportedPids(h, this.supportedNums());
-        return this.maybeSearching() + '41' + h.slice(2) + toHex(data);
+        const lines = ['41' + h.slice(2) + toHex(encodeSupportedPids(h, this.supportedNums()))];
+        const base = parseInt(h.slice(2), 16);
+        for (const ecu of this.scenario.secondaryEcus ?? []) {
+          const nums = ecu.supportedPids.map((p) => parseInt(p.slice(2), 16));
+          // A real module answers a range only when it supports at least one PID in it; one that
+          // supports nothing in 0x21–0x40 simply doesn't reply to 0120 (functional NO DATA from it).
+          if (!nums.some((n) => n > base && n <= base + 0x20)) continue;
+          lines.push('41' + h.slice(2) + toHex(encodeSupportedPids(h, nums)));
+        }
+        return this.maybeSearching() + lines.join('\r');
       }
       if (h === '0101') {
         const n = (this.scenario.storedDtcs ?? []).length;

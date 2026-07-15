@@ -94,5 +94,60 @@ describe('parseElmResponse', () => {
       const r = parseElmResponse('41 0C 0C D0\r\r>');
       expect(r.bytes).toEqual([0x41, 0x0c, 0x0c, 0xd0]);
     });
+
+    it('an ISO-TP printout is ONE frame, not one frame per segment line', () => {
+      const raw = '014\r0: 49 02 01 31 44 34\r1: 47 50 30 30 52 35 35\r2: 42 31 32 33 34 35 36\r\r>';
+      const r = parseElmResponse(raw);
+      // A single ECU's >7-byte answer is one logical (reassembled) message — never split per line.
+      expect(r.frames).toHaveLength(1);
+      expect(r.frames[0]).toEqual(r.bytes);
+      expect(r.bytes.length).toBe(0x14);
+    });
+  });
+
+  // Multi-ECU (functional, headers-off): a real adapter prints ONE LINE PER responding ECU.
+  describe('multi-ECU frames', () => {
+    it('splits one plain hex line per ECU into frames', () => {
+      // Two ECUs each answer Mode 03 with a single DTC on their own line.
+      const r = parseElmResponse('43 01 01 33\r43 01 02 15\r\r>');
+      expect(r.notice).toBeNull();
+      expect(r.frames).toEqual([
+        [0x43, 0x01, 0x01, 0x33],
+        [0x43, 0x01, 0x02, 0x15],
+      ]);
+    });
+
+    it('bytes is the FIRST ECU frame, never the concatenation (back-compat)', () => {
+      const r = parseElmResponse('41 00 BE 3F A8 13\r41 00 80 18 00 00\r>');
+      // First frame only — an un-migrated caller sees the engine's answer, not 12 fused bytes.
+      expect(r.bytes).toEqual([0x41, 0x00, 0xbe, 0x3f, 0xa8, 0x13]);
+      expect(r.frames).toHaveLength(2);
+      expect(r.bytes).toEqual(r.frames[0]);
+    });
+
+    it('single-ECU reply is exactly one frame equal to bytes (regression)', () => {
+      const r = parseElmResponse('41 0C 0C D0\r\r>');
+      expect(r.frames).toEqual([[0x41, 0x0c, 0x0c, 0xd0]]);
+      expect(r.bytes).toEqual(r.frames[0]);
+    });
+
+    it('notices still win over multi-line hex parsing (no frames)', () => {
+      // A notice mixed with a hex-looking line must classify as the notice, not fabricate frames.
+      const r = parseElmResponse('CAN ERROR\r41 00 BE 3F A8 13\r>');
+      expect(r.notice).toBe('CAN ERROR');
+      expect(r.bytes).toEqual([]);
+      expect(r.frames).toEqual([]);
+    });
+
+    it('drops a non-hex progress line but keeps the following data as one frame', () => {
+      const r = parseElmResponse('BUS INIT: OK\r41 0C 1A F8\r>');
+      expect(r.frames).toEqual([[0x41, 0x0c, 0x1a, 0xf8]]);
+    });
+
+    it('OK yields no frames', () => {
+      const r = parseElmResponse('OK\r>');
+      expect(r.frames).toEqual([]);
+      expect(r.bytes).toEqual([]);
+    });
   });
 });

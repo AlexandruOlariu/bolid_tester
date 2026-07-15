@@ -26,6 +26,9 @@ export function StatusBadge({ status }: { status: ConnState }) {
       paddingVertical="$1.5"
       borderRadius="$10"
       alignSelf="flex-start"
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={`Connection status: ${LABELS[status]}`}
     >
       <Text color="white" fontSize="$2" fontWeight="700">
         {LABELS[status]}

@@ -3,7 +3,7 @@
 // This is the durable payoff: domain concepts and relationships that the code
 // structure cannot express. Auto-derived edges (imports / serves / documents)
 // are table-stakes; THIS file is what makes the graph smarter than grep.
-// (29 concepts. Coverage goal: every non-trivial node has a concept neighbour.)
+// (30 concepts. Coverage goal: every non-trivial node has a concept neighbour.)
 //
 // Format:
 //   concepts[]      { id, summary, tokens[] }      -> becomes a concept:<id> node
@@ -33,8 +33,11 @@
       "summary": "Raw bus monitor (ELM327 ATMA) with per-arbitration-id aggregation; monitor mode owns the command channel until stopped. Multi-PID batching + log->replay-fixture live near here.",
       "tokens": ["sniffer","monitor","atma","bus","raw","frame","canmonitor","multipid","replay"] },
     { "id": "connection-lifecycle",
-      "summary": "Establishing a live link: BLE permission + scan -> BleTransport -> Elm327Client init (ATZ/ATSPn) -> DiagnosticSession; status flows into sessionStore.",
-      "tokens": ["connection","connect","ble","bluetooth","lifecycle","elm327","session","pairing"] },
+      "summary": "Establishing a live link: BLE permission + scan -> BleTransport -> Elm327Client init (ATZ/ATSPn) -> DiagnosticSession; status flows into sessionStore. Transport.onStatusChange propagates an unsolicited link drop; connectionService flips the app to disconnected and (opt-in) auto-reconnects with backoff.",
+      "tokens": ["connection","connect","ble","bluetooth","lifecycle","elm327","session","pairing","reconnect","statuschange","linkloss"] },
+    { "id": "engine-host",
+      "summary": "Headless EngineHost mounted once in app/_layout owns the single app-wide poll loop plus alert evaluation, diagnostic/connection notifications (fed real milOn/dtcCount from dtcStore), and trip sampling — so cross-cutting engines run regardless of which screen is mounted. Polls the demand-driven PID union (mounted screens via liveDataStore.acquire + enabled alert rules + trip set while recording); screen hooks (useLiveData/useAlerts/useNotifications/useTripRecorder) are thin store subscriptions.",
+      "tokens": ["engine","host","enginehost","poll","loop","cross-cutting","background","pidunion","acquire","demand","headless","layout"] },
     { "id": "obd-request-pipeline",
       "summary": "How a read happens: command -> Elm327Client (waits for the '>' prompt) -> responseParser -> obd decoders (pids/dtc). The half-duplex request/response path.",
       "tokens": ["pipeline","request","response","command","decode","pid","elm327"] },
@@ -118,9 +121,39 @@
       "tokens": ["build","apk","gradle","expo","android","mobile","adapter","vgate","icar","install","run","devclient"] },
     { "id": "documentation-driven",
       "summary": "Documentation-driven workflow: docs/ is the source of truth. PLAN is the approved plan, implementation-log tracks progress, architecture.md is the map, every feature has a doc.",
-      "tokens": ["documentation","docs","plan","process","implementation","log","readme","architecture","spec","sourceoftruth"] }
+      "tokens": ["documentation","docs","plan","process","implementation","log","readme","architecture","spec","sourceoftruth"] },
+    { "id": "adapter-health",
+      "summary": "One-tap ELM327 adapter grading over the live session: ATI firmware string (clone hints), ATRV voltage, ATDPN protocol, and a timed 0100 burst (min/median/max latency) -> good/ok/poor + notes, shareable as text. Pure gradeAdapter logic.",
+      "tokens": ["adapter","health","grade","clone","latency","firmware","voltage","elm327","check"] },
+    { "id": "scan-history-diff",
+      "summary": "Auto-scans persist (vehicle-keyed, capped) in scanHistoryStore; scanReport formats the forum-pasteable VCDS-style text block; scanDiff compares two scans (faults appeared/cleared, coding/part-number changes); scanSearch finds a DTC across all modules.",
+      "tokens": ["scan","history","diff","compare","report","autoscan","search","before","after","saved"] },
+    { "id": "coding-tweaks-backup",
+      "summary": "One-tap coding presets (reversible curated toggles per profile, compiled to the gated coding write with on/off/unknown detection), the long-coding per-bit helper with label names + old->new preview, and the full-car backup: every module's coding + adaptation values as a dated JSON snapshot with per-module gated restore.",
+      "tokens": ["tweak","preset","backup","clone","snapshot","restore","longcoding","bit","helper","onetap"] },
+    { "id": "readiness-coach",
+      "summary": "Drive-cycle coach: after a DTC clear, lists incomplete readiness monitors with generic per-monitor completion patterns (obd-core driveCycle), polls 0101 every ~30s from EngineHost while enabled, and notifies as each monitor (then all) flips ready.",
+      "tokens": ["readiness","coach","drivecycle","monitor","ready","itp","clear","0101","complete"] },
+    { "id": "fuel-economy-units",
+      "summary": "Fuel economy derived from live PIDs (fuel-rate 015E preferred, else MAF+speed with per-fuel constants) as instantaneous + windowed L/100km (L/h at standstill), on the dashboard and in trip stats; the units setting converts display values (metric/imperial) at UI level only — obd-core stays SI.",
+      "tokens": ["fuel","economy","consumption","l100km","mpg","maf","units","imperial","metric","conversion"] }
   ],
   "links": [
+    ["concept:adapter-health", "feature:adapter-health", "relates"],
+    ["concept:adapter-health", "core:elm327/Elm327Client", "relates"],
+    ["concept:adapter-health", "concept:connection-lifecycle", "relates"],
+    ["concept:scan-history-diff", "feature:module-scan", "relates"],
+    ["concept:scan-history-diff", "concept:module-scan", "relates"],
+    ["concept:coding-tweaks-backup", "feature:coding", "relates"],
+    ["concept:coding-tweaks-backup", "concept:ecu-coding", "relates"],
+    ["concept:coding-tweaks-backup", "concept:adaptation-channels", "relates"],
+    ["concept:readiness-coach", "feature:fault-codes", "relates"],
+    ["concept:readiness-coach", "concept:engine-host", "relates"],
+    ["concept:readiness-coach", "concept:dtc-faults", "relates"],
+    ["concept:fuel-economy-units", "feature:live-data", "relates"],
+    ["concept:fuel-economy-units", "concept:trip-recording", "relates"],
+    ["concept:fuel-economy-units", "concept:app-settings", "relates"],
+
     ["concept:module-scan", "concept:tp20-transport", "relates"],
     ["concept:module-scan", "concept:ecu-coding", "relates"],
     ["concept:adaptation-channels", "concept:ecu-coding", "relates"],
@@ -137,6 +170,18 @@
     ["concept:connection-lifecycle", "doc:features/connection", "relates"],
     ["concept:connection-lifecycle", "lib:base64", "relates"],
     ["concept:connection-lifecycle", "doc:architecture", "relates"],
+
+    ["concept:engine-host", "screen:_layout", "relates"],
+    ["concept:engine-host", "feature:live-data", "relates"],
+    ["concept:engine-host", "feature:alerts", "relates"],
+    ["concept:engine-host", "feature:notifications", "relates"],
+    ["concept:engine-host", "feature:trip-recording", "relates"],
+    ["concept:engine-host", "store:sessionStore", "relates"],
+    ["concept:engine-host", "concept:live-data-charts", "relates"],
+    ["concept:engine-host", "concept:threshold-alerts", "relates"],
+    ["concept:engine-host", "concept:notifications-layer", "relates"],
+    ["concept:engine-host", "concept:trip-recording", "relates"],
+    ["concept:engine-host", "concept:connection-lifecycle", "relates"],
 
     ["concept:obd-request-pipeline", "core:elm327/Elm327Client", "relates"],
     ["concept:obd-request-pipeline", "core:elm327/responseParser", "relates"],

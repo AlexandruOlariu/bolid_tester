@@ -20,6 +20,23 @@ describe('ChartBuffer', () => {
     b.push({ t: 5000, v: 5 }); // "future" relative to now=3000
     expect(b.window(10000, 3000).map((p) => p.t)).toEqual([1000]);
   });
+
+  it('supports panning by ending the window before the latest point (end offset)', () => {
+    const b = new ChartBuffer();
+    for (let i = 0; i < 10; i++) b.push({ t: i * 1000, v: i });
+    // Latest is t=9000; pan back 4000 ms → window [2000, 5000].
+    const last = b.bounds()!.last;
+    const panned = b.window(3000, last - 4000);
+    expect(panned.map((p) => p.t)).toEqual([2000, 3000, 4000, 5000]);
+  });
+
+  it('reports bounds, or null when empty', () => {
+    expect(new ChartBuffer().bounds()).toBeNull();
+    const b = new ChartBuffer();
+    b.push({ t: 100, v: 1 });
+    b.push({ t: 400, v: 4 });
+    expect(b.bounds()).toEqual({ first: 100, last: 400 });
+  });
 });
 
 describe('decimate', () => {

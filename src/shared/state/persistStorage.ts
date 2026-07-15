@@ -73,3 +73,48 @@ export const fileStateStorage: StateStorage = {
     }
   },
 };
+
+/** Wrap a `StateStorage` so `setItem` writes are **debounced** per key: rapid successive writes
+ *  coalesce into a single trailing flush `ms` after the last one. zustand-persist rewrites the whole
+ *  JSON file on every state mutation; for stores that mutate in bursts (history, trips) that is a lot
+ *  of redundant `JSON.stringify` + file writes, and only the final state matters (findings F6/F7).
+ *
+ *  Accepted loss window: up to `ms` of the most-recent state can be lost if the process is killed
+ *  mid-debounce. That is fine for history/trips (a just-added entry re-derives on the next action)
+ *  but NOT for the error log, whose whole job is to survive a crash — it stays on the un-debounced
+ *  `fileStateStorage` (see the fatal-error 150 ms flush in errorLogStore). `getItem` is passed
+ *  straight through (hydration must be immediate); `removeItem` cancels any pending write for that
+ *  key first so a clear can't be undone by a stale flush landing after it. */
+export function debouncedStorage(inner: StateStorage, ms: number): StateStorage {
+  const timers = new Map<string, ReturnType<typeof setTimeout>>();
+  const pending = new Map<string, string>();
+
+  const flush = (name: string): void => {
+    timers.delete(name);
+    const value = pending.get(name);
+    if (value === undefined) return;
+    pending.delete(name);
+    void inner.setItem(name, value);
+  };
+
+  const cancel = (name: string): void => {
+    const t = timers.get(name);
+    if (t) clearTimeout(t);
+    timers.delete(name);
+    pending.delete(name);
+  };
+
+  return {
+    getItem: (name) => inner.getItem(name),
+    setItem: (name, value) => {
+      pending.set(name, value);
+      const existing = timers.get(name);
+      if (existing) clearTimeout(existing);
+      timers.set(name, setTimeout(() => flush(name), ms));
+    },
+    removeItem: (name) => {
+      cancel(name);
+      return inner.removeItem(name);
+    },
+  };
+}

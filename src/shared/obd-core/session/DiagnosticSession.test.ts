@@ -23,6 +23,9 @@ class NoVehicleTransport implements Transport {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
+  onStatusChange(): () => void {
+    return () => undefined;
+  }
   async write(bytes: Uint8Array): Promise<void> {
     const cmd = bytesToString(bytes).replace(/[\r\n]+$/g, '').trim().toUpperCase();
     const body = cmd.startsWith('AT') ? 'OK' : 'UNABLE TO CONNECT';
@@ -222,5 +225,66 @@ describe('DiagnosticSession (integration via simulator)', () => {
     });
     await passat.connect();
     expect(await passat.readExtended('1701')).toBeNull();
+  });
+
+  // Multi-ECU (functional, headers off): a real adapter returns one line per responding ECU. The
+  // Punto profile is seeded as a multi-ECU car (transport/scenarios.ts). These pin the Phase 3 / F4
+  // fix — the second ECU's `43`/bitmap must never fold into the first ECU's data.
+  describe('multi-ECU functional responses', () => {
+    it('reads Mode 03 across two ECUs: exactly the injected set, no phantom codes', async () => {
+      const scenario = buildScenario('fiat-punto-2008-12', {
+        storedDtcs: ['P0301'],
+        secondaryEcus: [{ supportedPids: ['0104', '010C'], storedDtcs: ['U0100'] }],
+      });
+      const session = new DiagnosticSession(new MockTransport(scenario), { commandTimeoutMs: 1000 });
+      await session.connect();
+      const stored = (await session.readDtcs('03')).map((d) => d.code).sort();
+      expect(stored).toEqual(['P0301', 'U0100']);
+    });
+
+    it('merges and dedupes a code both ECUs report', async () => {
+      const scenario = buildScenario('fiat-punto-2008-12', {
+        storedDtcs: ['U0100', 'P0401'],
+        secondaryEcus: [{ supportedPids: ['0104'], storedDtcs: ['U0100'] }],
+      });
+      const session = new DiagnosticSession(new MockTransport(scenario), { commandTimeoutMs: 1000 });
+      await session.connect();
+      const stored = (await session.readDtcs('03')).map((d) => d.code).sort();
+      expect(stored).toEqual(['P0401', 'U0100']); // U0100 reported twice, surfaced once
+    });
+
+    it('a secondary ECU with no faults (43 00) contributes no phantom codes', async () => {
+      // The default Punto scenario already carries a no-fault secondary ECU.
+      const session = new DiagnosticSession(
+        new MockTransport(buildScenario('fiat-punto-2008-12', { storedDtcs: ['P0420'] })),
+        { commandTimeoutMs: 1000 },
+      );
+      await session.connect();
+      expect((await session.readDtcs('03')).map((d) => d.code)).toEqual(['P0420']);
+    });
+
+    it('unions the supported-PID bitmap across ECUs on 0100', async () => {
+      // The secondary ECU supports 0131, a PID the primary Punto set lacks — it must appear, and
+      // every primary PID must still be present.
+      const scenario = buildScenario('fiat-punto-2008-12', {
+        secondaryEcus: [{ supportedPids: ['0104', '0131'] }],
+      });
+      const session = new DiagnosticSession(new MockTransport(scenario), { commandTimeoutMs: 1000 });
+      const info = await session.connect();
+      expect(info.supportedPids).toContain('0131');
+      for (const p of getVehicleProfile('fiat-punto-2008-12').supportedPids) {
+        expect(info.supportedPids).toContain(p);
+      }
+    });
+
+    it('leaves single-ECU cars unchanged', async () => {
+      const session = new DiagnosticSession(
+        new MockTransport(buildScenario('generic', { storedDtcs: ['P0420'] })),
+        { commandTimeoutMs: 1000 },
+      );
+      const info = await session.connect();
+      expect((await session.readDtcs('03')).map((d) => d.code)).toEqual(['P0420']);
+      expect(info.supportedPids.length).toBeGreaterThan(0);
+    });
   });
 });

@@ -5,7 +5,53 @@ other docs; this file is the "what we did" history.)
 
 ---
 
-## Real-adapter hardening pass (2026-07-03)
+## Improvement-plan implementation (2026-07-15)
+
+The full [`improvement-plan-2026-07.md`](./improvement-plan-2026-07.md) landed — Phases 1–5, all
+ten Phase 6 nice-to-haves minus one deferral, and all ten Phase 6b VCDS-parity items.
+Simulator-first, unit-tested; suite grew **309 → 504 tests** (46 → 71 suites), with `typecheck`,
+`typecheck:app` and the repo-wide `lint` green.
+
+**Phase 1 — connection correctness:** `Transport.onStatusChange` (BLE + mock, incl.
+`simulateDisconnect()`); an unsolicited link drop now flips `sessionStore` to disconnected with an
+actionable message; failed connects (e.g. ignition-off probe) tear the half-open transport down;
+opt-in **auto-reconnect** with 2/5/10 s backoff (`connection/api/reconnect.ts`).
+
+**Phase 2 — EngineHost:** cross-cutting engines moved out of screen hooks into a headless
+`features/engine-host` mounted once in `_layout`: single demand-driven poll loop (union of
+screen-acquired PIDs + alert-rule PIDs + trip set), alert evaluation, connection/diagnostic
+notifications fed real `milOn`/`dtcCount`, trip sampling. Screen hooks became thin store
+subscriptions; double-polling is impossible by construction.
+
+**Phase 3 — multi-ECU parsing:** `ParsedResponse.frames` (one per plain hex line;
+`bytes === frames[0]`), per-frame DTC parse + dedupe, OR-merged supported-PID bitmaps, and a
+simulator secondary-ECU scenario (Punto engine+TCU) pinning the no-phantom-DTC regression.
+
+**Phase 4 — data lifecycle:** adapter I/O log moved to a module-level ring buffer with a ~4 Hz
+throttled publish and rx-pause during ATMA (`state/adapterLog.ts`); trips persist as summaries with
+CSV-backed samples (`fromCsv`), CSV delete-on-remove and share; history capped at 200 with
+debounced persist (`debouncedStorage`).
+
+**Phase 5 — polish/DX:** AI `apiKey` now lives in the OS keystore (`expo-secure-store`, tolerant
+import, one-time migration out of the settings file); a themed root `RootErrorBoundary` logs render
+errors to the error log; ESLint covers all of `src/**` with react + react-hooks rules and a
+`npm run ci` gate.
+
+**Phase 6 — nice-to-haves:** fuel economy (015E or MAF+speed) on the dashboard + trip stats;
+GPS trip tracks (expo-location, tolerant) with GPS-vs-OBD distance/speed; metric/imperial units at
+display level; shareable HTML diagnostic report; dashboard gauge customization (per-vehicle,
+persisted); adapter health check feature (grade + share); chart tap-inspect, pinch-zoom/pan and
+window-CSV share; first-run onboarding hints + a11y labels on shared gauges; EAS Update wiring
+('Check for updates' in More). *Deferred: 6.9 Web Bluetooth PWA transport.*
+
+**Phase 6b — VCDS parity, next tier:** forum-pasteable Auto-Scan text report; persisted scan
+history with before/after diff; DTC search across modules; long-coding per-bit helper with label
+names + live old→new preview; one-tap reversible coding tweaks (3 Golf Plus presets, sim-verified);
+measuring-block CSV logging in extended-pids; per-profile guided fault finding (DTC → DIDs /
+routine / freeze frame); full-car coding+adaptation backup with per-module gated restore;
+readiness drive-cycle coach with flip-to-ready notifications; tester-present bus wake before scans.
+
+Per-feature docs updated throughout; `vcds-parity-roadmap.md` status table reflects the landings.
 
 **Status:** ✅ complete — full suite **272 tests** green (16 new), `eslint` 0, core + full-app
 `tsc` 0. A code review of the VCDS-parity expansion found four real-hardware gaps the simulator

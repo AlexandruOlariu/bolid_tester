@@ -15,6 +15,22 @@
     ],
     "type": "concept"
   },
+  "concept:adapter-health": {
+    "path": null,
+    "summary": "One-tap ELM327 adapter grading over the live session: ATI firmware string (clone hints), ATRV voltage, ATDPN protocol, and a timed 0100 burst (min/me\u2026",
+    "tokens": [
+      "adapter",
+      "check",
+      "clone",
+      "elm327",
+      "firmware",
+      "grade",
+      "health",
+      "latency",
+      "voltage"
+    ],
+    "type": "concept"
+  },
   "concept:ai-diagnose-flow": {
     "path": null,
     "summary": "AI Diagnose: snapshot fault codes + live readings -> aiDiagnosis builds the prompt -> AI client (OpenAI-compatible) -> human-readable diagnosis.",
@@ -97,9 +113,28 @@
     ],
     "type": "concept"
   },
+  "concept:coding-tweaks-backup": {
+    "path": null,
+    "summary": "One-tap coding presets (reversible curated toggles per profile, compiled to the gated coding write with on/off/unknown detection), the long-coding pe\u2026",
+    "tokens": [
+      "backup",
+      "bit",
+      "clone",
+      "coding",
+      "helper",
+      "longcoding",
+      "onetap",
+      "preset",
+      "restore",
+      "snapshot",
+      "tweak",
+      "tweaks"
+    ],
+    "type": "concept"
+  },
   "concept:connection-lifecycle": {
     "path": null,
-    "summary": "Establishing a live link: BLE permission + scan -> BleTransport -> Elm327Client init (ATZ/ATSPn) -> DiagnosticSession; status flows into sessionStore.",
+    "summary": "Establishing a live link: BLE permission + scan -> BleTransport -> Elm327Client init (ATZ/ATSPn) -> DiagnosticSession; status flows into sessionStore\u2026",
     "tokens": [
       "ble",
       "bluetooth",
@@ -107,8 +142,11 @@
       "connection",
       "elm327",
       "lifecycle",
+      "linkloss",
       "pairing",
-      "session"
+      "reconnect",
+      "session",
+      "statuschange"
     ],
     "type": "concept"
   },
@@ -191,6 +229,25 @@
     ],
     "type": "concept"
   },
+  "concept:engine-host": {
+    "path": null,
+    "summary": "Headless EngineHost mounted once in app/_layout owns the single app-wide poll loop plus alert evaluation, diagnostic/connection notifications (fed re\u2026",
+    "tokens": [
+      "acquire",
+      "background",
+      "cross-cutting",
+      "demand",
+      "engine",
+      "enginehost",
+      "headless",
+      "host",
+      "layout",
+      "loop",
+      "pidunion",
+      "poll"
+    ],
+    "type": "concept"
+  },
   "concept:error-resilience": {
     "path": null,
     "summary": "Resilience pattern: recoverable failures are captured via logError into errorLogStore (the single logging zone, shown in the Error Log screen) rather\u2026",
@@ -220,6 +277,23 @@
       "pids",
       "uds",
       "vag"
+    ],
+    "type": "concept"
+  },
+  "concept:fuel-economy-units": {
+    "path": null,
+    "summary": "Fuel economy derived from live PIDs (fuel-rate 015E preferred, else MAF+speed with per-fuel constants) as instantaneous + windowed L/100km (L/h at st\u2026",
+    "tokens": [
+      "consumption",
+      "conversion",
+      "economy",
+      "fuel",
+      "imperial",
+      "l100km",
+      "maf",
+      "metric",
+      "mpg",
+      "units"
     ],
     "type": "concept"
   },
@@ -382,6 +456,39 @@
       "speed",
       "tests",
       "track"
+    ],
+    "type": "concept"
+  },
+  "concept:readiness-coach": {
+    "path": null,
+    "summary": "Drive-cycle coach: after a DTC clear, lists incomplete readiness monitors with generic per-monitor completion patterns (obd-core driveCycle), polls 0\u2026",
+    "tokens": [
+      "0101",
+      "clear",
+      "coach",
+      "complete",
+      "drivecycle",
+      "itp",
+      "monitor",
+      "readiness",
+      "ready"
+    ],
+    "type": "concept"
+  },
+  "concept:scan-history-diff": {
+    "path": null,
+    "summary": "Auto-scans persist (vehicle-keyed, capped) in scanHistoryStore; scanReport formats the forum-pasteable VCDS-style text block; scanDiff compares two s\u2026",
+    "tokens": [
+      "after",
+      "autoscan",
+      "before",
+      "compare",
+      "diff",
+      "history",
+      "report",
+      "saved",
+      "scan",
+      "search"
     ],
     "type": "concept"
   },
@@ -624,6 +731,19 @@
     ],
     "type": "core"
   },
+  "core:analysis/fuelEconomy": {
+    "path": "src/shared/obd-core/analysis/fuelEconomy.ts",
+    "summary": "Pure fuel-economy math over live PIDs.",
+    "tests": [
+      "src/shared/obd-core/analysis/fuelEconomy.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "economy",
+      "fuel"
+    ],
+    "type": "core"
+  },
   "core:analysis/inspection": {
     "path": "src/shared/obd-core/analysis/inspection.ts",
     "summary": "Pure \"used-car inspection\" assessment.",
@@ -708,6 +828,30 @@
     ],
     "type": "core"
   },
+  "core:coding/codingHelper": {
+    "path": "src/shared/obd-core/coding/codingHelper.ts",
+    "summary": "VCDS-style long-coding helper: pure functions that turn a coding value + its bit/byte schema (optionally enriched with label-pack names) into a byte-\u2026",
+    "tests": [
+      "src/shared/obd-core/coding/codingHelper.test.ts"
+    ],
+    "tokens": [
+      "coding",
+      "helper"
+    ],
+    "type": "core"
+  },
+  "core:coding/presets": {
+    "path": "src/shared/obd-core/coding/presets.ts",
+    "summary": "One-tap coding presets (\"tweaks\", OBDeleven-style): a curated per-profile toggle compiled down to the existing gated coding write (backup \u2192 write \u2192 v\u2026",
+    "tests": [
+      "src/shared/obd-core/coding/presets.test.ts"
+    ],
+    "tokens": [
+      "coding",
+      "presets"
+    ],
+    "type": "core"
+  },
   "core:coding/udsCoding": {
     "path": "src/shared/obd-core/coding/udsCoding.ts",
     "summary": "UDS coding sequence over an injectable byte sender.",
@@ -756,6 +900,18 @@
     "tokens": [
       "can",
       "monitor"
+    ],
+    "type": "core"
+  },
+  "core:obd/driveCycle": {
+    "path": "src/shared/obd-core/obd/driveCycle.ts",
+    "summary": "Drive-cycle / readiness coach data (6b.9).",
+    "tests": [
+      "src/shared/obd-core/obd/driveCycle.test.ts"
+    ],
+    "tokens": [
+      "cycle",
+      "drive"
     ],
     "type": "core"
   },
@@ -969,6 +1125,9 @@
   "core:transport/MockTransport": {
     "path": "src/shared/obd-core/transport/MockTransport.ts",
     "summary": "A virtual ELM327 that implements Transport, so the whole app/test-suite runs with no hardware.",
+    "tests": [
+      "src/shared/obd-core/transport/MockTransport.test.ts"
+    ],
     "tokens": [
       "mock",
       "transport"
@@ -1014,6 +1173,19 @@
     "tokens": [
       "guided",
       "routine",
+      "uds"
+    ],
+    "type": "core"
+  },
+  "core:uds/testerPresent": {
+    "path": "src/shared/obd-core/uds/testerPresent.ts",
+    "summary": "Bus wake / functional TesterPresent broadcast.",
+    "tests": [
+      "src/shared/obd-core/uds/testerPresent.test.ts"
+    ],
+    "tokens": [
+      "present",
+      "tester",
       "uds"
     ],
     "type": "core"
@@ -1096,6 +1268,15 @@
       "experimental",
       "gated",
       "write"
+    ],
+    "type": "doc"
+  },
+  "doc:features/adapter-health": {
+    "path": "docs/features/adapter-health.md",
+    "summary": "Feature: adapter-health",
+    "tokens": [
+      "adapter",
+      "health"
     ],
     "type": "doc"
   },
@@ -1373,6 +1554,20 @@
     ],
     "type": "doc"
   },
+  "doc:improvement-plan-2026-07": {
+    "path": "docs/improvement-plan-2026-07.md",
+    "summary": "App review & improvement plan \u2014 2026-07-12",
+    "tokens": [
+      "07",
+      "12",
+      "2026",
+      "app",
+      "improvement",
+      "plan",
+      "review"
+    ],
+    "type": "doc"
+  },
   "doc:obd2-reference": {
     "path": "docs/obd2-reference.md",
     "summary": "OBD2 / ELM327 Reference",
@@ -1497,6 +1692,18 @@
     ],
     "type": "feature"
   },
+  "feature:adapter-health": {
+    "path": "src/features/adapter-health",
+    "summary": "A one-tap **adapter health check** that grades your ELM327 so \"is my clone junk?\" support questions",
+    "tests": [
+      "src/features/adapter-health/api/gradeAdapter.test.ts"
+    ],
+    "tokens": [
+      "adapter",
+      "health"
+    ],
+    "type": "feature"
+  },
   "feature:ai-diagnose": {
     "path": "src/features/ai-diagnose",
     "summary": "**One-tap, AI-assisted health check.** Reads the car in one pass, sends a structured snapshot to a",
@@ -1535,6 +1742,9 @@
   "feature:coding": {
     "path": "src/features/coding",
     "summary": "**Custom coding** = changing a control module's configuration (\"long coding\" / adaptation) rather",
+    "tests": [
+      "src/features/coding/api/carBackup.test.ts"
+    ],
     "tokens": [
       "coding"
     ],
@@ -1543,6 +1753,9 @@
   "feature:connection": {
     "path": "src/features/connection",
     "summary": "Scan for, connect to, and initialize the ELM327 BLE adapter.",
+    "tests": [
+      "src/features/connection/api/reconnect.test.ts"
+    ],
     "tokens": [
       "connection"
     ],
@@ -1553,6 +1766,18 @@
     "summary": "A diesel-focused read-only view of the **diesel particulate filter**: soot load, ash load, distance",
     "tokens": [
       "dpf"
+    ],
+    "type": "feature"
+  },
+  "feature:engine-host": {
+    "path": "src/features/engine-host",
+    "summary": "Engine Host feature (screen + hooks + model).",
+    "tests": [
+      "src/features/engine-host/pollPids.test.ts"
+    ],
+    "tokens": [
+      "engine",
+      "host"
     ],
     "type": "feature"
   },
@@ -1568,6 +1793,9 @@
   "feature:extended-pids": {
     "path": "src/features/extended-pids",
     "summary": "Profile-driven **manufacturer-specific** reads via **Mode 22** (UDS `readDataByIdentifier`). **VAG is",
+    "tests": [
+      "src/features/extended-pids/api/measuringLog.test.ts"
+    ],
     "tokens": [
       "extended",
       "pids"
@@ -1602,6 +1830,9 @@
   "feature:live-charts": {
     "path": "src/features/live-charts",
     "summary": "Plot live PIDs over **time** (line charts) alongside the gauges in [`live-data`](./live-data.md), and",
+    "tests": [
+      "src/features/live-charts/api/chartCsv.test.ts"
+    ],
     "tokens": [
       "charts",
       "live"
@@ -1611,6 +1842,9 @@
   "feature:live-data": {
     "path": "src/features/live-data",
     "summary": "Stream and display live engine parameters (Mode 01 PIDs).",
+    "tests": [
+      "src/features/live-data/model/dashboardLayout.test.ts"
+    ],
     "tokens": [
       "data",
       "live"
@@ -1628,6 +1862,12 @@
   "feature:module-scan": {
     "path": "src/features/module-scan",
     "summary": "Scan every control module the profile declares: identification (part number, software version,",
+    "tests": [
+      "src/features/module-scan/api/scanDiff.test.ts",
+      "src/features/module-scan/api/scanReport.test.ts",
+      "src/features/module-scan/api/scanSearch.test.ts",
+      "src/features/module-scan/model/scanHistoryStore.test.ts"
+    ],
     "tokens": [
       "module",
       "scan"
@@ -1647,6 +1887,14 @@
     "summary": "A single **local notification** layer (no server, no push tokens) that surfaces important events to",
     "tokens": [
       "notifications"
+    ],
+    "type": "feature"
+  },
+  "feature:onboarding": {
+    "path": "src/features/onboarding",
+    "summary": "Onboarding feature (screen + hooks + model).",
+    "tokens": [
+      "onboarding"
     ],
     "type": "feature"
   },
@@ -1708,6 +1956,9 @@
   "feature:trip-recording": {
     "path": "src/features/trip-recording",
     "summary": "Record a drive as a typed **time-series** of live PIDs (plus DTC snapshots), persist it on the",
+    "tests": [
+      "src/features/trip-recording/api/trackRecorder.test.ts"
+    ],
     "tokens": [
       "recording",
       "trip"
@@ -1796,6 +2047,17 @@
     ],
     "type": "lib"
   },
+  "lib:units": {
+    "path": "src/shared/lib/units.ts",
+    "summary": "Display-time unit conversion.",
+    "tests": [
+      "src/shared/lib/units.test.ts"
+    ],
+    "tokens": [
+      "units"
+    ],
+    "type": "lib"
+  },
   "screen:_layout": {
     "path": "src/app/_layout.tsx",
     "summary": "exports RootLayout",
@@ -1809,6 +2071,15 @@
     "summary": "Route screen 'adaptations' (expo-router).",
     "tokens": [
       "adaptations"
+    ],
+    "type": "screen"
+  },
+  "screen:adapter-health": {
+    "path": "src/app/adapter-health.tsx",
+    "summary": "Route screen 'adapter health' (expo-router).",
+    "tokens": [
+      "adapter",
+      "health"
     ],
     "type": "screen"
   },
@@ -2064,6 +2335,18 @@
     ],
     "type": "service"
   },
+  "store:adapterLog": {
+    "path": "src/shared/state/adapterLog.ts",
+    "summary": "Adapter I/O log \u2014 a module-level ring buffer for the raw tx/rx traffic between the app and the ELM327, decoupled from React state on the hot path.",
+    "tests": [
+      "src/shared/state/adapterLog.test.ts"
+    ],
+    "tokens": [
+      "adapter",
+      "log"
+    ],
+    "type": "store"
+  },
   "store:errorLogStore": {
     "path": "src/shared/state/errorLogStore.ts",
     "summary": "The \"logging zone\": a persistent, capped store of errors the app has hit, so they can be reviewed and exported to fix later.",
@@ -2085,6 +2368,9 @@
   "store:historyStore": {
     "path": "src/shared/state/historyStore.ts",
     "summary": "Persistent history of diagnostic activity: every AI auto-diagnose run and every fault-code check, each **linked to a car**.",
+    "tests": [
+      "src/shared/state/historyStore.test.ts"
+    ],
     "tokens": [
       "history"
     ],
@@ -2093,9 +2379,24 @@
   "store:persistStorage": {
     "path": "src/shared/state/persistStorage.ts",
     "summary": "A zustand `StateStorage` backed by a JSON file in the app's document directory, using the already-installed **expo-file-system** (no extra native dep\u2026",
+    "tests": [
+      "src/shared/state/persistStorage.test.ts"
+    ],
     "tokens": [
       "persist",
       "storage"
+    ],
+    "type": "store"
+  },
+  "store:secureApiKey": {
+    "path": "src/shared/state/secureApiKey.ts",
+    "summary": "Secure storage for the AI `apiKey` (finding F8).",
+    "tests": [
+      "src/shared/state/secureApiKey.test.ts"
+    ],
+    "tokens": [
+      "key",
+      "secure"
     ],
     "type": "store"
   },
@@ -2109,7 +2410,7 @@
   },
   "store:settingsStore": {
     "path": "src/shared/state/settingsStore.ts",
-    "summary": "Cross-cutting runtime settings + the adapter I/O log.",
+    "summary": "Cross-cutting runtime settings, persisted across launches via expo-file-system \u2014 see persistStorage.ts and docs/features/settings.md.",
     "tokens": [
       "settings"
     ],
@@ -2169,6 +2470,16 @@
     ],
     "type": "ui"
   },
+  "ui:RootErrorBoundary": {
+    "path": "src/shared/ui/RootErrorBoundary.tsx",
+    "summary": "App-wide React render error boundary (finding F9).",
+    "tokens": [
+      "boundary",
+      "error",
+      "root"
+    ],
+    "type": "ui"
+  },
   "ui:Screen": {
     "path": "src/shared/ui/Screen.tsx",
     "summary": "Standard scrollable screen frame with safe-area + optional pull-to-refresh.",
@@ -2192,6 +2503,18 @@
       "value"
     ],
     "type": "ui"
+  },
+  "vehicle:faultGuides": {
+    "path": "src/shared/vehicles/faultGuides.ts",
+    "summary": "Guided fault finding (6b.7): from a DTC to the data that explains it.",
+    "tests": [
+      "src/shared/vehicles/faultGuides.test.ts"
+    ],
+    "tokens": [
+      "fault",
+      "guides"
+    ],
+    "type": "vehicle"
   },
   "vehicle:fiat-punto-2008-12": {
     "path": "src/shared/vehicles/fiat-punto-2008-12.ts",

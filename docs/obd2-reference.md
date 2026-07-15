@@ -60,6 +60,25 @@ Commands are terminated with `\r`. A complete response ends with the prompt char
 Request format: mode + PID as hex, e.g. `010C` (Mode 01, PID 0C = RPM). The reply echoes mode+0x40,
 then the PID, then the data bytes, e.g. `41 0C 1A F8`.
 
+### Multi-ECU (functional) responses
+
+Most requests are **functional** (broadcast to all ECUs). With headers off (`ATH0`) on a car where
+more than one ECU answers — e.g. Mode 03 stored DTCs, or `0100` supported-PID bitmaps on an
+engine+transmission car — a real adapter prints **one plain hex line per responding ECU**:
+
+```
+43 01 03 01      ← engine: one DTC (P0301)
+43 01 C1 00      ← transmission: one DTC (U0100)
+```
+
+These lines must be parsed **per line** — never concatenated, or a second ECU's `43` service byte
+folds into the first ECU's DTC stream and fabricates phantom codes. `responseParser` exposes them as
+`ParsedResponse.frames` (one entry per line; `bytes` stays the first frame for single-ECU
+back-compat). `readDtcs` strips each frame's own service byte and merges/dedupes; `discoverSupportedPids`
+ORs the per-ECU bitmaps (the supported-PID set is the union across ECUs). A single ECU's response
+longer than 7 bytes is a different thing — one ISO-TP multi-frame message (`N:`-prefixed segment
+lines), reassembled into a single frame.
+
 ## Mode 01 PIDs we decode
 
 `A`, `B`, `C`, `D` are the successive data bytes (decimal).

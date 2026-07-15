@@ -33,6 +33,13 @@ export class ChartBuffer {
     return this.buf.filter((p) => p.t >= start && p.t <= end);
   }
 
+  /** Earliest / latest buffered timestamps, or null when empty. Lets the UI clamp a pan (end-time)
+   *  offset to the data actually held rather than scrolling past the ends of the buffer. */
+  bounds(): { first: number; last: number } | null {
+    if (this.buf.length === 0) return null;
+    return { first: this.buf[0].t, last: this.buf[this.buf.length - 1].t };
+  }
+
   all(): Point[] {
     return this.buf.slice();
   }

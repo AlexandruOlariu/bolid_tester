@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { YStack, XStack, Button, Paragraph, Spinner, Text, Card, Input } from 'tamagui';
 import { CheckCircle2, XCircle, Loader, CircleDashed } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
+import { HintCard } from '@/features/onboarding';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import type { ConnState } from '@/shared/state/sessionStore';
@@ -63,6 +64,11 @@ export function ConnectionScreen() {
   return (
     <Screen title="Connect" subtitle="Pair with your OBD2 adapter, or use the built-in simulator">
       <StatusHero status={status} />
+
+      <HintCard id="connect-basics" title="Getting started">
+        Pick your car on the Vehicle tab, then connect here. No adapter? Turn on Simulator mode in
+        Settings — it emulates a real ECU so you can explore every screen with no hardware.
+      </HintCard>
 
       {error ? (
         <Panel backgroundColor="$red2">

@@ -106,16 +106,31 @@ export class DiagnosticSession {
     return { protocol: this.protocol, voltage, version, supportedPids: this.supported, vin, calibrationId };
   }
 
-  /** Walk the 0100/0120/0140/0160 bitmaps, collecting the real (non-marker) supported PIDs. */
+  /** Walk the 0100/0120/0140/0160 bitmaps, collecting the real (non-marker) supported PIDs.
+   *
+   *  Multi-ECU: `0100` is a functional (broadcast) request, so on a car where several ECUs answer
+   *  (engine + transmission/aux) each replies on its own line. The set of PIDs the app can read is
+   *  the UNION of what any ECU supports, so we OR the per-frame bitmaps — the correct semantics for
+   *  a functional query. (The old single-`bytes` path concatenated the lines and hex-parsed the
+   *  blob, fabricating garbage.) We keep walking to the next range while ANY responding ECU still
+   *  flags a higher range via its marker PID. Single-ECU behaviour is identical to before. */
   async discoverSupportedPids(): Promise<string[]> {
     const ranges = ['0100', '0120', '0140', '0160'];
     const found: string[] = [];
     for (const req of ranges) {
       const r = await this.client.command(req);
-      if (r.notice || r.bytes.length < 6) break;
-      const decoded = decodeSupportedPids(req, r.bytes.slice(2));
-      for (const p of decoded) if (!isMarkerPid(p) && !found.includes(p)) found.push(p);
-      if (!decoded.some(isMarkerPid)) break;
+      if (r.notice) break;
+      const frames = r.frames.length ? r.frames : r.bytes.length ? [r.bytes] : [];
+      let anyValid = false;
+      let anyMarker = false;
+      for (const frame of frames) {
+        if (frame.length < 6) continue;
+        anyValid = true;
+        const decoded = decodeSupportedPids(req, frame.slice(2));
+        for (const p of decoded) if (!isMarkerPid(p) && !found.includes(p)) found.push(p);
+        if (decoded.some(isMarkerPid)) anyMarker = true;
+      }
+      if (!anyValid || !anyMarker) break;
     }
     this.supported = found;
     return found;
@@ -131,6 +146,9 @@ export class DiagnosticSession {
 
   async readValue(pid: string): Promise<LiveValue | null> {
     const r = await this.client.command(pid);
+    // `r.bytes` is the first responding frame. Mode 01 live PIDs are answered only by the engine
+    // ECU in practice, so single-frame; if another module ever also answers, first-frame is the
+    // engine's value (not a multi-ECU concatenation) — see ParsedResponse.bytes.
     if (r.notice || r.bytes.length < 2) return null;
     const value = decodePid(pid, r.bytes.slice(2));
     if (value === null) return null;
@@ -187,8 +205,25 @@ export class DiagnosticSession {
     const r = await this.client.command(kind);
     if (r.notice) return [];
     const service = parseInt('4' + kind[1], 16); // 0x43 / 0x47 / 0x4A
-    const data = r.bytes[0] === service ? r.bytes.slice(1) : r.bytes;
-    return parseDtcBytes(data).map(toDtc);
+    // Parse each responding ECU's frame independently. Mode 03/07/0A is functional, so with headers
+    // off a multi-ECU car (engine + transmission/aux) returns ONE LINE PER ECU. Stripping only the
+    // first 0x43 and hex-parsing the concatenation used to fold a second ECU's `43` service byte
+    // into the DTC byte stream → phantom/garbled codes. Here we strip each frame's own service byte,
+    // decode per frame, then merge and dedupe (two ECUs can legitimately report the same code, e.g.
+    // U0100). Single-frame (single-ECU) behaviour is identical to before.
+    const frames = r.frames.length ? r.frames : r.bytes.length ? [r.bytes] : [];
+    const codes: string[] = [];
+    const seen = new Set<string>();
+    for (const frame of frames) {
+      const data = frame[0] === service ? frame.slice(1) : frame;
+      for (const code of parseDtcBytes(data)) {
+        if (!seen.has(code)) {
+          seen.add(code);
+          codes.push(code);
+        }
+      }
+    }
+    return codes.map(toDtc);
   }
 
   async clearDtcs(): Promise<boolean> {
@@ -198,6 +233,8 @@ export class DiagnosticSession {
 
   async readVin(): Promise<string | null> {
     const r = await this.client.command('0902');
+    // 0902 is functional but the VIN is >7 bytes, so on CAN it arrives as an ISO-TP multi-frame
+    // message → a SINGLE reassembled frame (`r.bytes`). No multi-ECU concatenation exposure here.
     if (r.notice || r.bytes.length < 3) return null;
     const vin = parseVin(r.bytes);
     return vin.length > 0 ? vin : null;
@@ -278,6 +315,10 @@ export class DiagnosticSession {
   /** MIL state + readiness monitors (Mode 01 PID 01). */
   async readReadiness(): Promise<MonitorStatus | null> {
     const r = await this.client.command('0101');
+    // 0101 is functional and several ECUs can answer, but MIL state + readiness belong to the
+    // PRIMARY (engine) ECU. `r.bytes` is the first responding frame — the engine on the lowest CAN
+    // id (7E8) — so this reads the right module and no longer risks the multi-ECU byte-concatenation
+    // garble. (If per-ECU readiness merging is ever wanted, `r.frames` carries every ECU's answer.)
     if (r.notice || r.bytes.length < 6) return null;
     return decodeMonitorStatus(r.bytes.slice(2));
   }

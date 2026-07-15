@@ -64,6 +64,11 @@ export class ReplayTransport implements Transport {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
+  /** Replay fixtures never drop their link, so status is fixed after connect/disconnect and this
+   *  is a no-op subscription (kept to satisfy the Transport contract). */
+  onStatusChange(): () => void {
+    return () => undefined;
+  }
   async write(bytes: Uint8Array): Promise<void> {
     const cmd = norm(bytesToString(bytes).replace(/[\r\n]/g, ''));
     if (!cmd) return;

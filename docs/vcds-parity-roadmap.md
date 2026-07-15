@@ -33,6 +33,39 @@ continuously-monitored routine interlocks**. Details in `docs/implementation-log
 validation is meaningful now — before this pass it would have misattributed parser failures to
 adapters/modules.
 
+## Next-tier parity (Phase 6b, 2026-07, ✅ landing)
+
+From `docs/improvement-plan-2026-07.md` → "Phase 6b — VCDS parity, next tier":
+
+- **6b.6 Measuring-block logging** (✅) — VCDS's "Log" for module DIDs: record selected Mode 22 DIDs
+  over time to a shareable CSV (`extended-pids`). `docs/features/extended-pids.md`. (Charting Mode 22
+  values was deferred — see that doc.)
+- **6b.7 Guided fault finding** (✅) — a DTC's **Guide**: note + deep-links to related measuring
+  blocks and the relevant routine + inline freeze frame, from a per-profile map
+  (`shared/vehicles/faultGuides.ts`). `docs/features/fault-codes.md`.
+- **6b.9 Readiness / drive-cycle coach** (✅) — after a clear, shows which monitors are still not
+  ready + a generic per-monitor drive pattern (`obd-core/obd/driveCycle.ts`), polled by EngineHost
+  and notifying as each monitor (and then all) flips ready. `docs/features/fault-codes.md`.
+- **6b.1 Auto-Scan text report** (✅) — forum-pasteable VCDS-style block, shared as `.txt`.
+  `scanReport.ts`; `docs/features/module-scan.md`.
+- **6b.2 Scan diff / before-after** (✅) — persist auto-scans + diff two (faults appeared/cleared,
+  coding/part-number changed, modules added/removed). `scanDiff.ts` + `scanHistoryStore.ts`.
+- **6b.3 Search all modules for a DTC** (✅) — one query over the last scan by VAG number / SAE code
+  / fault text. `scanSearch.ts`.
+- **6b.4 Long-coding helper** (✅) — byte-by-byte / per-bit breakdown with label-pack names, live
+  old→new preview, edits through the existing gated write. `obd-core/coding/codingHelper.ts`;
+  `docs/features/coding.md`.
+- **6b.5 One-tap coding presets ("tweaks")** (✅) — reversible curated toggles compiled to the gated
+  coding write, with on/off/unknown detection; ships 3 Golf Plus tweaks. `obd-core/coding/presets.ts`;
+  `docs/features/coding.md`.
+- **6b.8 Full coding backup ("clone my car")** (✅) — one-tap snapshot of every declared module's
+  coding + adaptation values → dated JSON, capped store, export/share, per-module gated coding
+  restore (adaptation restore manual in v1). `features/coding/api/carBackup.ts`; `docs/features/coding.md`.
+- **6b.10 Bus wake / tester-present broadcast** (✅) — best-effort functional `3E 00` burst before a
+  module scan, fully swallowed. `obd-core/uds/testerPresent.ts`; `docs/features/module-scan.md`.
+
+All ten Phase 6b items have now landed (simulator-first, tested).
+
 ## Still open (⏳ / ❌)
 
 - **KWP login (`2B`) UI + code book** (⏳) — the UDS/adaptation write paths exist; a K-line KWP

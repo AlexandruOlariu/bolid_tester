@@ -1,4 +1,4 @@
-import { formatDtcCheck, formatDtcReport, type DtcCheckReport } from './dtcReport';
+import { formatDtcCheck, formatDtcReport, buildDtcReportHtml, type DtcCheckReport } from './dtcReport';
 
 const T = Date.UTC(2026, 0, 2, 3, 4, 5); // 2026-01-02T03:04:05.000Z
 
@@ -94,5 +94,79 @@ describe('formatDtcReport', () => {
   it('includes the app version line only when provided', () => {
     expect(formatDtcReport([], { appVersion: '0.1.0', now: T })).toContain('App version: 0.1.0');
     expect(formatDtcReport([], { now: T })).not.toContain('App version:');
+  });
+});
+
+describe('buildDtcReportHtml', () => {
+  const check: DtcCheckReport = {
+    ...liveRead,
+    protocol: 'ISO 15765-4 (CAN 11/500)',
+    voltage: 14.2,
+    adapter: 'Simulator',
+    monitorsComplete: 6,
+    monitorsTotal: 8,
+  };
+
+  it('is a self-contained HTML document with inline CSS', () => {
+    const html = buildDtcReportHtml(check, { now: T });
+    expect(html.startsWith('<!DOCTYPE html>')).toBe(true);
+    expect(html).toContain('<style>');
+    expect(html).not.toContain('<link'); // no external stylesheet
+    expect(html.trimEnd().endsWith('</html>')).toBe(true);
+  });
+
+  it('renders vehicle, VIN, protocol, adapter, voltage and readiness', () => {
+    const html = buildDtcReportHtml(check, { now: T });
+    expect(html).toContain('VW Golf');
+    expect(html).toContain('WVWZZZ1KZAW000001');
+    expect(html).toContain('ISO 15765-4 (CAN 11/500)');
+    expect(html).toContain('Simulator');
+    expect(html).toContain('14.2 V');
+    expect(html).toContain('6/8 monitors complete');
+    expect(html).toContain('MIL ON');
+  });
+
+  it('lists stored/pending/permanent codes with their VAG cross-reference numbers', () => {
+    const html = buildDtcReportHtml(check, { now: T });
+    expect(html).toContain('P0299'); // stored
+    expect(html).toContain('P0420'); // permanent
+    // P0420 -> 0x0420 = 1056 -> '01056'
+    expect(html).toContain('01056');
+    expect(html).toContain('Turbo underboost');
+  });
+
+  it('includes freeze-frame values when captured', () => {
+    const html = buildDtcReportHtml(check, { now: T });
+    expect(html).toContain('Freeze frame');
+    expect(html).toContain('Engine RPM');
+    expect(html).toContain('2200 rpm');
+  });
+
+  it('escapes HTML-significant characters from decoder text', () => {
+    const html = buildDtcReportHtml({
+      ts: T,
+      vehicleLabel: 'Fiat <Punto> & "Co"',
+      milOn: false,
+      stored: [{ code: 'P0100', description: 'Mass air <flow> & sensor' }],
+      pending: [],
+      permanent: [],
+    });
+    expect(html).toContain('Fiat &lt;Punto&gt; &amp; &quot;Co&quot;');
+    expect(html).toContain('Mass air &lt;flow&gt; &amp; sensor');
+    expect(html).not.toContain('<Punto>');
+  });
+
+  it('shows a muted "none" row and MIL off badge for a clean car', () => {
+    const html = buildDtcReportHtml({
+      ts: T,
+      vehicleLabel: 'Clean Car',
+      milOn: false,
+      stored: [],
+      pending: [],
+      permanent: [],
+    });
+    expect(html).toContain('MIL off');
+    expect(html).toContain('none');
+    expect(html).toContain('0 fault codes');
   });
 });

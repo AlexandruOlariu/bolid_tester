@@ -1,6 +1,7 @@
 /** Vehicle profile types. Profiles are DATA — the engine is generic. See docs/vehicles/README.md. */
 
 import { ProtocolId } from '../obd-core/obd/protocols';
+import type { CodingPreset } from '../obd-core/coding/presets';
 
 export type Fuel = 'diesel' | 'petrol' | 'lpg' | 'hybrid' | 'other';
 export type DtcMode = '03' | '07' | '0A';
@@ -62,6 +63,9 @@ export interface CodingModule {
   schema: { byte: number; bit?: number; mask?: number; name: string }[];
   sampleCoding: number[]; // simulator's stored coding
   security?: { level: number };
+  /** Optional module part number (F187) so the long-coding helper can resolve a matching label pack
+   *  for extra bit names. Illustrative if set — confirm on the real car. */
+  partNumber?: string;
   experimental: true;
 }
 
@@ -228,6 +232,9 @@ export interface VehicleProfile {
   moduleSensors?: ModuleSensor[];
   /** Experimental, CAN-only codeable modules. Disabled by default in the UI. */
   codingModules?: CodingModule[];
+  /** Curated one-tap coding tweaks ("presets"), compiled to the gated coding write. Each links to a
+   *  `codingModules` entry by its ATSH request header. See docs/features/coding.md (tweaks). */
+  codingPresets?: CodingPreset[];
   /** Experimental, CAN-only service-interval reset descriptor. */
   serviceReset?: ServiceReset;
   /** Control modules for the per-module scan (auto-scan). See docs/features/module-scan.md. */

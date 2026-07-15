@@ -37,6 +37,28 @@ Scan for, connect to, and initialize the ELM327 BLE adapter.
 4. Run init: `ATZ → ATE0 → ATL0 → ATS0 → ATH0 → ATAT1 → ATSP0`, probe `0100`, read `ATDPN`/`ATRV`.
 5. On success → `connected`, store protocol + voltage; navigate onward.
 
+## Link status events & loss
+- The `Transport` interface exposes `onStatusChange(listener): unsubscribe`. `BleTransport` emits on
+  every transition — including the `device.onDisconnected` callback, so an **unsolicited** drop
+  (adapter pulled, out of range) is now observable instead of silently timing out every later
+  command. `MockTransport` emits the same transitions and adds a test/sim `simulateDisconnect()` to
+  exercise the path with no hardware.
+- After a successful connect, `connectionService` subscribes to the transport status. On an
+  unexpected `disconnected`/`error` while the store is `connected`/`initializing`, it detaches the
+  client, best-effort tears down the (dead) transport, and sets `sessionStore` to `disconnected` with
+  an actionable error. A **manual** `disconnect()` detaches the watcher first, so it never takes the
+  "link lost" path.
+- **Failed-connect teardown.** `connect()`'s catch does a best-effort `session.disconnect()` before
+  rethrowing, so a probe failure (ignition off) leaves no GATT link, notify monitor, or attached
+  client — a retry after failure works without an app restart.
+
+## Auto-reconnect (optional, default off)
+- Behind the persisted `settingsStore.autoReconnect` toggle (Settings → Auto-reconnect). On an
+  unexpected link loss it retries the stored device with backoff (2 s / 5 s / 10 s, 3 attempts),
+  surfacing progress via `sessionStore` status `connecting` + an "attempt _n_ of 3" message. It
+  aborts immediately on a manual disconnect or a new manual connect. The backoff control flow is the
+  pure `reconnect.ts` (`runReconnect`), unit-tested with injected timers.
+
 ## Troubleshooting — adapter visible in Android Bluetooth settings but not in the scan
 A BLE peripheral that the OS has already **bonded and connected to** stops advertising, so
 `startDeviceScan` can't surface it. This is the usual cause of "it's in Android’s Bluetooth list but
@@ -61,3 +83,6 @@ the app never lists it." The connection flow handles it as follows:
 - Surfaces a clear error on permission denial, no device, or failed init.
 - Already-connected/bonded adapters are listed (or reachable by address) even when not advertising.
 - Never hard-codes characteristic UUIDs.
+- Killing the link mid-session (sim `simulateDisconnect()` or pulling the adapter) flips the UI to
+  disconnected within a poll interval with one actionable error entry — no timeout cascade. A failed
+  ignition-off connect followed by a successful retry works without restarting the app.

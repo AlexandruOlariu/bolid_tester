@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import { ScrollView, YStack, XStack, Text, Paragraph, Button, Card, Input, Spinner } from 'tamagui';
 import { Screen } from '@/shared/ui';
 import { useSettingsStore } from '@/shared/state/settingsStore';
+import { useAdapterLogStore, clearAdapterLog } from '@/shared/state/adapterLog';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { VEHICLE_PROFILES } from '@/shared/vehicles';
 import { normalizeBaseUrl } from '@/shared/obd-core';
@@ -158,6 +159,7 @@ function AiSection() {
 export function SettingsScreen() {
   const { exportFixture, busy: exportingFixture } = useLogFixtureExport();
   const s = useSettingsStore();
+  const log = useAdapterLogStore((st) => st.entries);
   const status = useSessionStore((st) => st.status);
   const monoFont = Platform.select({ ios: 'Courier', android: 'monospace', default: 'monospace' });
 
@@ -233,24 +235,41 @@ export function SettingsScreen() {
       </YStack>
 
       <YStack gap="$2">
+        <SectionLabel>Auto-reconnect</SectionLabel>
+        <SegGroup>
+          <YStack gap="$2">
+            <XStack gap="$2" alignItems="center">
+              <Paragraph flex={1}>Retry the last adapter after a dropped link</Paragraph>
+              <Seg active={s.autoReconnect} label="On" onPress={() => s.setAutoReconnect(true)} />
+              <Seg active={!s.autoReconnect} label="Off" onPress={() => s.setAutoReconnect(false)} />
+            </XStack>
+            <Paragraph theme="alt2" fontSize="$1">
+              When the connection drops unexpectedly, reconnect to the same device with backoff (2s,
+              5s, 10s — up to 3 attempts). Cancelled the moment you disconnect or connect manually.
+            </Paragraph>
+          </YStack>
+        </SegGroup>
+      </YStack>
+
+      <YStack gap="$2">
         <XStack justifyContent="space-between" alignItems="center">
           <SectionLabel>Adapter log</SectionLabel>
           <XStack gap="$2">
             <Button
               size="$2"
-              disabled={exportingFixture || s.log.length === 0}
-              onPress={() => void exportFixture(s.log, 'adapter session')}
+              disabled={exportingFixture || log.length === 0}
+              onPress={() => void exportFixture(log, 'adapter session')}
             >
               Export as replay fixture
             </Button>
-            <Button size="$2" onPress={s.clearLog}>
+            <Button size="$2" onPress={clearAdapterLog}>
               Clear
             </Button>
           </XStack>
         </XStack>
         <Card bordered padding="$2" height={220} backgroundColor="$backgroundStrong">
           <ScrollView>
-            {s.log
+            {log
               .slice(-60)
               .reverse()
               .map((e, i) => (
@@ -265,7 +284,7 @@ export function SettingsScreen() {
                   {e.text}
                 </Text>
               ))}
-            {s.log.length === 0 ? (
+            {log.length === 0 ? (
               <Paragraph theme="alt2" fontSize="$2">
                 No adapter I/O yet.
               </Paragraph>

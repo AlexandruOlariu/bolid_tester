@@ -62,6 +62,11 @@ the OS notification centre and as in-app banners. Three sources feed it: **thres
   `permissionStatus`, and a short in-app `history` of recent notifications.
 
 ## Behavior
+- **Hosted app-wide by `EngineHost`** (mounted once in `_layout.tsx`): the connection/diagnostic
+  edge-detection and the `setNotifPrefs` sync run whether or not the Notifications screen is mounted.
+  The diagnostic snapshot is fed **real** state — `milOn`/`dtcCount` from the latest fault-codes read
+  (`dtcStore`) — so the MIL-on / new-fault-code events actually fire (they were previously dead code,
+  hardcoded to `false`/`0`). `useNotifications` is now a no-op kept for API stability.
 - All event sources route through `notificationService`, so prefs, quiet hours, and dedupe apply
   uniformly.
 - Diagnostic/alert notifications are **best-effort and tied to an active session**; the UI never

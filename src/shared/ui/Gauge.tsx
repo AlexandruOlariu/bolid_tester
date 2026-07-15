@@ -20,9 +20,18 @@ export function Gauge({ label, value, min = 0, max = 100, unit, size = 150 }: Ga
   const arc = 0.75; // 270° of the full circle
   const v = value ?? min;
   const pct = Math.max(0, Math.min(1, (v - min) / (max - min || 1)));
+  const hasValue = value !== null && value !== undefined;
+  const valueText = hasValue ? `${Math.round(v)}${unit ? ` ${unit}` : ''}` : 'no reading';
 
   return (
-    <YStack alignItems="center" gap="$1">
+    <YStack
+      alignItems="center"
+      gap="$1"
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+      accessibilityValue={{ min, max, now: hasValue ? Math.round(v) : undefined, text: valueText }}
+    >
       <Svg width={size} height={size}>
         {/* Rotate so the 90° gap sits at the bottom. */}
         <G rotation={135} originX={cx} originY={cx}>

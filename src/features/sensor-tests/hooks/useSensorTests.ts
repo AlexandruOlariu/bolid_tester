@@ -60,7 +60,7 @@ export function useSensorTests() {
       logError({ source: 'sensor-tests', error: e, severity: 'warning' });
       await session.resetAddressing();
     }
-  }, [session, profile, canModuleSensors, setMode06, setModuleReadings]);
+  }, [session, profile, canModuleSensors, kline, setMode06, setMode05, setModuleReadings]);
 
   return { refresh, canModuleSensors, kline, fuel: profile.fuel, hasMode06: !!profile.mode06Tests?.length };
 }

@@ -21,6 +21,14 @@ from a vehicle profile.
   real ELM327 prints reassembled ISO-TP messages — a hex length line, then `N:`-prefixed segment
   lines — so the app's de-framing (`responseParser.reassembleIsoTp`) is exercised by every
   integration test (module idents, `19 02` DTC lists, VIN, multi-PID batches).
+- **Multi-ECU, realistically:** with a `secondaryEcus` scenario the simulator answers FUNCTIONAL
+  (headers-off) requests — the supported-PID bitmaps (`0100/0120/…`) and Mode 03/07 DTCs — with
+  **one plain hex line per responding ECU**, exactly as a real adapter does on an engine+aux car.
+  Each ECU answers a bitmap range only when it supports a PID in it, and answers Mode 03 even with
+  no codes (`43 00`). This pins the multi-ECU parsing fix (`responseParser` returns per-line
+  `frames`; `DiagnosticSession.readDtcs` merges/dedupes per frame, `discoverSupportedPids` unions
+  the bitmaps). The **Fiat Punto** profile is seeded this way (see `transport/scenarios.ts`
+  `SIM_SECONDARY_ECUS`).
 - **Protocol negotiation:** first OBD request may emit `SEARCHING...` then data; K-line scenarios add
   latency and may emit a `BUS INIT` notice.
 - **Supported-PID bitmaps:** `0100/0120/0140/0160` computed from the scenario's PID set.
@@ -37,7 +45,8 @@ Built from the vehicle registry + overrides:
 - `generic` — CAN, broad PID set, sample VIN, no injected DTCs.
 - `golf-plus-2009-20tdi` — CAN 11/500, 16 PIDs, real VIN `WVWZZZ1KZ9W903398`,
   optional DTCs, one experimental Mode 22 DID.
-- `fiat-punto-2008-12` — CAN 11/500, 13 PIDs, VIN.
+- `fiat-punto-2008-12` — CAN 11/500, 13 PIDs, VIN. **Multi-ECU**: a second ECU answers functional
+  `0100` and Mode 03/07 on its own line (regression coverage for the multi-ECU parser).
 - `passat-b55-19tdi` — KWP2000 fast, 9 PIDs, real VIN `WVWZZZ3BZ4E342958` in scenario data,
   **no MAF/oil/fuel-rate**, slower timing, Mode 09 VIN often absent.
 
@@ -48,6 +57,7 @@ speed; non-zero to emulate K-line in the UI).
 - `latencyMs` — per-response delay (K-line > CAN).
 - `emitSearching` — prefix the first OBD reply with `SEARCHING...`.
 - `vinSupported` — whether `0902` answers.
+- `secondaryEcus` — extra ECUs that answer functional `0100`/Mode 03/07 on their own line (multi-ECU).
 - `whitespaceInResponses` — emulate adapters that ignore `ATS0` (the client must still parse).
 
 ## Contract

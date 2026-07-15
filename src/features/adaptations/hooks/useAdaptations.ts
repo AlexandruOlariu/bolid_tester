@@ -52,6 +52,7 @@ export function useAdaptations() {
         store.setRunning(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; session is the only reactive input
     [session],
   );
 
@@ -91,6 +92,7 @@ export function useAdaptations() {
         store.setRunning(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; reactive inputs (session, unlock) are listed
     [session, store.unlocked],
   );
 
@@ -107,6 +109,7 @@ export function useAdaptations() {
         store.setRunning(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; session is the only reactive input
     [session],
   );
 

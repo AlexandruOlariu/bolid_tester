@@ -15,8 +15,9 @@ import {
 import config from '../../tamagui.config';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { installGlobalErrorHandlers } from '@/shared/state/errorLogStore';
-import { AppLogo } from '@/shared/ui';
+import { AppLogo, RootErrorBoundary } from '@/shared/ui';
 import { AppSplash } from '@/shared/ui/AppSplash';
+import { EngineHost } from '@/features/engine-host';
 
 // Capture uncaught errors & unhandled rejections into the in-app error log, once, at app start.
 installGlobalErrorHandlers();
@@ -39,6 +40,11 @@ export default function RootLayout() {
     <TamaguiProvider config={config} defaultTheme={scheme}>
       <Theme name={scheme}>
         <View style={{ flex: 1 }}>
+        {/* Root render-error boundary (F9): themed fallback + Retry so one bad screen can't crash the
+            app. Inside the Theme so the fallback is themed; wraps the navigator (and EngineHost). */}
+        <RootErrorBoundary>
+        {/* Headless: owns the poll loop, alerts, notifications and trip sampling app-wide. */}
+        <EngineHost />
         <Tabs
           screenOptions={{
             headerShown: true,
@@ -140,8 +146,10 @@ export default function RootLayout() {
           <Tabs.Screen name="adaptations" options={{ href: null, title: 'Adaptations' }} />
           <Tabs.Screen name="routines" options={{ href: null, title: 'Routines & output tests' }} />
           <Tabs.Screen name="sniffer" options={{ href: null, title: 'Bus sniffer' }} />
+          <Tabs.Screen name="adapter-health" options={{ href: null, title: 'Adapter health' }} />
         </Tabs>
         <AppSplash />
+        </RootErrorBoundary>
         </View>
       </Theme>
     </TamaguiProvider>

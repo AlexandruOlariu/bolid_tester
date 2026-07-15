@@ -74,6 +74,57 @@ A generic ELM327 is a CAN transceiver we can address freely, so the **transport*
 - Profiles gain an optional, clearly-experimental `codingModules` map: module CAN IDs, coding DID(s)
   + byte/bit schema, and an optional security routine descriptor. **None are shipped enabled.**
 
+## Long-coding helper (6b.4)
+A VCDS-style byte-by-byte breakdown over the existing bit/byte schema, so a write is never a blind
+hex edit:
+- `obd-core/coding/codingHelper.buildCodingView(bytes, fields, baseline?)` (pure, unit-tested) turns a
+  coding value into per-byte views: hex, all 8 bits msb-first (each annotated when the schema names
+  it), the named bit/mask/whole-byte fields, and a `changed` flag against an optional baseline.
+- **Label-pack names.** `mergeCodingLabels(schema, packBits)` merges a module's own schema with
+  coding-bit labels from a matching **label pack** (resolved by the module's part number,
+  `findLabelPack` → `codingBitLabels`), **additively** — the profile schema always wins on a
+  conflict, the pack only fills in bits the schema doesn't name. The Golf BCM ships an illustrative
+  part number so the `vag-bcm-pq35` pack contributes extra bit names.
+- **Live old→new preview.** `CodingScreen`'s editor renders the breakdown: a `Switch` per named bit,
+  a stepper per masked field (e.g. the comfort-blink nibble), and a raw 8-bit editor for any
+  undocumented bit. Toggling a bit / choosing a value updates a `before → after` hex preview with the
+  changed bytes highlighted. The write still goes through the **existing gated path** (`useCoding.write`
+  → `codeModule`: backup → write → verify); the helper only shapes the edit.
+
+## Tweaks — one-tap presets (6b.5)
+OBDeleven-style curated toggles compiled down to the same gated write. A preset is **data** on the
+profile (`codingPresets`, linked to a `codingModules` entry by ATSH header); pure helpers in
+`obd-core/coding/presets` apply/revert/detect it:
+- `detectPresetState(bytes, preset)` → `on` / `off` / `unknown` drives each row's state badge.
+- `applyPreset` / `revertPreset` compile the preset onto a coding value (masked, in place).
+- `useCoding.applyTweak(preset, on)` reads the live coding first (**backup-first**), compiles, then
+  writes + verifies — never a bypass. Gated behind the same unlock + confirmation.
+- Ships with three reversible Golf Plus BCM tweaks (DRL, needle sweep, one-touch turn signals);
+  the whole apply→verify→revert loop round-trips against the simulator
+  (`presets.integration.test.ts`).
+
+## Full backup — "clone my car" (6b.8)
+One tap reads **every profile-declared module's** long coding **and** adaptation-channel values into a
+dated JSON snapshot — the safety net VCDS users keep in a drawer.
+- **Read path** (`useCarBackup.create`) walks the union (by ATSH header) of `codingModules` and
+  `adaptations`: per module it reads ident (`readModuleIdent`, best-effort part no/SW) + coding
+  (`22 <codingDid>`), and reads each adaptation channel by **reusing the adaptations feature's read
+  service** (`readChannel`, read-only — the adaptations feature itself is not modified).
+- **Snapshot shape** (`carBackup.buildCarBackup`, pure + tested): `{ id, ts, vehicle (key+VIN),
+  protocol, modules: [{ reqHeader, address?, name, partNumber?, softwareVersion?, coding: {did,
+  bytes, hex} | null, adaptations: [{did, name, unit?, raw, value}] }] }`. Pure diff/summary helpers
+  (`diffBackupModule`, `summarizeCarBackup`) support the restore preview and headline counts.
+- **Store** `carBackupStore` (persisted, capped `MAX_CAR_BACKUPS = 10`, debounced + rehydration-merge
+  safety net, like `scanHistoryStore`). **Export/share** as `.json`.
+- **Restore is per-module and gated.** Coding restore is exactly the existing gated coding write
+  (`useCoding.write(codingModule, snapshotBytes)` → backup + verify), behind unlock + confirm.
+  **Adaptation restore is manual in v1** (read-only in the backup UI, with a pointer to the
+  Adaptations screen): each adaptation write is bounds-checked and module-specific in the adaptations
+  feature, and reaching into it from the backup UI would duplicate that gating — deferred rather than
+  half-built.
+- UI: a **Backup** section on `CodingScreen` — create, expandable snapshots (per-module coding hex +
+  adaptation values), export, delete, and per-module gated coding restore.
+
 ## Behavior
 - The whole read→edit→backup→write→verify→restore loop is exercised end-to-end against the
   **simulator** with seeded module coding, so the UX and guardrails are testable with no hardware and

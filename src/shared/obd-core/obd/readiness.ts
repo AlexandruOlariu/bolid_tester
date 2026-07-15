@@ -23,7 +23,8 @@ const CONTINUOUS = [
 ];
 
 // Non-continuous monitors: byte C = supported, byte D = incomplete (names differ by ignition type).
-const SPARK_MONITORS = [
+// Exported so the drive-cycle coach (./driveCycle) can be validated against the canonical name list.
+export const SPARK_MONITOR_NAMES = [
   'Catalyst',
   'Heated catalyst',
   'Evaporative system',
@@ -33,7 +34,7 @@ const SPARK_MONITORS = [
   'Oxygen sensor heater',
   'EGR system',
 ];
-const COMPRESSION_MONITORS = [
+export const COMPRESSION_MONITOR_NAMES = [
   'NMHC catalyst',
   'NOx/SCR monitor',
   '',
@@ -59,7 +60,7 @@ export function decodeMonitorStatus(data: number[]): MonitorStatus {
     monitors.push({ id: m.id, name: m.name, supported, complete: supported && !incomplete });
   }
 
-  const names = ignition === 'compression' ? COMPRESSION_MONITORS : SPARK_MONITORS;
+  const names = ignition === 'compression' ? COMPRESSION_MONITOR_NAMES : SPARK_MONITOR_NAMES;
   for (let i = 0; i < 8; i++) {
     if (!names[i]) continue; // reserved slot
     const supported = (c & (1 << i)) !== 0;
@@ -68,4 +69,28 @@ export function decodeMonitorStatus(data: number[]): MonitorStatus {
   }
 
   return { milOn: (a & 0x80) !== 0, dtcCount: a & 0x7f, ignition, monitors };
+}
+
+export interface ReadinessDiff {
+  /** Supported monitors that flipped incomplete → complete between `prev` and `next`. */
+  becameReady: Monitor[];
+  /** True only on the rising edge where the LAST remaining incomplete monitor just completed
+   *  (prev had ≥1 incomplete supported monitor; next has none). */
+  becameAllReady: boolean;
+}
+
+/** Edge-detect readiness progress between two reads. Pure — the drive-cycle coach (6b.9) uses it to
+ *  fire a notification the moment a monitor completes, and once when the whole set is finally ready.
+ *  With no previous read (first sample) nothing has "become" ready yet — it only sets the baseline.
+ *  Monitors are matched by their stable `id`, so a monitor absent from `prev` is never reported. */
+export function diffReadiness(prev: MonitorStatus | null, next: MonitorStatus): ReadinessDiff {
+  const incomplete = (s: MonitorStatus) => s.monitors.filter((m) => m.supported && !m.complete);
+  const nextIncompleteCount = incomplete(next).length;
+  if (!prev) return { becameReady: [], becameAllReady: false };
+  const prevIncompleteIds = new Set(incomplete(prev).map((m) => m.id));
+  const becameReady = next.monitors.filter(
+    (m) => m.supported && m.complete && prevIncompleteIds.has(m.id),
+  );
+  const becameAllReady = prevIncompleteIds.size > 0 && nextIncompleteCount === 0;
+  return { becameReady, becameAllReady };
 }

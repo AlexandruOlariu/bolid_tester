@@ -33,6 +33,7 @@ describe('Elm327Client', () => {
       disconnect: async () => undefined,
       write: async () => undefined,
       onData: () => () => undefined,
+      onStatusChange: () => () => undefined,
     };
     const c = new Elm327Client(dead, { commandTimeoutMs: 30 });
     c.attach();

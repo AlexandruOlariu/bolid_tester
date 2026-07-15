@@ -16,8 +16,19 @@ export function ValueCard({ name, value, unit, stale }: ValueCardProps) {
       : typeof value === 'number'
         ? formatNumber(value)
         : value;
+  const a11yLabel = `${name}: ${display}${unit ? ` ${unit}` : ''}${stale ? ' (stale)' : ''}`;
   return (
-    <Card elevate bordered padding="$3" minWidth={150} flex={1} opacity={stale ? 0.5 : 1}>
+    <Card
+      elevate
+      bordered
+      padding="$3"
+      minWidth={150}
+      flex={1}
+      opacity={stale ? 0.5 : 1}
+      accessible
+      accessibilityRole="text"
+      accessibilityLabel={a11yLabel}
+    >
       <YStack gap="$1">
         <Paragraph theme="alt2" fontSize="$2" numberOfLines={1}>
           {name}

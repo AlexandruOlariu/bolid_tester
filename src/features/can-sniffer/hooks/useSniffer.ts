@@ -28,6 +28,7 @@ export function useSniffer() {
     }
     store.setStats(agg.current.snapshot(), total.current);
     store.setRunning(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; session is the only reactive input
   }, [session]);
 
   const start = useCallback(async () => {
@@ -47,6 +48,7 @@ export function useSniffer() {
       logError({ source: 'can-sniffer', error: e });
       store.setRunning(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; session is the only reactive input
   }, [session]);
 
   // Never leave the adapter in monitor mode when the screen goes away.

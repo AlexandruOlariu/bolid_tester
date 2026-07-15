@@ -5,6 +5,21 @@
     "relates"
   ],
   [
+    "concept:adapter-health",
+    "concept:connection-lifecycle",
+    "relates"
+  ],
+  [
+    "concept:adapter-health",
+    "core:elm327/Elm327Client",
+    "relates"
+  ],
+  [
+    "concept:adapter-health",
+    "feature:adapter-health",
+    "relates"
+  ],
+  [
     "concept:ai-diagnose-flow",
     "core:analysis/aiDiagnosis",
     "relates"
@@ -77,6 +92,21 @@
   [
     "concept:battery-charging",
     "feature:battery-health",
+    "relates"
+  ],
+  [
+    "concept:coding-tweaks-backup",
+    "concept:adaptation-channels",
+    "relates"
+  ],
+  [
+    "concept:coding-tweaks-backup",
+    "concept:ecu-coding",
+    "relates"
+  ],
+  [
+    "concept:coding-tweaks-backup",
+    "feature:coding",
     "relates"
   ],
   [
@@ -240,6 +270,61 @@
     "relates"
   ],
   [
+    "concept:engine-host",
+    "concept:connection-lifecycle",
+    "relates"
+  ],
+  [
+    "concept:engine-host",
+    "concept:live-data-charts",
+    "relates"
+  ],
+  [
+    "concept:engine-host",
+    "concept:notifications-layer",
+    "relates"
+  ],
+  [
+    "concept:engine-host",
+    "concept:threshold-alerts",
+    "relates"
+  ],
+  [
+    "concept:engine-host",
+    "concept:trip-recording",
+    "relates"
+  ],
+  [
+    "concept:engine-host",
+    "feature:alerts",
+    "relates"
+  ],
+  [
+    "concept:engine-host",
+    "feature:live-data",
+    "relates"
+  ],
+  [
+    "concept:engine-host",
+    "feature:notifications",
+    "relates"
+  ],
+  [
+    "concept:engine-host",
+    "feature:trip-recording",
+    "relates"
+  ],
+  [
+    "concept:engine-host",
+    "screen:_layout",
+    "relates"
+  ],
+  [
+    "concept:engine-host",
+    "store:sessionStore",
+    "relates"
+  ],
+  [
     "concept:error-resilience",
     "doc:architecture",
     "relates"
@@ -297,6 +382,21 @@
   [
     "concept:extended-pids-mode22",
     "lib:hex",
+    "relates"
+  ],
+  [
+    "concept:fuel-economy-units",
+    "concept:app-settings",
+    "relates"
+  ],
+  [
+    "concept:fuel-economy-units",
+    "concept:trip-recording",
+    "relates"
+  ],
+  [
+    "concept:fuel-economy-units",
+    "feature:live-data",
     "relates"
   ],
   [
@@ -492,6 +592,31 @@
   [
     "concept:performance-tests",
     "feature:performance-tests",
+    "relates"
+  ],
+  [
+    "concept:readiness-coach",
+    "concept:dtc-faults",
+    "relates"
+  ],
+  [
+    "concept:readiness-coach",
+    "concept:engine-host",
+    "relates"
+  ],
+  [
+    "concept:readiness-coach",
+    "feature:fault-codes",
+    "relates"
+  ],
+  [
+    "concept:scan-history-diff",
+    "concept:module-scan",
+    "relates"
+  ],
+  [
+    "concept:scan-history-diff",
+    "feature:module-scan",
     "relates"
   ],
   [
@@ -861,6 +986,11 @@
   ],
   [
     "core:analysis/trip",
+    "core:analysis/fuelEconomy",
+    "imports"
+  ],
+  [
+    "core:analysis/trip",
     "doc:features/trip-recording",
     "named"
   ],
@@ -868,6 +998,16 @@
     "core:coding/adaptationValue",
     "ui:ValueCard",
     "named"
+  ],
+  [
+    "core:coding/codingHelper",
+    "core:coding/coding",
+    "imports"
+  ],
+  [
+    "core:coding/presets",
+    "core:coding/coding",
+    "imports"
   ],
   [
     "core:elm327/Elm327Client",
@@ -971,6 +1111,11 @@
   ],
   [
     "core:public-api",
+    "core:analysis/fuelEconomy",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:analysis/inspection",
     "imports"
   ],
@@ -1006,6 +1151,16 @@
   ],
   [
     "core:public-api",
+    "core:coding/codingHelper",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:coding/presets",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:coding/udsCoding",
     "imports"
   ],
@@ -1022,6 +1177,11 @@
   [
     "core:public-api",
     "core:obd/canMonitor",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:obd/driveCycle",
     "imports"
   ],
   [
@@ -1057,6 +1217,11 @@
   [
     "core:public-api",
     "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:obd/readiness",
     "imports"
   ],
   [
@@ -1127,6 +1292,11 @@
   [
     "core:public-api",
     "core:uds/guidedRoutine",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:uds/testerPresent",
     "imports"
   ],
   [
@@ -1300,6 +1470,21 @@
     "imports"
   ],
   [
+    "core:uds/testerPresent",
+    "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "core:uds/testerPresent",
+    "doc:PLAN",
+    "named"
+  ],
+  [
+    "core:uds/testerPresent",
+    "doc:README",
+    "named"
+  ],
+  [
     "core:uds/udsModule",
     "core:coding/udsCoding",
     "imports"
@@ -1320,6 +1505,16 @@
     "documents"
   ],
   [
+    "doc:features/adapter-health",
+    "feature:adapter-health",
+    "documents"
+  ],
+  [
+    "doc:features/adapter-health",
+    "feature:battery-health",
+    "documents"
+  ],
+  [
     "doc:features/ai-diagnose",
     "feature:ai-diagnose",
     "documents"
@@ -1327,6 +1522,11 @@
   [
     "doc:features/alerts",
     "feature:alerts",
+    "documents"
+  ],
+  [
+    "doc:features/battery-health",
+    "feature:adapter-health",
     "documents"
   ],
   [
@@ -1550,6 +1750,21 @@
     "imports"
   ],
   [
+    "feature:adapter-health",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
     "feature:ai-diagnose",
     "core:analysis/aiDiagnosis",
     "imports"
@@ -1615,26 +1830,6 @@
     "named"
   ],
   [
-    "feature:alerts",
-    "feature:live-data",
-    "imports"
-  ],
-  [
-    "feature:alerts",
-    "service:notify",
-    "imports"
-  ],
-  [
-    "feature:alerts",
-    "store:errorLogStore",
-    "imports"
-  ],
-  [
-    "feature:alerts",
-    "store:sessionStore",
-    "imports"
-  ],
-  [
     "feature:battery-health",
     "core:analysis/battery",
     "imports"
@@ -1671,7 +1866,22 @@
   ],
   [
     "feature:coding",
+    "core:coding/adaptationValue",
+    "imports"
+  ],
+  [
+    "feature:coding",
     "core:coding/coding",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "core:coding/codingHelper",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "core:coding/presets",
     "imports"
   ],
   [
@@ -1686,12 +1896,32 @@
   ],
   [
     "feature:coding",
+    "core:uds/udsModule",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "feature:adaptations",
+    "imports"
+  ],
+  [
+    "feature:coding",
     "feature:vehicle-select",
     "imports"
   ],
   [
     "feature:coding",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "store:persistStorage",
     "imports"
   ],
   [
@@ -1736,7 +1966,17 @@
   ],
   [
     "feature:connection",
+    "feature:onboarding",
+    "imports"
+  ],
+  [
+    "feature:connection",
     "lib:bytes",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "store:adapterLog",
     "imports"
   ],
   [
@@ -1805,6 +2045,81 @@
     "imports"
   ],
   [
+    "feature:engine-host",
+    "core:analysis/alerts",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "core:analysis/notifications",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "core:obd/readiness",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "feature:alerts",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "feature:fault-codes",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "feature:live-data",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "feature:notifications",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "feature:trip-recording",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "service:notify",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
     "feature:error-log",
     "lib:errorLog",
     "imports"
@@ -1860,6 +2175,16 @@
     "imports"
   ],
   [
+    "feature:extended-pids",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "core:obd/driveCycle",
+    "imports"
+  ],
+  [
     "feature:fault-codes",
     "core:obd/dtc",
     "imports"
@@ -1902,6 +2227,11 @@
   [
     "feature:fault-codes",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "vehicle:faultGuides",
     "imports"
   ],
   [
@@ -1980,6 +2310,21 @@
     "imports"
   ],
   [
+    "feature:live-charts",
+    "feature:onboarding",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "core:analysis/fuelEconomy",
+    "imports"
+  ],
+  [
     "feature:live-data",
     "core:session/DiagnosticSession",
     "imports"
@@ -2001,7 +2346,12 @@
   ],
   [
     "feature:live-data",
-    "store:errorLogStore",
+    "lib:units",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "store:persistStorage",
     "imports"
   ],
   [
@@ -2071,6 +2421,11 @@
   ],
   [
     "feature:module-scan",
+    "core:uds/testerPresent",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
     "core:uds/udsModule",
     "imports"
   ],
@@ -2087,6 +2442,16 @@
   [
     "feature:module-scan",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "store:persistStorage",
     "imports"
   ],
   [
@@ -2110,6 +2475,11 @@
     "imports"
   ],
   [
+    "feature:more",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
     "feature:notifications",
     "core:analysis/notifications",
     "imports"
@@ -2120,13 +2490,8 @@
     "imports"
   ],
   [
-    "feature:notifications",
-    "store:errorLogStore",
-    "imports"
-  ],
-  [
-    "feature:notifications",
-    "store:sessionStore",
+    "feature:onboarding",
+    "store:persistStorage",
     "imports"
   ],
   [
@@ -2331,6 +2696,11 @@
   ],
   [
     "feature:settings",
+    "store:adapterLog",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "store:errorLogStore",
     "imports"
   ],
@@ -2361,12 +2731,12 @@
   ],
   [
     "feature:trip-recording",
-    "feature:live-data",
+    "feature:vehicle-select",
     "imports"
   ],
   [
     "feature:trip-recording",
-    "feature:vehicle-select",
+    "lib:units",
     "imports"
   ],
   [
@@ -2381,7 +2751,17 @@
   ],
   [
     "feature:trip-recording",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "store:settingsStore",
     "imports"
   ],
   [
@@ -2451,6 +2831,11 @@
   ],
   [
     "screen:_layout",
+    "feature:engine-host",
+    "serves"
+  ],
+  [
+    "screen:_layout",
     "store:errorLogStore",
     "imports"
   ],
@@ -2472,6 +2857,11 @@
   [
     "screen:adaptations",
     "feature:adaptations",
+    "serves"
+  ],
+  [
+    "screen:adapter-health",
+    "feature:adapter-health",
     "serves"
   ],
   [
@@ -2810,6 +3200,11 @@
     "imports"
   ],
   [
+    "store:secureApiKey",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
     "store:sessionStore",
     "core:session/DiagnosticSession",
     "imports"
@@ -2821,7 +3216,17 @@
   ],
   [
     "store:settingsStore",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "store:settingsStore",
     "store:persistStorage",
+    "imports"
+  ],
+  [
+    "store:settingsStore",
+    "store:secureApiKey",
     "imports"
   ],
   [
@@ -2843,26 +3248,6 @@
     "transport:BleTransport",
     "lib:base64",
     "imports"
-  ],
-  [
-    "ui:AppLogo",
-    "doc:PLAN",
-    "named"
-  ],
-  [
-    "ui:AppLogo",
-    "doc:phase2-mobile-app",
-    "named"
-  ],
-  [
-    "ui:AppSplash",
-    "doc:PLAN",
-    "named"
-  ],
-  [
-    "ui:AppSplash",
-    "doc:phase2-mobile-app",
-    "named"
   ],
   [
     "ui:AppSplash",
@@ -2890,6 +3275,11 @@
     "imports"
   ],
   [
+    "ui:RootErrorBoundary",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
     "ui:StatusBadge",
     "doc:vcds-parity-roadmap",
     "named"
@@ -2898,6 +3288,16 @@
     "ui:StatusBadge",
     "store:sessionStore",
     "imports"
+  ],
+  [
+    "vehicle:faultGuides",
+    "doc:features/fault-codes",
+    "named"
+  ],
+  [
+    "vehicle:fiat-punto-2008-12",
+    "doc:improvement-plan-2026-07",
+    "named"
   ],
   [
     "vehicle:fiat-punto-2008-12",
@@ -2977,6 +3377,11 @@
   [
     "vehicle:registry",
     "vehicle:vinSuggest",
+    "imports"
+  ],
+  [
+    "vehicle:types",
+    "core:coding/presets",
     "imports"
   ],
   [
