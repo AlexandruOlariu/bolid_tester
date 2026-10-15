@@ -54,6 +54,7 @@
           "neverForLocation": true
         }
       ],
+      "./plugins/ios-scene-lifecycle",
       "expo-sharing",
       "expo-secure-store",
       "expo-status-bar"

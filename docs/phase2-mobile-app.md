@@ -30,14 +30,16 @@ npm run android             # or: npm run ios   (iOS needs a Mac/Xcode or EAS)
 ### iOS 27 and a real iPhone
 
 Tried on 2026-10-15 with Xcode 27 and an iPhone on iOS 27. `npx expo prebuild` generates `ios/`
-(not committed), and with Expo SDK 57 that output needs these local changes before it builds and starts:
+(not committed). Most of what that output needs is handled for you; the rest is local to your machine:
 
-- **UIScene lifecycle (required by iOS 27).** Without it the app is stopped at launch
-  (`NoSceneLifecycleAdoption`). In `ios/<App>/AppDelegate.swift` make `AppDelegate` also conform to
-  `ExpoReactNativeFactoryProvider`, delete the `UIWindow(...)` and `startReactNative(...)` lines from
-  `didFinishLaunchingWithOptions`, and add `class SceneDelegate: ExpoAppSceneDelegate {}`. In
-  `Info.plist` add a `UIApplicationSceneManifest` whose `UISceneDelegateClassName` is
-  `$(PRODUCT_MODULE_NAME).SceneDelegate` (single scene, `UIApplicationSupportsMultipleScenes` false).
+- **UIScene lifecycle (required by iOS 27): automated.** Without it the app is stopped at launch
+  (`NoSceneLifecycleAdoption`). The config plugin [`plugins/ios-scene-lifecycle.js`](../plugins/ios-scene-lifecycle.js)
+  (registered in `app.json`, unit-tested in `plugins/ios-scene-lifecycle.test.ts`) makes the generated
+  `AppDelegate` conform to `ExpoReactNativeFactoryProvider`, removes its own window creation, adds
+  `class SceneDelegate: ExpoAppSceneDelegate {}` and writes the `UIApplicationSceneManifest` into
+  `Info.plist`. It is idempotent, does nothing once the Expo template adopts scenes itself, and throws
+  if the template changes shape. A clean `expo prebuild` was checked to produce the same files that
+  ran on the phone.
 - **Personal Apple team:** free teams cannot use Push Notifications. The app only needs local
   notifications, so empty `ios/<App>/<App>.entitlements` (remove `aps-environment`), pick the team in
   Signing & Capabilities and use a bundle id of your own, because the one in `app.json` is probably
