@@ -27,6 +27,27 @@ npx expo prebuild
 npm run android             # or: npm run ios   (iOS needs a Mac/Xcode or EAS)
 ```
 
+### iOS 27 and a real iPhone
+
+Tried on 2026-10-15 with Xcode 27 and an iPhone on iOS 27. `npx expo prebuild` generates `ios/`
+(not committed), and with Expo SDK 57 that output needs these local changes before it builds and starts:
+
+- **UIScene lifecycle (required by iOS 27).** Without it the app is stopped at launch
+  (`NoSceneLifecycleAdoption`). In `ios/<App>/AppDelegate.swift` make `AppDelegate` also conform to
+  `ExpoReactNativeFactoryProvider`, delete the `UIWindow(...)` and `startReactNative(...)` lines from
+  `didFinishLaunchingWithOptions`, and add `class SceneDelegate: ExpoAppSceneDelegate {}`. In
+  `Info.plist` add a `UIApplicationSceneManifest` whose `UISceneDelegateClassName` is
+  `$(PRODUCT_MODULE_NAME).SceneDelegate` (single scene, `UIApplicationSupportsMultipleScenes` false).
+- **Personal Apple team:** free teams cannot use Push Notifications. The app only needs local
+  notifications, so empty `ios/<App>/<App>.entitlements` (remove `aps-environment`), pick the team in
+  Signing & Capabilities and use a bundle id of your own, because the one in `app.json` is probably
+  registered to another team.
+- **Xcode 27 rejects pod targets below iOS 15.** Raise them in the `Podfile` `post_install` block.
+- **Node:** `expo prebuild` needs Node 20.19.4 or newer; point the build phase at it with
+  `ios/.xcode.env.local` (`export NODE_BINARY=...`).
+- **Release, not Debug,** for an icon launch: the Debug configuration needs the Metro server.
+- **Signing over SSH fails** (`errSecInternalComponent`, locked keychain); start the build from Xcode.
+
 For cloud builds without a Mac, use EAS (profiles in `eas.json`):
 
 ```bash

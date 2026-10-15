@@ -53,7 +53,10 @@
           "isBackgroundEnabled": false,
           "neverForLocation": true
         }
-      ]
+      ],
+      "expo-sharing",
+      "expo-secure-store",
+      "expo-status-bar"
     ],
     "_comment": "Phase 2 scaffolding. The native build (Expo prebuild / EAS) is done on a developer machine; not exercised in the cloud container."
   }
