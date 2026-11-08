@@ -1,7 +1,7 @@
 # Feature: routines — output tests & basic settings (experimental, write-capable, gated)
 
 VCDS-style **output tests** (UDS `2F` InputOutputControlByIdentifier) and **basic settings**
-(UDS `31` RoutineControl) as *guided* routines: each one ships with a description of what it does,
+(UDS `31` RoutineControl) as _guided_ routines: each one ships with a description of what it does,
 live **interlocks** (engine off / at idle / vehicle stationary) checked immediately before
 starting **and re-checked continuously while the routine runs** (violation = auto-stop),
 TesterPresent keep-alive, live values while running, and a prominent stop that returns control to
@@ -17,10 +17,11 @@ excluded.
 > cannot speak. Airbag/immobilizer/cluster-mileage routines are never offered.
 
 ## Core (`obd-core/uds/guidedRoutine.ts`, unit-tested)
+
 - `startOutputControl` / `stopOutputControl` — `2F <did> 03 <data>` / `2F <did> 00`.
 - `startGuidedRoutine` — enter diagnostic session, **optionally `0x27` SecurityAccess**, then
   `31 01 <id>` or `2F … 03`. Security runs only when the descriptor supplies a `seedToKey`
-  algorithm; a bare `level` (all a profile can declare today) is *not* enough to unlock, so the
+  algorithm; a bare `level` (all a profile can declare today) is _not_ enough to unlock, so the
   routine is attempted unlocked and the ECU decides (NRC `0x33` if it needed access).
 - `stopGuidedRoutine` — best-effort `31 02` / `2F … 00`; never throws (stop must always be safe).
 - `guidedRoutineResults` — `31 03 <id>` (31-routines only).
@@ -28,6 +29,7 @@ excluded.
   (`Negative response: securityAccessDenied (NRC 0x33)`).
 
 ## Feature
+
 - `routineService` — fail-closed interlock checks from standard Mode 01 (RPM/speed — works on any
   car) plus `checkInterlocksDuringRun` (switches to the functional address and back around the
   reads); start/stop with `ATSH`/`ATCRA` addressing (**both** restored via
@@ -48,14 +50,15 @@ excluded.
 - Profiles gain `routines?: GuidedRoutine[]`. The Golf ships: stationary DPF regen (31, requires
   idle + stationary), **Intake Manifold Runner/Motor (V157) adaptation** (VCDS Basic Settings
   Group 121 — the flap end-stop re-learn and the P2015/08213 fix check), EGR valve output test (2F,
-  engine off — intentionally *blocked* in the simulator, whose engine always idles, to exercise the
+  engine off — intentionally _blocked_ in the simulator, whose engine always idles, to exercise the
   interlock UX).
 - A routine may declare `vcdsGroup` (the VCDS measuring-block group it maps to, cross-reference
   only) and `unavailableReason`. When `unavailableReason` is set the UI leads with it and demotes
   start to "attempt anyway (unverified)" — the same honest pattern as `ServiceReset.obdUnreachable`.
 
 ## Confirming a routine on the real car (the placeholder problem)
-The shipped routine IDs (e.g. Golf flap `0301`) are **illustrative** and the *mechanism* itself may
+
+The shipped routine IDs (e.g. Golf flap `0301`) are **illustrative** and the _mechanism_ itself may
 be wrong: VCDS drives the Golf flap adaptation as a measuring-block **Basic Settings on Group 121**
 (label file `03L-906-022-CBA.CLB`, component "Intake Manifold Runner/Motor (V157)"), which on this
 PQ35 car most likely rides on **VW TP2.0 / KWP** — a generic ELM327 cannot drive it and the app's
@@ -65,15 +68,19 @@ so the Basic-Settings screen does **not** reveal the actual `31 01 <id>` / KWP s
 To capture the real sequence: run the in-app **Bus Sniffer** (`ATMA` monitor) while VCDS performs
 the Group 121 basic setting, read off the frames on `7E0→7E8` (or the TP2.0 channel), then set the
 profile routine's transport/`id` and — if the ECU demands it — a `security: { level, seedToKey }`.
+The sniffer saves that run as a shareable CSV / raw dump with a note; the step-by-step
+Y-splitter procedure is in [can-sniffer § Record a VCDS session](./can-sniffer.md#record-a-vcds-session).
 Until then the app runs the flow in the simulator and, on the real car, reports exactly why the ECU
 refused (`describeRoutineFailure`).
 
 ## Simulator
+
 `2F` echoes positive (`6F`); `31` already echoed positive; live DIDs reuse the profile's seeded
 extended PIDs. The whole start → live values → stop loop runs risk-free, including the blocked-
 interlock path.
 
 ## Acceptance
+
 - Golf simulator: DPF regen passes interlocks (sim idles at ~820 rpm, 0 km/h), starts, streams
   live values, stops cleanly. The V157 flap adaptation leads with its `unavailableReason` and its
   start is demoted to "attempt anyway (unverified)"; if attempted it still runs risk-free in the

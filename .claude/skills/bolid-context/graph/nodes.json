@@ -98,18 +98,22 @@
   },
   "concept:can-sniffer": {
     "path": null,
-    "summary": "Raw bus monitor (ELM327 ATMA) with per-arbitration-id aggregation; monitor mode owns the command channel until stopped. Multi-PID batching + log->rep\u2026",
+    "summary": "Raw bus monitor (ELM327 ATMA) with per-arbitration-id aggregation; monitor mode owns the command channel until stopped. Every line is kept in a bound\u2026",
     "tokens": [
       "atma",
       "bus",
       "can",
       "canmonitor",
+      "capture",
+      "csv",
       "frame",
       "monitor",
       "multipid",
       "raw",
       "replay",
-      "sniffer"
+      "sniffer",
+      "splitter",
+      "vcds"
     ],
     "type": "concept"
   },
@@ -899,13 +903,25 @@
   },
   "core:obd/canMonitor": {
     "path": "src/shared/obd-core/obd/canMonitor.ts",
-    "summary": "CAN bus monitor (ELM327 `ATMA` with headers on): line parsing + per-id aggregation for the sniffer screen.",
+    "summary": "CAN bus monitor (ELM327 `ATMA` with headers on): line parsing + per-id aggregation for the sniffer screen, and the capture file formats (CSV / raw du\u2026",
     "tests": [
       "src/shared/obd-core/obd/canMonitor.test.ts"
     ],
     "tokens": [
       "can",
       "monitor"
+    ],
+    "type": "core"
+  },
+  "core:obd/captureBuffer": {
+    "path": "src/shared/obd-core/obd/captureBuffer.ts",
+    "summary": "Bounded capture of a sniffer (`ATMA`) run: every adapter line, timestamped and parsed, kept in a ring so a long session can be saved and shared (see\u2026",
+    "tests": [
+      "src/shared/obd-core/obd/captureBuffer.test.ts"
+    ],
+    "tokens": [
+      "buffer",
+      "capture"
     ],
     "type": "core"
   },
@@ -1320,6 +1336,16 @@
     "tokens": [
       "battery",
       "health"
+    ],
+    "type": "doc"
+  },
+  "doc:features/can-sniffer": {
+    "path": "docs/features/can-sniffer.md",
+    "summary": "Feature: bus sniffer (can-sniffer)",
+    "tokens": [
+      "bus",
+      "can",
+      "sniffer"
     ],
     "type": "doc"
   },
@@ -2285,7 +2311,12 @@
   },
   "feature:can-sniffer": {
     "path": "src/features/can-sniffer",
-    "summary": "Can Sniffer feature (screen + hooks + model).",
+    "summary": "A raw **bus monitor** built on the ELM327 `ATMA` (monitor all) command: every frame the adapter",
+    "tests": [
+      "src/features/can-sniffer/api/captureExport.test.ts",
+      "src/features/can-sniffer/model/snifferController.test.ts",
+      "src/features/can-sniffer/model/snifferStore.test.ts"
+    ],
     "tokens": [
       "can",
       "sniffer"

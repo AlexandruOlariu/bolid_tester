@@ -1056,7 +1056,27 @@
   ],
   [
     "core:obd/canMonitor",
+    "core:obd/captureBuffer",
+    "imports"
+  ],
+  [
+    "core:obd/canMonitor",
     "doc:features/dpf",
+    "named"
+  ],
+  [
+    "core:obd/captureBuffer",
+    "core:obd/canMonitor",
+    "imports"
+  ],
+  [
+    "core:obd/captureBuffer",
+    "doc:plans/03-sniffer-capture",
+    "named"
+  ],
+  [
+    "core:obd/captureBuffer",
+    "doc:plans/25-post-capture-confirmation",
     "named"
   ],
   [
@@ -1197,6 +1217,11 @@
   [
     "core:public-api",
     "core:obd/canMonitor",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:obd/captureBuffer",
     "imports"
   ],
   [
@@ -1411,6 +1436,11 @@
   ],
   [
     "core:tp20/fakeTp20Bus",
+    "doc:features/can-sniffer",
+    "named"
+  ],
+  [
+    "core:tp20/fakeTp20Bus",
     "doc:plans/03-sniffer-capture",
     "named"
   ],
@@ -1557,6 +1587,11 @@
   [
     "doc:features/battery-health",
     "feature:battery-health",
+    "documents"
+  ],
+  [
+    "doc:features/can-sniffer",
+    "feature:can-sniffer",
     "documents"
   ],
   [
@@ -1886,8 +1921,28 @@
   ],
   [
     "feature:can-sniffer",
+    "core:obd/captureBuffer",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "doc:features/can-sniffer",
+    "named"
+  ],
+  [
+    "feature:can-sniffer",
     "doc:plans/03-sniffer-capture",
     "named"
+  ],
+  [
+    "feature:can-sniffer",
+    "feature:vehicle-select",
+    "imports"
   ],
   [
     "feature:can-sniffer",
@@ -3218,6 +3273,11 @@
     "screen:settings",
     "feature:settings",
     "serves"
+  ],
+  [
+    "screen:sniffer",
+    "doc:features/can-sniffer",
+    "named"
   ],
   [
     "screen:sniffer",

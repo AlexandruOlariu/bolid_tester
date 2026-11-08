@@ -41,6 +41,11 @@ from a vehicle profile.
 - **VIN:** Mode 09 PID 02 returns a scenario VIN (multi-frame on CAN); K-line scenarios can be
   configured to **not** answer (to emulate older ECUs).
 - **Extended (Mode 22):** answers only the DIDs the scenario declares (Golf); otherwise `NO DATA`.
+- **Bus monitor (`ATMA`):** streams the scenario's `monitorFrames` cyclically (one line per 30 ms,
+  no prompt) until any byte interrupts it. The **Golf** streams 30 illustrative frames across 4 ids
+  (TP2.0 channel setup `200`→`201`, tester session `7E0`→`7E8`) so a saved sniffer capture has real
+  content; other CAN profiles a generic 5-frame mix, K-line a single line. See
+  [can-sniffer](./features/can-sniffer.md).
 
 ## Scenarios
 

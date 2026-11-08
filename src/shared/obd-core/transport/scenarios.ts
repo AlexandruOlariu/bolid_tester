@@ -35,7 +35,50 @@ const SAMPLE_CALIDS: Record<string, string> = {
   'passat-b55-19tdi': '038906019KC 4896',
 };
 
-export function buildScenario(profileId: string, overrides: Partial<SimScenario> = {}): SimScenario {
+/** Per-profile `ATMA` streams (played cyclically, one line per 30 ms). The Golf Plus (PQ35) OBD
+ *  port sits behind the gateway, so a sniff there sees diagnostic traffic, not the powertrain bus:
+ *  a VW TP2.0 channel setup to the engine (`200` -> `201`) and a tester session on `7E0` -> `7E8`
+ *  (Mode 01 reads + tester-present). ~30 frames across 4 ids, so a saved capture in the simulator
+ *  has real content to analyse (plan 03). Illustrative, not a recording. */
+const SIM_MONITOR_FRAMES: Record<string, string[]> = {
+  'golf-plus-2009-20tdi': [
+    '200 01 C0 00 10 00 03 01',
+    '201 00 D0 00 03 40 07 01',
+    '7E0 02 10 03',
+    '7E8 06 50 03 00 32 01 F4',
+    '7E0 02 01 0C',
+    '7E8 04 41 0C 0C D0',
+    '7E0 02 01 0D',
+    '7E8 03 41 0D 00',
+    '7E0 02 01 05',
+    '7E8 03 41 05 7B',
+    '7E0 02 3E 80',
+    '7E0 02 01 0C',
+    '7E8 04 41 0C 0C E4',
+    '7E0 02 01 0B',
+    '7E8 03 41 0B 64',
+    '7E0 02 01 10',
+    '7E8 04 41 10 01 2C',
+    '7E0 02 01 0C',
+    '7E8 04 41 0C 0C C8',
+    '7E0 02 01 0D',
+    '7E8 03 41 0D 00',
+    '7E0 02 3E 80',
+    '7E0 02 01 05',
+    '7E8 03 41 05 7C',
+    '7E0 02 01 0C',
+    '7E8 04 41 0C 0C DA',
+    '7E0 02 01 11',
+    '7E8 03 41 11 26',
+    '200 01 C0 00 10 00 03 01',
+    '201 00 D0 00 03 40 07 01',
+  ],
+};
+
+export function buildScenario(
+  profileId: string,
+  overrides: Partial<SimScenario> = {},
+): SimScenario {
   const profile = getVehicleProfile(profileId);
   const protocol: ProtocolId =
     profile.expectedProtocol === 'AUTO' ? 'ISO_15765_4_CAN_11_500' : profile.expectedProtocol;
@@ -61,7 +104,10 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
   const udsModules = (profile.modules ?? []).filter((m) => m.transport === 'uds' && m.reqHeader);
   const moduleDtcs = udsModules.length
     ? udsModules.reduce<NonNullable<SimScenario['moduleDtcs']>>((acc, m) => {
-        acc[m.reqHeader as string] = (m.sampleDtcs ?? []).map((d) => ({ bytes: [...d.bytes] as [number, number, number], status: d.status }));
+        acc[m.reqHeader as string] = (m.sampleDtcs ?? []).map((d) => ({
+          bytes: [...d.bytes] as [number, number, number],
+          status: d.status,
+        }));
         return acc;
       }, {})
     : undefined;
@@ -87,26 +133,60 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
 
   // IUPR seeds (CAN cars): plausible driven-car counters; diesel -> 090B, petrol -> 0908.
   const item = (n: number) => [Math.floor(n / 256), n % 256];
-  const iuprCompression = !kline && profile.fuel === 'diesel'
-    ? [0x10, ...item(1500), ...item(1800), ...item(300), ...item(400), ...item(250), ...item(400),
-       ...item(0), ...item(0), ...item(120), ...item(140), ...item(400), ...item(410),
-       ...item(390), ...item(400), ...item(380), ...item(400)]
-    : undefined;
-  const iuprSpark = !kline && profile.fuel !== 'diesel'
-    ? [0x10, ...item(900), ...item(1000), ...item(400), ...item(500), ...item(0), ...item(0),
-       ...item(420), ...item(500), ...item(0), ...item(0), ...item(380), ...item(500),
-       ...item(0), ...item(0), ...item(200), ...item(500)]
-    : undefined;
+  const iuprCompression =
+    !kline && profile.fuel === 'diesel'
+      ? [
+          0x10,
+          ...item(1500),
+          ...item(1800),
+          ...item(300),
+          ...item(400),
+          ...item(250),
+          ...item(400),
+          ...item(0),
+          ...item(0),
+          ...item(120),
+          ...item(140),
+          ...item(400),
+          ...item(410),
+          ...item(390),
+          ...item(400),
+          ...item(380),
+          ...item(400),
+        ]
+      : undefined;
+  const iuprSpark =
+    !kline && profile.fuel !== 'diesel'
+      ? [
+          0x10,
+          ...item(900),
+          ...item(1000),
+          ...item(400),
+          ...item(500),
+          ...item(0),
+          ...item(0),
+          ...item(420),
+          ...item(500),
+          ...item(0),
+          ...item(0),
+          ...item(380),
+          ...item(500),
+          ...item(0),
+          ...item(0),
+          ...item(200),
+          ...item(500),
+        ]
+      : undefined;
 
   const monitorFrames = kline
     ? ['48 6B 10 41 0C 0C D0 5A']
-    : [
+    : (SIM_MONITOR_FRAMES[profileId] ?? [
         '7E8 04 41 0C 0C D0',
         '1A0 08 12 34 56 78 9A BC DE F0',
         '2C3 04 00 11 22 33',
         '7E8 03 41 0D 00',
         '5D0 05 AA BB CC DD EE',
-      ];
+      ]);
 
   const base: SimScenario = {
     protocol,

@@ -1,63 +1,53 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { CanFrameAggregator } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { logError } from '@/shared/state/errorLogStore';
-import { useSnifferStore } from '../model/snifferStore';
+import { SnifferController, finishedCapture } from '../model/snifferController';
+import type { CaptureFormat } from '../api/captureExport';
+import { useSnifferExport } from './useSnifferExport';
 
-const SNAPSHOT_MS = 500;
-
-/** Raw bus monitor (ELM327 ATMA): stream frames, aggregate per CAN id. While sniffing, the
- *  adapter channel belongs to the monitor — all other polling pauses. */
+/** Raw bus monitor (ELM327 ATMA): stream frames, aggregate per CAN id, and keep every line in a
+ *  bounded capture that can be shared as CSV / raw dump after Stop. While sniffing, the adapter
+ *  channel belongs to the monitor — all other polling pauses. The run lifecycle lives in
+ *  `SnifferController` (one per session); this hook binds it to the screen. */
 export function useSniffer() {
   const session = useSessionStore((s) => s.session);
   const status = useSessionStore((s) => s.status);
-  const store = useSnifferStore();
-  const agg = useRef(new CanFrameAggregator());
-  const total = useRef(0);
-  const timer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { exportCapture, busy } = useSnifferExport();
+  const controller = useRef<SnifferController | null>(null);
 
   const available = !!session && status === 'connected';
 
-  const stop = useCallback(async () => {
-    if (timer.current) clearInterval(timer.current);
-    timer.current = null;
-    try {
-      await session?.stopSniffer();
-    } catch (e) {
-      logError({ source: 'can-sniffer', error: e, severity: 'warning' });
-    }
-    store.setStats(agg.current.snapshot(), total.current);
-    store.setRunning(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; session is the only reactive input
-  }, [session]);
-
-  const start = useCallback(async () => {
-    if (!session) return;
-    agg.current.clear();
-    total.current = 0;
-    store.reset();
-    store.setRunning(true);
-    try {
-      await session.startSniffer((line) => {
-        if (agg.current.add(line)) total.current += 1;
-      });
-      timer.current = setInterval(() => {
-        store.setStats(agg.current.snapshot(), total.current);
-      }, SNAPSHOT_MS);
-    } catch (e) {
-      logError({ source: 'can-sniffer', error: e });
-      store.setRunning(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; session is the only reactive input
-  }, [session]);
-
-  // Never leave the adapter in monitor mode when the screen goes away.
+  // One controller per session. Cleanup (unmount or session change) never leaves the adapter in
+  // monitor mode — including when it happens while start() is still setting ATMA up.
   useEffect(() => {
+    if (!session) return;
+    const c = new SnifferController(session);
+    controller.current = c;
     return () => {
-      if (timer.current) clearInterval(timer.current);
-      if (session?.sniffing) void session.stopSniffer();
+      c.dispose();
+      if (controller.current === c) controller.current = null;
     };
   }, [session]);
 
-  return { available, start, stop };
+  const start = useCallback(async () => {
+    await controller.current?.start();
+  }, []);
+
+  const stop = useCallback(async () => {
+    await controller.current?.stop();
+  }, []);
+
+  /** Share the finished capture. Refused (null) while running and when nothing was captured. */
+  const exportAs = useCallback(
+    async (format: CaptureFormat): Promise<string | null> => {
+      const capture = finishedCapture();
+      if (!capture) return null;
+      return exportCapture(format, capture.header, capture.lines);
+    },
+    [exportCapture],
+  );
+
+  const exportCsv = useCallback(() => exportAs('csv'), [exportAs]);
+  const exportRaw = useCallback(() => exportAs('raw'), [exportAs]);
+
+  return { available, start, stop, exportCsv, exportRaw, exporting: busy };
 }

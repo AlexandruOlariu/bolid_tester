@@ -5,6 +5,88 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 03 — Bus sniffer: save and share captures (2026-11-08)
+
+[Plan 03](./plans/03-sniffer-capture.md) landed (everything above its "Deferred until an on-car
+session" section; the VCDS recording and BLE throughput measurement are on-car pending).
+
+- **Core (pure):** new `obd-core/obd/captureBuffer.ts` — `CapturedLine { t, raw, frame }` and
+  `CaptureBuffer` (O(1) ring, default capacity `DEFAULT_CAPTURE_CAPACITY` = 20 000, `size`,
+  `dropped`, chronological `lines()`, `clear()`; unparsed lines kept with `frame: null`).
+  `canMonitor.ts` gained `CaptureHeader`, `formatCaptureCsv` (`# key: value` header, then
+  `t_ms,id,dlc,bytes`, one row per frame, relative `t_ms`, upper hex, trailing `# raw:` block for
+  unparsed lines) and `formatCaptureRaw` (header + one `t_ms<TAB>line` per input). Both exported
+  from `obd-core/index.ts`.
+- **Feature:** `snifferStore` gained `capturedLines`, `dropped`, `note`, `lastExportUri`,
+  `setCapture`, `setNote`, `setLastExportUri` (`reset()` keeps the note). New
+  `model/captureSession.ts` (module-level current capture), `api/captureExport.ts`
+  (`buildCaptureHeader`, `captureFileName` → `bolid-sniff-<vehicleId>-<stamp>.csv|.txt`,
+  `buildCaptureFile`, `shareCaptureFile`) and `hooks/useSnifferExport.ts`. The run lifecycle moved
+  out of the hook into `model/snifferController.ts` (`SnifferController`, one per session:
+  `start` / `stop` / `dispose`; `finishedCapture()`), so it is unit-tested in node. Start clears
+  the capture and freezes a `CaptureContext` (vehicle id, session info, device name, note) in
+  `captureSession.ts`, which the header is built from at Share time — so changing the car,
+  reconnecting or editing the note after Stop cannot rewrite the file. Every line goes into the
+  capture, counts are published in the 500 ms snapshot, export is refused while running or empty,
+  and dispose (unmount / session change) stops `ATMA` and marks the run finished — also when it
+  lands during the `ATH1` round trip before the monitor exists (the controller stops the monitor
+  once setup returns and never creates the snapshot interval); Stop pressed mid-setup waits for it.
+  `useSniffer` is now a thin binding. `SnifferScreen`: note input above Start (read-only while
+  running), `captured N · dropped M`, **Share CSV** / **Share raw** (disabled while running) with
+  a one-line explanation and the saved file name; a finished capture can also be shared while
+  disconnected (Start is replaced by "Not connected — reconnect to start a new run."); the per-id
+  table is unchanged.
+- **Simulator:** the Golf scenario's `monitorFrames` is now 30 frames across 4 ids (TP2.0 channel
+  setup `200`→`201`, tester session `7E0`→`7E8`) via a new `SIM_MONITOR_FRAMES` map in
+  `transport/scenarios.ts`; other profiles unchanged.
+- **Tests:** `captureBuffer.test.ts` (7: capacity eviction, order, unparsed lines, 25 000 lines,
+  copy + `clear`), `canMonitor.test.ts` (+4: header lines, rows, relative `t_ms`, hex, `# raw:`
+  block, raw dump), `sniffer.integration.test.ts` (+2: start → 20 lines → stop → CSV with the
+  header and 20 data rows; Golf stream shape), `features/can-sniffer/api/captureExport.test.ts`
+  (8: header, file name / MIME, write + share against mocked native modules, failure logged),
+  `features/can-sniffer/model/snifferStore.test.ts` (1),
+  `features/can-sniffer/model/snifferController.test.ts` (6: Start clears + freezes the header
+  context against the simulator, export refused while running / empty, dispose while running
+  releases the channel, dispose and Stop during ATMA setup, double Start). Suite **579 → 607
+  tests** (77 → 81 suites).
+- **Docs:** new `features/can-sniffer.md` (full spec, file formats, memory bound, "Record a VCDS
+  session" guide); linked from `features/routines.md` § "Confirming a routine" and
+  `features/tp20.md` § "Honest limits"; `simulator.md` (ATMA streaming + Golf frames);
+  `roadmap.md` (Sniffer captures ✅, on-car pending). This also covers the `can-sniffer` spec item
+  of plan 04.
+
+**Deviations from the plan:**
+
+- The capture buffer lives at module level (`model/captureSession.ts`) instead of a `useRef`, so a
+  finished capture can still be shared after the screen is left and reopened (the store counters
+  already survived; a ref would have left them pointing at an empty buffer).
+- `CaptureHeader` gained an optional `dropped` (written as `# dropped: M`), and the header also
+  prints `# lines:` / `# t_ms` explanation lines. Unknown protocol / adapter print as `unknown`; the
+  `# note:` line is always present (empty when no note).
+- `appVersion` is supported by the formatter but not wired in the app — there is no app-version
+  source yet (plan 08 owns versioning).
+- The export writes through `expo-file-system/legacy`, not the root `expo-file-system` that
+  `useErrorLogExport` imports: on this Expo SDK the root module exports no `documentDirectory`
+  and its `writeAsStringAsync` throws (the legacy API moved to `/legacy`). The other existing
+  export hooks (error log, DTC report, measuring log, adapter health, chart, module scan, car
+  backup) still use the root import, so on a device they most likely return null without
+  writing — left for a follow-up, outside this plan.
+- Pure export logic sits in `api/captureExport.ts` (unit-tested in node); `useSnifferExport` is a
+  thin `busy` wrapper around it rather than a full copy of `useErrorLogExport`.
+- The vehicle id comes from `features/vehicle-select/model/vehicleStore` (now imported by
+  `model/snifferController.ts`; the existing pattern in `useDpf`, `useCoding`, …), a feature →
+  feature import the repo rules discourage; there is no shared selector for it yet. Kept after
+  review, consistent with plan 01's decision: moving the store into `shared/state` is a
+  cross-cutting refactor (~20 importers; plans 06 / 18 / 32 name its current path) better done
+  with plan 07 than inside plan 03.
+- The hook-level lifecycle is tested through `SnifferController` rather than by rendering
+  `useSniffer`: the jest setup is node-only (`*.test.ts`, no React renderer), and plan 10 owns
+  component tests.
+- `transport/scenarios.ts` was not run through Prettier (the file was not Prettier-clean before;
+  formatting it would rewrite unrelated lines). Same for `routines.md` / `tp20.md`.
+
+---
+
 ## Plan 12 — BLE robustness and connection diagnostics (2026-11-08)
 
 [Plan 12](./plans/12-ble-robustness.md) landed (everything above its "Deferred until an on-car
