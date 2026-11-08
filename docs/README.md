@@ -27,6 +27,9 @@ and the code is written to match. When something changes, the docs change first 
 | [`vehicles/`](./vehicles/) | The vehicle registry. The three example cars + how to add more. |
 | [`features/`](./features/) | One spec per feature slice. |
 | [`implementation-log.md`](./implementation-log.md) | Running record of what we implemented. |
+| [`roadmap.md`](./roadmap.md) | The living product roadmap: releases v0.2 → v1.0 and the complete feature map. |
+| [`audit-2026-11.md`](./audit-2026-11.md) | Feature audit (2026-11): maturity of every slice, engineering gaps, next three iterations. |
+| [`plans/`](./plans/README.md) | Handoff-grade implementation plans (files, signatures, tests, acceptance) for the next roadmap items. |
 
 ## What this app is (and is not)
 

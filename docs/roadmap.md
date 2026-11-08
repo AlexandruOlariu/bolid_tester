@@ -1,0 +1,158 @@
+# Roadmap
+
+> The living plan for **what Bolid Tester will have**, grouped by release. Status legend: ✅ shipped ·
+> 🔄 in progress · ⬜ planned · 🧪 experimental (ships gated, illustrative until confirmed on a car).
+> The dated snapshot that produced this plan is [`audit-2026-11.md`](./audit-2026-11.md); what has
+> actually landed is recorded in [`implementation-log.md`](./implementation-log.md).
+
+## Direction
+
+Bolid Tester is a **generic OBD2 / EOBD diagnostics app for any car**, with a **manufacturer tier**
+that goes as far as a generic ELM327 physically allows (VAG first). Everything is **documentation-first**
+and **simulator-first**, writes are **gated and reversible**, and limits are stated honestly in the UI.
+
+Today (v0.1) the engine and 29 screens exist and are fully tested against the simulator. The next
+releases turn that into a product: **prove it on real cars, ship sane defaults, know every fault code,
+let users add their own cars, then widen to iOS, more adapters and more languages.**
+
+## Release plan
+
+Every item from v0.2 to v1.0 has a handoff-grade implementation plan in
+[`plans/`](./plans/README.md): exact files, signatures, tests and acceptance checks.
+
+### v0.1 — Engine + full feature surface ✅ (current)
+
+Generic OBD2 (connect, vehicle select, live data, faults with readiness / freeze frame / coach, vehicle
+info, VIN decode, Mode 06/05, Mode 22, settings, error log) · analysis and ownership (AI diagnose, history,
+used-car inspection, battery, DPF, maintenance log, trips with GPS, charts, performance, alerts,
+notifications, adapter health) · manufacturer tier 🧪 (module scan + TP2.0, adaptations, routines,
+coding + tweaks + full backup, service reset, bus sniffer) · Android APK from CI.
+
+### v0.2 — Trust the car
+
+Goal: every Tier A/B feature has an **observed** result on at least one real car, and a fresh install
+behaves like a product, not a dev build.
+
+|     | Feature                                                                  | Notes                                                                                                                                            |
+| --- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ⬜  | **Production first-run** · [plan 01](./plans/01-production-first-run.md) | BLE is the default adapter source; simulator is an explicit opt-in with a persistent banner; no injected DTC by default; a 3-step first-run card |
+| ⬜  | **On-car validation log** · [plan 02](./plans/02-on-car-validation.md)   | A "Validated on" section per vehicle doc (protocol, PID bitmap, VIN, DTC read/clear, timing). Golf → Punto → Passat                              |
+| ⬜  | **Log → fixture pipeline** · [plan 02](./plans/02-on-car-validation.md)  | Every validation flow captured from the adapter I/O log and committed as a replay fixture, so the simulator scenarios become real-car recordings |
+| ⬜  | **Sniffer captures** · [plan 03](./plans/03-sniffer-capture.md)          | Save / share `ATMA` captures; a "record while VCDS runs" guide to recover Group 121 and other real routine bytes                                 |
+| ⬜  | **BLE robustness** · [plan 12](./plans/12-ble-robustness.md)             | Auto-reconnect on by default after a confirmed drop; MTU negotiation; adapter sleep / wake handling; connection diagnostics screen on failure    |
+| ⬜  | **Signed release build** · [plan 08](./plans/08-signed-release-ota.md)   | Release keystore from a CI secret, semantic versioning, EAS project id, OTA updates enabled                                                      |
+| ⬜  | **Doc debt zero** · [plan 04](./plans/04-doc-debt.md)                    | Specs for `can-sniffer`, `sensor-readings`, `onboarding`, `engine-host`, `more`; README and phase docs refreshed                                 |
+
+### v0.3 — Any car, any code
+
+Goal: the app is useful on a car it has never seen, and explains every code it reads.
+
+|     | Feature                                                                                | Notes                                                                                                                                                                                   |
+| --- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ⬜  | **Full DTC database** · [plan 05](./plans/05-dtc-database.md)                          | SAE J2012 generic set (P0/P2/P3, B0, C0, U0) with description, system and severity hint; manufacturer P1/P3 packs for VAG and Fiat as data modules                                      |
+| ⬜  | **DTC detail sheet** · [plan 05](./plans/05-dtc-database.md)                           | Meaning, typical causes, severity, freeze frame, linked guide / routine, "explain with AI", web search deep link                                                                        |
+| ⬜  | **Garage (multiple cars)** · [plan 06](./plans/06-garage-learned-profiles.md)          | Save many vehicles; switch car; history, maintenance, dashboard layout, scans and trips keyed per car (stores already key by vehicle)                                                   |
+| ⬜  | **Learn this car** · [plan 06](./plans/06-garage-learned-profiles.md)                  | Create a profile from a live connection: VIN, protocol, supported-PID bitmap, calibration IDs, ECU count; editable name / fuel / year; persisted as a user profile beside the built-ins |
+| ⬜  | **Profile import / export** · [plan 13](./plans/13-profile-labelpack-import-export.md) | Share a learned profile or label pack as JSON; the community contribution path                                                                                                          |
+| ⬜  | **Information architecture** · [plan 07](./plans/07-information-architecture.md)       | More grouped into Diagnose · Drive · Ownership · Workshop (experimental) · Tools, with search; Developer section in Settings; `sensor-readings` folded into Live as a grouped view      |
+| ⬜  | **Dashboard presets** · [plan 07](./plans/07-information-architecture.md)              | Petrol / diesel / hybrid default layouts chosen from the profile fuel type                                                                                                              |
+| ⬜  | **Mode 22 in charts** · [plan 14](./plans/14-mode22-charts-measuring-groups.md)        | Extended DIDs plot like any PID (deferred from 6b.6)                                                                                                                                    |
+
+### v0.4 — Reports, history & sharing
+
+Goal: the "send it to my mechanic" release.
+
+|     | Feature                                                                      | Notes                                                                                                                                         |
+| --- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| ⬜  | **Unified vehicle report** · [plan 15](./plans/15-unified-vehicle-report.md) | One PDF/HTML: identity, readiness, DTCs with VAG numbers and freeze frames, module scan, inspection verdict, battery, AI summary; share sheet |
+| ⬜  | **Per-car timeline** · [plan 16](./plans/16-per-car-timeline.md)             | History, scans, trips, maintenance and reports on one chronological view per car, with before/after diff links                                |
+| ⬜  | **Trip detail map** · [plan 17](./plans/17-trip-detail-map.md)               | GPS polyline, speed / RPM / fuel overlays, GPS-vs-OBD distance check                                                                          |
+| ⬜  | **Export everything** · [plan 18](./plans/18-backup-restore.md)              | CSV / JSON for every store; one-tap full app backup and restore (zip), no cloud                                                               |
+| ⬜  | **AI provider presets** · [plan 19](./plans/19-ai-provider-presets.md)       | OpenAI / Anthropic / local presets with per-provider defaults; multi-turn follow-up questions; report cites the linked guides                 |
+
+### v0.5 — iOS, languages & accessibility
+
+|     | Feature                                                                  | Notes                                                                                                         |
+| --- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| ⬜  | **iOS build** · [plan 09](./plans/09-ios-eas.md)                         | EAS build + TestFlight; BLE discovery verified on iOS (no MFi needed for BLE)                                 |
+| ⬜  | **Localization** · [plan 11](./plans/11-i18n.md)                         | `i18next`; English + Romanian first; dates and number formats locale-aware; metric only                       |
+| ⬜  | **Accessibility pass** · [plan 20](./plans/20-accessibility-pass.md)     | Labels on every control, dynamic type, contrast check in both themes, reduced-motion respect                  |
+| ⬜  | **Component + e2e tests** · [plan 10](./plans/10-component-e2e-tests.md) | `jest-expo` + Testing Library for the 7 tabs; a Maestro smoke flow (simulator connect → faults → clear) in CI |
+| ⬜  | **Tablet layout** · [plan 21](./plans/21-tablet-layout.md)               | Two-pane Live / Charts on wide screens                                                                        |
+
+### v0.6 — VCDS-class on the Golf 🧪
+
+Goal: the manufacturer tier stops being illustrative on the reference car. Depends on v0.2 captures.
+
+|     | Feature                                                                              | Notes                                                                                                                                                  |
+| --- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ⬜  | **Confirmed module map** · [plan 25](./plans/25-post-capture-confirmation.md)        | Real CAN addresses, ident DIDs and DTC lists for the Golf's UDS modules (ABS, cluster, gateway…) recorded from sniffer captures; placeholders replaced |
+| ⬜  | **TP2.0 on hardware** · [plan 25](./plans/25-post-capture-confirmation.md)           | Channel setup, keep-alive and timing validated on the Vgate; gateway install list and pre-UDS module faults confirmed                                  |
+| ⬜  | **Confirmed routines** · [plan 25](./plans/25-post-capture-confirmation.md)          | Forced DPF regen and V157 intake-flap adaptation with real bytes; interlocks tuned to observed values                                                  |
+| ⬜  | **KWP login UI + code book** · [plan 22](./plans/22-kwp-login-code-book.md)          | 5-digit login (`2B`) entry per profile for pre-UDS adaptations                                                                                         |
+| ⬜  | **Security-access plugins** · [plan 23](./plans/23-security-access-plugins.md)       | Seed/key algorithms loaded from a user-supplied file per profile, never shipped; UI shows which writes are unlocked                                    |
+| ⬜  | **Adaptation restore** · [plan 24](./plans/24-adaptation-restore.md)                 | Full backup restores adaptation channels, not only coding (manual today)                                                                               |
+| ⬜  | **Label-pack expansion** · [plan 13](./plans/13-profile-labelpack-import-export.md)  | More EDC17 / BCM / cluster packs; community import via the v0.3 JSON format                                                                            |
+| ⬜  | **Tweaks catalog** · [plan 25](./plans/25-post-capture-confirmation.md)              | More curated one-tap presets per profile, each with on-car confirmation status                                                                         |
+| ⬜  | **Measuring-block groups** · [plan 14](./plans/14-mode22-charts-measuring-groups.md) | VCDS-style grouped, labeled blocks per module over Mode 22 / KWP `21`                                                                                  |
+
+### v0.7 — More adapters & web
+
+|     | Feature                                                                                  | Notes                                                                                          |
+| --- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| ⬜  | **Wi-Fi ELM327** · [plan 26](./plans/26-wifi-tcp-transport.md)                           | `TcpTransport` (192.168.0.10:35000 class adapters), same `Transport` interface                 |
+| ⬜  | **Classic Bluetooth SPP (Android)** · [plan 27](./plans/27-bluetooth-spp-transport.md)   | The majority of cheap adapters; native module or community lib behind the same interface       |
+| ⬜  | **Web Bluetooth PWA** · [plan 28](./plans/28-web-bluetooth-pwa.md)                       | `WebBluetoothTransport` + Expo web target for Chrome desktop / Android demos (deferred 6.9)    |
+| ⬜  | **Adapter compatibility matrix** · [plan 29](./plans/29-adapter-compatibility-matrix.md) | Adapter-health grades aggregated into a doc / in-app list of known-good and known-bad adapters |
+| ⬜  | **USB (Android OTG)** · [plan 27](./plans/27-bluetooth-spp-transport.md)                 | Stretch; wired adapters for benches                                                            |
+
+### v1.0 — Store release
+
+|     | Feature                                                                         | Notes                                                                               |
+| --- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| ⬜  | **Play Store + App Store** · [plan 30](./plans/30-store-release-prep.md)        | Listings, screenshots, privacy policy, data-safety forms, review-ready builds       |
+| ⬜  | **Opt-in crash reporting** · [plan 31](./plans/31-opt-in-crash-reporting.md)    | Privacy-respecting, off by default; the error log stays the primary channel         |
+| ⬜  | **In-app feedback / log bundle** · [plan 32](./plans/32-feedback-log-bundle.md) | One tap: error log + adapter log + device info, redacted, to a share sheet or issue |
+| ⬜  | **Community data** · [plan 33](./plans/33-community-contribution.md)            | Documented contribution flow for profiles, label packs, DTC texts and tweaks        |
+| ⬜  | **Stability targets** · [plan 30](./plans/30-store-release-prep.md)             | Crash-free > 99.5 % on the simulator path and the three reference cars              |
+
+### Beyond 1.0 — exploratory
+
+- **EV / hybrid profiles** — battery SoH, cell voltages and charge stats via Mode 22 packs (Zoe, Leaf, e-Golf, ID.3 class).
+- **DoIP / 2020+ cars** — Ethernet-based diagnostics are a different transport; evaluate when an adapter exists.
+- **Other manufacturer tiers** — Fiat / PSA / Renault module scans using the same profile + label-pack machinery.
+- **Shared sessions** — mirror a live session to another device (mechanic watches while the owner drives).
+- **Cloud sync** — only if users ask; the architecture stays local-first.
+
+## Explicit non-goals (hardware or policy limits)
+
+- **KWP1281 modules** (the Passat's non-engine modules): a stock ELM327 cannot do per-byte ACK timing. Documented, not chased. A KKL / OBDeleven-class transport would lift it.
+- **SFD unlock** (2020+ VAG): not applicable to the reference cars; out of scope.
+- **Writes to safety modules** — immobilizer, airbag / SRS, cluster mileage, key / component protection: never.
+- **MS-CAN / SW-CAN** sub-buses: not reachable from the OBD port with this adapter class.
+
+- **Imperial units**: the app is metric only (decision 2026-11-08). No unit-conversion layer; the dead
+  imperial path is removed in plan 07.
+
+## Complete feature map (today → planned)
+
+| Area            | Shipped today                                                                                      | Planned additions                                                                                                            |
+| --------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| **Connect**     | BLE scan / connect, Bluetooth prompts, connect-by-MAC, link-loss, opt-in auto-reconnect, simulator | BLE-default first run, auto-reconnect default on, connection diagnostics, Wi-Fi, SPP, Web Bluetooth, USB                     |
+| **Vehicle**     | 3 profiles + generic, VIN suggestion, VIN decode                                                   | Garage, learn-this-car, profile import / export, model-level VIN decode                                                      |
+| **Live**        | Gauges, value cards, multi-PID, fuel economy, custom layout                                        | Fuel-type presets, grouped sensor view, tablet two-pane                                                                      |
+| **Faults**      | 03/07/0A, clear, readiness, freeze frame, VAG numbers, guides, drive-cycle coach, report           | Full DTC database, DTC detail sheet, AI explain, web deep link                                                               |
+| **Info**        | Adapter / protocol / ECU, PID coverage, Extended PIDs, adapter health                              | Adapter compatibility matrix                                                                                                 |
+| **Analysis**    | AI diagnose, inspection, battery, DPF, Mode 06/05                                                  | AI provider presets, multi-turn, confirmed DPF DIDs                                                                          |
+| **Drive**       | Trips + GPS, charts, performance, alerts, notifications                                            | Trip map, Mode 22 charts, GPS-fused performance                                                                              |
+| **Ownership**   | History, maintenance log, reminders                                                                | Per-car timeline, unified report, backup / restore                                                                           |
+| **Workshop 🧪** | Module scan + TP2.0, adaptations, routines, coding + tweaks + backup, service reset, sniffer       | Confirmed Golf module map, TP2.0 on hardware, KWP login, security plugins, adaptation restore, label packs, measuring groups |
+| **Platform**    | Android APK (debug-signed), OTA wiring, error log, keystore for secrets                            | Signed release, iOS, i18n (EN/RO), a11y, component + e2e tests, store release, opt-in crash reports                          |
+
+## How we work
+
+1. **Docs first.** A feature starts as `docs/features/<slug>.md`; the slice matches it.
+2. **Simulator first.** Every new byte sequence is answered by `MockTransport` before it is sent to a car.
+3. **Capture, then confirm.** Real-car sessions are recorded (adapter log, sniffer) and turned into fixtures; illustrative data becomes confirmed data only from a capture.
+4. **Gated writes.** Backup → write → verify, interlocks fail closed, addressing restored in `finally`, safety modules excluded.
+5. **Log the landing.** Each shipped item moves to ✅ here and gets an entry in `implementation-log.md`.

@@ -20,6 +20,9 @@ service-interval reset — for any OBD2-compliant car.
 - ⏳ on-car validation against the three example cars; store builds.
 
 See [`docs/implementation-log.md`](./docs/implementation-log.md) for details.
+What comes next: [`docs/roadmap.md`](./docs/roadmap.md) (release plan) and
+[`docs/audit-2026-11.md`](./docs/audit-2026-11.md) (feature audit); each next step has an
+implementation plan under [`docs/plans/`](./docs/plans/README.md).
 
 ## Features
 

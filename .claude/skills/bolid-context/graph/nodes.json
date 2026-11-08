@@ -1257,6 +1257,17 @@
     ],
     "type": "doc"
   },
+  "doc:audit-2026-11": {
+    "path": "docs/audit-2026-11.md",
+    "summary": "Feature audit \u2014 2026-11-08",
+    "tokens": [
+      "08",
+      "11",
+      "2026",
+      "audit"
+    ],
+    "type": "doc"
+  },
   "doc:features/adaptations": {
     "path": "docs/features/adaptations.md",
     "summary": "Feature: adaptations \u2014 channel browser (experimental, write-capable, gated)",
@@ -1588,6 +1599,534 @@
       "mobile",
       "phase",
       "tamagui"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/01-production-first-run": {
+    "path": "docs/plans/01-production-first-run.md",
+    "summary": "Plan 01 \u2014 Production defaults and first-run",
+    "tokens": [
+      "01",
+      "defaults",
+      "first",
+      "plan",
+      "plans",
+      "production",
+      "run"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/02-on-car-validation": {
+    "path": "docs/plans/02-on-car-validation.md",
+    "summary": "Plan 02 \u2014 Log \u2192 fixture pipeline now, on-car validation later",
+    "tokens": [
+      "02",
+      "car",
+      "fixture",
+      "later",
+      "log",
+      "now",
+      "on",
+      "pipeline",
+      "plan",
+      "plans",
+      "validation"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/03-sniffer-capture": {
+    "path": "docs/plans/03-sniffer-capture.md",
+    "summary": "Plan 03 \u2014 Bus sniffer: save and share captures",
+    "tokens": [
+      "03",
+      "bus",
+      "capture",
+      "captures",
+      "plan",
+      "plans",
+      "save",
+      "share",
+      "sniffer"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/04-doc-debt": {
+    "path": "docs/plans/04-doc-debt.md",
+    "summary": "Plan 04 \u2014 Doc debt zero",
+    "tokens": [
+      "04",
+      "debt",
+      "doc",
+      "plan",
+      "plans",
+      "zero"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/05-dtc-database": {
+    "path": "docs/plans/05-dtc-database.md",
+    "summary": "Plan 05 \u2014 Full DTC database and the DTC detail sheet",
+    "tokens": [
+      "05",
+      "database",
+      "detail",
+      "dtc",
+      "full",
+      "plan",
+      "plans",
+      "sheet"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/06-garage-learned-profiles": {
+    "path": "docs/plans/06-garage-learned-profiles.md",
+    "summary": "Plan 06 \u2014 Garage (multiple cars) and learned profiles",
+    "tokens": [
+      "06",
+      "cars",
+      "garage",
+      "learned",
+      "multiple",
+      "plan",
+      "plans",
+      "profiles"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/07-information-architecture": {
+    "path": "docs/plans/07-information-architecture.md",
+    "summary": "Plan 07 \u2014 Information architecture: More, Settings, Live",
+    "tokens": [
+      "07",
+      "architecture",
+      "information",
+      "live",
+      "more",
+      "plan",
+      "plans",
+      "settings"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/08-signed-release-ota": {
+    "path": "docs/plans/08-signed-release-ota.md",
+    "summary": "Plan 08 \u2014 Signed release build, versioning, OTA updates",
+    "tokens": [
+      "08",
+      "build",
+      "ota",
+      "plan",
+      "plans",
+      "release",
+      "signed",
+      "updates",
+      "versioning"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/09-ios-eas": {
+    "path": "docs/plans/09-ios-eas.md",
+    "summary": "Plan 09 \u2014 iOS build via EAS",
+    "tokens": [
+      "09",
+      "build",
+      "eas",
+      "ios",
+      "os",
+      "plan",
+      "plans",
+      "via"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/10-component-e2e-tests": {
+    "path": "docs/plans/10-component-e2e-tests.md",
+    "summary": "Plan 10 \u2014 Component tests and an end-to-end smoke flow",
+    "tokens": [
+      "10",
+      "an",
+      "component",
+      "end",
+      "flow",
+      "plan",
+      "plans",
+      "smoke",
+      "tests",
+      "to"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/11-i18n": {
+    "path": "docs/plans/11-i18n.md",
+    "summary": "Plan 11 \u2014 Localization: English and Romanian",
+    "tokens": [
+      "11",
+      "18",
+      "english",
+      "localization",
+      "plan",
+      "plans",
+      "romanian"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/12-ble-robustness": {
+    "path": "docs/plans/12-ble-robustness.md",
+    "summary": "Plan 12 \u2014 BLE robustness",
+    "tokens": [
+      "12",
+      "ble",
+      "plan",
+      "plans",
+      "robustness"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/13-profile-labelpack-import-export": {
+    "path": "docs/plans/13-profile-labelpack-import-export.md",
+    "summary": "Plan 13 \u2014 Profile and label-pack import / export",
+    "tokens": [
+      "13",
+      "export",
+      "import",
+      "label",
+      "labelpack",
+      "pack",
+      "plan",
+      "plans",
+      "profile"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/14-mode22-charts-measuring-groups": {
+    "path": "docs/plans/14-mode22-charts-measuring-groups.md",
+    "summary": "Plan 14 \u2014 Mode 22 values in the poll loop and charts; VCDS-style measuring groups",
+    "tokens": [
+      "14",
+      "22",
+      "charts",
+      "groups",
+      "in",
+      "loop",
+      "measuring",
+      "mode",
+      "plan",
+      "plans",
+      "poll",
+      "style",
+      "values",
+      "vcds"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/15-unified-vehicle-report": {
+    "path": "docs/plans/15-unified-vehicle-report.md",
+    "summary": "Plan 15 \u2014 Unified vehicle report (PDF / HTML)",
+    "tokens": [
+      "15",
+      "html",
+      "pdf",
+      "plan",
+      "plans",
+      "report",
+      "unified",
+      "vehicle"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/16-per-car-timeline": {
+    "path": "docs/plans/16-per-car-timeline.md",
+    "summary": "Plan 16 \u2014 Per-car timeline",
+    "tokens": [
+      "16",
+      "car",
+      "per",
+      "plan",
+      "plans",
+      "timeline"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/17-trip-detail-map": {
+    "path": "docs/plans/17-trip-detail-map.md",
+    "summary": "Plan 17 \u2014 Trip detail: GPS polyline, overlays, GPS-vs-OBD check",
+    "tokens": [
+      "17",
+      "check",
+      "detail",
+      "gps",
+      "map",
+      "overlays",
+      "plan",
+      "plans",
+      "polyline",
+      "trip",
+      "vs"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/18-backup-restore": {
+    "path": "docs/plans/18-backup-restore.md",
+    "summary": "Plan 18 \u2014 Export everything, one-tap backup and restore",
+    "tokens": [
+      "18",
+      "backup",
+      "everything",
+      "export",
+      "one",
+      "plan",
+      "plans",
+      "restore",
+      "tap"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/19-ai-provider-presets": {
+    "path": "docs/plans/19-ai-provider-presets.md",
+    "summary": "Plan 19 \u2014 AI provider presets, follow-up questions, guide citations",
+    "tokens": [
+      "19",
+      "ai",
+      "citations",
+      "follow",
+      "guide",
+      "plan",
+      "plans",
+      "presets",
+      "provider",
+      "questions",
+      "up"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/20-accessibility-pass": {
+    "path": "docs/plans/20-accessibility-pass.md",
+    "summary": "Plan 20 \u2014 Accessibility pass",
+    "tokens": [
+      "20",
+      "accessibility",
+      "pass",
+      "plan",
+      "plans"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/21-tablet-layout": {
+    "path": "docs/plans/21-tablet-layout.md",
+    "summary": "Plan 21 \u2014 Tablet and landscape layout",
+    "tokens": [
+      "21",
+      "landscape",
+      "layout",
+      "plan",
+      "plans",
+      "tablet"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/22-kwp-login-code-book": {
+    "path": "docs/plans/22-kwp-login-code-book.md",
+    "summary": "Plan 22 \u2014 KWP login entry and the per-car code book",
+    "tokens": [
+      "22",
+      "book",
+      "car",
+      "code",
+      "entry",
+      "kwp",
+      "login",
+      "per",
+      "plan",
+      "plans"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/23-security-access-plugins": {
+    "path": "docs/plans/23-security-access-plugins.md",
+    "summary": "Plan 23 \u2014 Security-access plugins (user-supplied seed\u2192key, never shipped)",
+    "tokens": [
+      "23",
+      "access",
+      "key",
+      "never",
+      "plan",
+      "plans",
+      "plugins",
+      "security",
+      "seed",
+      "shipped",
+      "supplied",
+      "user"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/24-adaptation-restore": {
+    "path": "docs/plans/24-adaptation-restore.md",
+    "summary": "Plan 24 \u2014 Adaptation restore from a full-car backup",
+    "tokens": [
+      "24",
+      "adaptation",
+      "backup",
+      "car",
+      "full",
+      "plan",
+      "plans",
+      "restore"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/25-post-capture-confirmation": {
+    "path": "docs/plans/25-post-capture-confirmation.md",
+    "summary": "Plan 25 \u2014 Confirmation metadata, module discovery and the capture analyzer",
+    "tokens": [
+      "25",
+      "analyzer",
+      "capture",
+      "confirmation",
+      "discovery",
+      "metadata",
+      "module",
+      "plan",
+      "plans",
+      "post"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/26-wifi-tcp-transport": {
+    "path": "docs/plans/26-wifi-tcp-transport.md",
+    "summary": "Plan 26 \u2014 Wi-Fi ELM327 transport (TCP)",
+    "tokens": [
+      "26",
+      "327",
+      "elm",
+      "fi",
+      "plan",
+      "plans",
+      "tcp",
+      "transport",
+      "wi",
+      "wifi"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/27-bluetooth-spp-transport": {
+    "path": "docs/plans/27-bluetooth-spp-transport.md",
+    "summary": "Plan 27 \u2014 Classic Bluetooth (SPP) transport, Android",
+    "tokens": [
+      "27",
+      "android",
+      "bluetooth",
+      "classic",
+      "plan",
+      "plans",
+      "spp",
+      "transport"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/28-web-bluetooth-pwa": {
+    "path": "docs/plans/28-web-bluetooth-pwa.md",
+    "summary": "Plan 28 \u2014 Web Bluetooth PWA",
+    "tokens": [
+      "28",
+      "bluetooth",
+      "plan",
+      "plans",
+      "pwa",
+      "web"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/29-adapter-compatibility-matrix": {
+    "path": "docs/plans/29-adapter-compatibility-matrix.md",
+    "summary": "Plan 29 \u2014 Adapter compatibility matrix",
+    "tokens": [
+      "29",
+      "adapter",
+      "compatibility",
+      "matrix",
+      "plan",
+      "plans"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/30-store-release-prep": {
+    "path": "docs/plans/30-store-release-prep.md",
+    "summary": "Plan 30 \u2014 Store release preparation (Play Store + App Store) and stability targets",
+    "tokens": [
+      "30",
+      "app",
+      "plan",
+      "plans",
+      "play",
+      "prep",
+      "preparation",
+      "release",
+      "stability",
+      "targets"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/31-opt-in-crash-reporting": {
+    "path": "docs/plans/31-opt-in-crash-reporting.md",
+    "summary": "Plan 31 \u2014 Opt-in crash reporting",
+    "tokens": [
+      "31",
+      "crash",
+      "in",
+      "opt",
+      "plan",
+      "plans",
+      "reporting"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/32-feedback-log-bundle": {
+    "path": "docs/plans/32-feedback-log-bundle.md",
+    "summary": "Plan 32 \u2014 In-app feedback and the redacted log bundle",
+    "tokens": [
+      "32",
+      "app",
+      "bundle",
+      "feedback",
+      "in",
+      "log",
+      "plan",
+      "plans",
+      "redacted"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/33-community-contribution": {
+    "path": "docs/plans/33-community-contribution.md",
+    "summary": "Plan 33 \u2014 Community contribution flow",
+    "tokens": [
+      "33",
+      "community",
+      "contribution",
+      "flow",
+      "plan",
+      "plans"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/README": {
+    "path": "docs/plans/README.md",
+    "summary": "Implementation plans \u2014 handoff guide",
+    "tokens": [
+      "guide",
+      "handoff",
+      "implementation",
+      "plans",
+      "readme"
+    ],
+    "type": "doc"
+  },
+  "doc:roadmap": {
+    "path": "docs/roadmap.md",
+    "summary": "Roadmap",
+    "tokens": [
+      "roadmap"
     ],
     "type": "doc"
   },

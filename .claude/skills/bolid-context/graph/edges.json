@@ -995,6 +995,16 @@
     "named"
   ],
   [
+    "core:analysis/trip",
+    "doc:plans/17-trip-detail-map",
+    "named"
+  ],
+  [
+    "core:coding/adaptationValue",
+    "doc:plans/24-adaptation-restore",
+    "named"
+  ],
+  [
     "core:coding/adaptationValue",
     "ui:ValueCard",
     "named"
@@ -1008,6 +1018,11 @@
     "core:coding/presets",
     "core:coding/coding",
     "imports"
+  ],
+  [
+    "core:coding/presets",
+    "doc:plans/19-ai-provider-presets",
+    "named"
   ],
   [
     "core:elm327/Elm327Client",
@@ -1026,16 +1041,6 @@
   ],
   [
     "core:elm327/Elm327Client",
-    "doc:obd2-reference",
-    "named"
-  ],
-  [
-    "core:elm327/Elm327Client",
-    "doc:simulator",
-    "named"
-  ],
-  [
-    "core:elm327/Elm327Client",
     "lib:bytes",
     "imports"
   ],
@@ -1046,22 +1051,37 @@
   ],
   [
     "core:elm327/responseParser",
-    "doc:obd2-reference",
-    "named"
-  ],
-  [
-    "core:elm327/responseParser",
-    "doc:simulator",
-    "named"
-  ],
-  [
-    "core:elm327/responseParser",
     "lib:hex",
     "imports"
   ],
   [
     "core:obd/canMonitor",
     "doc:features/dpf",
+    "named"
+  ],
+  [
+    "core:obd/dtc",
+    "doc:plans/05-dtc-database",
+    "named"
+  ],
+  [
+    "core:obd/mode05",
+    "doc:plans/05-dtc-database",
+    "named"
+  ],
+  [
+    "core:obd/mode05",
+    "doc:plans/14-mode22-charts-measuring-groups",
+    "named"
+  ],
+  [
+    "core:obd/mode06",
+    "doc:plans/06-garage-learned-profiles",
+    "named"
+  ],
+  [
+    "core:obd/mode06",
+    "doc:plans/14-mode22-charts-measuring-groups",
     "named"
   ],
   [
@@ -1388,6 +1408,11 @@
     "core:tp20/fakeTp20Bus",
     "core:tp20/tp20Scan",
     "imports"
+  ],
+  [
+    "core:tp20/fakeTp20Bus",
+    "doc:plans/03-sniffer-capture",
+    "named"
   ],
   [
     "core:tp20/fakeTp20Bus",
@@ -1856,6 +1881,11 @@
   ],
   [
     "feature:can-sniffer",
+    "doc:plans/03-sniffer-capture",
+    "named"
+  ],
+  [
+    "feature:can-sniffer",
     "store:errorLogStore",
     "imports"
   ],
@@ -2301,7 +2331,7 @@
   ],
   [
     "feature:live-charts",
-    "doc:features/live-data",
+    "doc:plans/14-mode22-charts-measuring-groups",
     "named"
   ],
   [
@@ -2328,11 +2358,6 @@
     "feature:live-data",
     "core:session/DiagnosticSession",
     "imports"
-  ],
-  [
-    "feature:live-data",
-    "doc:features/live-charts",
-    "named"
   ],
   [
     "feature:live-data",
@@ -2473,6 +2498,11 @@
     "feature:module-scan",
     "vehicle:types",
     "imports"
+  ],
+  [
+    "feature:more",
+    "doc:plans/07-information-architecture",
+    "named"
   ],
   [
     "feature:more",
@@ -2731,6 +2761,11 @@
   ],
   [
     "feature:trip-recording",
+    "doc:plans/17-trip-detail-map",
+    "named"
+  ],
+  [
+    "feature:trip-recording",
     "feature:vehicle-select",
     "imports"
   ],
@@ -2830,6 +2865,21 @@
     "imports"
   ],
   [
+    "lib:dtcReport",
+    "doc:plans/05-dtc-database",
+    "named"
+  ],
+  [
+    "lib:dtcReport",
+    "doc:plans/15-unified-vehicle-report",
+    "named"
+  ],
+  [
+    "screen:_layout",
+    "doc:plans/21-tablet-layout",
+    "named"
+  ],
+  [
     "screen:_layout",
     "feature:engine-host",
     "serves"
@@ -2912,6 +2962,11 @@
   [
     "screen:charts",
     "doc:features/live-charts",
+    "named"
+  ],
+  [
+    "screen:charts",
+    "doc:plans/14-mode22-charts-measuring-groups",
     "named"
   ],
   [
@@ -3041,6 +3096,11 @@
   ],
   [
     "screen:more",
+    "doc:plans/07-information-architecture",
+    "named"
+  ],
+  [
+    "screen:more",
     "feature:more",
     "serves"
   ],
@@ -3108,6 +3168,11 @@
     "screen:settings",
     "feature:settings",
     "serves"
+  ],
+  [
+    "screen:sniffer",
+    "doc:plans/03-sniffer-capture",
+    "named"
   ],
   [
     "screen:sniffer",
@@ -3201,6 +3266,11 @@
   ],
   [
     "store:secureApiKey",
+    "doc:plans/23-security-access-plugins",
+    "named"
+  ],
+  [
+    "store:secureApiKey",
     "store:errorLogStore",
     "imports"
   ],
@@ -3242,6 +3312,11 @@
   [
     "transport:BleTransport",
     "doc:phase2-mobile-app",
+    "named"
+  ],
+  [
+    "transport:BleTransport",
+    "doc:plans/12-ble-robustness",
     "named"
   ],
   [
@@ -3301,6 +3376,11 @@
   ],
   [
     "vehicle:fiat-punto-2008-12",
+    "doc:plans/12-ble-robustness",
+    "named"
+  ],
+  [
+    "vehicle:fiat-punto-2008-12",
     "doc:vehicles/fiat-punto-2008-12",
     "named"
   ],
@@ -3331,6 +3411,11 @@
   ],
   [
     "vehicle:passat-b55-19tdi",
+    "doc:plans/19-ai-provider-presets",
+    "named"
+  ],
+  [
+    "vehicle:passat-b55-19tdi",
     "doc:vehicles/golf-plus-2009-20tdi",
     "named"
   ],
@@ -3343,6 +3428,11 @@
     "vehicle:passat-b55-19tdi",
     "vehicle:types",
     "imports"
+  ],
+  [
+    "vehicle:registry",
+    "doc:plans/13-profile-labelpack-import-export",
+    "named"
   ],
   [
     "vehicle:registry",
