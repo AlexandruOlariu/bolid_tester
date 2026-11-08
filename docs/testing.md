@@ -4,12 +4,13 @@ Three layers: **automated unit + component tests** (no hardware, every push), an
 flow** on an Android emulator (nightly / on demand), and **on-car manual** checks (the user, with the
 real Vgate adapter).
 
-| Command             | Runs                                                                     |
-| ------------------- | ------------------------------------------------------------------------ |
-| `npm test`          | both Jest projects (`core` + `ui`)                                       |
-| `npm run test:core` | `*.test.ts`: engine, simulator, stores, services (ts-jest, Node)         |
-| `npm run test:ui`   | `*.test.tsx`: component tests (jest-expo + React Native Testing Library) |
-| `npm run ci`        | core typecheck + app typecheck + lint + both Jest projects               |
+| Command                 | Runs                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `npm test`              | both Jest projects (`core` + `ui`)                                           |
+| `npm run test:core`     | `*.test.ts`: engine, simulator, stores, services (ts-jest, Node)             |
+| `npm run test:ui`       | `*.test.tsx`: component tests (jest-expo + React Native Testing Library)     |
+| `npm run check:release` | release config: signing plugin vs. a generated-gradle fixture, version sync  |
+| `npm run ci`            | core typecheck + app typecheck + lint + `check:release` + both Jest projects |
 
 ## Automated (no hardware)
 
@@ -37,7 +38,8 @@ The `core` Jest project (`npm run test:core`; ts-jest over the pure-TS core in N
 
 Also: `npm run typecheck` (core, `tsc --noEmit`), `npm run lint` (eslint over `src/`, `test/` and
 `jest.setup.ui.ts`), and `npm run typecheck:app` (full RN app, including the `*.test.tsx` component
-tests and the `test/` helpers). All of these run in CI (`.github/workflows/ci.yml`) on every push.
+tests and the `test/` helpers). All of these run in CI (`.github/workflows/ci.yml`) on every push, plus `npm run check:release`
+(`scripts/check-signing-plugin.mjs`, `scripts/check-version-sync.mjs`; see [release.md](./release.md)).
 
 ## Component tests
 

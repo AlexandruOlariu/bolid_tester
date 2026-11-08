@@ -30,6 +30,13 @@ Developer and runtime settings.
     See [connection](./connection.md#auto-reconnect-on-by-default-with-a-flap-guard).
   - **Live log** of adapter I/O (sent commands ↔ raw responses), with clear + export-as-fixture.
   - Units (metric default), poll interval, theme (system/light/dark).
+  - **About** (plan 08) — "Bolid Tester <version>" (`APP_NAME` / `APP_VERSION` from
+    `shared/lib/appInfo.ts`, read from `app.json`; the version is also the OTA runtime version), a
+    note that OTA updates only reach the same version and are checked only from **More → Check for
+    updates**, and a **Privacy policy** button that expands the policy in place ("Last updated
+    <date>", then each section). The text lives in `model/privacyPolicy.ts` and is published as
+    [docs/privacy-policy.md](../privacy-policy.md); `privacyPolicy.test.ts` fails when a heading or
+    paragraph differs between the two. See [release.md](../release.md).
 
 ## hooks
 
@@ -94,4 +101,6 @@ Developer and runtime settings.
 - With the simulator and **Injected DTCs: None**, Faults shows no codes; **Custom…** `P0135` shows
   `P0135`.
 - App is fully usable end-to-end in simulator mode.
+- **About** shows the app version from `app.json`; **Privacy policy** expands every section of
+  `docs/privacy-policy.md` and collapses again.
 - Log shows every command/response pair.

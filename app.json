@@ -14,7 +14,11 @@
     "updates": {
       "url": "https://u.expo.dev/TODO-eas-project-id",
       "fallbackToCacheTimeout": 0,
-      "_comment": "EAS Update / OTA. Replace the placeholder URL with your project's `https://u.expo.dev/<projectId>` (run `eas update:configure` on the dev machine, which also fills the `extra.eas.projectId`). Until then expo-updates reports isEnabled=false and 'Check for updates' is a safe no-op."
+      "checkAutomatically": "ON_ERROR_RECOVERY",
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      },
+      "_comment": "EAS Update / OTA (docs/release.md). The owner runs `eas init` + `eas update:configure` once, which replaces the placeholder URL with `https://u.expo.dev/<projectId>` and fills `extra.eas.projectId`. checkAutomatically ON_ERROR_RECOVERY: the app never checks silently at launch, only when the user taps More > Check for updates (docs/privacy-policy.md). The channel header is for the Gradle-built CI APK; EAS Build overrides it per eas.json profile."
     },
     "ios": {
       "supportsTablet": true,
@@ -53,7 +57,8 @@
           "isBackgroundEnabled": false,
           "neverForLocation": true
         }
-      ]
+      ],
+      "./plugins/withReleaseSigning"
     ],
     "_comment": "Phase 2 scaffolding. The native build (Expo prebuild / EAS) is done on a developer machine; not exercised in the cloud container."
   }

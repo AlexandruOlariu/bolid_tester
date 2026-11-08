@@ -4,6 +4,7 @@ import { renderWithProviders } from '@test/renderWithProviders';
 import { connectSimulator } from '@test/simulator';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { APP_VERSION } from '@/shared/lib/appInfo';
 import { SettingsScreen } from './SettingsScreen';
 
 describe('SettingsScreen', () => {
@@ -47,5 +48,20 @@ describe('SettingsScreen', () => {
 
     fireEvent.press(screen.getByText('P0299+P0401'));
     expect(useSettingsStore.getState().injectedDtcs).toEqual(['P0299', 'P0401']);
+  });
+
+  it('About shows the app version and opens the privacy policy', () => {
+    renderWithProviders(<SettingsScreen />);
+    expect(screen.getByText(`Bolid Tester ${APP_VERSION}`)).toBeTruthy();
+    expect(screen.queryByText('When the app uses the internet')).toBeNull();
+
+    fireEvent.press(screen.getByLabelText('Show the privacy policy'));
+
+    expect(screen.getByText('What stays on your phone')).toBeTruthy();
+    expect(screen.getByText('When the app uses the internet')).toBeTruthy();
+    expect(screen.getByText('Deleting your data')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Hide the privacy policy'));
+    expect(screen.queryByText('What stays on your phone')).toBeNull();
   });
 });

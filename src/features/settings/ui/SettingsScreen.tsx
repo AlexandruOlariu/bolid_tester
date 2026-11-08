@@ -11,6 +11,8 @@ import { listModels, AiClientError } from '@/shared/ai';
 import { logError } from '@/shared/state/errorLogStore';
 import { useLogFixtureExport } from '../hooks/useLogFixtureExport';
 import { connectionService } from '@/features/connection';
+import { APP_NAME, APP_VERSION } from '@/shared/lib/appInfo';
+import { PRIVACY_POLICY, PRIVACY_POLICY_UPDATED } from '../model/privacyPolicy';
 
 const ACCENT = '#2bb673';
 
@@ -300,6 +302,55 @@ function SimulatorDeveloperSection() {
   );
 }
 
+/** Settings → About (plan 08): the app version (= the OTA runtime version) and the privacy policy,
+ *  whose text lives in `model/privacyPolicy.ts` and is published as docs/privacy-policy.md. */
+function AboutSection() {
+  const [policyOpen, setPolicyOpen] = useState(false);
+
+  return (
+    <YStack gap="$2">
+      <SectionLabel>About</SectionLabel>
+      <SegGroup>
+        <YStack gap="$2">
+          <Paragraph fontWeight="700">
+            {APP_NAME} {APP_VERSION}
+          </Paragraph>
+          <Paragraph theme="alt2" fontSize="$1">
+            Over-the-air updates only reach installs of this same version. The app looks for one
+            only when you tap More → Check for updates.
+          </Paragraph>
+          <Button
+            size="$2"
+            onPress={() => setPolicyOpen((open) => !open)}
+            accessibilityLabel={policyOpen ? 'Hide the privacy policy' : 'Show the privacy policy'}
+          >
+            {policyOpen ? 'Hide privacy policy' : 'Privacy policy'}
+          </Button>
+          {policyOpen ? (
+            <YStack gap="$2">
+              <Paragraph theme="alt2" fontSize="$1">
+                Last updated {PRIVACY_POLICY_UPDATED}
+              </Paragraph>
+              {PRIVACY_POLICY.map((section) => (
+                <YStack key={section.heading} gap="$1">
+                  <Text fontWeight="700" fontSize="$3">
+                    {section.heading}
+                  </Text>
+                  {section.paragraphs.map((p) => (
+                    <Paragraph key={p} fontSize="$2">
+                      {p}
+                    </Paragraph>
+                  ))}
+                </YStack>
+              ))}
+            </YStack>
+          ) : null}
+        </YStack>
+      </SegGroup>
+    </YStack>
+  );
+}
+
 export function SettingsScreen() {
   const { exportFixture, busy: exportingFixture } = useLogFixtureExport();
   const s = useSettingsStore();
@@ -449,6 +500,8 @@ export function SettingsScreen() {
           </ScrollView>
         </Card>
       </YStack>
+
+      <AboutSection />
 
       {status === 'connected' ? (
         <Button theme="red" onPress={() => connectionService.disconnect()}>

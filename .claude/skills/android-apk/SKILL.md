@@ -12,8 +12,9 @@ description: >-
 
 Produce an installable APK from the prebuilt `android/` project using Gradle. On Windows the native
 C++ codegen step overflows the 260-char path limit; this skill builds through a short **directory
-junction** so paths stay legal. The release variant is signed with the debug keystore (see
-`android/app/build.gradle`), so the APK installs directly — it is **not** a Play-Store upload build.
+junction** so paths stay legal. By default the release variant is signed with the debug keystore, so
+the APK installs directly — it is **not** a Play-Store upload build (setting the `BOLID_KEYSTORE_*`
+variables switches it to the upload key; see `docs/release.md`).
 
 ## Preconditions (check, don't assume)
 
@@ -53,6 +54,7 @@ on a clean repeat build from the same junction you can skip it.
 ## On macOS / Linux
 
 No path limit — build in place:
+
 ```bash
 cd android && ./gradlew assembleRelease
 ```
@@ -68,7 +70,9 @@ cd android && ./gradlew assembleRelease
 
 ## Notes
 
-- Debug-key signed → fine for sideloading/testing, **not** Play upload. For a store build, set up a
-  real upload keystore or use `eas build -p android` (`eas.json` is configured).
+- Debug-key signed → fine for sideloading/testing, **not** Play upload. `plugins/withReleaseSigning.js`
+  switches the release build to the upload key when `BOLID_KEYSTORE_PATH` (+ `BOLID_KEYSTORE_PASSWORD`,
+  `BOLID_KEY_ALIAS`, `BOLID_KEY_PASSWORD`) is set while Gradle runs; without them nothing changes.
+  Store builds normally come from CI tags — see `docs/release.md`.
 - For a smaller download, build a `.aab` (`bundleRelease`) or split per-ABI APKs.
 - The junction is safe to delete afterward (`rmdir C:\b` / `Remove-Item C:\b`) — it never touches files.

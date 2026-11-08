@@ -139,6 +139,17 @@ a real-time diagnostics dashboard isn't an allowed category and React Native UI 
 The app is a normal phone app (mount the phone, talk BLE to the adapter). A glanceable in-app
 "driving mode" is the practical in-car option.
 
+## Releases
+
+CI builds a release APK + AAB on every push to `main` and cuts a **GitHub Release only for `v*`
+tags** (`npm version minor|patch` → `git push --follow-tags`). Tag builds must be signed with the
+upload keystore (four GitHub secrets); `versionCode` is the CI run number; one version lives in
+`package.json` = `app.json`. JS-only fixes ship over the air with EAS Update (the app only checks
+when you tap **More → Check for updates**). Local builds without the signing variables stay
+debug-signed. Full procedure, rollback and the owner's one-time setup:
+[`docs/release.md`](./docs/release.md). What the app sends where:
+[`docs/privacy-policy.md`](./docs/privacy-policy.md).
+
 ## Example cars
 
 The three cars in [`docs/vehicles/`](./docs/vehicles) are the owner's own, used as reference

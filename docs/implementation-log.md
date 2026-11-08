@@ -5,6 +5,151 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 08 — Signed release build, versioning, OTA updates (2026-11-09)
+
+[Plan 08](./plans/08-signed-release-ota.md) landed. Not done yet: the owner-only setup (upload
+keystore, four GitHub secrets, `eas init` / `eas update:configure`, `EXPO_TOKEN`) and the first
+`v0.2.0` tag. These now sit in a new **Owner actions (deferred)** section of the plan. Until then,
+main builds stay debug-signed with a CI warning and `ota-publish` is skipped with a warning. The
+procedure is in [release.md](./release.md).
+
+- **`plugins/withReleaseSigning.js`** (registered in `app.json` `plugins`). It edits the generated
+  `android/app/build.gradle` at prebuild:
+  - adds a `release` signing config, created only when `BOLID_KEYSTORE_PATH` is set, that reads the
+    store password, alias and key password from the environment when Gradle runs;
+  - points the `release` build type at it only when that variable is set, so it falls back to the
+    debug key otherwise;
+  - writes `versionCode` from `BOLID_VERSION_CODE`, and sets `expo.android.versionCode` to the
+    same value so Expo's own version step agrees whatever order the mods run in.
+
+  A set path whose file is missing, or a missing password, stops the build with a `GradleException`.
+  A malformed `BOLID_VERSION_CODE`, or an Expo template that has lost one of the anchors, fails
+  prebuild. No secret and no path is ever written into the file. The pure transform
+  (`applyReleaseSigning`) is exported for the check script.
+
+- **Checked on this workstation against the real Gradle project.** I ran `expo prebuild` with the
+  plugin, then `gradlew :app:signingReport` four times:
+  - no env: `Config: debug`, the debug keystore;
+  - throwaway test keystore + env: `Config: release`, the test cert;
+  - path but no password: fails with "BOLID_KEYSTORE_PASSWORD must be set…";
+  - path to a missing file: fails with "…no keystore exists at…".
+
+  The throwaway keystore was deleted afterwards. I re-ran prebuild without `BOLID_VERSION_CODE`, so
+  the local `android/` is back to `versionCode 1` with the plugin's block in place. `npm run
+android:apk` is unchanged.
+
+- **`scripts/check-signing-plugin.mjs`** runs the plugin against
+  `scripts/fixtures/app-build.gradle`, a verbatim copy of the file Expo SDK 56 generates. It checks
+  10 things:
+  - the env-driven signing config;
+  - the conditional release reference, with the debug build type untouched;
+  - `versionCode` with and without the variable;
+  - that no secret leaks into the file;
+  - idempotence;
+  - that malformed codes are rejected;
+  - that a template change fails loudly;
+  - that the real `expo/config-plugins` `appBuildGradle` mod chain gives the same output;
+  - that `expo.android.versionCode` is set.
+
+  To prove the script can fail, I removed the release-reference rewrite: 2 checks failed. Reverted.
+
+- **`scripts/check-version-sync.mjs`** checks that `package.json`, `package-lock.json` and
+  `app.json` agree on the version. `--tag vX.Y.Z` also checks the tag (CI uses this on tag builds),
+  and `--write` syncs app.json while keeping its formatting and CRLF line endings. The new npm
+  `version` script (`check-version-sync.mjs --write && git add app.json`) makes `npm version
+minor|patch` bump all three in one commit and tag. I checked this end to end in a scratch git
+  repo: one commit, three files, tag `v0.2.0`. New script `check:release` runs both checks;
+  `npm run ci` now includes it.
+- **CI (`ci.yml`):**
+  - Triggers add `tags: ['v*']`.
+  - `verify` gains the release-config step.
+  - `release-android` is renamed `build-android` and runs on `main` and `v*` tags. In order: on tags,
+    check that the tag matches the version; restore the keystore; prebuild with `BOLID_VERSION_CODE`
+    set to the run number; `assembleRelease bundleRelease`; check `aapt2 dump badging`
+    (`versionCode` = run number, `versionName` = version); whenever a keystore was restored, check
+    that `apksigner verify --print-certs` succeeds (under `pipefail`, so a failed verification is
+    not masked by `tee`), prints a signer certificate, and has no "Android Debug"; upload the artifact
+    `android-v<version>-<run>` (`.apk` + `.aab`).
+  - `gh release create … --verify-tag --generate-notes` runs **only for tags**. Main pushes no
+    longer create `v0.1.0-buildN` releases.
+  - New `ota-publish` job (tags, after the build) runs `eas-cli update --branch production`.
+  - Validated with the `yaml` parser (all three workflow jobs) and `bash -n` on every `run:` block.
+    GitHub Actions itself cannot be run here.
+- **OTA:** `eas.json` gives the `preview` and `production` profiles their channels. In `app.json`
+  `updates`:
+  - `checkAutomatically: "ON_ERROR_RECOVERY"`: no silent launch check. The generated manifest now
+    has `EXPO_UPDATES_CHECK_ON_LAUNCH = ERROR_RECOVERY_ONLY`.
+  - `requestHeaders: { "expo-channel-name": "production" }`.
+- **Settings → About:** shows "Bolid Tester <version>" (new `src/shared/lib/appInfo.ts`, read from
+  `app.json`), the OTA note, and a **Privacy policy** button that expands the policy in place. The
+  text is in `src/features/settings/model/privacyPolicy.ts`, and the same text is published as
+  [privacy-policy.md](./privacy-policy.md). It covers:
+  - what stays on the phone;
+  - the three network destinations: the AI server, including that the VIN is sent; the Expo update
+    server, including the installation ID and the error-recovery check; the browser web search;
+  - permissions, exports, deleting data, and contact.
+- **Tests (+2 suites, +9 tests):**
+  - `appInfo.test.ts`: app.json = package.json version; the `appVersion` runtime policy,
+    `ON_ERROR_RECOVERY`, the channel header and the plugin registration; the `eas.json` channels.
+  - `privacyPolicy.test.ts`: the in-app headings equal the doc's, in order; every in-app paragraph
+    appears verbatim in the doc; the date matches; every network destination is named.
+  - A new test in the existing Settings component suite: About shows the version, and the policy
+    expands and collapses.
+
+  `check-signing-plugin.mjs` and `check-version-sync.mjs` run outside Jest, through
+  `npm run check:release`.
+
+- **Docs:** new [release.md](./release.md) (versions, cutting a release, what CI does, signing,
+  OTA channels and hotfixes, rollback, owner setup, acceptance checks) and
+  [privacy-policy.md](./privacy-policy.md). Also updated: the README "Releases" section, the docs
+  index, [testing.md](./testing.md) (`check:release`), [settings](./features/settings.md) (About),
+  and the android-apk skill note on signing.
+
+**Deviations from the plan**
+
+- **No secrets in step `if:`.** GitHub Actions does not allow `secrets.*` in a step `if:`, so the
+  keystore step decides in shell. It also does not pass `BOLID_KEYSTORE_PATH` unconditionally as
+  the plan's YAML did: that would point Gradle at a missing file on a main build with no secret.
+  Instead the step exports the variable via `$GITHUB_ENV` only after decoding the file. Without the
+  secret, a tag build fails at that step and a main build warns and stays debug-signed.
+- **Gradle block differs from the plan's snippet.** The plan's regex
+  `release \{\s*\n(\s*)signingConfig signingConfigs\.debug` does not match the SDK 56 template:
+  two comment lines sit between `release {` and `signingConfig`. The plugin instead finds the
+  `signingConfig` line inside `buildTypes` → `release`. It also uses a marker comment for
+  idempotence, creates the release config only when the variable is set, adds the fail-loud
+  checks, and sets `expo.android.versionCode` as well as rewriting the gradle line.
+- **Signature check only when a keystore was restored.** "Verify signature" runs only then, because
+  a keystore-less main build is debug-signed by design. A `versionCode` / `versionName` badging
+  check was added (from the Acceptance list).
+- **Channel header (addition).** `app.json` `updates.requestHeaders` sets the `production` channel,
+  because the CI APK is built by Gradle and not by EAS Build, so the `eas.json` channels do not
+  reach it.
+- **OTA skip.** `ota-publish` skips with a warning, rather than failing, while `EXPO_TOKEN` or the
+  EAS project id is missing. Only the keystore is a hard requirement for a tag.
+- **Privacy policy shown in the app.** "Link it from Settings → About" became an in-app expandable
+  policy plus the doc, with no external link. There is no hosted copy yet (plan 30), and the repo
+  URL may not be public. The policy says "uninstall, or Android Settings → Storage → Clear storage"
+  for deleting data. **Plan 07 must update both copies** when it adds Settings → Reset all app data.
+- **`npm run ci` runs `check:release`.** The plan asked only for the CI `verify` job. Both
+  `npm run ci` and that job now run it.
+
+**Skipped:** owner steps 3 and 5 (keystore, secrets, `eas init` / `eas update:configure`, the
+`0.2.0` bump and tag; the v0.2 items are not all in). I did not run them, by rule.
+
+**Review fixes**
+
+- Privacy policy (both copies): Search the web also sends the selected car's name
+  (`dtcWebSearchUrl(code, vehicleName)`), and the policy now says so.
+- `ci.yml` "Verify release signature": added `set -o pipefail`. Without it, the default `bash -e`
+  took the exit status from `tee`, so a failed `apksigner verify` passed. The step also requires a
+  `Signer #1 certificate` line. It cannot match a specific upload-key fingerprint until the owner
+  creates the keystore.
+- `release.md` rollback: `npm version patch` on the previous tag recomputes the bad release's
+  version, and that tag already exists. The doc now uses an explicit higher version
+  (`npm version 0.2.2` after a bad `v0.2.1`).
+
+---
+
 ## Plan 10 — Component tests and an end-to-end smoke flow (2026-11-08)
 
 [Plan 10](./plans/10-component-e2e-tests.md) landed. The only part not exercised yet is the first

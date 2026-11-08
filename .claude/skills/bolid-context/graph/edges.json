@@ -1655,6 +1655,11 @@
     "named"
   ],
   [
+    "core:uds/testerPresent",
+    "doc:privacy-policy",
+    "named"
+  ],
+  [
     "core:uds/udsModule",
     "core:coding/udsCoding",
     "imports"
@@ -2946,6 +2951,11 @@
   ],
   [
     "feature:settings",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "service:ai",
     "imports"
   ],
@@ -3036,6 +3046,11 @@
   ],
   [
     "feature:vehicle-info",
+    "lib:appInfo",
+    "named"
+  ],
+  [
+    "feature:vehicle-info",
     "store:sessionStore",
     "imports"
   ],
@@ -3083,6 +3098,11 @@
     "feature:vin-decode",
     "store:sessionStore",
     "imports"
+  ],
+  [
+    "lib:appInfo",
+    "doc:features/vehicle-info",
+    "named"
   ],
   [
     "lib:dtcReport",
@@ -3273,6 +3293,11 @@
     "screen:info",
     "feature:vehicle-info",
     "serves"
+  ],
+  [
+    "screen:info",
+    "lib:appInfo",
+    "named"
   ],
   [
     "screen:inspection",

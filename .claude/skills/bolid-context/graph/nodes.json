@@ -2349,6 +2349,30 @@
     ],
     "type": "doc"
   },
+  "doc:privacy-policy": {
+    "path": "docs/privacy-policy.md",
+    "summary": "Bolid Tester \u2014 Privacy policy",
+    "tokens": [
+      "bolid",
+      "policy",
+      "privacy",
+      "tester"
+    ],
+    "type": "doc"
+  },
+  "doc:release": {
+    "path": "docs/release.md",
+    "summary": "Releases: versioning, signing, OTA updates",
+    "tokens": [
+      "ota",
+      "release",
+      "releases",
+      "signing",
+      "updates",
+      "versioning"
+    ],
+    "type": "doc"
+  },
   "doc:roadmap": {
     "path": "docs/roadmap.md",
     "summary": "Roadmap",
@@ -2736,6 +2760,7 @@
     "path": "src/features/settings",
     "summary": "Developer and runtime settings.",
     "tests": [
+      "src/features/settings/model/privacyPolicy.test.ts",
       "src/features/settings/ui/SettingsScreen.test.tsx"
     ],
     "tokens": [
@@ -2787,6 +2812,18 @@
       "vin"
     ],
     "type": "feature"
+  },
+  "lib:appInfo": {
+    "path": "src/shared/lib/appInfo.ts",
+    "summary": "App identity read from app.json at bundle time.",
+    "tests": [
+      "src/shared/lib/appInfo.test.ts"
+    ],
+    "tokens": [
+      "app",
+      "info"
+    ],
+    "type": "lib"
   },
   "lib:base64": {
     "path": "src/shared/lib/base64.ts",

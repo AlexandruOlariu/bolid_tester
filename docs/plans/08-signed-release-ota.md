@@ -163,3 +163,15 @@ delete data (Settings → Reset all app data, plan 07). Link it from Settings �
 - [ ] `More → Check for updates` on the signed build reports up-to-date; a test `eas update` on the
       `preview` branch is picked up by a preview build.
 - [ ] `docs/release.md` and `docs/privacy-policy.md` exist; About links the policy.
+
+## Owner actions (deferred)
+
+Added when the plan landed (2026-11-09); everything above this section is shipped. The procedure is
+in [release.md → Owner setup](../release.md#owner-setup-once).
+
+1. Generate the upload keystore and add the four GitHub secrets (Design → Owner prerequisites 1–2).
+2. `eas init` + `eas update:configure`, commit the resulting `app.json`; create the `production`
+   and `preview` channels; add `EXPO_TOKEN`. Until then `ota-publish` skips with a warning.
+3. Step 5: bump to `0.2.0` (`npm version minor`) when the v0.2 items are in, push the tag, and tick
+   the Acceptance list above against that run (signature, badging, no Release from `main`,
+   keystore-less tag fails, Check for updates → up to date, preview OTA picked up).

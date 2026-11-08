@@ -16,25 +16,27 @@ and the code is written to match. When something changes, the docs change first 
 
 ## Index
 
-| Doc | Purpose |
-|-----|---------|
-| [`PLAN.md`](./PLAN.md) | The overall implementation plan (approved). |
-| [`architecture.md`](./architecture.md) | Layers, data flow, transport abstraction, feature-sliced layout. |
-| [`obd2-reference.md`](./obd2-reference.md) | ELM327 AT commands, OBD2 modes/PIDs, DTC format, protocols. |
-| [`adapter-vgate-icar-pro.md`](./adapter-vgate-icar-pro.md) | The Vgate iCar Pro BLE adapter: facts, BLE behavior, limits. |
-| [`simulator.md`](./simulator.md) | The virtual ELM327 used for hardware-free development & tests. |
-| [`testing.md`](./testing.md) | Automated tests + per-car on-vehicle manual checklists. |
-| [`vehicles/`](./vehicles/) | The vehicle registry. The three example cars + how to add more. |
-| [`features/`](./features/) | One spec per feature slice. |
-| [`implementation-log.md`](./implementation-log.md) | Running record of what we implemented. |
-| [`roadmap.md`](./roadmap.md) | The living product roadmap: releases v0.2 → v1.0 and the complete feature map. |
-| [`audit-2026-11.md`](./audit-2026-11.md) | Feature audit (2026-11): maturity of every slice, engineering gaps, next three iterations. |
-| [`plans/`](./plans/README.md) | Handoff-grade implementation plans (files, signatures, tests, acceptance) for the next roadmap items. |
+| Doc                                                        | Purpose                                                                                               |
+| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| [`PLAN.md`](./PLAN.md)                                     | The overall implementation plan (approved).                                                           |
+| [`architecture.md`](./architecture.md)                     | Layers, data flow, transport abstraction, feature-sliced layout.                                      |
+| [`obd2-reference.md`](./obd2-reference.md)                 | ELM327 AT commands, OBD2 modes/PIDs, DTC format, protocols.                                           |
+| [`adapter-vgate-icar-pro.md`](./adapter-vgate-icar-pro.md) | The Vgate iCar Pro BLE adapter: facts, BLE behavior, limits.                                          |
+| [`simulator.md`](./simulator.md)                           | The virtual ELM327 used for hardware-free development & tests.                                        |
+| [`testing.md`](./testing.md)                               | Automated tests + per-car on-vehicle manual checklists.                                               |
+| [`vehicles/`](./vehicles/)                                 | The vehicle registry. The three example cars + how to add more.                                       |
+| [`features/`](./features/)                                 | One spec per feature slice.                                                                           |
+| [`implementation-log.md`](./implementation-log.md)         | Running record of what we implemented.                                                                |
+| [`release.md`](./release.md)                               | Versioning, release signing, CI artifacts and GitHub Releases, OTA updates, rollback.                 |
+| [`privacy-policy.md`](./privacy-policy.md)                 | The privacy policy (also shown in Settings → About).                                                  |
+| [`roadmap.md`](./roadmap.md)                               | The living product roadmap: releases v0.2 → v1.0 and the complete feature map.                        |
+| [`audit-2026-11.md`](./audit-2026-11.md)                   | Feature audit (2026-11): maturity of every slice, engineering gaps, next three iterations.            |
+| [`plans/`](./plans/README.md)                              | Handoff-grade implementation plans (files, signatures, tests, acceptance) for the next roadmap items. |
 
 ## What this app is (and is not)
 
 **Is:** a **generic OBD2 / EOBD diagnostics tool** for Android and iOS that talks to an
-ELM327-compatible Bluetooth Low Energy adapter (the user's is a *Vgate iCar Pro Bluetooth 4.0*).
+ELM327-compatible Bluetooth Low Energy adapter (the user's is a _Vgate iCar Pro Bluetooth 4.0_).
 It reads live engine data, reads & clears engine fault codes, shows freeze-frame and readiness
 monitors, and reads the VIN — for **any** OBD2-compliant car.
 

@@ -18,3 +18,7 @@ web-build/
 *.log
 .DS_Store
 .env*.local
+
+# release signing (plan 08): never commit a keystore
+*.keystore
+*.jks
