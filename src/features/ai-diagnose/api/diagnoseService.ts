@@ -4,6 +4,7 @@
 
 import {
   type AiReport,
+  type DiagnosisOptions,
   type DiagnosticSnapshot,
   type LiveValue,
   type VehicleContext,
@@ -12,6 +13,8 @@ import {
   localHeuristicReport,
   normalizeBaseUrl,
   parseAiReport,
+  toDtc,
+  type Dtc,
 } from '@/shared/obd-core';
 import { chatCompletion } from '@/shared/ai';
 import { getVehicleProfile, vehicleLabel, type VehicleProfile } from '@/shared/vehicles';
@@ -34,8 +37,10 @@ function toVehicleContext(p: VehicleProfile): VehicleContext {
     year: p.year || undefined,
     engine: p.engine && p.engine !== '—' ? p.engine : undefined,
     fuel: p.fuel && p.fuel !== 'other' ? p.fuel : undefined,
-    expectedProtocol: p.expectedProtocol && p.expectedProtocol !== 'AUTO' ? p.expectedProtocol : undefined,
+    expectedProtocol:
+      p.expectedProtocol && p.expectedProtocol !== 'AUTO' ? p.expectedProtocol : undefined,
     notes: p.notes || undefined,
+    make: p.make,
   };
 }
 
@@ -47,9 +52,11 @@ export async function gatherSnapshot(): Promise<DiagnosticSnapshot> {
 
   const profile = getVehicleProfile(useVehicleStore.getState().selectedProfileId);
   const modes = profile.dtcModes;
-  const stored = modes.includes('03') ? await session.readDtcs('03') : [];
-  const pending = modes.includes('07') ? await session.readDtcs('07') : [];
-  const permanent = modes.includes('0A') ? await session.readDtcs('0A') : [];
+  // Same make-aware descriptions as the Faults screen (VAG / Fiat text for P1xxx codes).
+  const describe = (list: Dtc[]) => list.map((d) => toDtc(d.code, profile.make));
+  const stored = describe(modes.includes('03') ? await session.readDtcs('03') : []);
+  const pending = describe(modes.includes('07') ? await session.readDtcs('07') : []);
+  const permanent = describe(modes.includes('0A') ? await session.readDtcs('0A') : []);
   const readiness = await session.readReadiness();
   const freezeFrame = stored.length > 0 ? await session.readFreezeFrame() : null;
 
@@ -72,17 +79,19 @@ export async function gatherSnapshot(): Promise<DiagnosticSnapshot> {
 }
 
 /** Analyse a snapshot. Uses the configured AI server when available; otherwise (or on any AI error)
- *  returns the deterministic local report with an explanatory notice. Never throws for AI issues. */
+ *  returns the deterministic local report with an explanatory notice. Never throws for AI issues.
+ *  `opts.focusCode` (from the fault-codes "Explain with AI" action) focuses both paths on one code. */
 export async function analyze(
   snapshot: DiagnosticSnapshot,
   onAnalyzing?: () => void,
+  opts: DiagnosisOptions = {},
 ): Promise<AnalysisOutcome> {
   const ai = useSettingsStore.getState().ai;
   const configured = ai.enabled && !!normalizeBaseUrl(ai.baseUrl) && !!ai.model;
 
   if (!configured) {
     return {
-      report: localHeuristicReport(snapshot),
+      report: localHeuristicReport(snapshot, opts),
       notice: ai.enabled
         ? 'No AI server configured — showing an on-device rule-based report. Add a server in Settings → AI assistant.'
         : 'AI is turned off — showing an on-device rule-based report. Enable it in Settings → AI assistant.',
@@ -91,12 +100,17 @@ export async function analyze(
 
   onAnalyzing?.();
   try {
-    const content = await chatCompletion(buildDiagnosisMessages(snapshot), ai);
+    const content = await chatCompletion(buildDiagnosisMessages(snapshot, opts), ai);
     return { report: parseAiReport(content, snapshot), notice: null };
   } catch (e) {
-    logError({ source: 'ai-diagnose', error: e, severity: 'warning', context: { phase: 'analyse', model: ai.model } });
+    logError({
+      source: 'ai-diagnose',
+      error: e,
+      severity: 'warning',
+      context: { phase: 'analyse', model: ai.model },
+    });
     return {
-      report: localHeuristicReport(snapshot),
+      report: localHeuristicReport(snapshot, opts),
       notice: `AI server unavailable — showing an on-device rule-based report instead. (${e instanceof Error ? e.message : String(e)})`,
     };
   }

@@ -208,6 +208,25 @@
     ],
     "type": "concept"
   },
+  "concept:dtc-database": {
+    "path": null,
+    "summary": "DTC database (plan 05): lookupDtc(code, make) -> description, system, J2012 subsystem, severity hint, manufacturer flag. Generic SAE tables (P0/P2/P3\u2026",
+    "tokens": [
+      "database",
+      "description",
+      "dtc",
+      "fiat",
+      "j2012",
+      "lookup",
+      "make",
+      "manufacturer",
+      "p1",
+      "severity",
+      "subsystem",
+      "vag"
+    ],
+    "type": "concept"
+  },
   "concept:dtc-faults": {
     "path": null,
     "summary": "Diagnostic Trouble Codes: read/clear (Mode 03/07/0A) + readiness monitors. dtc.ts encodes/decodes the P/C/B/U codes shown in Fault Codes.",
@@ -948,6 +967,174 @@
     ],
     "type": "core"
   },
+  "core:obd/dtcDatabase/generic/b0": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/b0.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 body codes, B0000\u2013B0FFF.",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/c0": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/c0.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 chassis codes, C0000\u2013C0FFF.",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p0": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p0.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes, P0000\u2013P0FFF \u2014 the whole P0 family, composed from the per-range part files (each \u2264 1 800 lines, see\u2026",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p0-part1": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p0-part1.ts",
+    "summary": "Generic SAE powertrain DTC descriptions, P0000-P02FF: fuel and air metering, injector circuits, turbocharger/supercharger.",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p0-part2": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p0-part2.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes, part 2: P0300\u2013P05FF.",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p0-part3": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p0-part3.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain DTC descriptions, P0600-P09FF (computer & output circuits, transmission).",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p0-part4": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p0-part4.ts",
+    "summary": "exports P0_PART4",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p2": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p2.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes, P2000\u2013P2FFF \u2014 the whole P2 family, composed from the per-range part files (see the plan-05 sourcing\u2026",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p2-part1": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p2-part1.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes, P2 family part 1: P2000-P24FF.",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p2-part2": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p2-part2.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes, P2500-P2FFF (part 2 of the P2 family).",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p3": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p3.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes in the SAE-controlled P3 block (P3400-P34FF).",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/u0": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/u0.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 network communication codes (U0xxx).",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/index": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/index.ts",
+    "summary": "exports DtcMake",
+    "tokens": [
+      "database",
+      "dtc"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/manufacturer/fiat": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/manufacturer/fiat.ts",
+    "summary": "Fiat / FGA (Fiat, Alfa Romeo, Lancia) manufacturer-specific powertrain DTC definitions, keyed by the SAE-format code (`P1xxx`).",
+    "tokens": [
+      "database",
+      "dtc",
+      "fiat",
+      "manufacturer"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/manufacturer/vag": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/manufacturer/vag.ts",
+    "summary": "exports VAG_DTC_TEXTS",
+    "tokens": [
+      "database",
+      "dtc",
+      "manufacturer",
+      "vag"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/manufacturer/vag-p1": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/manufacturer/vag-p1.ts",
+    "summary": "exports VAG_P1",
+    "tokens": [
+      "database",
+      "dtc",
+      "manufacturer",
+      "vag"
+    ],
+    "type": "core"
+  },
   "core:obd/iupr": {
     "path": "src/shared/obd-core/obd/iupr.ts",
     "summary": "IUPR \u2014 In-Use Performance Ratios (Mode 09 PID 08 spark / PID 0B compression).",
@@ -1226,7 +1413,7 @@
   },
   "core:uds/vagDtcs": {
     "path": "src/shared/obd-core/uds/vagDtcs.ts",
-    "summary": "Seed dictionary of common VAG 5-digit fault-code texts (the numbers VCDS shows for component/module faults).",
+    "summary": "Compatibility re-export: the VAG native KWP 5-digit fault texts moved into the DTC database (`obd/dtcDatabase/manufacturer/vag.ts`, plan 05).",
     "tokens": [
       "dtcs",
       "uds",
@@ -2392,6 +2579,10 @@
   "feature:fault-codes": {
     "path": "src/features/fault-codes",
     "summary": "Read and clear Diagnostic Trouble Codes (DTCs), show freeze frame and readiness monitors. Every read is saved to [History](./history.md).",
+    "tests": [
+      "src/features/fault-codes/api/dtcService.test.ts",
+      "src/features/fault-codes/model/dtcDetail.test.ts"
+    ],
     "tokens": [
       "codes",
       "fault"

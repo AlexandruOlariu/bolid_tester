@@ -2,6 +2,7 @@
 
 import { ProtocolId } from '../obd-core/obd/protocols';
 import type { CodingPreset } from '../obd-core/coding/presets';
+import type { DtcMake } from '../obd-core/obd/dtcDatabase';
 
 export type Fuel = 'diesel' | 'petrol' | 'lpg' | 'hybrid' | 'other';
 export type DtcMode = '03' | '07' | '0A';
@@ -214,6 +215,9 @@ export interface VehicleProfile {
   year: number;
   engine: string;
   fuel: Fuel;
+  /** Manufacturer DTC table for P1xxx-style codes (`lookupDtc(code, make)`): 'vag' for VW group
+   *  cars, 'fiat' for Fiat / FGA. Omitted (generic) when the make has no table. */
+  make?: DtcMake;
   /** Hint only — the adapter still auto-detects the real protocol. */
   expectedProtocol: ProtocolId;
   /** VIN prefixes that identify this car/family (e.g. 'WVWZZZ1K'). Drives the connect-time

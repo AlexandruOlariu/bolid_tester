@@ -1,6 +1,7 @@
 import { scanTp20, GATEWAY_ADDRESS } from './tp20Scan';
 import { FakeTp20Bus, buildTp20BusFromProfile, kwpIdentResponder } from './fakeTp20Bus';
 import { getVehicleProfile } from '../../vehicles';
+import { vagNativeDtcText } from '../obd/dtcDatabase/manufacturer/vag';
 
 describe('TP2.0 scan against the simulated Golf gateway', () => {
   it('reads the install list and details the profile TP2.0 modules', async () => {
@@ -39,6 +40,11 @@ describe('TP2.0 scan against the simulated Golf gateway', () => {
     const comfort = result.modules.find((m) => m.address === 0x46);
     expect(comfort?.state).toBe('ok');
     expect(comfort?.dtcs?.map((d) => d.vag)).toEqual(['00928', '01330']);
+    // The simulated module scan shows native VAG text for both seeded faults (plan 05 acceptance).
+    expect(comfort?.dtcs?.map((d) => vagNativeDtcText(d.vag))).toEqual([
+      expect.stringMatching(/locking module.*driver side \(F220\)/i),
+      expect.stringMatching(/central convenience \(J393\)/i),
+    ]);
 
     const cluster = result.modules.find((m) => m.address === 0x17);
     expect(cluster?.state).toBe('ok');

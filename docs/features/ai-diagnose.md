@@ -11,10 +11,10 @@ Reachable from the **More** tab (`/ai-diagnose`). Every run is saved to [History
 ## Scope & safety
 
 - **Reads + clear DTCs only.** The diagnosis reads the engine/emissions ECU (DTCs, readiness,
-  freeze frame, live PIDs). The *only* write it can perform is **clear fault codes (Mode 04)**, and
+  freeze frame, live PIDs). The _only_ write it can perform is **clear fault codes (Mode 04)**, and
   that is always behind an explicit confirmation dialog. It never performs coding or service-reset
   writes (see [`coding.md`](./coding.md), [`service-reset.md`](./service-reset.md)).
-- **The model only *suggests*.** Recommended actions come from a fixed enum
+- **The model only _suggests_.** Recommended actions come from a fixed enum
   (`clear_dtcs | recheck | inspect | monitor | service`); the UI renders only the ones it recognises
   and executes only the gated ones. The model can never trigger an action by itself.
 - **Not a mechanic.** Every report carries a disclaimer that it is an aid, not a substitute for
@@ -24,7 +24,7 @@ Reachable from the **More** tab (`/ai-diagnose`). Every run is saved to [History
 
 - **AiDiagnoseScreen** —
   - **Run diagnosis** / **Re-run** button (disabled until connected).
-  - Progress line while *gathering* then *analysing*.
+  - Progress line while _gathering_ then _analysing_.
   - **Overall banner**: `ok` (healthy) / `attention` / `urgent`, colour-coded, with a one-line
     summary and a chip showing whether it came from the **AI** or **on-device rules**.
   - **Findings** — one card per issue: severity (`ok/info/warn/critical`), detail, related DTC
@@ -32,6 +32,31 @@ Reachable from the **More** tab (`/ai-diagnose`). Every run is saved to [History
   - **Recommended actions** — `clear_dtcs` (red, confirm → Mode 04 → re-run), `recheck` (re-run),
     and advisory `inspect/monitor/service` cards.
   - A **notice** banner explains any fallback (AI off / not configured / unreachable).
+
+## Focused run ("Explain with AI")
+
+The fault-codes [detail sheet](./fault-codes.md#detail-sheet) opens `/ai-diagnose?focus=<code>`.
+`AiDiagnoseScreen` reads the `focus` search param (`useLocalSearchParams<{ focus?: string }>()`),
+shows a **Focused on fault code …** card with the code's description (described with the selected
+profile's `make`, `useAiDiagnose().make`, so it matches the detail sheet) and, once connected
+**and while the screen is in front** (`useIsFocused()`), runs the diagnosis once for that code
+(`useAiDiagnose().run({ focusCode })` → `analyze(snapshot, onAnalyzing, { focusCode })`). The
+screen is a hidden tab that stays mounted, so the focus gate stops a reconnect on another tab from
+starting the run in the background; the run waits until the user comes back. The param is then
+consumed on this route (`useNavigation().setParams({ focus: undefined })` — not the global
+`router.setParams`, which would act on whichever route is focused): this is what lets a later
+**Explain with AI** — even on the same code — run again. While a focus is
+shown the main button reads **Run full diagnosis** and runs unfocused; the report's **Re-run**
+repeats the report's own run (focused when it was).
+
+- **AI path:** `buildDiagnosisMessages(snapshot, { focusCode })` appends one user message: "Focus on
+  fault code P0135: explain it in plain words, likely causes in order of probability, and what to
+  check first."
+- **Local path:** `localHeuristicReport(snapshot, { focusCode })` lists that code's findings first;
+  when the code is not in the current read it adds an `info` finding with the code's description
+  (`describeDtc(code, snapshot.vehicle.make)` — `VehicleContext.make` is the profile's make).
+- The focused code is kept in `aiDiagnoseStore.focusCode`; the snapshot's DTC descriptions use the
+  profile's `make` like the Faults screen.
 
 ## Settings (Settings → AI assistant)
 
@@ -75,7 +100,7 @@ gatherSnapshot()                          analyze(snapshot)
   `localHeuristicReport`, `buildDiagnosisMessages`, `buildChatRequestBody`, `extractMessageContent`,
   `parseAiReport`, `normalizeBaseUrl`, `overallFromFindings`.
 
-The split mirrors `analysis/notifications` (pure *decision*) vs `shared/notify` (the OS call): all
+The split mirrors `analysis/notifications` (pure _decision_) vs `shared/notify` (the OS call): all
 request/response shaping and the rule-based report are pure and testable with **no network and no
 device**; only the `fetch` lives outside the core.
 
@@ -93,7 +118,7 @@ Every diagnosis includes the **selected vehicle's details as default context** f
 `toVehicleContext()` from the chosen `VehicleProfile` (always present, even for the generic profile).
 They appear at the top of the snapshot digest, and the system prompt instructs the model to tailor
 its analysis to that specific car and its fuel type. The live-detected protocol and VIN are included
-alongside, so the model sees both what the car *should* be and what was actually read.
+alongside, so the model sees both what the car _should_ be and what was actually read.
 
 ## Acceptance
 
@@ -106,3 +131,5 @@ alongside, so the model sees both what the car *should* be and what was actually
 - With an AI server, a valid JSON answer renders as an AI-sourced report; any AI/network error
   degrades to the local report with an explanatory notice (never throws to the user).
 - Clear runs Mode 04 (confirmed) and the diagnosis re-runs to reflect the cleared state.
+- A focused run (`focusCode: 'P0135'`) ends the request with a user message naming `P0135`; the
+  local report lists the focused code first (`aiDiagnosis.test.ts`).

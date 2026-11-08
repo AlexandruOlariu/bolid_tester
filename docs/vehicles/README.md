@@ -1,6 +1,6 @@
 # Vehicle Registry
 
-Vehicles are **data**, not code paths. The engine is generic; a *profile* tells the app what to
+Vehicles are **data**, not code paths. The engine is generic; a _profile_ tells the app what to
 expect for a given car (likely protocol, which live PIDs to surface, whether experimental extended
 PIDs apply, and an on-car test checklist). **The three cars here are examples** — add as many as you
 like.
@@ -15,11 +15,11 @@ Front-matter (machine-readable, checked by the sync test):
 
 ```yaml
 ---
-id: <kebab-case-id>            # unique; matches the TS profile id and file name
+id: <kebab-case-id> # unique; matches the TS profile id and file name
 name: <human name>
-expectedProtocol: <ProtocolId>  # e.g. ISO_15765_4_CAN_11_500, ISO_14230_4_KWP_FAST, ISO_9141_2, AUTO
-supportedPidCount: <number>     # length of the supportedPids list in the TS profile
-extended: <true|false>          # whether the profile declares experimental extended (Mode 22) PIDs
+expectedProtocol: <ProtocolId> # e.g. ISO_15765_4_CAN_11_500, ISO_14230_4_KWP_FAST, ISO_9141_2, AUTO
+supportedPidCount: <number> # length of the supportedPids list in the TS profile
+extended: <true|false> # whether the profile declares experimental extended (Mode 22) PIDs
 ---
 ```
 
@@ -32,14 +32,23 @@ type VehicleProfile = {
   year: number;
   engine: string;
   fuel: 'diesel' | 'petrol' | 'lpg' | 'hybrid' | 'other';
-  expectedProtocol: ProtocolId;       // hint only; the adapter still auto-detects
-  supportedPids: Pid[];               // Mode 01 PIDs we surface for this car
-  dtcModes: DtcMode[];                // which DTC services to read (03/07/0A)
-  extendedPids?: ExtendedPid[];       // experimental Mode 22 reads (flagged)
+  make?: 'vag' | 'fiat' | 'generic'; // manufacturer DTC table for P1xxx-style codes (see below)
+  expectedProtocol: ProtocolId; // hint only; the adapter still auto-detects
+  supportedPids: Pid[]; // Mode 01 PIDs we surface for this car
+  dtcModes: DtcMode[]; // which DTC services to read (03/07/0A)
+  extendedPids?: ExtendedPid[]; // experimental Mode 22 reads (flagged)
   notes: string;
-  testChecklist: string[];            // mirrored from the doc's "On-car checklist"
+  testChecklist: string[]; // mirrored from the doc's "On-car checklist"
 };
 ```
+
+### `make` — manufacturer fault-code texts
+
+`make` picks the manufacturer table the [DTC database](../features/fault-codes.md#dtc-database)
+uses for manufacturer-specific codes (P1xxx, P3000–P33FF, B1/B2, C1/C2, U1/U2): `'vag'` for VW
+group cars (Golf, Passat), `'fiat'` for Fiat / FGA (Punto). Leave it out for the generic profile or
+a make without a table — those codes then show the range description. Generic SAE codes read the
+same for every make.
 
 ## The `generic` profile
 

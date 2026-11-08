@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
 import { Screen } from '@/shared/ui';
-import { vagModuleName } from '@/shared/obd-core';
+import { vagModuleName, vagNativeDtcText } from '@/shared/obd-core';
 import { useModuleScan } from '../hooks/useModuleScan';
 import { useModuleScanStore, ModuleScanResult } from '../model/moduleScanStore';
 import { ScanHistorySection } from './ScanHistorySection';
 
 const hex2 = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
+
+/** A native KWP fault (TP2.0 module): 5-digit number, component text when known, status byte. */
+const kwpFaultLine = (vag: string, status: number) => {
+  const text = vagNativeDtcText(vag);
+  return `${vag}${text ? ` ${text}` : ''} (status 0x${hex2(status)})`;
+};
 
 const tp20StateLabel: Record<string, string> = {
   ok: '✓',
@@ -16,7 +22,10 @@ const tp20StateLabel: Record<string, string> = {
 };
 
 function stateBadge(r: ModuleScanResult): string {
-  if (r.state === 'ok') return r.dtcs.length ? `⚠ ${r.dtcs.length} fault${r.dtcs.length > 1 ? 's' : ''}` : '✓ no faults';
+  if (r.state === 'ok')
+    return r.dtcs.length
+      ? `⚠ ${r.dtcs.length} fault${r.dtcs.length > 1 ? 's' : ''}`
+      : '✓ no faults';
   if (r.state === 'silent') return '– no response';
   if (r.state === 'skipped') return '⏳ TP2.0';
   return '✕ error';
@@ -92,7 +101,11 @@ function ModuleRow({
           ))}
           {result.state === 'ok' ? (
             !confirmingClear ? (
-              <Button size="$3" disabled={running || !result.dtcs.length} onPress={() => setConfirmingClear(true)}>
+              <Button
+                size="$3"
+                disabled={running || !result.dtcs.length}
+                onPress={() => setConfirmingClear(true)}
+              >
                 Clear this module's faults
               </Button>
             ) : (
@@ -122,7 +135,8 @@ function ModuleRow({
 }
 
 export function ModuleScanScreen() {
-  const { available, canScanTp20, modules, proto, scanAll, clearOne, scanGateway } = useModuleScan();
+  const { available, canScanTp20, modules, proto, scanAll, clearOne, scanGateway } =
+    useModuleScan();
   const running = useModuleScanStore((s) => s.running);
   const progress = useModuleScanStore((s) => s.progress);
   const results = useModuleScanStore((s) => s.results);
@@ -203,7 +217,7 @@ export function ModuleScanScreen() {
                       m.dtcs.length ? (
                         m.dtcs.map((d) => (
                           <Paragraph key={d.vag} size="$2" color="$red10" fontFamily="$mono">
-                            {d.vag} (status 0x{d.status.toString(16).padStart(2, '0').toUpperCase()})
+                            {kwpFaultLine(d.vag, d.status)}
                           </Paragraph>
                         ))
                       ) : (

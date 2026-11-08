@@ -11,15 +11,18 @@ the app's equivalent of a VCDS auto-scan, within what a generic ELM327 can reach
 > ELM327 — the engine-only Fault codes screen is their path.
 
 ## What it does (per UDS module)
+
 - `22 F187/F189/F191/F197/F18C` — best-effort identification (skips DIDs the module lacks).
 - `19 02 <mask>` — ReadDTCInformation, default full store (0xFF); each DTC decodes to SAE
-  (`P0299 00`), the VAG decimal (`vagCodeForDtc`), a description (VAG seed dictionary
-  `uds/vagDtcs.ts`, falling back to the generic dictionary), and decoded status flags
+  (`P0299 00`), the VAG decimal (`vagCodeForDtc`), a description (`describeDtc(sae, 'vag')`: the
+  SAE meaning, VAG P1 texts for manufacturer codes — UDS bytes are SAE-encoded, so the native KWP
+  5-digit table is never used here), and decoded status flags
   (confirmed / pending / failing now / warning lamp).
 - `19 04` — per-DTC snapshot (UDS freeze frame), raw + lightly parsed (layouts are per-module).
 - `14 FFFFFF` — per-module clear, behind a confirm, followed by an automatic re-scan.
 
 ## Bus wake (6b.10)
+
 Before the first module is addressed, `scanAll` fires a **best-effort functional TesterPresent
 burst** (`3E 00` to the OBD2 functional header, `testerPresentBurst` in `obd-core/uds/testerPresent`):
 a parked VW lets the bus fall asleep and the first physically-addressed request then times out
@@ -28,11 +31,13 @@ every response and error** — a still-asleep bus, a clone that NAKs, or a timeo
 scan that follows. Pure and unit-tested over an injectable sender.
 
 ## Saved scans, report, diff & search (6b.1–3)
+
 Every completed `scanAll` is **auto-saved** to a persisted, capped history (`scanHistoryStore`,
 key `bolid.scans`), vehicle-keyed exactly like `historyStore` (VIN when the ECU reports it, else the
 profile id). A saved scan is a compact serializable snapshot (`buildSavedScan` normalizes the live
 `ModuleScanResult[]`, which embeds the whole `DiagModule`, into it). Three pure, unit-tested views sit
 on top:
+
 - **VCDS-style Auto-Scan text report** (`scanReport.formatAutoScanReport`) — the forum-pasteable block
   (chassis header, per-module address/name/part no/component/coding/faults with VAG numbers + status),
   shared as a `.txt` via `expo-sharing` (`useScanShare`, the dependency-tolerant import pattern).
@@ -43,6 +48,7 @@ on top:
   VAG 5-digit number, SAE/OBD2 code, or fault-text substring.
 
 ## UI
+
 - **ModuleScanScreen** — "Scan all modules" with progress; one row per module: address, name,
   part number/SW, state badge (`✓ no faults / ⚠ n faults / – no response / ⏳ TP2.0`). Expanding a
   row shows ident, each DTC (code, VAG number, description, status), and the gated per-module
@@ -53,6 +59,7 @@ on top:
   badges.
 
 ## hooks / api / model
+
 - `useModuleScan()` — availability gate (CAN + profile modules), a best-effort **bus-wake** pre-step,
   sequential `scanAll`, `clearOne`, and **auto-save** of the completed scan to `scanHistoryStore`.
 - `useScanShare()` — writes `formatAutoScanReport` to a `.txt` and opens the OS share sheet
@@ -69,12 +76,14 @@ on top:
   seeds). The Golf ships engine + ABS + cluster (UDS, illustrative) and the gateway as `tp20`.
 
 ## Behavior
+
 - Fully exercised against the simulator: `scenarios.ts` seeds per-header DTC stores + ident from
   the profile; MockTransport answers `19 02`/`19 04`/`14`/`22 F1xx` per ATSH header.
 - Real cars: silent modules are reported as such, never as app errors; every experimental address
   is badged.
 
 ## Acceptance
+
 - Golf simulator: engine scan shows the three known faults (P2183/P2015/P0121) with VAG numbers;
   ABS shows C0130 with warning-lamp flag; cluster scans clean; gateway shows the TP2.0 note;
   per-module clear empties the engine store and the re-scan confirms it.

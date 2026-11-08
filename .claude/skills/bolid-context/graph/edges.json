@@ -225,6 +225,31 @@
     "relates"
   ],
   [
+    "concept:dtc-database",
+    "concept:dtc-faults",
+    "relates"
+  ],
+  [
+    "concept:dtc-database",
+    "core:obd/dtcDatabase/index",
+    "relates"
+  ],
+  [
+    "concept:dtc-database",
+    "core:obd/dtcDatabase/manufacturer/vag",
+    "relates"
+  ],
+  [
+    "concept:dtc-database",
+    "core:uds/vagDtcs",
+    "relates"
+  ],
+  [
+    "concept:dtc-database",
+    "doc:features/fault-codes",
+    "relates"
+  ],
+  [
     "concept:dtc-faults",
     "core:obd/dtc",
     "relates"
@@ -926,6 +951,11 @@
   ],
   [
     "core:analysis/aiDiagnosis",
+    "core:obd/dtcDatabase/index",
+    "imports"
+  ],
+  [
+    "core:analysis/aiDiagnosis",
     "core:obd/protocols",
     "imports"
   ],
@@ -1081,8 +1111,93 @@
   ],
   [
     "core:obd/dtc",
-    "doc:plans/05-dtc-database",
+    "core:obd/dtcDatabase/index",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p0",
+    "core:obd/dtcDatabase/generic/p0-part1",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p0",
+    "core:obd/dtcDatabase/generic/p0-part2",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p0",
+    "core:obd/dtcDatabase/generic/p0-part3",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p0",
+    "core:obd/dtcDatabase/generic/p0-part4",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p2",
+    "core:obd/dtcDatabase/generic/p2-part1",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p2",
+    "core:obd/dtcDatabase/generic/p2-part2",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/b0",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/c0",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/p0",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/p2",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/p3",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/u0",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/manufacturer/fiat",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/manufacturer/vag",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/manufacturer/fiat",
+    "doc:vehicles/fiat-punto-2008-12",
     "named"
+  ],
+  [
+    "core:obd/dtcDatabase/manufacturer/fiat",
+    "vehicle:fiat-punto-2008-12",
+    "named"
+  ],
+  [
+    "core:obd/dtcDatabase/manufacturer/vag",
+    "core:obd/dtcDatabase/manufacturer/vag-p1",
+    "imports"
   ],
   [
     "core:obd/mode05",
@@ -1550,8 +1665,8 @@
     "imports"
   ],
   [
-    "core:uds/udsModule",
     "core:uds/vagDtcs",
+    "core:obd/dtcDatabase/manufacturer/vag",
     "imports"
   ],
   [
@@ -1832,6 +1947,16 @@
   [
     "feature:ai-diagnose",
     "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:obd/dtcDatabase/index",
     "imports"
   ],
   [
@@ -2491,6 +2616,11 @@
   ],
   [
     "feature:module-scan",
+    "core:obd/dtcDatabase/manufacturer/vag",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
     "core:obd/protocols",
     "imports"
   ],
@@ -2961,17 +3091,7 @@
   ],
   [
     "lib:dtcReport",
-    "doc:plans/05-dtc-database",
-    "named"
-  ],
-  [
-    "lib:dtcReport",
     "doc:plans/15-unified-vehicle-report",
-    "named"
-  ],
-  [
-    "lib:dtcReport",
-    "store:dtcStore",
     "named"
   ],
   [
@@ -3350,11 +3470,6 @@
     "imports"
   ],
   [
-    "store:dtcStore",
-    "doc:plans/05-dtc-database",
-    "named"
-  ],
-  [
     "store:errorLogStore",
     "lib:errorLog",
     "imports"
@@ -3602,6 +3717,11 @@
   [
     "vehicle:types",
     "core:coding/presets",
+    "imports"
+  ],
+  [
+    "vehicle:types",
+    "core:obd/dtcDatabase/index",
     "imports"
   ],
   [

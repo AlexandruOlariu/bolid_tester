@@ -143,8 +143,23 @@ Example: bytes `01 33` → `00` ⇒ `P`, `00` ⇒ `0`, `1` ⇒ `1`, `33` ⇒ `33
 - **Mode 07** (`47`) = pending; **Mode 0A** (`4A`) = permanent.
 - **Mode 04** clears DTCs and turns off the MIL; success reply is `44`.
 
-A small built-in dictionary maps the most common generic codes (e.g. `P0101`, `P0299`, `P0401`) to
-text; unknown codes are shown with the standard "generic powertrain" description by range.
+Descriptions come from the DTC database in `src/shared/obd-core/obd/dtcDatabase/` — the SAE J2012
+generic set (P0, P2, P34xx, B0, C0, U0) plus VAG / Fiat manufacturer packs, with a system,
+subsystem and severity hint per code. See
+[`features/fault-codes.md`](./features/fault-codes.md#dtc-database) for the API, the sourcing rule
+and the severity rules. Code ranges per J2012 (the database's `DTC_RANGES`):
+
+| Range                     | Owner        | Subsystem                                                                                                                                                                                 |
+| ------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `P0xxx`                   | SAE          | by the third character: 0 fuel & air + aux emission · 1–2 fuel & air · 3 ignition / misfire · 4 auxiliary emission · 5 speed & idle · 6 computer & output · 7–9 transmission · A–C hybrid |
+| `P1xxx`                   | Manufacturer | same grouping as P0                                                                                                                                                                       |
+| `P2xxx`                   | SAE          | 20–22 fuel & air + aux emission · 23 misfire · 24 aux emission · 25 aux inputs · 26 computer · 27–28 transmission · 29–2A fuel & air                                                      |
+| `P3000–P33FF`             | Manufacturer | —                                                                                                                                                                                         |
+| `P3400–P34FF`             | SAE          | cylinder deactivation / valve control (P35xx–P3FFF reserved)                                                                                                                              |
+| `B0`, `C0`, `U0`          | SAE          | body · chassis · network (U00 bus, U01–U02 lost communication, U03 software, U04 invalid data)                                                                                            |
+| `B1/B2`, `C1/C2`, `U1/U2` | Manufacturer | —                                                                                                                                                                                         |
+
+A code with no entry is shown as `<System> — <subsystem> fault (<code>)`.
 
 ## VIN (Mode 09 PID 02)
 

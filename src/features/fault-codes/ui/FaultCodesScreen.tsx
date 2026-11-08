@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Alert } from 'react-native';
-import { router } from 'expo-router';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Switch } from 'tamagui';
 import { Share2, FileText } from 'lucide-react-native';
 import { Screen, ValueCard } from '@/shared/ui';
@@ -16,78 +15,54 @@ import type { FreezeFrame } from '@/shared/obd-core/session/DiagnosticSession';
 import { useDtcs } from '../hooks/useDtcs';
 import { useDtcExport } from '../hooks/useDtcExport';
 import { useCoachStore } from '../model/coachStore';
+import { DtcDetailSheet } from './DtcDetailSheet';
+import { CodeFreezeFrame, GuideLinks } from './DtcGuideParts';
 
-/** A single DTC with an expandable "Guide" (6b.7): the note, deep-links to related data / routine,
- *  and the captured freeze frame for this code. */
+/** A single DTC: tap the code (or description) for the detail sheet; the inline **Guide** (6b.7)
+ *  shows the note, deep-links to related data / routine and the captured freeze frame. */
 function DtcRow({
-  code,
-  description,
+  dtc,
   profileId,
   freezeFrames,
+  onOpenDetail,
 }: {
-  code: string;
-  description: string;
+  dtc: Dtc;
   profileId: string;
   freezeFrames: FreezeFrame[];
+  onOpenDetail: (dtc: Dtc) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const { code, description } = dtc;
   const guide = matchFaultGuide(profileId, code, vagCodeForDtc(code) || undefined);
-  const ff = guide.freezeFrame ? freezeFrames.find((f) => f.triggerDtc === code) : undefined;
-  const hasLinks = Boolean(guide.relatedDids?.length) || Boolean(guide.routineId);
 
   return (
     <Card bordered padding="$3" gap="$2">
       <XStack justifyContent="space-between" alignItems="center">
-        <Text fontWeight="800" color="$red10">
-          {code}
-        </Text>
+        <YStack
+          flex={1}
+          onPress={() => onOpenDetail(dtc)}
+          pressStyle={{ opacity: 0.6 }}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={`${code}: ${description}. Open details`}
+        >
+          <Text fontWeight="800" color="$red10">
+            {code}
+          </Text>
+          <Paragraph theme="alt2" fontSize="$2">
+            {description}
+          </Paragraph>
+        </YStack>
         <Button size="$2" chromeless onPress={() => setOpen((v) => !v)}>
           {open ? 'Hide guide' : 'Guide'}
         </Button>
       </XStack>
-      <Paragraph theme="alt2" fontSize="$2">
-        {description}
-      </Paragraph>
 
       {open ? (
         <YStack gap="$2" backgroundColor="$color2" padding="$2" borderRadius="$3">
           <Paragraph fontSize="$2">{guide.note}</Paragraph>
-          {hasLinks ? (
-            <XStack gap="$2" flexWrap="wrap">
-              {guide.relatedDids?.length ? (
-                <Button
-                  size="$2"
-                  theme="blue"
-                  onPress={() =>
-                    router.push(`/extended?dids=${encodeURIComponent(guide.relatedDids!.join(','))}`)
-                  }
-                >
-                  Related data
-                </Button>
-              ) : null}
-              {guide.routineId ? (
-                <Button size="$2" theme="blue" onPress={() => router.push('/routines')}>
-                  Open routine
-                </Button>
-              ) : null}
-            </XStack>
-          ) : null}
-          {ff ? (
-            <YStack gap="$1">
-              <Text fontWeight="700" fontSize="$2">
-                Freeze frame
-              </Text>
-              <XStack flexWrap="wrap" gap="$2">
-                {ff.values.map((v) => (
-                  <ValueCard key={v.pid} name={v.name} value={v.value} unit={v.unit} />
-                ))}
-              </XStack>
-            </YStack>
-          ) : guide.freezeFrame ? (
-            <Paragraph theme="alt2" fontSize="$2">
-              No freeze frame captured for this code.
-            </Paragraph>
-          ) : null}
+          <GuideLinks guide={guide} />
+          <CodeFreezeFrame code={code} guide={guide} freezeFrames={freezeFrames} />
         </YStack>
       ) : null}
     </Card>
@@ -99,11 +74,13 @@ function Section({
   codes,
   profileId,
   freezeFrames,
+  onOpenDetail,
 }: {
   title: string;
   codes: Dtc[];
   profileId: string;
   freezeFrames: FreezeFrame[];
+  onOpenDetail: (dtc: Dtc) => void;
 }) {
   return (
     <YStack gap="$2">
@@ -116,10 +93,10 @@ function Section({
         codes.map((d) => (
           <DtcRow
             key={`${title}-${d.code}`}
-            code={d.code}
-            description={d.description}
+            dtc={d}
             profileId={profileId}
             freezeFrames={freezeFrames}
+            onOpenDetail={onOpenDetail}
           />
         ))
       )}
@@ -243,6 +220,7 @@ export function FaultCodesScreen() {
   const { stored, pending, permanent, readiness, freezeFrames, loading, error, refresh, clear } =
     useDtcs();
   const { exportReport, busy: exporting } = useDtcExport();
+  const [detail, setDetail] = useState<Dtc | null>(null);
 
   // Snapshot the current read as the normalised report shape, shared by both the Markdown export and
   // the HTML "send to my mechanic" report. `protocol` is HTML-only (ignored by the Markdown renderer).
@@ -264,7 +242,11 @@ export function FaultCodesScreen() {
       freezeFrame: freezeFrames[0]
         ? {
             triggerDtc: freezeFrames[0].triggerDtc,
-            values: freezeFrames[0].values.map((v) => ({ name: v.name, value: v.value, unit: v.unit })),
+            values: freezeFrames[0].values.map((v) => ({
+              name: v.name,
+              value: v.value,
+              unit: v.unit,
+            })),
           }
         : null,
       freezeFrames: freezeFrames.map((ff) => ({
@@ -313,13 +295,26 @@ export function FaultCodesScreen() {
       {error ? <Paragraph color="$red10">{error}</Paragraph> : null}
       {readiness ? <ReadinessPanel readiness={readiness} /> : null}
       <CoachPanel readiness={readiness} />
-      <Section title="Stored" codes={stored} profileId={selectedProfileId} freezeFrames={freezeFrames} />
-      <Section title="Pending" codes={pending} profileId={selectedProfileId} freezeFrames={freezeFrames} />
+      <Section
+        title="Stored"
+        codes={stored}
+        profileId={selectedProfileId}
+        freezeFrames={freezeFrames}
+        onOpenDetail={setDetail}
+      />
+      <Section
+        title="Pending"
+        codes={pending}
+        profileId={selectedProfileId}
+        freezeFrames={freezeFrames}
+        onOpenDetail={setDetail}
+      />
       <Section
         title="Permanent"
         codes={permanent}
         profileId={selectedProfileId}
         freezeFrames={freezeFrames}
+        onOpenDetail={setDetail}
       />
       {freezeFrames.map((ff) => (
         <FreezeFrameView key={ff.frame ?? ff.triggerDtc ?? 0} ff={ff} />
@@ -351,6 +346,12 @@ export function FaultCodesScreen() {
           Share report
         </Button>
       </XStack>
+      <DtcDetailSheet
+        dtc={detail}
+        profileId={selectedProfileId}
+        freezeFrames={freezeFrames}
+        onClose={() => setDetail(null)}
+      />
     </Screen>
   );
 }

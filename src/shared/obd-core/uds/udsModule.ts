@@ -6,7 +6,6 @@
 
 import { UdsSend, UdsError, checkNegative, hexBytes as hex } from '../coding/udsCoding';
 import { decodeDtcBytes, describeDtc, vagCodeForDtc } from '../obd/dtc';
-import { vagDtcText } from './vagDtcs';
 
 /** ISO 14229 DTC status byte, bit-decoded. */
 export interface UdsDtcStatus {
@@ -53,7 +52,6 @@ export interface UdsDtc {
 function toUdsDtc(hi: number, mid: number, lo: number, status: number): UdsDtc {
   const sae = decodeDtcBytes(hi, mid);
   const vagCode = vagCodeForDtc(sae);
-  const vagText = vagDtcText(vagCode);
   return {
     bytes: [hi, mid, lo],
     sae,
@@ -62,7 +60,10 @@ function toUdsDtc(hi: number, mid: number, lo: number, status: number): UdsDtc {
     vagCode,
     status,
     statusFlags: decodeDtcStatusByte(status),
-    description: vagText ?? describeDtc(sae),
+    // UDS DTC bytes are SAE-encoded, so the SAE meaning (VAG P1 texts for manufacturer codes) is
+    // the right one. The native KWP 5-digit table is a different number space (00532 would be
+    // P0214 here), so it is never consulted on this path.
+    description: describeDtc(sae, 'vag'),
   };
 }
 

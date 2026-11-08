@@ -7,7 +7,7 @@ import {
   readModuleIdent,
 } from './udsModule';
 import { UdsError, UdsSend } from '../coding/udsCoding';
-import { vagDtcText } from './vagDtcs';
+import { VAG_DTC_TEXTS, vagDtcText } from './vagDtcs';
 import { vagCodeForDtc } from '../obd/dtc';
 
 const senderFor = (map: Record<string, number[] | null>): UdsSend => {
@@ -100,16 +100,39 @@ describe('readModuleIdent', () => {
   });
 });
 
-describe('vagDtcText', () => {
+describe('vagDtcText (native KWP numbers)', () => {
   it('knows a seed code and pads short ones', () => {
     expect(vagDtcText('532')).toMatch(/Supply voltage/i);
     expect(vagDtcText('99999')).toBeNull();
   });
+});
 
-  it('resolves P0234/P1557 via the app VAG code (2 bytes as decimal), not the legacy VCDS numbers', () => {
+describe('UDS DTC descriptions (SAE-encoded bytes, never native KWP numbers)', () => {
+  const one = (hi: number, mid: number) =>
+    parseReportDtcByStatusMask([0x59, 0x02, 0xff, hi, mid, 0x00, 0x09])[0];
+
+  it('describes oil-pressure faults by their SAE meaning, not the colliding KWP number', () => {
+    // 0x0520 = P0520 (VAG number 01312 — "Powertrain data bus" in the native KWP space).
+    const p0520 = one(0x05, 0x20);
+    expect(p0520.sae).toBe('P0520');
+    expect(p0520.vagCode).toBe('01312');
+    expect(p0520.description).toMatch(/oil pressure/i);
+    expect(p0520.description).not.toMatch(/data bus/i);
+    expect(one(0x05, 0x22).description).toMatch(/oil pressure.*low/i);
+  });
+
+  it('never shows a native KWP text for any SAE code whose bytes collide with one', () => {
+    for (const key of Object.keys(VAG_DTC_TEXTS)) {
+      const n = parseInt(key, 10);
+      const d = one(n >> 8, n & 0xff);
+      expect(d.description).not.toBe(VAG_DTC_TEXTS[key]);
+    }
+  });
+
+  it('keeps generic and VAG P1 meanings via the app VAG code (2 bytes as decimal)', () => {
     // vagCodeForDtc('P0234') === '00564' (0x0234 bytes → 564), not the VCDS legacy 16618.
     expect(vagCodeForDtc('P0234')).toBe('00564');
-    expect(vagDtcText(vagCodeForDtc('P0234'))).toMatch(/overboost/i);
-    expect(vagDtcText(vagCodeForDtc('P1557'))).toMatch(/Charge pressure/i);
+    expect(one(0x02, 0x34).description).toMatch(/overboost/i);
+    expect(one(0x15, 0x57).description).toMatch(/Charge pressure/i);
   });
 });

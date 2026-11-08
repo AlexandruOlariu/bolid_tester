@@ -239,7 +239,7 @@ export class DiagnosticSession {
         }
       }
     }
-    return codes.map(toDtc);
+    return codes.map((c) => toDtc(c));
   }
 
   async clearDtcs(): Promise<boolean> {

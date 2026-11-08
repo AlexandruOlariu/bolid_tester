@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
+import { useIsFocused, useLocalSearchParams, useNavigation } from 'expo-router';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner } from 'tamagui';
 import {
   Stethoscope,
@@ -16,11 +17,13 @@ import {
 } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { describeDtc } from '@/shared/obd-core';
 import type {
   AiReport,
   AiFinding,
   AiAction,
   DiagSeverity,
+  DtcMake,
   OverallHealth,
 } from '@/shared/obd-core';
 import { useAiDiagnose } from '../hooks/useAiDiagnose';
@@ -148,7 +151,12 @@ function ActionsView({
         const Icon = ACTION_ICON[a.type] ?? Activity;
         if (a.type === 'clear_dtcs')
           return (
-            <Button key={`a-${i}`} theme="red" onPress={onClear} icon={() => <Eraser size={18} color="#fff" />}>
+            <Button
+              key={`a-${i}`}
+              theme="red"
+              onPress={onClear}
+              icon={() => <Eraser size={18} color="#fff" />}
+            >
               {a.label || 'Clear fault codes'}
             </Button>
           );
@@ -224,9 +232,55 @@ function ReportView({
   );
 }
 
+/** Shown when the run is focused on one fault code (fault-codes detail sheet → "Explain with AI"). */
+function FocusCard({ code, make }: { code: string; make?: DtcMake }) {
+  return (
+    <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="#388bfd" gap="$1">
+      <Text fontWeight="800">Focused on fault code {code}</Text>
+      <Paragraph theme="alt2" fontSize="$2">
+        {describeDtc(code, make)}
+      </Paragraph>
+      <Paragraph theme="alt2" fontSize="$1">
+        The report explains this code first: what it means, likely causes and what to check.
+      </Paragraph>
+    </Card>
+  );
+}
+
 export function AiDiagnoseScreen() {
   const status = useSessionStore((s) => s.status);
-  const { phase, progress, report, notice, error, ranAt, busy, run, clearCodes } = useAiDiagnose();
+  const { phase, progress, report, notice, error, ranAt, focusCode, make, busy, run, clearCodes } =
+    useAiDiagnose();
+  const params = useLocalSearchParams<{ focus?: string | string[] }>();
+  const rawFocus = Array.isArray(params.focus) ? params.focus[0] : params.focus;
+  const focusParam = rawFocus?.trim().toUpperCase() || undefined;
+
+  // Arriving from "Explain with AI": run once for the focused code as soon as we are connected
+  // AND this screen is in front, then consume the param. The screen is a (hidden) tab that stays
+  // mounted, so without the focus gate a reconnect on another tab would start the run in the
+  // background. The param is cleared on THIS route (`navigation.setParams`, not the global
+  // `router.setParams`, which acts on whichever route is focused) — that is what lets a later
+  // "Explain with AI" on the same code run again; the guard only stops a double run before the
+  // cleared param arrives.
+  const navigation = useNavigation<{ setParams(params: { focus?: string }): void }>();
+  const isFocused = useIsFocused();
+  const autoRanFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!focusParam) {
+      autoRanFor.current = null;
+      return;
+    }
+    if (!isFocused || status !== 'connected' || busy || autoRanFor.current === focusParam) return;
+    autoRanFor.current = focusParam;
+    void run({ focusCode: focusParam });
+    navigation.setParams({ focus: undefined });
+  }, [focusParam, isFocused, status, busy, run, navigation]);
+
+  const shownFocus = focusParam ?? focusCode ?? undefined;
+  // The main button always runs a full diagnosis; Recheck repeats the report's own run (focused
+  // when the report was).
+  const runFull = () => void run();
+  const recheck = () => void run({ focusCode: focusCode ?? undefined });
 
   const confirmClear = () =>
     Alert.alert(
@@ -249,14 +303,16 @@ export function AiDiagnoseScreen() {
         </Card>
       ) : null}
 
+      {shownFocus ? <FocusCard code={shownFocus} make={make} /> : null}
+
       <Button
         theme="green"
         size="$5"
-        onPress={() => void run()}
+        onPress={runFull}
         disabled={busy || status !== 'connected'}
         icon={busy ? () => <Spinner /> : () => <Stethoscope size={20} color="#fff" />}
       >
-        {report ? 'Re-run diagnosis' : 'Run diagnosis'}
+        {shownFocus ? 'Run full diagnosis' : report ? 'Re-run diagnosis' : 'Run diagnosis'}
       </Button>
 
       {busy ? (
@@ -278,7 +334,7 @@ export function AiDiagnoseScreen() {
           notice={notice}
           ranAt={ranAt}
           onClear={confirmClear}
-          onRecheck={() => void run()}
+          onRecheck={recheck}
         />
       ) : null}
 

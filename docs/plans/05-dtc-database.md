@@ -176,3 +176,21 @@ spec).
 - [ ] **Explain with AI** lands on the AI screen with the code pre-focused (visible in the request
       preview or the local heuristic report header).
 - [ ] Bundle delta recorded in the PR; `npm run ci` green.
+
+## Deferred until an on-car session
+
+Added when the plan landed: the Fiat / FGA `P1xxx` pack (`manufacturer/fiat.ts`, `FIAT_P1`) ships
+**empty**. No Fiat P1 definition could be stated with confidence from published sources (meanings
+differ between Marelli IAW petrol and Bosch EDC16 / EDC17 Multijet diesel modules), and a wrong
+manufacturer text is worse than the honest range fallback. Everything else in this plan, including
+the `'fiat'` make wiring (tested with a seeded entry), is shipped.
+
+Procedure (owner, Punto 2008-12):
+
+1. Connect Multiecuscan (or the dealer tool) to the engine ECU and read stored faults; also note any
+   P1 code the app shows as `Powertrain — <subsystem> fault (P1xxx)` on the Faults screen.
+2. For each P1 code, record the code, the tool's exact text and the ECU part / software number.
+3. Agent: add one `FIAT_P1` entry per confirmed code, in short canonical wording, with the ECU
+   family in a comment when the text is engine-specific; keep keys upper-case and unique (the
+   database test enforces it). Then raise the Fiat floor in `dtcDatabase.test.ts` to the count
+   added and flip the roadmap note.

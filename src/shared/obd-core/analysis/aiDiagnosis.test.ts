@@ -88,7 +88,9 @@ describe('extractMessageContent', () => {
   });
   it('joins an array-of-parts content', () => {
     expect(
-      extractMessageContent({ choices: [{ message: { content: [{ text: 'a' }, { text: 'b' }] } }] }),
+      extractMessageContent({
+        choices: [{ message: { content: [{ text: 'a' }, { text: 'b' }] } }],
+      }),
     ).toBe('ab');
   });
   it('returns null when absent', () => {
@@ -107,7 +109,11 @@ describe('summarizeSnapshot', () => {
           ignition: 'compression',
           monitors: [{ id: 'egr', name: 'EGR/VVT system', supported: true, complete: false }],
         },
-        dtcs: { stored: [{ code: 'P0299', description: 'Turbo underboost' }], pending: [], permanent: [] },
+        dtcs: {
+          stored: [{ code: 'P0299', description: 'Turbo underboost' }],
+          pending: [],
+          permanent: [],
+        },
       }),
     );
     expect(text).toContain('MIL (check-engine light): ON');
@@ -143,7 +149,11 @@ describe('localHeuristicReport', () => {
     const r = localHeuristicReport(
       snapshot({
         readiness: { milOn: true, dtcCount: 1, ignition: 'compression', monitors: [] },
-        dtcs: { stored: [{ code: 'P0299', description: 'Turbo underboost' }], pending: [], permanent: [] },
+        dtcs: {
+          stored: [{ code: 'P0299', description: 'Turbo underboost' }],
+          pending: [],
+          permanent: [],
+        },
         live: [lv('0105', 'Coolant temp', '°C', 121), lv('010C', 'Engine RPM', 'rpm', 900)],
       }),
     );
@@ -154,19 +164,27 @@ describe('localHeuristicReport', () => {
 
   it('treats a moderately high coolant temp as attention', () => {
     const r = localHeuristicReport(
-      snapshot({ live: [lv('0105', 'Coolant temp', '°C', 108), lv('010C', 'Engine RPM', 'rpm', 820)] }),
+      snapshot({
+        live: [lv('0105', 'Coolant temp', '°C', 108), lv('010C', 'Engine RPM', 'rpm', 820)],
+      }),
     );
     expect(r.overall).toBe('attention');
   });
 
   it('flags low charging voltage only while the engine is running', () => {
     const running = localHeuristicReport(
-      snapshot({ voltage: 12.4, live: [lv('010C', 'Engine RPM', 'rpm', 800), lv('0142', 'Module voltage', 'V', 12.4)] }),
+      snapshot({
+        voltage: 12.4,
+        live: [lv('010C', 'Engine RPM', 'rpm', 800), lv('0142', 'Module voltage', 'V', 12.4)],
+      }),
     );
     expect(running.findings.some((f) => f.title.includes('Charging voltage low'))).toBe(true);
 
     const off = localHeuristicReport(
-      snapshot({ voltage: 12.4, live: [lv('010C', 'Engine RPM', 'rpm', 0), lv('0142', 'Module voltage', 'V', 12.4)] }),
+      snapshot({
+        voltage: 12.4,
+        live: [lv('010C', 'Engine RPM', 'rpm', 0), lv('0142', 'Module voltage', 'V', 12.4)],
+      }),
     );
     expect(off.findings.some((f) => f.title.includes('Charging voltage low'))).toBe(false);
   });
@@ -189,7 +207,9 @@ describe('parseAiReport', () => {
     const content = JSON.stringify({
       overall: 'attention',
       summary: 'One issue found.',
-      findings: [{ title: 'EGR low flow', severity: 'warn', detail: 'Check EGR.', codes: ['P0401'] }],
+      findings: [
+        { title: 'EGR low flow', severity: 'warn', detail: 'Check EGR.', codes: ['P0401'] },
+      ],
       actions: [{ type: 'inspect', label: 'Inspect EGR' }],
     });
     const r = parseAiReport(content, snap);
@@ -216,7 +236,10 @@ describe('parseAiReport', () => {
   });
 
   it('handles JSON wrapped in prose', () => {
-    const r = parseAiReport('Sure! Here you go: {"summary":"hi","findings":[]} — hope that helps', snap);
+    const r = parseAiReport(
+      'Sure! Here you go: {"summary":"hi","findings":[]} — hope that helps',
+      snap,
+    );
     expect(r.source).toBe('ai');
     expect(r.summary).toBe('hi');
   });
@@ -225,7 +248,10 @@ describe('parseAiReport', () => {
     const content = JSON.stringify({
       summary: 's',
       findings: [{ title: 'x', severity: 'banana', detail: 'd' }],
-      actions: [{ type: 'launch_rocket', label: 'no' }, { type: 'recheck', label: 'again' }],
+      actions: [
+        { type: 'launch_rocket', label: 'no' },
+        { type: 'recheck', label: 'again' },
+      ],
     });
     const r = parseAiReport(content, snap);
     expect(r.findings[0].severity).toBe('info');
@@ -248,5 +274,54 @@ describe('buildDiagnosisMessages', () => {
     expect(msgs[1].content).toContain('Coolant temp: 88 °C');
     expect(msgs[1].content).toContain('Vehicle: VW Golf Plus 2009 (2009)');
     expect(msgs[0].content).toContain('JSON');
+  });
+});
+
+describe('focused diagnosis (Explain with AI)', () => {
+  it('ends with a user message focusing on the code', () => {
+    const msgs = buildDiagnosisMessages(snapshot(), { focusCode: 'P0135' });
+    expect(msgs.map((m) => m.role)).toEqual(['system', 'user', 'user']);
+    const last = msgs[msgs.length - 1];
+    expect(last.role).toBe('user');
+    expect(last.content).toContain('P0135');
+    expect(last.content).toMatch(/likely causes in order of probability/);
+  });
+
+  it('normalises the code and sends no focus line without one', () => {
+    const msgs = buildDiagnosisMessages(snapshot(), { focusCode: ' p0299 ' });
+    expect(msgs[msgs.length - 1].content).toContain('P0299');
+    expect(buildDiagnosisMessages(snapshot(), { focusCode: '' })).toHaveLength(2);
+  });
+
+  it('puts the focused code first in the local report', () => {
+    const snap = snapshot({
+      dtcs: {
+        stored: [
+          { code: 'P0299', description: 'Turbo underboost' },
+          { code: 'P0135', description: 'O2 heater' },
+        ],
+        pending: [],
+        permanent: [],
+      },
+    });
+    expect(localHeuristicReport(snap).findings[0].codes).toEqual(['P0299']);
+    expect(localHeuristicReport(snap, { focusCode: 'P0135' }).findings[0].codes).toEqual(['P0135']);
+  });
+
+  it('explains a focused code that is not in the read', () => {
+    const r = localHeuristicReport(snapshot(), { focusCode: 'P0135' });
+    expect(r.findings[0].title).toContain('P0135');
+    expect(r.findings[0].detail).toMatch(/O2 Sensor Heater/i);
+    expect(r.overall).toBe('ok');
+  });
+
+  it("describes a focused manufacturer code with the car's make", () => {
+    const vag = snapshot();
+    vag.vehicle = { label: 'VW Golf Plus 2009 (2009)', make: 'vag' };
+    expect(localHeuristicReport(vag, { focusCode: 'P1557' }).findings[0].detail).toMatch(
+      /charge pressure/i,
+    );
+    const generic = localHeuristicReport(snapshot(), { focusCode: 'P1557' });
+    expect(generic.findings[0].detail).not.toMatch(/charge pressure/i);
   });
 });

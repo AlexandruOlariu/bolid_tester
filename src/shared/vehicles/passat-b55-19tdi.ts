@@ -8,20 +8,11 @@ export const passatB55: VehicleProfile = {
   year: 2004,
   engine: '1.9 TDI AVB-family (ECU 038 906 019 KC)',
   fuel: 'diesel',
+  make: 'vag',
   // Confirmed on the real car: ISO 9141-2 (5-baud init, 10.4 kbaud). The adapter still auto-detects.
   expectedProtocol: 'ISO_9141_2',
   vinPatterns: ['WVWZZZ3B'],
-  supportedPids: [
-    '0104',
-    '0105',
-    '010B',
-    '010C',
-    '010D',
-    '010F',
-    '0111',
-    '011F',
-    '0142',
-  ],
+  supportedPids: ['0104', '0105', '010B', '010C', '010D', '010F', '0111', '011F', '0142'],
   dtcModes: ['03', '07'],
   serviceReset: {
     // EXPERIMENTAL / illustrative KWP2000 (K-line) path. On a real B5.5 the reliable method is often

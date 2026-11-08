@@ -7,6 +7,7 @@ export const fiatPunto2008: VehicleProfile = {
   year: 2008,
   engine: '1.2 8v petrol (199A4.000 FIRE, 48 kW)',
   fuel: 'petrol',
+  make: 'fiat',
   expectedProtocol: 'ISO_15765_4_CAN_11_500',
   vinPatterns: ['ZFA199'],
   supportedPids: [

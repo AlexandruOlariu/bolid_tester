@@ -12,6 +12,9 @@ interface AiDiagnoseState {
   notice: string | null;
   error: string | null;
   ranAt: number | null;
+  /** Fault code the last run was focused on ("Explain with AI"), or null for a full diagnosis. */
+  focusCode: string | null;
+  setFocusCode: (code: string | null) => void;
   setPhase: (phase: RunPhase, progress?: string | null) => void;
   setSnapshot: (snapshot: DiagnosticSnapshot) => void;
   setReport: (report: AiReport, notice: string | null) => void;
@@ -27,11 +30,22 @@ export const useAiDiagnoseStore = create<AiDiagnoseState>((set) => ({
   notice: null,
   error: null,
   ranAt: null,
+  focusCode: null,
+  setFocusCode: (focusCode) => set({ focusCode }),
   setPhase: (phase, progress) => set({ phase, progress: progress ?? null, error: null }),
   setSnapshot: (snapshot) => set({ snapshot }),
   setReport: (report, notice) =>
     set({ report, notice, phase: 'done', ranAt: Date.now(), error: null, progress: null }),
   setError: (error) => set({ error, phase: 'error', progress: null }),
   reset: () =>
-    set({ phase: 'idle', progress: null, snapshot: null, report: null, notice: null, error: null, ranAt: null }),
+    set({
+      phase: 'idle',
+      progress: null,
+      snapshot: null,
+      report: null,
+      notice: null,
+      error: null,
+      ranAt: null,
+      focusCode: null,
+    }),
 }));

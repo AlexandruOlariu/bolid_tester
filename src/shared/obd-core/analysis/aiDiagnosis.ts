@@ -8,7 +8,8 @@
  *  module only shapes requests and parses responses, mirroring how `analysis/notifications` is pure
  *  while `shared/notify` does the I/O. See docs/features/ai-diagnose.md. */
 
-import type { Dtc } from '../obd/dtc';
+import { describeDtc, type Dtc } from '../obd/dtc';
+import type { DtcMake } from '../obd/dtcDatabase';
 import type { MonitorStatus } from '../obd/readiness';
 import type { ProtocolId } from '../obd/protocols';
 import type { LiveValue, FreezeFrame } from '../session/DiagnosticSession';
@@ -39,6 +40,9 @@ export interface VehicleContext {
   expectedProtocol?: string;
   /** Free-form profile notes (quirks, what works/doesn't on this car). */
   notes?: string;
+  /** Manufacturer DTC table for this car (`VehicleProfile.make`), so a focused manufacturer code
+   *  is described the same way as on the Faults screen. */
+  make?: DtcMake;
 }
 
 /** Everything we gathered from the car in one read pass. The unit of input to the analysis. */
@@ -214,6 +218,16 @@ export function summarizeSnapshot(s: DiagnosticSnapshot): string {
 
 // --------------------------------------------------------------- local heuristics
 
+/** Options for one diagnosis run. */
+export interface DiagnosisOptions {
+  /** A fault code the user asked about (fault-codes detail sheet → "Explain with AI"). */
+  focusCode?: string;
+}
+
+function normalizeFocus(code: string | undefined): string {
+  return (code ?? '').trim().toUpperCase();
+}
+
 function liveValue(s: DiagnosticSnapshot, pid: string): number | undefined {
   return s.live.find((v) => v.pid === pid)?.value;
 }
@@ -226,7 +240,7 @@ export function overallFromFindings(findings: AiFinding[]): OverallHealth {
 
 /** Rule-based assessment: flags the obvious stuff (MIL, DTCs, overheating, over-fuel-trim, low
  *  charging voltage, emissions not ready). Deterministic and dependency-free. */
-export function localHeuristicReport(s: DiagnosticSnapshot): AiReport {
+export function localHeuristicReport(s: DiagnosticSnapshot, opts: DiagnosisOptions = {}): AiReport {
   const findings: AiFinding[] = [];
 
   if (s.readiness?.milOn) {
@@ -324,6 +338,24 @@ export function localHeuristicReport(s: DiagnosticSnapshot): AiReport {
       });
   }
 
+  // Focused run ("Explain with AI" on one code): that code's findings go first; when the code is
+  // not in this read, a note says what it means so the report still answers the question.
+  const focus = normalizeFocus(opts.focusCode);
+  if (focus) {
+    const focused = findings.filter((f) => f.codes?.includes(focus));
+    const rest = findings.filter((f) => !f.codes?.includes(focus));
+    if (focused.length === 0)
+      focused.push({
+        title: `${focus} (asked about)`,
+        severity: 'info',
+        detail:
+          `${describeDtc(focus, s.vehicle?.make)}. This code is not in the current read: it may have been ` +
+          'cleared, or it is stored in another control module.',
+        codes: [focus],
+      });
+    findings.splice(0, findings.length, ...focused, ...rest);
+  }
+
   const overall = overallFromFindings(findings);
   const hasCodes =
     s.dtcs.stored.length > 0 || s.dtcs.pending.length > 0 || s.dtcs.permanent.length > 0;
@@ -342,7 +374,8 @@ export function localHeuristicReport(s: DiagnosticSnapshot): AiReport {
     actions.push({
       type: 'clear_dtcs',
       label: 'Clear fault codes',
-      detail: 'Erase stored/pending codes and reset readiness monitors. Codes return if the fault persists.',
+      detail:
+        'Erase stored/pending codes and reset readiness monitors. Codes return if the fault persists.',
     });
   if (hasCodes)
     actions.push({
@@ -350,7 +383,11 @@ export function localHeuristicReport(s: DiagnosticSnapshot): AiReport {
       label: 'Inspect the flagged systems',
       detail: 'Follow up on the codes/systems above.',
     });
-  actions.push({ type: 'recheck', label: 'Re-run diagnosis', detail: 'Read the car again to confirm.' });
+  actions.push({
+    type: 'recheck',
+    label: 'Re-run diagnosis',
+    detail: 'Read the car again to confirm.',
+  });
 
   return { overall, summary, findings, actions, source: 'local', disclaimer: DISCLAIMER_LOCAL };
 }
@@ -395,8 +432,19 @@ export function buildSystemPrompt(): string {
   ].join('\n');
 }
 
-export function buildDiagnosisMessages(s: DiagnosticSnapshot): AiChatMessage[] {
-  return [
+/** The extra user line sent when the run is focused on one fault code. */
+export function focusInstruction(code: string): string {
+  return (
+    `Focus on fault code ${code}: explain it in plain words, likely causes in order of ` +
+    'probability, and what to check first.'
+  );
+}
+
+export function buildDiagnosisMessages(
+  s: DiagnosticSnapshot,
+  opts: DiagnosisOptions = {},
+): AiChatMessage[] {
+  const messages: AiChatMessage[] = [
     { role: 'system', content: buildSystemPrompt() },
     {
       role: 'user',
@@ -405,6 +453,9 @@ export function buildDiagnosisMessages(s: DiagnosticSnapshot): AiChatMessage[] {
         summarizeSnapshot(s),
     },
   ];
+  const focus = normalizeFocus(opts.focusCode);
+  if (focus) messages.push({ role: 'user', content: focusInstruction(focus) });
+  return messages;
 }
 
 /** JSON Schema describing the diagnosis report — used for `response_format: json_schema` (the modern
@@ -434,7 +485,10 @@ export const REPORT_JSON_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          type: { type: 'string', enum: ['clear_dtcs', 'recheck', 'monitor', 'inspect', 'service'] },
+          type: {
+            type: 'string',
+            enum: ['clear_dtcs', 'recheck', 'monitor', 'inspect', 'service'],
+          },
           label: { type: 'string' },
           detail: { type: 'string' },
         },
@@ -509,7 +563,9 @@ function asStringArray(v: unknown): string[] | undefined {
 }
 
 function coerceSeverity(v: unknown): DiagSeverity {
-  return (DIAG_SEVERITIES as readonly string[]).includes(v as string) ? (v as DiagSeverity) : 'info';
+  return (DIAG_SEVERITIES as readonly string[]).includes(v as string)
+    ? (v as DiagSeverity)
+    : 'info';
 }
 
 function sanitizeFindings(v: unknown): AiFinding[] {

@@ -5,6 +5,142 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 05 — DTC database and the DTC detail sheet (2026-11-08)
+
+[Plan 05](./plans/05-dtc-database.md) landed; only the Fiat P1 texts moved to a new **Deferred until
+an on-car session** section of the plan (see the deviations). The data
+files under `dtcDatabase/generic/` and `manufacturer/` were written beforehand by parallel
+data-entry agents; this change builds the module around them.
+
+- **Core (pure):** new `obd-core/obd/dtcDatabase/index.ts` — `DtcMake`, `DtcSeverity`,
+  `DtcSystem`, `DtcInfo`, the exported SAE range table `DTC_RANGES` (longest-prefix match,
+  `subsystemForCode`), `isManufacturerSpecific` (P1xxx, P3000–P33FF, B1/B2, C1/C2, U1/U2), the
+  ordered `DTC_SEVERITY_RULES` (10 rules), `lookupDtc(code, make = 'generic')` and
+  `describeDtc(code, make?)`; the module header carries the sourcing rules. Fallback text is
+  `<System> — <subsystem> fault (<code>)`. `generic/p0.ts` / `generic/p2.ts` compose the part
+  files (`P0_PARTS`, `P2_PARTS`). `manufacturer/vag.ts` is the single VAG home: re-exports
+  `VAG_P1`, holds the native KWP 5-digit `VAG_DTC_TEXTS` moved from `uds/vagDtcs.ts`,
+  `vagNativeDtcText()` (alias `vagDtcText`, native table only) and `saeCodeForVagCode()`;
+  `uds/vagDtcs.ts` is now a compatibility re-export. `obd/dtc.ts` drops the 21-entry
+  `DTC_DICTIONARY`, re-exports the database and gains `toDtc(code, make?)`. `udsModule` describes
+  every UDS DTC with `describeDtc(sae, 'vag')` only (see the review fixes below).
+  `aiDiagnosis.ts`: `DiagnosisOptions { focusCode }`, `focusInstruction()`,
+  `buildDiagnosisMessages(s, { focusCode })` appends the focus user message,
+  `localHeuristicReport(s, { focusCode })` lists the focused code first (or explains it when it is
+  not in the read).
+- **Data:** P0 1 333 codes, P2 694, P34xx 98, U0 271, B0 10, C0 10, VAG P1 157, VAG native
+  5-digit 14, Fiat 0. Module source about 183 KB (budget 350 KB); largest file 520 lines.
+- **Bundle delta:** `npx expo export --platform android`, Hermes bundle: HEAD `afe8e13`
+  7 617 756 B → this change 7 809 759 B, **+192 003 B (+187.5 KB, +2.5 %)** for the whole plan
+  (database, detail sheet, AI focus). Measured from a `git archive HEAD` copy sharing
+  `node_modules`, so both builds use the same dependencies.
+- **Profiles:** `VehicleProfile.make?: DtcMake`; Golf and Passat `'vag'`, Punto `'fiat'`, generic
+  unset. `dtcService.readAll()` re-describes every list with `describeForMake(list, profile.make)`;
+  the AI snapshot (`diagnoseService.gatherSnapshot`) does the same.
+- **Feature UI:** new `fault-codes/ui/DtcDetailSheet.tsx` (Tamagui `Sheet`, modal, 85 % snap) with
+  its pure view model `model/dtcDetail.ts` (`SEVERITY_META`, `buildDtcDetail`, `dtcWebSearchUrl`,
+  `dtcShareMessage`, footer text); tapping the code / description in `DtcRow` opens it, the inline
+  **Guide** stays. The guide links and per-code freeze frame moved into `ui/DtcGuideParts.tsx`,
+  shared by the row and the sheet. Actions: **Explain with AI** →
+  `/ai-diagnose?focus=<code>`, **Search the web**, **Share**. `AiDiagnoseScreen` reads `focus`,
+  shows a focus card (make-aware, `useAiDiagnose().make`), auto-runs once when connected **and the
+  screen is focused** (`useIsFocused()`), then consumes the param on its own route
+  (`useNavigation().setParams({ focus: undefined })`) so a later "Explain with AI" on the same code
+  runs again (the screen is a hidden tab and stays mounted). Review fix: the first version used the
+  global `router.setParams`, which acts on whichever route is focused, and had no focus gate — a
+  reconnect on the Connect tab started the run in the background, the param was cleared on Connect
+  instead, and the focus card stuck and a repeat "Explain with AI" on the same code did nothing. The main button is then
+  **Run full diagnosis** (unfocused); the report's **Re-run** repeats the report's own focus.
+  `useAiDiagnose().run({ focusCode })`, `aiDiagnoseStore.focusCode`. `VehicleContext.make` carries
+  the profile's make, so the local report's note for a focused code not in the read uses the same
+  VAG / Fiat text as the detail sheet.
+- **Simulator:** no new commands (the database is pure lookup); the existing Custom… injector
+  from plan 01 drives the QA set.
+- **Tests:** `dtcDatabase.test.ts` (20: coverage floors, part composition, key format and
+  uniqueness across every file, family per file, native 5-digit table shape, size budget
+  and line limit, spot checks, severity rules incl. every rule reachable, make handling, J2012
+  manufacturer ranges, fallback text, malformed input, range table coverage, `dtc.ts` wiring,
+  native table kept separate from the SAE space, TDI systems resolve from generic codes, `fiat`
+  make wiring with a seeded entry, P0B / P0C hybrid fallback), `tp20Scan.test.ts` (+native text for
+  the seeded comfort faults),
+  `aiDiagnosis.test.ts` (+5 focused run, incl. make-aware note), `fault-codes/api/dtcService.test.ts`
+  (4, against the simulator: VAG text for `P1557` on the Golf, range text on generic, the
+  `P0135,P0301,U0121` QA set), `fault-codes/model/dtcDetail.test.ts` (5), `udsModule.test.ts`
+  (UDS descriptions never use a colliding native KWP text: `P0520`/`P0522` read as oil pressure),
+  `scanReport.test.ts` (+1 native KWP text in the TP2.0 block). `dtc.test.ts` unchanged and green.
+  Suite **607 → 644 tests** (81 → 84 suites).
+- **Docs:** `features/fault-codes.md` ("DTC database", "Detail sheet", behaviour, acceptance),
+  `obd2-reference.md` § DTC encoding (pointer + J2012 range table), `features/ai-diagnose.md`
+  ("Focused run"), `vehicles/README.md` (`make`), `roadmap.md` (both v0.3 rows ✅); context graph
+  rebuilt with a `dtc-database` concept.
+
+**Deviations from the plan:**
+
+- **P0 coverage floor is 1 300, not 1 400.** The accurate P0 data holds 1 333 codes (uncertain
+  assignments omitted on purpose), so the floor is the actual count rounded down to 50. P2 (≥ 600)
+  and U0 (≥ 250) keep the plan's floors.
+- **Fiat pack is empty — moved to a Deferred section (review fix).** No Fiat / FGA P1xxx
+  definition could be stated with confidence (meanings differ between Marelli IAW and Bosch
+  EDC16/17), so `FIAT_P1` is `{}` instead of the ~60 most common; Punto P1 codes show the range
+  text. A guessed manufacturer text is worse than the honest fallback, so the data entry stays out;
+  to keep the "nothing blocks on the car" rule, plan 05 now ends with a **Deferred until an on-car
+  session** section (Multiecuscan procedure) and the plans README row names it. The `'fiat'` make
+  wiring is tested with a seeded test-only entry (`dtcDatabase.test.ts`). The roadmap row says so.
+- **P0B00–P0CFF have no entries (review fix: headers corrected).** `p0-part4.ts` holds P0A00–P0AFF
+  only; its header and `p0.ts` used to claim P0A00–P0CFF. P0Bxx / P0Cxx codes show
+  `Powertrain — Hybrid propulsion fault (<code>)`, P0Bxx with the plan's hybrid severity (high);
+  a test pins the fallback. This is the main reason P0 holds 1 333 codes, not 1 400.
+- **Native texts for the Golf simulator's TP2.0 faults (review fix).** The acceptance item "module
+  scan (Golf simulator) VAG codes still show VAG text" could not be seen in the simulator: none of
+  its module faults had a VAG text. `VAG_DTC_TEXTS` gained `00928` (locking module, front driver
+  side, F220) and `01330` (central control module for central convenience, J393), the comfort
+  module's seeded faults; `tp20Scan.test.ts` checks both resolve and `scanReport.test.ts` shows the
+  text in the Auto-Scan block. The UDS modules' SAE codes keep their generic text by design.
+- **P0 and P2 are composed from part files** (`p0-part1…4.ts`, `p2-part1…2.ts`) rather than one
+  file each; `p0.ts` / `p2.ts` merge them and the test checks for overlap.
+- **VAG P1 data lives in `manufacturer/vag-p1.ts`**, re-exported by `manufacturer/vag.ts`, which
+  also holds the native KWP 5-digit table.
+- **The VAG 5-digit table is native KWP only (review fix, blocker).** The texts carried over from
+  HEAD's `uds/vagDtcs.ts` are native KWP1281/KWP2000 component numbers (00532 Supply voltage B+,
+  01312 Powertrain data bus, …). Read as SAE bytes on the UDS path they collided with standardized
+  P0 faults — 11 of 13 with a different meaning, worst `01312` = `P0520` and `01314` = `P0522`
+  (oil pressure, high severity) shown as "Powertrain data bus — defective" / "Engine control
+  module — no communication". Fix: `udsModule` no longer consults the table (`describeDtc(sae,
+'vag')` only); the table is used for TP2.0 KWP `0x18` faults, now shown with their component
+  text on the module-scan screen and in the Auto-Scan report (`vagNativeDtcText`); no fall-through
+  from a 5-digit number into `VAG_P1`. `00564` (a P0234 byte form, not a native number) and
+  `05463` are gone; `65535` stays because raw 0xFFFF is a real KWP answer. Texts were trimmed to
+  the component (VCDS reports the failure type separately), e.g. `00532` "Supply voltage B+",
+  `01299` "Diagnostic interface for data bus (J533)".
+- **VAG P1 pack is the shared ME7 / EDC15-16 list, not TDI-first (review note).** The plan asked to
+  start with glow plug, EGR, boost, DPF, swirl flap and G-sensor P1 codes. On EDC16/EDC17 those
+  systems report generic SAE codes (glow plugs P0380–P0384 / P0670–P0684, DPF P2002/P2003, P242F,
+  P2452–P2459, P2463, swirl / intake-manifold flaps P2008–P2025, EGR P0400–P0409), which resolve
+  from `generic/` — a test checks they do. The TDI P1 codes shared with EDC15/16 (boost
+  P1555–P1557, EGR P1400–P1408, now also `P1403` control deviation) are in the pack. Missing
+  `P242F` (DPF ash accumulation) was added to `generic/p2-part1.ts`. `P2460`–`P2462` stay out: their
+  J2012 wording could not be stated with confidence (uncertain codes are omitted, not guessed).
+- **P3 ranges follow J2012 precisely:** P3000–P33FF manufacturer-controlled, P3400–P34FF generic
+  (cylinder deactivation), P3500–P3FFF reserved and treated as generic (not manufacturer-specific).
+  B2/C2/U2 also count as manufacturer-specific (J2012), not only B1/C1/U1.
+- **Severity table extras:** the DPF class is `P2002`/`P2003`, `P242F` and `P2452`–`P2463`; the
+  lost-communication rule covers `U0100`–`U01FF` (the plan's "U0100–U0199" read as the U01xx
+  block). Rules apply whether or not the code has an entry.
+- **VAG 5-digit number** in the sheet header shows for VAG and generic profiles and is hidden for
+  Fiat (the plan said "when `vagCodeForDtc(code)` is non-empty", which is every P code).
+- **"Copy" action is labelled "Share"** — it opens `Share.share` (no clipboard module installed),
+  where the user can copy.
+- **`diagnoseService.run({ focusCode })` does not exist;** the focus is threaded as
+  `useAiDiagnose().run({ focusCode })` → `analyze(snapshot, onAnalyzing, { focusCode })`. The AI
+  snapshot is also make-aware (not in the plan; same rule as the Faults screen).
+- **Camshaft labels** `P000A`–`P000D` use J2012's `A Camshaft` / `B Camshaft` (A = intake / left /
+  front, B = exhaust / right / rear), matching `P0010`–`P0025` (review fix).
+- The settings **Custom…** input already existed (plan 01), so nothing was added there.
+- Prettier was run on every file this change touched, so the Golf and Passat profiles (not
+  Prettier-clean before) were reformatted along with their one `make` line; no content change.
+
+---
+
 ## Plan 03 — Bus sniffer: save and share captures (2026-11-08)
 
 [Plan 03](./plans/03-sniffer-capture.md) landed (everything above its "Deferred until an on-car
