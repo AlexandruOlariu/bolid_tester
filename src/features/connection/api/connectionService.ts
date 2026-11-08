@@ -14,7 +14,7 @@ import { bytesToString } from '@/shared/lib/bytes';
 import { BleTransport } from '@/shared/transports/ble/BleTransport';
 import { getBleManager } from '@/shared/transports/ble/manager';
 import { requestBlePermissions } from '@/shared/transports/ble/permissions';
-import { useSettingsStore } from '@/shared/state/settingsStore';
+import { useSettingsStore, type AdapterSource } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { appendAdapterLog } from '@/shared/state/adapterLog';
 import { logError } from '@/shared/state/errorLogStore';
@@ -36,13 +36,25 @@ function withLog(inner: Transport, isMonitoring: () => boolean): Transport {
     connect: () => inner.connect(),
     disconnect: () => inner.disconnect(),
     write: (bytes) => {
-      appendAdapterLog({ dir: 'tx', text: bytesToString(bytes).replace(/[\r\n]/g, '').trim(), ts: Date.now() });
+      appendAdapterLog({
+        dir: 'tx',
+        text: bytesToString(bytes)
+          .replace(/[\r\n]/g, '')
+          .trim(),
+        ts: Date.now(),
+      });
       return inner.write(bytes);
     },
     onData: (listener) =>
       inner.onData((bytes) => {
         if (!isMonitoring())
-          appendAdapterLog({ dir: 'rx', text: bytesToString(bytes).replace(/[\r\n>]/g, ' ').trim(), ts: Date.now() });
+          appendAdapterLog({
+            dir: 'rx',
+            text: bytesToString(bytes)
+              .replace(/[\r\n>]/g, ' ')
+              .trim(),
+            ts: Date.now(),
+          });
         listener(bytes);
       }),
     onStatusChange: (listener) => inner.onStatusChange(listener),
@@ -66,6 +78,9 @@ let statusUnsub: (() => void) | null = null;
 let lastTarget: ConnectTarget | undefined;
 /** The in-flight auto-reconnect run, if any. `cancelSleep` wakes a pending backoff wait early. */
 let reconnectRun: { aborted: boolean; cancelSleep: () => void } | null = null;
+/** Bumped by every adapter-source switch. A connect that started under an older epoch is stale: it
+ *  was built for the previous source (e.g. a MockTransport), so it must never publish its session. */
+let connectEpoch = 0;
 
 function detachStatusWatch(): void {
   statusUnsub?.();
@@ -158,10 +173,20 @@ function startAutoReconnect(): void {
 
 // --- Connect / disconnect -----------------------------------------------------------------------
 
+/** Internal signal: the adapter source changed while a connect was in flight (see `connectEpoch`). */
+class StaleConnectError extends Error {
+  constructor() {
+    super('Connect superseded by an adapter-source switch');
+  }
+}
+
 /** Build the transport + session, run init, and publish the connected state. Does NOT touch the
  *  auto-reconnect controller, so it is safe to call from within a reconnect attempt. */
 async function connectInternal(target?: ConnectTarget): Promise<void> {
   const { adapterSource, simulatedVehicleId, injectedDtcs } = useSettingsStore.getState();
+  const epoch = connectEpoch;
+  /** True once the adapter source was switched while this connect was in flight. */
+  const stale = () => epoch !== connectEpoch;
   const store = useSessionStore.getState();
   detachStatusWatch();
   store.setError(null);
@@ -183,7 +208,11 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
       // codes and pins pending/permanent empty, so a profile's seeded knownFaults can't leak past the
       // user's choice (e.g. "None" really means none, even for a profile with pending/permanent faults).
       rawTransport = new MockTransport(
-        buildScenario(simulatedVehicleId, { storedDtcs: injectedDtcs, pendingDtcs: [], permanentDtcs: [] }),
+        buildScenario(simulatedVehicleId, {
+          storedDtcs: injectedDtcs,
+          pendingDtcs: [],
+          permanentDtcs: [],
+        }),
       );
       device = { id: 'mock', name: `Simulator · ${simulatedVehicleId}` };
     }
@@ -196,8 +225,12 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
       commandTimeoutMs: 5000,
       firstCommandTimeoutMs: 12000,
     });
+    if (stale()) throw new StaleConnectError();
     store.setStatus('initializing');
     const info = await session.connect();
+    // The source was switched mid-connect (e.g. the banner's "Use real adapter" while the simulator
+    // was still initializing): drop this session instead of publishing it under the new source.
+    if (stale()) throw new StaleConnectError();
     useSessionStore.getState().setConnected(session, info, device);
     // Now that the link is up, watch for it dropping out from under us.
     watchStatus(transport);
@@ -216,6 +249,9 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
         // best-effort
       }
     }
+    // A stale connect was superseded by an adapter switch, which already reset the session store:
+    // tear down quietly, without publishing an error over the new source's state.
+    if (stale()) return;
     const message = e instanceof Error ? e.message : String(e);
     useSessionStore.getState().setStatus('error');
     useSessionStore.getState().setError(message);
@@ -238,4 +274,32 @@ export async function disconnect(): Promise<void> {
   const { session } = useSessionStore.getState();
   await session?.disconnect();
   useSessionStore.getState().reset();
+}
+
+/** Change the adapter source (Settings' segments, the simulator banner, the Connect screen). A
+ *  session built for the old source must not survive the switch — otherwise simulated readings would
+ *  show unflagged under 'ble' (or real ones under the simulator banner). So, synchronously:
+ *  invalidate any in-flight connect (it tears itself down instead of publishing), cancel a pending
+ *  auto-reconnect, reset the session store and flip the setting; then close the old session.
+ *  A no-op when the source is unchanged. */
+export async function switchAdapterSource(source: AdapterSource): Promise<void> {
+  if (useSettingsStore.getState().adapterSource === source) return;
+  connectEpoch++;
+  abortReconnect();
+  detachStatusWatch();
+  const { session } = useSessionStore.getState();
+  useSessionStore.getState().reset();
+  useSettingsStore.getState().setAdapterSource(source);
+  if (!session) return;
+  try {
+    await session.disconnect();
+  } catch (e) {
+    logError({ source: 'connection/switch-adapter', error: e, severity: 'warning' });
+  }
+}
+
+/** Leave simulator mode for the real Bluetooth adapter (the simulator banner's / Connect screen's
+ *  "Use real adapter"). See `switchAdapterSource`. */
+export function switchToRealAdapter(): Promise<void> {
+  return switchAdapterSource('ble');
 }

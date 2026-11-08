@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Platform } from 'react-native';
 import { ScrollView, YStack, XStack, Text, Paragraph, Button, Card, Input, Spinner } from 'tamagui';
 import { Screen } from '@/shared/ui';
-import { useSettingsStore } from '@/shared/state/settingsStore';
+import { useSettingsStore, parseDtcList } from '@/shared/state/settingsStore';
 import { useAdapterLogStore, clearAdapterLog } from '@/shared/state/adapterLog';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { VEHICLE_PROFILES } from '@/shared/vehicles';
@@ -16,7 +16,13 @@ const ACCENT = '#2bb673';
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <Text fontWeight="800" fontSize="$2" color={ACCENT} letterSpacing={0.8} textTransform="uppercase">
+    <Text
+      fontWeight="800"
+      fontSize="$2"
+      color={ACCENT}
+      letterSpacing={0.8}
+      textTransform="uppercase"
+    >
       {children}
     </Text>
   );
@@ -50,15 +56,26 @@ function AiSection() {
     try {
       const models = await listModels(ai);
       if (models.length === 0) {
-        setStatusText('Connected, but the server lists no models. Load a model on the server first.');
+        setStatusText(
+          'Connected, but the server lists no models. Load a model on the server first.',
+        );
       } else {
         if (autofillModel) setAi({ model: models[0] });
         const shown = models.slice(0, 4).join(', ');
-        setStatusText(`Connected ✓ — ${models.length} model(s): ${shown}${models.length > 4 ? '…' : ''}`);
+        setStatusText(
+          `Connected ✓ — ${models.length} model(s): ${shown}${models.length > 4 ? '…' : ''}`,
+        );
       }
     } catch (e) {
-      setStatusText(`Failed: ${e instanceof AiClientError || e instanceof Error ? e.message : String(e)}`);
-      logError({ source: 'settings/ai-test', error: e, severity: 'warning', context: { baseUrl: ai.baseUrl } });
+      setStatusText(
+        `Failed: ${e instanceof AiClientError || e instanceof Error ? e.message : String(e)}`,
+      );
+      logError({
+        source: 'settings/ai-test',
+        error: e,
+        severity: 'warning',
+        context: { baseUrl: ai.baseUrl },
+      });
     } finally {
       setTesting(false);
     }
@@ -110,13 +127,25 @@ function AiSection() {
           <YStack gap="$1">
             <XStack gap="$2" alignItems="center" flexWrap="wrap">
               <Paragraph flex={1}>Structured output</Paragraph>
-              <Seg active={ai.jsonMode === 'schema'} label="Schema" onPress={() => setAi({ jsonMode: 'schema' })} />
-              <Seg active={ai.jsonMode === 'object'} label="JSON" onPress={() => setAi({ jsonMode: 'object' })} />
-              <Seg active={ai.jsonMode === 'off'} label="Off" onPress={() => setAi({ jsonMode: 'off' })} />
+              <Seg
+                active={ai.jsonMode === 'schema'}
+                label="Schema"
+                onPress={() => setAi({ jsonMode: 'schema' })}
+              />
+              <Seg
+                active={ai.jsonMode === 'object'}
+                label="JSON"
+                onPress={() => setAi({ jsonMode: 'object' })}
+              />
+              <Seg
+                active={ai.jsonMode === 'off'}
+                label="Off"
+                onPress={() => setAi({ jsonMode: 'off' })}
+              />
             </XStack>
             <Paragraph theme="alt2" fontSize="$1">
-              Schema = json_schema (LM Studio / current OpenAI). JSON = json_object (older OpenAI). Off
-              = plain text. The app auto-falls back to text if the server rejects the format.
+              Schema = json_schema (LM Studio / current OpenAI). JSON = json_object (older OpenAI).
+              Off = plain text. The app auto-falls back to text if the server rejects the format.
             </Paragraph>
           </YStack>
 
@@ -156,6 +185,76 @@ function AiSection() {
   );
 }
 
+const DTC_PRESETS: { label: string; codes: string[] }[] = [
+  { label: 'None', codes: [] },
+  { label: 'P0299', codes: ['P0299'] },
+  { label: 'P0299+P0401', codes: ['P0299', 'P0401'] },
+];
+
+/** Simulator fault injection: three presets plus **Custom…**, a free-text list of codes
+ *  (comma-separated, each `[PCBU]` + 4 hex digits; invalid entries are ignored). */
+function InjectedDtcsSection() {
+  const injected = useSettingsStore((st) => st.injectedDtcs);
+  const setInjectedDtcs = useSettingsStore((st) => st.setInjectedDtcs);
+  const matchesPreset = DTC_PRESETS.some((p) => p.codes.join() === injected.join());
+  const [customOpen, setCustomOpen] = useState(!matchesPreset);
+  const [customText, setCustomText] = useState(matchesPreset ? '' : injected.join(', '));
+
+  const pickPreset = (codes: string[]) => {
+    setCustomOpen(false);
+    setInjectedDtcs(codes);
+  };
+  const editCustom = (text: string) => {
+    setCustomText(text);
+    setInjectedDtcs(parseDtcList(text));
+  };
+
+  return (
+    <YStack gap="$2">
+      <SectionLabel>Injected DTCs</SectionLabel>
+      <SegGroup>
+        <YStack gap="$2">
+          <XStack flexWrap="wrap" gap="$2">
+            {DTC_PRESETS.map((p) => (
+              <Seg
+                key={p.label}
+                active={!customOpen && injected.join() === p.codes.join()}
+                label={p.label}
+                onPress={() => pickPreset(p.codes)}
+              />
+            ))}
+            <Seg
+              active={customOpen}
+              label="Custom…"
+              onPress={() => {
+                setCustomOpen(true);
+                setInjectedDtcs(parseDtcList(customText));
+              }}
+            />
+          </XStack>
+          {customOpen ? (
+            <YStack gap="$1">
+              <Input
+                value={customText}
+                onChangeText={editCustom}
+                placeholder="e.g. P0135, P0420"
+                autoCapitalize="characters"
+                autoCorrect={false}
+                accessibilityLabel="Custom fault codes to inject, comma-separated"
+              />
+              <Paragraph theme="alt2" fontSize="$1">
+                {injected.length > 0
+                  ? `Injecting: ${injected.join(', ')}. Reconnect the simulator to apply.`
+                  : 'Enter codes like P0135 (letter P, C, B or U plus four digits). Invalid codes are ignored.'}
+              </Paragraph>
+            </YStack>
+          ) : null}
+        </YStack>
+      </SegGroup>
+    </YStack>
+  );
+}
+
 export function SettingsScreen() {
   const { exportFixture, busy: exportingFixture } = useLogFixtureExport();
   const s = useSettingsStore();
@@ -168,10 +267,24 @@ export function SettingsScreen() {
       <YStack gap="$2">
         <SectionLabel>Adapter source</SectionLabel>
         <SegGroup>
-          <XStack gap="$2">
-            <Seg active={s.adapterSource === 'mock'} label="Simulator" onPress={() => s.setAdapterSource('mock')} />
-            <Seg active={s.adapterSource === 'ble'} label="Real (BLE)" onPress={() => s.setAdapterSource('ble')} />
-          </XStack>
+          <YStack gap="$2">
+            <XStack gap="$2" flexWrap="wrap">
+              <Seg
+                active={s.adapterSource === 'ble'}
+                label="Real adapter (Bluetooth)"
+                onPress={() => void connectionService.switchAdapterSource('ble')}
+              />
+              <Seg
+                active={s.adapterSource === 'mock'}
+                label="Simulator (no car)"
+                onPress={() => void connectionService.switchAdapterSource('mock')}
+              />
+            </XStack>
+            <Paragraph theme="alt2" fontSize="$1">
+              The simulator emulates a real ECU so every screen works with no hardware. A banner
+              stays visible while it is on. Switching disconnects the current session.
+            </Paragraph>
+          </YStack>
         </SegGroup>
       </YStack>
 
@@ -193,20 +306,7 @@ export function SettingsScreen() {
             </SegGroup>
           </YStack>
 
-          <YStack gap="$2">
-            <SectionLabel>Injected DTCs</SectionLabel>
-            <SegGroup>
-              <XStack flexWrap="wrap" gap="$2">
-                <Seg active={s.injectedDtcs.length === 0} label="None" onPress={() => s.setInjectedDtcs([])} />
-                <Seg active={s.injectedDtcs.join() === 'P0299'} label="P0299" onPress={() => s.setInjectedDtcs(['P0299'])} />
-                <Seg
-                  active={s.injectedDtcs.join() === 'P0299,P0401'}
-                  label="P0299+P0401"
-                  onPress={() => s.setInjectedDtcs(['P0299', 'P0401'])}
-                />
-              </XStack>
-            </SegGroup>
-          </YStack>
+          <InjectedDtcsSection />
         </>
       ) : null}
 
@@ -228,7 +328,12 @@ export function SettingsScreen() {
         <SegGroup>
           <XStack gap="$2">
             {[250, 500, 1000, 2000].map((ms) => (
-              <Seg key={ms} active={s.pollIntervalMs === ms} label={`${ms} ms`} onPress={() => s.setPollInterval(ms)} />
+              <Seg
+                key={ms}
+                active={s.pollIntervalMs === ms}
+                label={`${ms} ms`}
+                onPress={() => s.setPollInterval(ms)}
+              />
             ))}
           </XStack>
         </SegGroup>
@@ -241,7 +346,11 @@ export function SettingsScreen() {
             <XStack gap="$2" alignItems="center">
               <Paragraph flex={1}>Retry the last adapter after a dropped link</Paragraph>
               <Seg active={s.autoReconnect} label="On" onPress={() => s.setAutoReconnect(true)} />
-              <Seg active={!s.autoReconnect} label="Off" onPress={() => s.setAutoReconnect(false)} />
+              <Seg
+                active={!s.autoReconnect}
+                label="Off"
+                onPress={() => s.setAutoReconnect(false)}
+              />
             </XStack>
             <Paragraph theme="alt2" fontSize="$1">
               When the connection drops unexpectedly, reconnect to the same device with backoff (2s,

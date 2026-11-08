@@ -5,6 +5,76 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 01 — Production first-run (2026-11-08)
+
+[Plan 01](./plans/01-production-first-run.md) landed: a fresh install now behaves like a product.
+
+- **Defaults + migration** (`shared/state/settingsStore.ts`): `adapterSource` defaults to `'ble'`,
+  `injectedDtcs` to `[]`; persist `version: 2` with the pure, exported `migrateSettings` wired as
+  `migrate` — a v1 blob keeps its explicit simulator choice, only missing fields get the new defaults.
+  New pure `parseDtcList` backs the Settings **Custom…** DTC injection (first digit limited to
+  `0`–`3`, since it is 2 bits on the wire — the plan's `[0-9A-F]{4}` would let `P4135` read back as
+  `P0135`).
+- **Simulator banner** (`connection/ui/SimulatorBanner.tsx`): amber one-line strip mounted in
+  `_layout.tsx` via the `<Tabs screenLayout>` wrapper (inside `RootErrorBoundary`), so every route —
+  hidden ones included — shows it under its header (it also shows while a session with device id
+  `mock` is live). **Use real adapter** calls the new `connectionService.switchToRealAdapter()`, a
+  thin wrapper over `switchAdapterSource(source)`, which the Settings segments use too: it bumps a
+  connect epoch so an in-flight simulator connect tears itself down instead of publishing, cancels a
+  pending auto-reconnect, resets the session store, flips the source, then closes the old session.
+- **First-run card** (`onboarding/model/firstRun.ts` + `ui/FirstRunCard.tsx`): pick car → connect →
+  read faults, replacing the `connect-basics` hint on the Connect tab; auto-dismisses (`first-run`)
+  when complete. `dtcStore` gained an in-memory `lastReadAt`, stamped only by a real read:
+  `dtcService.readAll()` now resolves `null` with no session and `useDtcs` then calls the new
+  `clearResults()` (no stamp), so opening Faults while disconnected doesn't tick step 3.
+- **Copy:** Connect simulator panel says readings are not from a real car and offers **Use a real
+  adapter**; Settings segments renamed **Real adapter (Bluetooth)** / **Simulator (no car)** with a
+  helper line.
+- **Tests:** `settingsStore.test.ts` (defaults, migration incl. a real persist round-trip of v1 blobs
+  through a mocked file system, `parseDtcList`), `firstRun.test.ts`, `connectionService.test.ts`
+  (switching tears down a connected and an in-flight simulator session; same-source no-op) and
+  `shared/state/dtcStore.test.ts` (`lastReadAt` only on real reads). Suite **504 → 527 tests**
+  (71 → 75 suites).
+- **Docs:** `features/settings.md`, `features/connection.md` (First run, Simulator banner), new
+  `features/onboarding.md`, `features/fault-codes.md` (`dtcStore` location), `phase2-mobile-app.md`,
+  root `README.md`; `features/coding.md` no longer claims coding "defaults to the simulator" and
+  lists the gates as built.
+
+**Deviations from the plan:** `FirstRunInput` gained a `genericAccepted: boolean` field (the pure
+function cannot read the onboarding store, so the `first-run-generic-ok` dismissal is passed in), and
+its `connectionStatus` reuses `ConnState` from `sessionStore` (same union). The banner/Connect-screen
+switch goes through a new `connectionService.switchToRealAdapter()` instead of inlining
+`disconnect()` + `setAdapterSource('ble')` in two places; it also cancels a pending auto-reconnect.
+**Use a real adapter** sits under **Connect to simulator** (stacked) rather than beside it, to fit
+phone width. The banner is mounted through `<Tabs screenLayout>` rather than as a sibling directly
+above `<Tabs>`: a sibling would render above the navigator's header, under the Android edge-to-edge
+status bar, whereas `screenLayout` puts it under the header on every route, which is what the plan
+asks for. Custom-DTC parsing also drops duplicates and accepts whitespace as a separator.
+**Layering:** `dtcStore` (and its test) moved from `features/fault-codes/model/` to
+`src/shared/state/dtcStore.ts`, so the first-run card reads it through a shared store instead of
+deep-importing another feature (plans/README: "never feature → feature"); EngineHost and
+fault-codes now import it from `@/shared/state` too. `FirstRunCard` still deep-imports
+`vehicle-select/model/vehicleStore` — kept deliberately: ~20 feature files already import it the
+same way, so moving it into `shared/state` is a cross-cutting refactor better done with plan 07
+(information architecture) than inside plan 01.
+
+**Coding safety doc:** `features/coding.md` now states the gates that actually exist (CAN +
+`codingModules` availability, the in-memory per-session unlock switch, a two-tap Confirm step,
+backup-first + verify) in a new "Gates as built today" section, and marks the Settings flag and the
+typed confirmation string as target-only, not built. With the real adapter now the default, a real
+CAN write on the Golf profile is one switch and two taps away; adding those two gates is open work.
+
+**Known limitation (migration):** v1's `partialize` always wrote `adapterSource` and `injectedDtcs`,
+so every real v1 file has them — including installs that never chose anything and merely persisted
+the old defaults (`'mock'`, `['P0299']`). As the plan specifies, the migration keeps them, so every
+upgraded install stays in simulator mode with P0299 until the user switches (the banner flags it);
+only fresh installs get the production defaults. The "v1 blob without an adapter choice" test covers
+hand-edited/partial blobs only. Documented in `features/settings.md`.
+
+**Status:** ✅ complete — no on-car part.
+
+---
+
 ## Improvement-plan implementation (2026-07-15)
 
 The full [`improvement-plan-2026-07.md`](./improvement-plan-2026-07.md) landed — Phases 1–5, all
@@ -42,7 +112,7 @@ GPS trip tracks (expo-location, tolerant) with GPS-vs-OBD distance/speed; metric
 display level; shareable HTML diagnostic report; dashboard gauge customization (per-vehicle,
 persisted); adapter health check feature (grade + share); chart tap-inspect, pinch-zoom/pan and
 window-CSV share; first-run onboarding hints + a11y labels on shared gauges; EAS Update wiring
-('Check for updates' in More). *Deferred: 6.9 Web Bluetooth PWA transport.*
+('Check for updates' in More). _Deferred: 6.9 Web Bluetooth PWA transport._
 
 **Phase 6b — VCDS parity, next tier:** forum-pasteable Auto-Scan text report; persisted scan
 history with before/after diff; DTC search across modules; long-coding per-bit helper with label
@@ -99,6 +169,7 @@ points at the shipped TP2.0 gateway scan instead of calling it future work.
 [`vin-decode`](./features/vin-decode.md), [`maintenance-log`](./features/maintenance-log.md).
 
 Pure, unit-tested core (no hardware):
+
 - `obd-core/obd/vinDecode.ts` (+ test) — `decodeVin` (WMI dictionary, ISO-3780 country, char-10 year
   with the char-7 rule, FMVSS-565 check digit). Verified against the three example VINs + a US case.
 - `obd-core/analysis/battery.ts` (+ test) — `analyzeBattery` / `socFromResting` (resting SoC, cranking
@@ -110,11 +181,13 @@ Pure, unit-tested core (no hardware):
   readiness heuristic. All exported from `obd-core/index.ts`.
 
 Vehicle data:
+
 - Golf TDI profile gains a **diesel/DPF extended-PID pack** (soot mass/%, ash, distance & count since
   regen, EGT, oil temp, EGR), each `experimental` and tagged `category`/`role`; `ExtendedPid` gained
   optional `category`/`role` fields. The simulator auto-seeds every DID from its `sampleResponse`.
 
 Feature slices (feature-sliced, Tamagui) + routes + **More** menu + hidden tabs:
+
 - `features/dpf` — CAN/diesel-gated DPF monitor (status banner + tiles), maps DID `role`s into
   `assessDpf`.
 - `features/inspection` — one-tap used-car screening (readiness + DTC 03/07/0A + freeze frame +
@@ -155,6 +228,7 @@ freeze frame, and a one-shot poll of the key supported live PIDs), send it to a 
 back to a deterministic on-device rule-based report when the AI is off/unconfigured/unreachable.
 
 Platform-agnostic core (`src/shared/obd-core/analysis/aiDiagnosis.ts`, unit-tested):
+
 - Types `DiagnosticSnapshot` / `AiReport` / `AiFinding` / `AiAction` / `AiClientConfig`.
 - `summarizeSnapshot`, `localHeuristicReport` (MIL/DTCs/overheat/fuel-trim/charging/readiness rules).
 - `buildDiagnosisMessages`, `buildChatRequestBody`, `extractMessageContent`, `parseAiReport`
@@ -162,6 +236,7 @@ Platform-agnostic core (`src/shared/obd-core/analysis/aiDiagnosis.ts`, unit-test
   `normalizeBaseUrl`, `overallFromFindings`, `KEY_DIAGNOSTIC_PIDS`.
 
 App layer:
+
 - `src/shared/ai/openaiClient.ts` — `chatCompletion` / `listModels` over `fetch` with an
   AbortController timeout and friendly errors (lives in `shared`, no cross-feature deps).
 - `src/features/ai-diagnose/*` — store, `diagnoseService` (gather/analyze/clearCodes), `useAiDiagnose`
@@ -169,7 +244,7 @@ App layer:
 - Settings → **AI assistant** section (enable, server URL, model + Detect, JSON mode, timeout, Test).
 - Routing: `/ai-diagnose` route + hidden tab; entry added to the **More** menu.
 
-Safety: reads + **clear DTCs only** (Mode 04, confirmed); the model only *suggests* actions from a
+Safety: reads + **clear DTCs only** (Mode 04, confirmed); the model only _suggests_ actions from a
 fixed enum and never writes coding/service-reset.
 
 ---
@@ -184,6 +259,7 @@ Specs: [`features/trip-recording`](./features/trip-recording.md), [`live-charts`
 [`notifications`](./features/notifications.md).
 
 Platform-agnostic core (in `src/shared/obd-core`, all unit-tested here):
+
 - `analysis/alerts.ts` — `AlertEngine` (edge detection + hysteresis), `defaultRules`.
 - `analysis/performance.ts` — `computeAccelRun` (0–100 + splits), `computeDragRun` (60 ft / ⅛ / ¼
   mile + trap), `computeBrakeRun`, plus `timeToSpeed` / `cumulativeDistance` integration.
@@ -197,6 +273,7 @@ Platform-agnostic core (in `src/shared/obd-core`, all unit-tested here):
   (read→backup→security→write→verify) over an injectable sender.
 
 Engine/profile/simulator extensions:
+
 - `vehicles/types.ts` + the Golf profile gained `mode06Tests`, `moduleSensors` (illustrative ABS
   wheel-speed), and `codingModules` (illustrative BCM coding) — all clearly experimental/unverified.
 - `MockTransport` now answers **Mode 06**, **module-scoped UDS 22** (via `ATSH` addressing), and the
@@ -236,6 +313,7 @@ toolchain (unrelated to this code); ts-jest type-checks the core on every test r
 ## Phase 3 — Polish (in progress)
 
 Done:
+
 - **Verified the whole app typechecks** against the real RN/Tamagui/`react-native-ble-plx` types
   (`npm run typecheck:app` → 0 errors), not just the core.
 - **Readiness monitors** (Mode 01 PID 01) — `src/shared/obd-core/obd/readiness.ts`
@@ -250,6 +328,7 @@ Verified: `npm test` (39 passing, 11 suites), `npm run typecheck` (0), `npm run 
 `npm run lint` (0).
 
 Remaining (needs hardware or external accounts):
+
 - On-car validation against the three example cars (checklists in `testing.md`); tune the profiles
   from what the real cars report.
 - Log export/share; optional persisted settings (AsyncStorage).
@@ -261,6 +340,7 @@ Remaining (needs hardware or external accounts):
 EAS (native build can't run in the container). See [`phase2-mobile-app.md`](./phase2-mobile-app.md).
 
 Implemented the feature-sliced UI over the tested core:
+
 - `src/shared/transports/ble/BleTransport.ts` — `Transport` over `react-native-ble-plx` with
   **runtime characteristic discovery** (no hard-coded UUIDs); `permissions.ts`, `manager.ts`,
   and a dependency-free `src/shared/lib/base64.ts` (unit-tested) for BLE payloads.
@@ -273,6 +353,7 @@ Implemented the feature-sliced UI over the tested core:
 
 A persistent, capped on-device store of errors, reviewable and **exportable** (Markdown/JSON via the
 share sheet) to fix later.
+
 - `src/shared/lib/errorLog.ts` — pure, unit-tested core: `LoggedError` shape, `normalizeError`,
   `buildLoggedError`, and the export renderers (`formatErrorsForExport`, `errorsToJson`).
 - `src/shared/state/errorLogStore.ts` — persisted Zustand store (`bolid.errors`, capped at 500) with

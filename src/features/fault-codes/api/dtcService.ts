@@ -2,19 +2,14 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { useHistoryStore } from '@/shared/state/historyStore';
 import { getVehicleProfile, vehicleLabel } from '@/shared/vehicles';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
-import type { DtcResult } from '../model/dtcStore';
+import type { DtcResult } from '@/shared/state/dtcStore';
 
-const EMPTY: DtcResult = {
-  stored: [],
-  pending: [],
-  permanent: [],
-  readiness: null,
-  freezeFrames: [],
-};
-
-export async function readAll(): Promise<DtcResult> {
+/** Read every fault-code mode the profile supports, plus readiness and freeze frames. Resolves to
+ *  `null` when there is no live session — nothing was read, so callers must not treat it as a read
+ *  (the first-run card's "Read fault codes" step keys off real reads only). */
+export async function readAll(): Promise<DtcResult | null> {
   const { session, info } = useSessionStore.getState();
-  if (!session) return EMPTY;
+  if (!session) return null;
   const profile = getVehicleProfile(useVehicleStore.getState().selectedProfileId);
   const modes = profile.dtcModes;
   const stored = modes.includes('03') ? await session.readDtcs('03') : [];

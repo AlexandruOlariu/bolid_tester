@@ -1635,6 +1635,11 @@
     "documents"
   ],
   [
+    "doc:features/onboarding",
+    "feature:onboarding",
+    "documents"
+  ],
+  [
     "doc:features/performance-tests",
     "feature:performance-tests",
     "documents"
@@ -2131,6 +2136,11 @@
   ],
   [
     "feature:engine-host",
+    "store:dtcStore",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
     "store:errorLogStore",
     "imports"
   ],
@@ -2242,6 +2252,11 @@
   [
     "feature:fault-codes",
     "lib:dtcReport",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "store:dtcStore",
     "imports"
   ],
   [
@@ -2521,7 +2536,27 @@
   ],
   [
     "feature:onboarding",
+    "doc:features/onboarding",
+    "named"
+  ],
+  [
+    "feature:onboarding",
+    "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:onboarding",
+    "store:dtcStore",
+    "imports"
+  ],
+  [
+    "feature:onboarding",
     "store:persistStorage",
+    "imports"
+  ],
+  [
+    "feature:onboarding",
+    "store:sessionStore",
     "imports"
   ],
   [
@@ -2875,9 +2910,19 @@
     "named"
   ],
   [
+    "lib:dtcReport",
+    "store:dtcStore",
+    "named"
+  ],
+  [
     "screen:_layout",
     "doc:plans/21-tablet-layout",
     "named"
+  ],
+  [
+    "screen:_layout",
+    "feature:connection",
+    "serves"
   ],
   [
     "screen:_layout",
@@ -3223,6 +3268,26 @@
     "service:notify",
     "store:errorLogStore",
     "imports"
+  ],
+  [
+    "store:dtcStore",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "store:dtcStore",
+    "core:obd/readiness",
+    "imports"
+  ],
+  [
+    "store:dtcStore",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "store:dtcStore",
+    "doc:plans/05-dtc-database",
+    "named"
   ],
   [
     "store:errorLogStore",

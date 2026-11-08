@@ -11,7 +11,12 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { fileStateStorage } from './persistStorage';
 import { logError } from './errorLogStore';
-import { secureGetApiKey, secureSetApiKey, redactApiKey, planApiKeyHydration } from './secureApiKey';
+import {
+  secureGetApiKey,
+  secureSetApiKey,
+  redactApiKey,
+  planApiKeyHydration,
+} from './secureApiKey';
 
 export type AdapterSource = 'mock' | 'ble';
 export type ThemePref = 'system' | 'light' | 'dark';
@@ -36,7 +41,7 @@ export interface AiSettings {
   jsonMode: AiJsonMode;
 }
 
-interface SettingsState {
+export interface SettingsState {
   adapterSource: AdapterSource;
   simulatedVehicleId: string;
   injectedDtcs: string[];
@@ -65,12 +70,43 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   jsonMode: 'schema',
 };
 
+/** Codes the simulator accepts for injection: a letter (P/C/B/U), a first digit 0–3, then three hex
+ *  digits. The first digit is only 2 bits in the wire encoding (SAE J2012 / `encodeDtc`), so e.g.
+ *  `P4135` would silently read back as `P0135` — reject it instead. */
+const DTC_CODE_RE = /^[PCBU][0-3][0-9A-F]{3}$/i;
+
+/** Parse a comma/whitespace-separated list of DTC codes for the simulator's "Custom…" injection.
+ *  Each code is trimmed and uppercased; invalid entries are ignored and duplicates dropped. */
+export function parseDtcList(text: string): string[] {
+  const out: string[] = [];
+  for (const raw of text.split(/[,\s]+/)) {
+    const code = raw.trim().toUpperCase();
+    if (code && DTC_CODE_RE.test(code) && !out.includes(code)) out.push(code);
+  }
+  return out;
+}
+
+/** Persisted settings schema version. v2 = production defaults (real adapter, no injected DTC). */
+export const SETTINGS_VERSION = 2;
+
+/** v1 → v2: production defaults. Existing blobs keep their explicit adapterSource (a tester who chose
+ *  the simulator must not be flipped under them); only *missing* fields get the new defaults. */
+export function migrateSettings(persisted: unknown, fromVersion: number): Partial<SettingsState> {
+  const p = (persisted ?? {}) as Partial<SettingsState>;
+  if (fromVersion < 2) {
+    return { ...p, adapterSource: p.adapterSource ?? 'ble', injectedDtcs: p.injectedDtcs ?? [] };
+  }
+  return p;
+}
+
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      adapterSource: 'mock',
+      // Production defaults (plan 01): a fresh install offers the real Bluetooth adapter; the
+      // simulator is an explicit opt-in and never injects a fault unless asked.
+      adapterSource: 'ble',
       simulatedVehicleId: 'golf-plus-2009-20tdi',
-      injectedDtcs: ['P0299'],
+      injectedDtcs: [],
       units: 'metric',
       pollIntervalMs: 1000,
       autoReconnect: false,
@@ -94,8 +130,9 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'bolid.settings',
-      version: 1,
+      version: SETTINGS_VERSION,
       storage: createJSONStorage(() => fileStateStorage),
+      migrate: (persisted, version) => migrateSettings(persisted, version) as SettingsState,
       // Persist user config only — never the live adapter I/O log, and never the AI apiKey (redacted
       // here; it is stored in the OS keystore instead — finding F8).
       partialize: (s) => ({

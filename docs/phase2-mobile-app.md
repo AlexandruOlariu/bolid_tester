@@ -11,7 +11,7 @@ container. So:
 
 - The **core** (`src/shared/lib`, `src/shared/obd-core`, `src/shared/vehicles`) is typechecked,
   linted, and unit/integration-tested in the container (`npm run typecheck`, `npm test`, `npm run
-  lint` — all green).
+lint` — all green).
 - The **app** (`src/app`, `src/features`, `src/shared/ui|state|theme|transports`) is typechecked on a
   dev machine with `npm run typecheck:app` after installing the RN deps, and run with Expo.
 
@@ -37,8 +37,10 @@ eas build -p ios --profile preview       # needs an Apple account
 
 ## Using the app
 
-1. **Settings** → choose **Simulator** (default, no hardware) or **Real (BLE)**. In simulator mode
-   pick which example car to emulate and whether to inject DTCs.
+1. **Settings** → the adapter source defaults to **Real adapter (Bluetooth)**. **Simulator (no car)**
+   is an explicit opt-in (no hardware needed); while it is on, an amber banner is shown on every
+   screen. In simulator mode pick which example car to emulate and whether to inject DTCs (none by
+   default; presets or **Custom…** codes).
 2. **Connect** → connect to the simulator, or scan & pick your Vgate adapter over BLE.
 3. **Vehicle** → choose a profile (or Auto / Generic).
 4. **Live**, **Faults**, **Info** → live data, read/clear DTCs, VIN/protocol/adapter info. The
@@ -49,15 +51,15 @@ exercisable end-to-end without a car — and is what the core integration tests 
 
 ## Feature ↔ code map
 
-| Feature (`src/features/*`) | Screen | Spec |
-|----------------------------|--------|------|
-| `connection` | Connect / scan | [`features/connection.md`](./features/connection.md) |
-| `vehicle-select` | Vehicle | [`features/vehicle-select.md`](./features/vehicle-select.md) |
-| `live-data` | Live dashboard | [`features/live-data.md`](./features/live-data.md) |
-| `fault-codes` | Faults | [`features/fault-codes.md`](./features/fault-codes.md) |
-| `vehicle-info` | Info | [`features/vehicle-info.md`](./features/vehicle-info.md) |
-| `extended-pids` | Extended PIDs | [`features/extended-pids.md`](./features/extended-pids.md) |
-| `settings` | Settings | [`features/settings.md`](./features/settings.md) |
+| Feature (`src/features/*`) | Screen         | Spec                                                         |
+| -------------------------- | -------------- | ------------------------------------------------------------ |
+| `connection`               | Connect / scan | [`features/connection.md`](./features/connection.md)         |
+| `vehicle-select`           | Vehicle        | [`features/vehicle-select.md`](./features/vehicle-select.md) |
+| `live-data`                | Live dashboard | [`features/live-data.md`](./features/live-data.md)           |
+| `fault-codes`              | Faults         | [`features/fault-codes.md`](./features/fault-codes.md)       |
+| `vehicle-info`             | Info           | [`features/vehicle-info.md`](./features/vehicle-info.md)     |
+| `extended-pids`            | Extended PIDs  | [`features/extended-pids.md`](./features/extended-pids.md)   |
+| `settings`                 | Settings       | [`features/settings.md`](./features/settings.md)             |
 
 Cross-cutting: `src/shared/transports/ble/BleTransport.ts` (runtime characteristic discovery),
 `src/shared/state/*` (Zustand), `src/shared/ui/*` (Tamagui widgets + SVG gauge),

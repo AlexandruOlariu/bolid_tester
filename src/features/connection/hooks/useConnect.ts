@@ -17,7 +17,8 @@ export function useConnect() {
       setBusy(true);
       try {
         await connectionService.connect(target);
-        router.push('/vehicle');
+        // A connect superseded by an adapter-source switch resolves without a session; stay put.
+        if (useSessionStore.getState().status === 'connected') router.push('/vehicle');
       } catch {
         // error is surfaced via the session store
       } finally {

@@ -1439,6 +1439,14 @@
     ],
     "type": "doc"
   },
+  "doc:features/onboarding": {
+    "path": "docs/features/onboarding.md",
+    "summary": "Feature: onboarding",
+    "tokens": [
+      "onboarding"
+    ],
+    "type": "doc"
+  },
   "doc:features/performance-tests": {
     "path": "docs/features/performance-tests.md",
     "summary": "Feature: performance-tests",
@@ -2293,6 +2301,7 @@
     "path": "src/features/connection",
     "summary": "Scan for, connect to, and initialize the ELM327 BLE adapter.",
     "tests": [
+      "src/features/connection/api/connectionService.test.ts",
       "src/features/connection/api/reconnect.test.ts"
     ],
     "tokens": [
@@ -2431,7 +2440,10 @@
   },
   "feature:onboarding": {
     "path": "src/features/onboarding",
-    "summary": "Onboarding feature (screen + hooks + model).",
+    "summary": "First-run guidance: dismissible hints and the three-step \"Getting started\" card on the Connect tab.",
+    "tests": [
+      "src/features/onboarding/model/firstRun.test.ts"
+    ],
     "tokens": [
       "onboarding"
     ],
@@ -2886,6 +2898,17 @@
     ],
     "type": "store"
   },
+  "store:dtcStore": {
+    "path": "src/shared/state/dtcStore.ts",
+    "summary": "One freeze frame per stored code (frame n belongs to stored[n] on most ECUs).",
+    "tests": [
+      "src/shared/state/dtcStore.test.ts"
+    ],
+    "tokens": [
+      "dtc"
+    ],
+    "type": "store"
+  },
   "store:errorLogStore": {
     "path": "src/shared/state/errorLogStore.ts",
     "summary": "The \"logging zone\": a persistent, capped store of errors the app has hit, so they can be reviewed and exported to fix later.",
@@ -2950,6 +2973,9 @@
   "store:settingsStore": {
     "path": "src/shared/state/settingsStore.ts",
     "summary": "Cross-cutting runtime settings, persisted across launches via expo-file-system \u2014 see persistStorage.ts and docs/features/settings.md.",
+    "tests": [
+      "src/shared/state/settingsStore.test.ts"
+    ],
     "tokens": [
       "settings"
     ],

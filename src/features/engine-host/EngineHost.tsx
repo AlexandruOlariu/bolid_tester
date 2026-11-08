@@ -32,7 +32,7 @@ import { useLiveDataStore } from '@/features/live-data/model/liveDataStore';
 import { useAlertsStore } from '@/features/alerts/model/alertsStore';
 import { useNotificationsStore } from '@/features/notifications/model/notificationsStore';
 import { useTripStore } from '@/features/trip-recording/model/tripStore';
-import { useDtcStore } from '@/features/fault-codes/model/dtcStore';
+import { useDtcStore } from '@/shared/state/dtcStore';
 import { useCoachStore } from '@/features/fault-codes/model/coachStore';
 import { computePollPids, enabledRulePids } from './pollPids';
 
@@ -74,7 +74,8 @@ export function EngineHost(): null {
   const rules = useAlertsStore((s) => s.rules);
   const setRules = useAlertsStore((s) => s.setRules);
   useEffect(() => {
-    if (rules.length === 0 && info?.supportedPids?.length) setRules(defaultRules(info.supportedPids));
+    if (rules.length === 0 && info?.supportedPids?.length)
+      setRules(defaultRules(info.supportedPids));
   }, [info, rules.length, setRules]);
 
   // Keep the shared notifier in sync with the user's prefs at startup and on every change.
@@ -120,7 +121,9 @@ export function EngineHost(): null {
       if (cancelled) return;
       const recording = useTripStore.getState().recording;
       const profile = getVehicleProfile(useVehicleStore.getState().selectedProfileId);
-      const effective = session.effectivePids(profile.id === 'generic' ? undefined : profile.supportedPids);
+      const effective = session.effectivePids(
+        profile.id === 'generic' ? undefined : profile.supportedPids,
+      );
       const pids = computePollPids({
         registrations: useLiveDataStore.getState().registrations,
         alertPids: enabledRulePids(useAlertsStore.getState().rules),
@@ -226,7 +229,8 @@ export function EngineHost(): null {
 
   // End coach mode on disconnect so it doesn't silently resume on the next connection.
   useEffect(() => {
-    if (status !== 'connected' && useCoachStore.getState().enabled) useCoachStore.getState().reset();
+    if (status !== 'connected' && useCoachStore.getState().enabled)
+      useCoachStore.getState().reset();
   }, [status]);
 
   return null;

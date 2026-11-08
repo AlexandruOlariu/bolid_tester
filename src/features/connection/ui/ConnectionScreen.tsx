@@ -3,35 +3,32 @@ import { Platform } from 'react-native';
 import { YStack, XStack, Button, Paragraph, Spinner, Text, Card, Input } from 'tamagui';
 import { CheckCircle2, XCircle, Loader, CircleDashed } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
-import { HintCard } from '@/features/onboarding';
+import { FirstRunCard } from '@/features/onboarding';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import type { ConnState } from '@/shared/state/sessionStore';
 import { useScan } from '../hooks/useScan';
 import { useConnect } from '../hooks/useConnect';
+import { switchToRealAdapter } from '../api/connectionService';
 import { useBluetoothState } from '../hooks/useBluetoothState';
 import { DeviceRow } from './DeviceRow';
 import { BluetoothPrompt } from './BluetoothPrompt';
 import { Panel } from '../styles/connection.styles';
 
-const STATUS_CONFIG: Record<ConnState, { icon: React.ElementType; color: string; label: string }> = {
-  disconnected: { icon: CircleDashed,  color: '#8B949E', label: 'Disconnected' },
-  connecting:   { icon: Loader,        color: '#E3B341', label: 'Connecting…'  },
-  initializing: { icon: Loader,        color: '#E3B341', label: 'Initializing…'},
-  connected:    { icon: CheckCircle2,  color: '#2bb673', label: 'Connected'    },
-  error:        { icon: XCircle,       color: '#F85149', label: 'Error'        },
-};
+const STATUS_CONFIG: Record<ConnState, { icon: React.ElementType; color: string; label: string }> =
+  {
+    disconnected: { icon: CircleDashed, color: '#8B949E', label: 'Disconnected' },
+    connecting: { icon: Loader, color: '#E3B341', label: 'Connecting…' },
+    initializing: { icon: Loader, color: '#E3B341', label: 'Initializing…' },
+    connected: { icon: CheckCircle2, color: '#2bb673', label: 'Connected' },
+    error: { icon: XCircle, color: '#F85149', label: 'Error' },
+  };
 
 function StatusHero({ status }: { status: ConnState }) {
   const cfg = STATUS_CONFIG[status];
   const Icon = cfg.icon;
   return (
-    <Card
-      bordered
-      padding="$4"
-      borderColor={cfg.color}
-      borderWidth={1.5}
-    >
+    <Card bordered padding="$4" borderColor={cfg.color} borderWidth={1.5}>
       <XStack alignItems="center" gap="$3">
         <Icon size={32} color={cfg.color} />
         <YStack>
@@ -62,13 +59,10 @@ export function ConnectionScreen() {
   const btBlocked = bt.poweredOff || bt.unauthorized || bt.unsupported;
 
   return (
-    <Screen title="Connect" subtitle="Pair with your OBD2 adapter, or use the built-in simulator">
+    <Screen title="Connect" subtitle="Pair with your OBD2 Bluetooth adapter">
       <StatusHero status={status} />
 
-      <HintCard id="connect-basics" title="Getting started">
-        Pick your car on the Vehicle tab, then connect here. No adapter? Turn on Simulator mode in
-        Settings — it emulates a real ECU so you can explore every screen with no hardware.
-      </HintCard>
+      <FirstRunCard />
 
       {error ? (
         <Panel backgroundColor="$red2">
@@ -80,8 +74,10 @@ export function ConnectionScreen() {
         <YStack gap="$3" marginTop="$2">
           <Panel>
             <Paragraph fontSize="$3">
-              Simulator mode is on (change in Settings).{'\n'}Emulating:{' '}
-              <Text fontWeight="700" color="$color">{simulated}</Text>
+              Simulator mode is on — readings are not from a real car.{'\n'}Emulating:{' '}
+              <Text fontWeight="700" color="$color">
+                {simulated}
+              </Text>
             </Paragraph>
           </Panel>
           <Button
@@ -92,6 +88,9 @@ export function ConnectionScreen() {
             onPress={() => connect()}
           >
             Connect to simulator
+          </Button>
+          <Button size="$5" disabled={busy} onPress={() => void switchToRealAdapter()}>
+            Use a real adapter
           </Button>
         </YStack>
       ) : (
@@ -118,9 +117,9 @@ export function ConnectionScreen() {
             ))}
             {!scanning && devices.length === 0 ? (
               <Paragraph theme="alt2" fontSize="$3">
-                No devices yet. Plug in the adapter, switch the ignition on, then scan. If the adapter
-                is already paired in Android’s Bluetooth settings it may have stopped advertising —
-                “Forget” it there first, or connect by address below.
+                No devices yet. Plug in the adapter, switch the ignition on, then scan. If the
+                adapter is already paired in Android’s Bluetooth settings it may have stopped
+                advertising — “Forget” it there first, or connect by address below.
               </Paragraph>
             ) : null}
           </YStack>

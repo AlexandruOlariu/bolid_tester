@@ -1,7 +1,7 @@
 # Bolid Tester
 
 A **generic OBD2 / EOBD diagnostics app** for Android and iOS that talks to an ELM327-compatible
-**Bluetooth Low Energy** adapter (e.g. the *Vgate iCar Pro Bluetooth 4.0*). It reads live engine
+**Bluetooth Low Energy** adapter (e.g. the _Vgate iCar Pro Bluetooth 4.0_). It reads live engine
 data, reads & clears fault codes, shows readiness / freeze-frame and the VIN — and adds trip
 recording, charts, performance tests, alerts, sensor tests, and gated, experimental coding /
 service-interval reset — for any OBD2-compliant car.
@@ -32,24 +32,24 @@ PIDs), **settings** (with a built-in **simulator** so the whole app runs with no
 
 Phase-4 additions (reachable from the **More** tab):
 
-| Feature | What it does | Notes |
-|---|---|---|
-| [Diagnose (AI)](./docs/features/ai-diagnose.md) | One-tap AI health report from a local OpenAI-compatible LLM (e.g. LM Studio); reads + gated clear-DTC | falls back to on-device rules if no server |
-| [History](./docs/features/history.md) | Persistent log of past AI diagnoses & fault-code checks | unlimited, clearable; file-backed |
-| [Trips](./docs/features/trip-recording.md) | Record live data, export CSV/JSON, replay | — |
-| [Charts](./docs/features/live-charts.md) | Live PIDs plotted over time | — |
-| [Performance](./docs/features/performance-tests.md) | 0–100, ¼-mile, braking | closed-course |
-| [Alerts](./docs/features/alerts.md) | Threshold warnings (haptic/visual/sound) | — |
-| [Notifications](./docs/features/notifications.md) | Local notifications + maintenance reminders | on-device only |
-| [Sensor tests](./docs/features/sensor-tests.md) | Mode 06 + experimental module sensors (ABS) | module reads CAN-only |
-| [Coding](./docs/features/coding.md) | Experimental UDS module coding | gated, backup-first |
-| [Service reset](./docs/features/service-reset.md) | Service-interval ("oil/SRI") reset | gated; CAN (Golf) **and** KWP2000 (Passat) |
-| [DPF / regen](./docs/features/dpf.md) | Diesel soot load, regeneration status, EGT/EGR | experimental Mode 22; **CAN diesel only** |
-| [Used-car inspection](./docs/features/used-car-inspection.md) | One-tap pre-purchase check incl. a "codes recently cleared?" tell | standard OBD2; any car |
-| [Battery & charging](./docs/features/battery-health.md) | Resting/cranking/charging voltage → health verdict | voltage-based, not a load test |
-| [VIN decoder](./docs/features/vin-decode.md) | WMI / country / year / check-digit from the VIN, offline | NA year/check conventions flagged |
-| [Maintenance log](./docs/features/maintenance-log.md) | Service logbook + what's-due by km/time | odometer user-entered |
-| [Error log](./docs/features/error-log.md) | Saves caught & uncaught errors; export as Markdown/JSON to fix later | on-device, capped, clearable |
+| Feature                                                       | What it does                                                                                          | Notes                                      |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| [Diagnose (AI)](./docs/features/ai-diagnose.md)               | One-tap AI health report from a local OpenAI-compatible LLM (e.g. LM Studio); reads + gated clear-DTC | falls back to on-device rules if no server |
+| [History](./docs/features/history.md)                         | Persistent log of past AI diagnoses & fault-code checks                                               | unlimited, clearable; file-backed          |
+| [Trips](./docs/features/trip-recording.md)                    | Record live data, export CSV/JSON, replay                                                             | —                                          |
+| [Charts](./docs/features/live-charts.md)                      | Live PIDs plotted over time                                                                           | —                                          |
+| [Performance](./docs/features/performance-tests.md)           | 0–100, ¼-mile, braking                                                                                | closed-course                              |
+| [Alerts](./docs/features/alerts.md)                           | Threshold warnings (haptic/visual/sound)                                                              | —                                          |
+| [Notifications](./docs/features/notifications.md)             | Local notifications + maintenance reminders                                                           | on-device only                             |
+| [Sensor tests](./docs/features/sensor-tests.md)               | Mode 06 + experimental module sensors (ABS)                                                           | module reads CAN-only                      |
+| [Coding](./docs/features/coding.md)                           | Experimental UDS module coding                                                                        | gated, backup-first                        |
+| [Service reset](./docs/features/service-reset.md)             | Service-interval ("oil/SRI") reset                                                                    | gated; CAN (Golf) **and** KWP2000 (Passat) |
+| [DPF / regen](./docs/features/dpf.md)                         | Diesel soot load, regeneration status, EGT/EGR                                                        | experimental Mode 22; **CAN diesel only**  |
+| [Used-car inspection](./docs/features/used-car-inspection.md) | One-tap pre-purchase check incl. a "codes recently cleared?" tell                                     | standard OBD2; any car                     |
+| [Battery & charging](./docs/features/battery-health.md)       | Resting/cranking/charging voltage → health verdict                                                    | voltage-based, not a load test             |
+| [VIN decoder](./docs/features/vin-decode.md)                  | WMI / country / year / check-digit from the VIN, offline                                              | NA year/check conventions flagged          |
+| [Maintenance log](./docs/features/maintenance-log.md)         | Service logbook + what's-due by km/time                                                               | odometer user-entered                      |
+| [Error log](./docs/features/error-log.md)                     | Saves caught & uncaught errors; export as Markdown/JSON to fix later                                  | on-device, capped, clearable               |
 
 > ⚠️ Coding and service-reset are **experimental writes** to control modules. They ship gated
 > (explicit confirmation), are profile-driven, back up the current values first, and the shipped
@@ -75,8 +75,9 @@ npm install
 npx expo start --dev-client -c     # -c clears Metro's cache (needed after adding files)
 ```
 
-The **Settings → Adapter source** toggle switches between a real BLE adapter and the simulator, so
-every screen works with no car. After pulling new native dependencies, install them with
+A fresh install uses the **real Bluetooth adapter**. To work with no car, switch **Settings → Adapter
+source** to **Simulator (no car)** — every screen then runs against the built-in virtual ECU, and an
+amber banner stays visible so simulated readings are never mistaken for the real car. After pulling new native dependencies, install them with
 `npx expo install` (this project uses `expo-notifications`, `expo-file-system`, `expo-haptics`,
 `expo-location`, `expo-sharing`).
 
@@ -113,8 +114,8 @@ object-file paths embed the full project path, which overflows 260 chars.
    ```bat
    mklink /J C:\b "C:\Users\<you>\...\bolid_tester"
    ```
-2. **Delete the stale native build** (it was configured with the long paths) and rebuild *from the
-   junction*:
+2. **Delete the stale native build** (it was configured with the long paths) and rebuild _from the
+   junction_:
    ```bat
    rmdir /s /q C:\b\android\app\.cxx
    cd /d C:\b\android
