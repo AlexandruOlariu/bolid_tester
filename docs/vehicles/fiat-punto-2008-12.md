@@ -4,6 +4,8 @@ name: Fiat Grande Punto 1.2 2008 (petrol)
 expectedProtocol: ISO_15765_4_CAN_11_500
 supportedPidCount: 13
 extended: false
+validatedOn:
+observedProtocol:
 ---
 
 # Fiat Grande Punto 1.2 2008 — petrol, manual
@@ -44,6 +46,16 @@ None defined. Mode 22 (UDS) is not relied upon here; left to the generic flow.
 2. Read VIN (Mode 09) and confirm it matches the windscreen.
 3. Read live data at idle: RPM (~850), coolant, throttle, fuel trims near 0 %, MAP.
 4. Read DTCs (Mode 03/07); clear a harmless one and confirm.
+
+## Validated on the car
+
+Filled in after each on-car session ([testing.md → Recording results](../testing.md#recording-results)).
+One row per flow; the Fixture column names the committed car fixture in
+`src/shared/obd-core/transport/fixtures/<id>/`. Simulator fixtures (`sim-*.json`) never count.
+
+| Date                | App build | Adapter | Flow | Result | Fixture |
+| ------------------- | --------- | ------- | ---- | ------ | ------- |
+| _not yet validated_ |           |         |      |        |         |
 
 ## Notes
 

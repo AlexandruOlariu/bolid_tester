@@ -3,13 +3,19 @@ import { Platform } from 'react-native';
 import { ScrollView, YStack, XStack, Text, Paragraph, Button, Card, Input, Spinner } from 'tamagui';
 import { Screen } from '@/shared/ui';
 import { useSettingsStore, parseDtcList } from '@/shared/state/settingsStore';
-import { useAdapterLogStore, clearAdapterLog } from '@/shared/state/adapterLog';
+import {
+  useAdapterLogStore,
+  clearAdapterLog,
+  ADAPTER_LOG_CAPACITY,
+} from '@/shared/state/adapterLog';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { VEHICLE_PROFILES } from '@/shared/vehicles';
 import { normalizeBaseUrl } from '@/shared/obd-core';
 import { listModels, AiClientError } from '@/shared/ai';
 import { logError } from '@/shared/state/errorLogStore';
 import { useLogFixtureExport } from '../hooks/useLogFixtureExport';
+import { DEFAULT_FLOW_NAME } from '../model/replayExport';
+import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { connectionService } from '@/features/connection';
 import { APP_NAME, APP_VERSION } from '@/shared/lib/appInfo';
 import { PRIVACY_POLICY, PRIVACY_POLICY_UPDATED } from '../model/privacyPolicy';
@@ -351,12 +357,54 @@ function AboutSection() {
   );
 }
 
+/** Warning for an adapter log that wrapped: the export would start mid-session. */
+function wrappedText(dropped: number): string {
+  return `the oldest ${dropped} lines were dropped, so the export starts mid-session. Clear the log and record a shorter flow.`;
+}
+
 export function SettingsScreen() {
   const { exportFixture, busy: exportingFixture } = useLogFixtureExport();
   const s = useSettingsStore();
   const log = useAdapterLogStore((st) => st.entries);
+  const logDropped = useAdapterLogStore((st) => st.dropped);
   const status = useSessionStore((st) => st.status);
+  const info = useSessionStore((st) => st.info);
+  const selectedProfileId = useVehicleStore((st) => st.selectedProfileId);
+  const [flowName, setFlowName] = useState(DEFAULT_FLOW_NAME);
+  // The outcome of the last export, with the log's `dropped` count at that moment. It gives way to
+  // the default hint on Clear, and to the "log is full" warning as soon as the log wraps further,
+  // so a stale "Saved …" never hides that warning for the next flow.
+  const [exportStatus, setExportStatus] = useState<{ text: string; dropped: number } | null>(null);
   const monoFont = Platform.select({ ios: 'Courier', android: 'monospace', default: 'monospace' });
+
+  // A simulator session is labelled as such (and with the simulated car), so it can never pass for
+  // an on-car validation fixture. The label is the source at export time; that matches the log
+  // because `switchAdapterSource` clears the log on every switch and a superseded link logs nothing.
+  const onExportFixture = async () => {
+    const simulator = s.adapterSource === 'mock';
+    const saved = await exportFixture({
+      log,
+      flow: flowName,
+      vehicleId: simulator ? s.simulatedVehicleId : selectedProfileId,
+      source: simulator ? 'simulator' : 'car',
+      adapter: info?.version,
+      protocol: info?.protocol,
+      droppedEntries: logDropped,
+      appVersion: APP_VERSION,
+    });
+    setExportStatus({
+      dropped: logDropped,
+      text: !saved
+        ? 'Could not save the replay fixture. See More → Error log for details.'
+        : logDropped > 0
+          ? `Saved ${saved}, but the log was full: ${wrappedText(logDropped)}`
+          : `Saved ${saved}. Clear the log before recording the next flow.`,
+    });
+  };
+  const onClearLog = () => {
+    clearAdapterLog();
+    setExportStatus(null);
+  };
 
   return (
     <Screen title="Settings">
@@ -462,19 +510,36 @@ export function SettingsScreen() {
       <YStack gap="$2">
         <XStack justifyContent="space-between" alignItems="center">
           <SectionLabel>Adapter log</SectionLabel>
-          <XStack gap="$2">
-            <Button
-              size="$2"
-              disabled={exportingFixture || log.length === 0}
-              onPress={() => void exportFixture(log, 'adapter session')}
-            >
-              Export as replay fixture
-            </Button>
-            <Button size="$2" onPress={clearAdapterLog}>
-              Clear
-            </Button>
-          </XStack>
+          <Button size="$2" onPress={onClearLog}>
+            Clear
+          </Button>
         </XStack>
+        <XStack gap="$2" alignItems="center">
+          <Input
+            flex={1}
+            size="$3"
+            value={flowName}
+            onChangeText={setFlowName}
+            placeholder={DEFAULT_FLOW_NAME}
+            autoCapitalize="none"
+            autoCorrect={false}
+            accessibilityLabel="Flow name"
+          />
+          <Button
+            size="$3"
+            disabled={exportingFixture || log.length === 0}
+            onPress={() => void onExportFixture()}
+          >
+            Export as replay fixture
+          </Button>
+        </XStack>
+        <Paragraph theme="alt2" fontSize="$1">
+          {exportStatus && logDropped <= exportStatus.dropped
+            ? exportStatus.text
+            : logDropped > 0
+              ? `The log is full: ${wrappedText(logDropped)}`
+              : `Name the flow you just ran (connect, live, faults, clear…). The file records every command and the reply it got (the last ${ADAPTER_LOG_CAPACITY} log lines), so the session can be replayed in tests.`}
+        </Paragraph>
         <Card bordered padding="$2" height={220} backgroundColor="$backgroundStrong">
           <ScrollView>
             {log
@@ -489,7 +554,7 @@ export function SettingsScreen() {
                   numberOfLines={1}
                 >
                   {e.dir === 'tx' ? '» ' : '« '}
-                  {e.text}
+                  {e.text.replace(/\s+/g, ' ').trim()}
                 </Text>
               ))}
             {log.length === 0 ? (

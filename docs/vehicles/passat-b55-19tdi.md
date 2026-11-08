@@ -6,6 +6,8 @@ vin: WVWZZZ3BZ4E342958
 engineCode: AVB
 supportedPidCount: 9
 extended: false
+validatedOn:
+observedProtocol:
 ---
 
 # VW Passat B5.5 — 1.9 TDI AVB-family (diesel)
@@ -62,6 +64,16 @@ accessible generically. This is the documented limit, not an app bug.
 5. Read VIN (Mode 09 may be unsupported on this ECU); if present, confirm it matches
    `WVWZZZ3BZ4E342958`.
 6. Read engine DTCs; the 2025-05-17 VCDS scan had no engine faults.
+
+## Validated on the car
+
+Filled in after each on-car session ([testing.md → Recording results](../testing.md#recording-results)).
+One row per flow; the Fixture column names the committed car fixture in
+`src/shared/obd-core/transport/fixtures/<id>/`. Simulator fixtures (`sim-*.json`) never count.
+
+| Date                | App build | Adapter | Flow | Result | Fixture |
+| ------------------- | --------- | ------- | ---- | ------ | ------- |
+| _not yet validated_ |           |         |      |        |         |
 
 ## Notes
 

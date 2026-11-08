@@ -10,6 +10,7 @@ real Vgate adapter).
 | `npm run test:core`     | `*.test.ts`: engine, simulator, stores, services (ts-jest, Node)             |
 | `npm run test:ui`       | `*.test.tsx`: component tests (jest-expo + React Native Testing Library)     |
 | `npm run check:release` | release config: signing plugin vs. a generated-gradle fixture, version sync  |
+| `npm run fixtures:sim`  | re-record the committed simulator replay fixtures (`sim-*.json`)             |
 | `npm run ci`            | core typecheck + app typecheck + lint + `check:release` + both Jest projects |
 
 ## Automated (no hardware)
@@ -34,7 +35,14 @@ The `core` Jest project (`npm run test:core`; ts-jest over the pure-TS core in N
   - injected DTCs read then clear,
   - VIN decodes (or is correctly reported absent).
 - **vehicle-docs-sync** — every TS profile has a `docs/vehicles/<id>.md`; the doc front-matter
-  `expectedProtocol` and `supportedPidCount` match the TS profile.
+  `expectedProtocol` and `supportedPidCount` match the TS profile; a recorded `observedProtocol`
+  equals `expectedProtocol`; the "Validated on the car" table lists exactly the committed car
+  fixtures.
+- **Replay fixtures** — `fixtures.replay.test.ts` replays every committed fixture under
+  `transport/fixtures/` through `DiagnosticSession` and asserts its `expect` block;
+  `sim-fixtures.freshness.test.ts` fails when the committed simulator fixtures differ from a fresh
+  recording (regenerate with `npm run fixtures:sim`). See
+  [simulator.md → Replay fixtures](./simulator.md#replay-fixtures).
 
 Also: `npm run typecheck` (core, `tsc --noEmit`), `npm run lint` (eslint over `src/`, `test/` and
 `jest.setup.ui.ts`), and `npm run typecheck:app` (full RN app, including the `*.test.tsx` component
@@ -148,6 +156,50 @@ profile's `testChecklist`:
 
 ### Recording results
 
-After each real connection, update the car's doc with the **observed** protocol and any PID
-availability surprises, then adjust the TS profile and re-run `npm test`. This keeps docs and code in
-sync as we learn each car's real behavior.
+Every on-car flow is captured as a **replay fixture** and committed, so what the car answered
+becomes a CI test ([simulator.md → Replay fixtures](./simulator.md#replay-fixtures)). The doc is
+corrected first, then the TS profile, then `npm test`.
+
+**Session script** (Golf first, then Punto, then Passat). Prepare: phone charged, a build from
+`main`, Settings → **Real adapter (Bluetooth)**, adapter plugged in. Before each flow: Settings →
+Adapter log → **Clear**. After each flow: type the flow name in **Flow name**, then **Export as
+replay fixture**; send the files to the repo (any channel). Flows 2–9 run on the session that
+flow 1 connected, so their files hold no connect traffic; that is expected (see step 1 below). The
+log keeps the last 300 lines: if Settings says **the log is full** before you export, clear it and
+run the flow again, shorter.
+
+| #   | Flow name                                        | Steps on the car                                                                              | Record                                                                                               |
+| --- | ------------------------------------------------ | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| 1   | `connect`                                        | Ignition ON, engine OFF. Connect → Scan → pick the Vgate → wait for Connected. Open **Info**. | Protocol, VIN, adapter version, supported-PID count, voltage; seconds from tap to Connected.         |
+| 2   | `live`                                           | Start engine. **Live** about 30 s at idle, a few throttle blips.                              | Which gauges/cards show values; update feel; any `—`.                                                |
+| 3   | `faults`                                         | **Faults** → pull to refresh. Open each code's Guide.                                         | Codes vs the known list (`P2183`, `P2015`, `P0121` on the Golf), readiness, MIL, freeze-frame count. |
+| 4   | `inspection`                                     | More → **Used-car inspection** → run.                                                         | Verdict; IUPR present or not.                                                                        |
+| 5   | `battery`                                        | Engine OFF: More → **Battery & charging** → capture 20 s; second capture while starting.      | Resting V, cranking dip, charging V, verdict.                                                        |
+| 6   | `extended`                                       | Info → **Extended PIDs** → read every DID once.                                               | Per DID: value / `NO DATA` / negative response. Decides which illustrative DIDs survive.             |
+| 7   | `module-scan`                                    | More → **Module scan** (engine ON, parked).                                                   | Which modules answer; on the Golf only the engine pair is expected.                                  |
+| 8   | `sniffer`                                        | More → **Bus sniffer** → 10 s at idle → Stop → Share CSV.                                     | Frame count, dominant IDs.                                                                           |
+| 9   | `clear` (only if a harmless pending code exists) | Faults → Clear → re-read.                                                                     | Before/after sets.                                                                                   |
+
+Passat: expect `BUS INIT` / `SEARCHING…`; flows 6–8 do not apply; note the time to connect. Punto:
+two ECUs answer `0100`; confirm there are no phantom DTCs.
+
+**After the session** (whoever commits the files):
+
+1. Copy each exported JSON to `src/shared/obd-core/transport/fixtures/<vehicleId>/<flow>.json`
+   (never `sim-*`); keep `meta.source: 'car'`; write `expect` from what the car actually answered
+   (read the `pairs`). Only `connect.json` holds the connect handshake (`0100`), so only it carries
+   `protocol`, `vin` and `supportedPidCount`; the checker reports those fields on a file without
+   connect traffic. In `clear.json`, `storedDtcsAfterClear` is the last `03` reply in the file. A
+   file with `meta.droppedEntries` lost its oldest lines: re-record it if the flow's start is
+   missing.
+2. Run `npm test -- fixtures.replay`. Each failure is either a wrong expectation (fix the fixture) or
+   an app bug (fix the code and add a regression test that uses the fixture).
+3. Fill the vehicle doc's **Validated on the car** row per flow (the last column names the fixture
+   file; `vehicle-docs-sync` fails until every car fixture is listed and every listed file exists).
+   Set `validatedOn` and `observedProtocol` in the front-matter; `observedProtocol` must equal the
+   profile's `expectedProtocol`, so correct the doc and the profile if the car disagrees. If the
+   observed PID bitmap differs from `supportedPids`, change `supportedPidCount` in the doc first,
+   then the profile.
+4. Flow 6 decides each extended DID: confirmed → keep and mark it; `NO DATA` / negative → remove it
+   from the profile and note it in the doc.
+5. Write an `implementation-log.md` entry; flip "On-car validation log" in the roadmap per car.

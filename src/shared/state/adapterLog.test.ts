@@ -32,6 +32,11 @@ describe('adapterLog ring buffer', () => {
     expect(snap).toHaveLength(mod.ADAPTER_LOG_CAPACITY);
     expect(snap[0].text).toBe('c50'); // first 50 evicted
     expect(snap[snap.length - 1].text).toBe(`c${total - 1}`);
+    jest.advanceTimersByTime(mod.ADAPTER_LOG_PUBLISH_INTERVAL_MS);
+    // The store counts what fell off, so a replay-fixture export can warn it starts mid-session.
+    expect(mod.useAdapterLogStore.getState().dropped).toBe(50);
+    mod.clearAdapterLog();
+    expect(mod.useAdapterLogStore.getState().dropped).toBe(0);
   });
 
   it('publishes the leading append immediately, then coalesces a burst into one trailing flush', () => {

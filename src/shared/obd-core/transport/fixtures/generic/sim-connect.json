@@ -1,0 +1,34 @@
+{
+  "name": "sim-connect",
+  "pairs": {
+    "ATI": "ELM327 v2.2",
+    "ATZ": "ELM327 v2.2",
+    "ATE0": "OK",
+    "ATL0": "OK",
+    "ATS0": "OK",
+    "ATH0": "OK",
+    "ATAT1": "OK",
+    "ATSP0": "OK",
+    "0100": "41001E3F8003",
+    "ATDPN": "6",
+    "ATRV": "12.3V",
+    "0120": "412080022001",
+    "0140": "414044000010",
+    "0902": "014\r0:490201314847\r1:424834314A584D\r2:4E313039313836",
+    "0904": "011\r0:49040147454E\r1:455249432D4341\r2:4C2D3031"
+  },
+  "sequences": {},
+  "meta": {
+    "source": "simulator",
+    "vehicleId": "generic",
+    "flow": "connect",
+    "adapter": "ELM327 v2.2",
+    "protocol": "ISO_15765_4_CAN_11_500",
+    "notes": "Recorded from the simulator (MockTransport + buildScenario) by scripts/record-sim-fixtures.ts. Exercises the fixture pipeline; not a validation on the car."
+  },
+  "expect": {
+    "protocol": "ISO_15765_4_CAN_11_500",
+    "vin": "1HGBH41JXMN109186",
+    "supportedPidCount": 18
+  }
+}

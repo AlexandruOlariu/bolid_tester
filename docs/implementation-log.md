@@ -5,6 +5,182 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 02 — Log → fixture pipeline (Part A) (2026-11-09)
+
+[Plan 02](./plans/02-on-car-validation.md) Part A landed: any adapter session can become a replay
+fixture, committed fixtures run in CI against the real `DiagnosticSession`, and the simulator is
+recorded into fixtures for every registry profile. Not done yet: Part B, the on-car sessions
+(drive the Golf, Punto and Passat, export one fixture per flow, fill the tables). The procedure is
+in [testing.md → Recording results](./testing.md#recording-results).
+
+- **Fixture format** (`transport/logReplay.ts`). `ReplayFixture` gains:
+  - `sequences`: every reply per command, kept only for commands whose reply changed;
+  - `meta`: `source` (`simulator` | `car`), `vehicleId`, `flow`, `adapter`, `protocol`,
+    `appVersion`, `notes`;
+  - `expect`: `protocol`, `vin`, `supportedPidCount`, `storedDtcs`, `pendingDtcs`, `milOn`, and
+    two additions, `freezeFrameCount` and `storedDtcsAfterClear`.
+
+  `fixtureFromLog(entries, name?, { meta?, keepSequences? })` fills `sequences` by default.
+  `ReplayTransport` keeps a per-command cursor over `sequences` (repeating the last reply when
+  exhausted), then falls back to `pairs`, then to `OK` / `NO DATA`.
+
+- **Line structure is now kept.** The old log turned every `\r` into a space and trimmed each BLE
+  chunk, and `fixtureFromLog` joined chunks with spaces. A multi-ECU reply (the Punto's two `0100`
+  lines) or an ISO-TP printout (a CAN VIN) therefore replayed as one line. The parser then read the
+  wrong bytes: the F4 phantom-DTC bug, inside the fixture. Now:
+  - `logTxText` / `logRxText` (new, in `transport/recordingTransport.ts`) are the single
+    normalisation for both `connectionService.withLog` and `RecordingTransport`;
+  - rx chunks keep their line breaks as `\r` and are not trimmed;
+  - `fixtureFromLog` concatenates a command's chunks as sent, then rebuilds the lines.
+
+  The Settings log view and `formatLogLine` collapse whitespace for display, so the UI looks the
+  same. One existing `logReplay.test.ts` expectation changed for this reason, from
+  `'SEARCHING... 41 00 …'` to `'SEARCHING...\r41 00 …'`.
+
+- **`RecordingTransport` + `recordSession(inner, run, meta, options?)`**: they record tx/rx in
+  order, disconnect in `finally`, and return the fixture. The callback connects the session itself.
+- **Simulator fixtures.** `transport/simFixtures.ts` records `connect`, `faults` and `clear` per
+  registry profile into `transport/fixtures/<id>/sim-<flow>.json`, 12 files in all, and the files
+  are committed. The `expect` block comes from the scenario, not from the recording. Files are
+  deterministic: no `createdAt`, no app version.
+
+  `npm run fixtures:sim` runs `scripts/record-sim-fixtures.ts`, which also removes stale `sim-*`
+  files, through `scripts/run-ts.cjs`. That is a 30-line runner on the existing `typescript`
+  devDependency (`ts.transpileModule` as a `.ts` require hook), so no tsx / ts-node was added.
+  `tsconfig.json` (core) now typechecks `scripts/**/*.ts`.
+
+- **Tests.** Suites went from 94 to 100, tests to 750 (after the review fixes).
+  - `fixtures.replay.test.ts`: every committed fixture passes `checkReplayFixture`
+    (`transport/fixtureCheck.ts`, which returns one message per mismatch). Each fixture's
+    `meta.vehicleId` must match its folder, and `sim-` is reserved for `source: 'simulator'`. A car
+    fixture must be listed in its doc's table. A permanent test checks that a deliberately wrong
+    `expect` is reported, field by field.
+  - `sim-fixtures.freshness.test.ts`: the committed files equal a fresh recording (none missing or
+    stale). It also checks that the recording is deterministic and that a changed scenario VIN no
+    longer matches. Checked by hand as well: editing the Punto calibration ID in `scenarios.ts`
+    turned the suite red. Reverted.
+  - `recordingTransport.test.ts`: the normalisation, tx/rx order, an identical `SessionInfo` on
+    replay for all four profiles (including the multi-ECU Punto and the K-line Passat), a clear
+    flow replayed before and after through `sequences`, and disconnect when the flow throws.
+  - `logReplay.test.ts`: sequences replayed in order and then repeating the last reply; `pairs`
+    still first-wins; BLE chunks split mid-line; a replayed multi-ECU reply still parses as two
+    frames; `meta` / `expect` survive a JSON round trip.
+  - `fixtureCheck.test.ts`: the shapes a real export has but a simulator recording does not, a
+    flow logged after the connect (no `0100`) and a clear flow with two `03` reads before the `04`.
+  - `replayExport.test.ts` and `SettingsScreen` tests for the export (simulator, car, wrapped log),
+    see below.
+- **Settings export.** A **Flow name** field (default `session`) sits next to **Export as replay
+  fixture**. `model/replayExport.ts` (pure) builds the fixture and the file name
+  `bolid-replay-<vehicleId>-<flow>-<stamp>.json`. `meta` carries:
+  - `adapter` and `protocol` from the live session;
+  - `appVersion` from `APP_VERSION`;
+  - `vehicleId` from the selected profile (`vehicleStore`), or the simulated car in simulator mode.
+
+  On success the copy reads "Saved <file>. Clear the log before recording the next flow."
+
+- **Review fixes.**
+  - _Fixtures recorded mid-session._ The session script clears the log before each flow on an
+    already-connected session, so only `connect` holds `0100`. `checkReplayFixture` used to call
+    `connect()` on every fixture, so every other car fixture would have failed with "no reply to
+    0100". It now connects only when the fixture has a `0100` reply (`hasConnectTraffic`).
+    Otherwise it attaches the session to the replay transport directly, checks only the
+    non-connect expectations, and reports any `protocol` / `vin` / `supportedPidCount`
+    expectation on that fixture.
+  - _Clear flows with several `03` reads._ `storedDtcsAfterClear` used to read the next `03` in the
+    sequence, which is wrong when the Faults screen read `03` more than once before the `04`. The
+    checker now calls the new `ReplayTransport.skipToLast('03')` after the `04`, so it checks the
+    last recorded answer.
+  - _Wrapped adapter log._ The ring buffer counts the entries it overwrites (`dropped`, reset by
+    **Clear**, published with the snapshot). When it is above 0, the Settings hint and the saved
+    message say the export starts mid-session, and the fixture records `meta.droppedEntries`. The
+    session script's `live` flow is now about 30 s (it was 2 minutes, which wraps a 300-line log),
+    and testing.md / simulator.md / settings.md mention the 300-line cap. The capacity itself is
+    unchanged.
+  - _Car branch tested in the screen._ A `SettingsScreen` test exports with
+    `adapterSource: 'ble'` and checks `meta.source: 'car'` and the selected profile's id.
+  - _The export could not write on a device._ The hook loaded the root `expo-file-system`, which
+    on this SDK (56) has no `documentDirectory` and throws for `writeAsStringAsync`. Every export
+    therefore returned null, and nothing was logged. The write + share now lives in
+    `settings/api/replayFixtureFile.ts` (`saveReplayFixture`). It uses `expo-file-system/legacy`,
+    like the sniffer's `captureExport.ts`, and logs a `settings/replay-export` warning on every
+    null, including the "no document directory" case. `replayFixtureFile.test.ts` mocks only the
+    legacy module, so a root import fails it. `useLogFixtureExport` now only tracks `busy`.
+  - _Stale saved message._ The "Saved …" status stayed up until the screen unmounted, so it hid the
+    "log is full" warning on the next flow. **Clear** now resets it. The status also remembers the
+    `dropped` count at export time, and the warning replaces it as soon as the log wraps further. A
+    `SettingsScreen` test covers export → Clear → export → wrap.
+  - _Mislabelled exports after a source switch._ The export reads `meta.source` / `vehicleId` /
+    `adapter` / `protocol` when **Export** is pressed, but switching the adapter source did not
+    clear the log, so a simulator log could be exported as `source: 'car'` (and the reverse).
+    `connectionService.switchAdapterSource` now calls `clearAdapterLog()`, and `withLog` takes the
+    connect's `stale()` guard so a connect superseded by the switch logs nothing more. Two
+    `connectionService.test.ts` cases cover both (the second fails with the guard removed).
+  - _Validation rules tested on bad input._ Every doc is still the empty template and no car
+    fixture is committed, so the per-vehicle `observedProtocol` and table checks passed without
+    checking anything. The rules are now pure functions in `vehicles/validatedOn.ts`
+    (`validationFrontMatterProblems`, `validatedOnTableProblems`, `carFixturesFor`, plus
+    `parseFrontMatter` moved out of the test), used by the per-vehicle checks and unit-tested on
+    synthetic input: wrong protocol, malformed date, one field without the other, an unlisted car
+    fixture, a row naming a non-car (`sim-*`) or missing fixture, no section, an empty table.
+  - _All eight `expect` fields shown to fail._ The permanent wrong-expectation test now also sets
+    a wrong `pendingDtcs`. A second test on the Golf `sim-faults.json` sets a wrong `pendingDtcs`
+    and `freezeFrameCount` and checks both messages.
+
+- **Vehicle docs.** The three vehicle docs gain empty `validatedOn:` / `observedProtocol:`
+  front-matter and an empty "Validated on the car" table. A new `vehicles/validatedOn.ts` parses
+  the table and holds the validation rules (unit-tested on bad input, see the review fixes).
+  `vehicle-docs-sync.test.ts` now checks four rules per vehicle doc:
+  - a recorded `observedProtocol` equals `expectedProtocol`;
+  - `validatedOn` is `YYYY-MM-DD`, and is set together with `observedProtocol`;
+  - the table exists;
+  - it lists exactly the committed car fixtures, and every listed file exists.
+
+  The front-matter parser now tolerates CRLF.
+
+- **Docs.**
+  - [simulator.md → Replay fixtures](./simulator.md#replay-fixtures): format, recorder, where the
+    files live, the two tests.
+  - [testing.md](./testing.md): `fixtures:sim`, the new automated suites, and "Recording results"
+    rewritten as the Part B session script plus the post-session procedure.
+  - [vehicles/README.md](./vehicles/README.md): front-matter fields, the table template, and that
+    simulator fixtures are not validation.
+  - [features/settings.md](./features/settings.md): the export and the log normalisation.
+
+  There is a curated `concept:replay-fixtures` in the context graph, and the roadmap rows
+  "On-car validation log" and "Log → fixture pipeline" are ✅ with on-car pending.
+
+**Deviations from the plan.**
+
+- `appVersion` comes from the existing `APP_VERSION` (`shared/lib/appInfo.ts`, added by plan 08,
+  read from `app.json`), not `expo-constants`. No new dependency.
+- The Settings export sets `meta.source: 'simulator'` (and the simulated car) in simulator mode,
+  not always `'car'`, so a simulator session can never pass for validation.
+- The line-preserving log normalisation and `fixtureFromLog`'s chunk joining (above) were not in
+  the plan, but without them the fixtures could not replay the multi-ECU or ISO-TP answers.
+- Fixtures are recorded for all four registry profiles, `generic` included; the acceptance named
+  three. Profiles without `knownFaults` seed `P0113` + `P0562` for the DTC flows.
+- `expect` gains `freezeFrameCount` and `storedDtcsAfterClear`, so the `faults` and `clear` flows
+  assert their own results.
+- The "wrong expectation fails" check is a permanent test through `checkReplayFixture`, not a
+  one-off edit that is then reverted.
+- `sequences` leaves out commands whose reply never changed, which loses nothing because `pairs`
+  replays them.
+- The TS runner is a small `typescript`-based `scripts/run-ts.cjs` instead of `ts-node` / `tsx`.
+- Settings reads `selectedProfileId` from `features/vehicle-select/model/vehicleStore`, a feature →
+  feature import. Other features already import that store the same way (extended-pids, coding,
+  dpf…); moving it to `shared/state` is left to plan 06 (garage).
+- The session script's `live` flow is about 30 s instead of the plan's 2 minutes, so it fits the
+  300-line adapter log. Non-connect car fixtures replay without the connect handshake, which the
+  plan did not specify.
+- `recordSession` does not connect: the callback calls `session.connect()` itself (the plan says
+  `recordSession` connects). Only the disconnect is in `finally`. Every caller (`simFixtures.runFlow`,
+  the tests) connects first inside the callback.
+- The Settings component test replaces `useLogFixtureExport` with a double: Jest cannot run the
+  hook's variable-specifier `import()`. The file contents are covered by `replayExport.test.ts`, and the write + share by
+  `replayFixtureFile.test.ts`.
+
+---
+
 ## Plan 08 — Signed release build, versioning, OTA updates (2026-11-09)
 
 [Plan 08](./plans/08-signed-release-ota.md) landed. Not done yet: the owner-only setup (upload

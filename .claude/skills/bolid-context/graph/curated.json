@@ -3,7 +3,7 @@
 // This is the durable payoff: domain concepts and relationships that the code
 // structure cannot express. Auto-derived edges (imports / serves / documents)
 // are table-stakes; THIS file is what makes the graph smarter than grep.
-// (30 concepts. Coverage goal: every non-trivial node has a concept neighbour.)
+// (31 concepts. Coverage goal: every non-trivial node has a concept neighbour.)
 //
 // Format:
 //   concepts[]      { id, summary, tokens[] }      -> becomes a concept:<id> node
@@ -107,6 +107,9 @@
     { "id": "vehicle-info",
       "summary": "Show vehicle + adapter identity: ELM327/adapter info, the active protocol, ECU(s), and supported-PID coverage for the connected car.",
       "tokens": ["vehicle","info","adapter","identity","ecu","protocol","supported","about"] },
+    { "id": "replay-fixtures",
+      "summary": "Adapter sessions as CI tests: adapter log / RecordingTransport -> ReplayFixture (pairs + per-command sequences + meta + expect) -> ReplayTransport replays through DiagnosticSession. Committed under transport/fixtures/<vehicleId>/; sim-*.json are recorded from the simulator (npm run fixtures:sim, freshness test) and never count as validation; car fixtures must be listed in the vehicle doc's Validated on the car table.",
+      "tokens": ["replay","fixture","fixtures","recording","validation","validated","on-car","sequences","freshness","adapter","log","export"] },
     { "id": "trip-recording",
       "summary": "Record a drive as a typed time-series of live PIDs (+ DTC snapshots), persist/replay/export it. Decoded data for analysis, unlike the raw adapter I/O log.",
       "tokens": ["trip","recording","drive","timeseries","replay","export","csv","journey"] },
@@ -142,6 +145,12 @@
       "tokens": ["fuel","economy","consumption","l100km","mpg","maf","units","imperial","metric","conversion"] }
   ],
   "links": [
+    ["concept:replay-fixtures", "core:transport/logReplay", "relates"],
+    ["concept:replay-fixtures", "core:transport/recordingTransport", "relates"],
+    ["concept:replay-fixtures", "core:transport/simFixtures", "relates"],
+    ["concept:replay-fixtures", "core:transport/fixtureCheck", "relates"],
+    ["concept:replay-fixtures", "feature:settings", "relates"],
+    ["concept:replay-fixtures", "concept:app-settings", "relates"],
     ["concept:adapter-health", "feature:adapter-health", "relates"],
     ["concept:adapter-health", "core:elm327/Elm327Client", "relates"],
     ["concept:adapter-health", "concept:connection-lifecycle", "relates"],

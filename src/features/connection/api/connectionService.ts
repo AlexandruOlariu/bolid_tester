@@ -12,13 +12,13 @@ import { MockTransport } from '@/shared/obd-core/transport/MockTransport';
 import { buildScenario } from '@/shared/obd-core/transport/scenarios';
 import { DiagnosticSession } from '@/shared/obd-core/session/DiagnosticSession';
 import { DEFAULT_WAKE_AFTER_IDLE_MS } from '@/shared/obd-core/elm327/Elm327Client';
-import { bytesToString } from '@/shared/lib/bytes';
+import { logRxText, logTxText } from '@/shared/obd-core/transport/recordingTransport';
 import { BleTransport } from '@/shared/transports/ble/BleTransport';
 import { getBleManager } from '@/shared/transports/ble/manager';
 import { requestBlePermissions } from '@/shared/transports/ble/permissions';
 import { useSettingsStore, type AdapterSource } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { appendAdapterLog } from '@/shared/state/adapterLog';
+import { appendAdapterLog, clearAdapterLog } from '@/shared/state/adapterLog';
 import { logError } from '@/shared/state/errorLogStore';
 import { runReconnect, RECONNECT_DELAYS_MS } from './reconnect';
 import { pruneDrops, shouldAutoReconnect } from './flapGuard';
@@ -31,8 +31,17 @@ import { useLinkStore, type AttemptDevice } from '../model/linkStore';
  *  monitoring we do NOT mirror rx chunks: the sniffer feature has its own line listener on that same
  *  firehose, so logging here would double-handle hundreds of frames per second for no benefit
  *  (finding F5). tx commands are always logged — there are only a couple during a sniff (the ATMA
- *  and the stop). */
-function withLog(inner: Transport, isMonitoring: () => boolean): Transport {
+ *  and the stop).
+ *
+ *  The text normalisation is obd-core's (`logTxText` / `logRxText`, shared with
+ *  `RecordingTransport`): rx chunks keep their line breaks as `\r`, so an exported replay fixture
+ *  can still tell several ECUs' answers and ISO-TP segment lines apart.
+ *
+ *  `isStale` reports that the adapter source was switched since this transport's connect began
+ *  (`connectEpoch`). A superseded link logs nothing more, so the log — cleared on every switch —
+ *  only ever holds traffic from the current source, and a replay fixture exported from it is
+ *  labelled correctly (`meta.source`, plan 02 review). */
+function withLog(inner: Transport, isMonitoring: () => boolean, isStale: () => boolean): Transport {
   return {
     get status() {
       return inner.status;
@@ -40,25 +49,13 @@ function withLog(inner: Transport, isMonitoring: () => boolean): Transport {
     connect: () => inner.connect(),
     disconnect: () => inner.disconnect(),
     write: (bytes) => {
-      appendAdapterLog({
-        dir: 'tx',
-        text: bytesToString(bytes)
-          .replace(/[\r\n]/g, '')
-          .trim(),
-        ts: Date.now(),
-      });
+      if (!isStale()) appendAdapterLog({ dir: 'tx', text: logTxText(bytes), ts: Date.now() });
       return inner.write(bytes);
     },
     onData: (listener) =>
       inner.onData((bytes) => {
-        if (!isMonitoring())
-          appendAdapterLog({
-            dir: 'rx',
-            text: bytesToString(bytes)
-              .replace(/[\r\n>]/g, ' ')
-              .trim(),
-            ts: Date.now(),
-          });
+        if (!isMonitoring() && !isStale())
+          appendAdapterLog({ dir: 'rx', text: logRxText(bytes), ts: Date.now() });
         listener(bytes);
       }),
     onStatusChange: (listener) => inner.onStatusChange(listener),
@@ -291,7 +288,7 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
 
     // Read monitor state lazily off the not-yet-created session; by the time any rx chunk arrives
     // the session below is assigned. While sniffing (ATMA) this pauses rx mirroring — see withLog.
-    transport = withLog(rawTransport, () => session?.client.monitoring ?? false);
+    transport = withLog(rawTransport, () => session?.client.monitoring ?? false, stale);
     session = new DiagnosticSession(transport, {
       commandTimeoutMs: 5000,
       firstCommandTimeoutMs: 12000,
@@ -363,8 +360,10 @@ export async function disconnect(): Promise<void> {
  *  session built for the old source must not survive the switch — otherwise simulated readings would
  *  show unflagged under 'ble' (or real ones under the simulator banner). So, synchronously:
  *  invalidate any in-flight connect (it tears itself down instead of publishing), cancel a pending
- *  auto-reconnect, reset the session store and flip the setting; then close the old session.
- *  A no-op when the source is unchanged. */
+ *  auto-reconnect, reset the session store, clear the adapter log and flip the setting; then close
+ *  the old session. The log is cleared because a replay fixture exported from it is labelled with
+ *  the source at export time — a simulator log must never be exported as `source: 'car'` (or the
+ *  reverse). A no-op when the source is unchanged. */
 export async function switchAdapterSource(source: AdapterSource): Promise<void> {
   if (useSettingsStore.getState().adapterSource === source) return;
   connectEpoch++;
@@ -373,6 +372,7 @@ export async function switchAdapterSource(source: AdapterSource): Promise<void> 
   liveRawTransport = null;
   const { session } = useSessionStore.getState();
   useSessionStore.getState().reset();
+  clearAdapterLog();
   useSettingsStore.getState().setAdapterSource(source);
   if (!session) return;
   try {

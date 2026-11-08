@@ -635,6 +635,36 @@
     "relates"
   ],
   [
+    "concept:replay-fixtures",
+    "concept:app-settings",
+    "relates"
+  ],
+  [
+    "concept:replay-fixtures",
+    "core:transport/fixtureCheck",
+    "relates"
+  ],
+  [
+    "concept:replay-fixtures",
+    "core:transport/logReplay",
+    "relates"
+  ],
+  [
+    "concept:replay-fixtures",
+    "core:transport/recordingTransport",
+    "relates"
+  ],
+  [
+    "concept:replay-fixtures",
+    "core:transport/simFixtures",
+    "relates"
+  ],
+  [
+    "concept:replay-fixtures",
+    "feature:settings",
+    "relates"
+  ],
+  [
     "concept:scan-history-diff",
     "concept:module-scan",
     "relates"
@@ -1446,6 +1476,11 @@
   ],
   [
     "core:public-api",
+    "core:transport/recordingTransport",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:transport/scenarios",
     "imports"
   ],
@@ -1610,12 +1645,72 @@
     "imports"
   ],
   [
+    "core:transport/fixtureCheck",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "core:transport/fixtureCheck",
+    "core:transport/logReplay",
+    "imports"
+  ],
+  [
+    "core:transport/fixtureCheck",
+    "doc:plans/02-on-car-validation",
+    "named"
+  ],
+  [
+    "core:transport/fixtureCheck",
+    "doc:plans/17-trip-detail-map",
+    "named"
+  ],
+  [
+    "core:transport/fixtureFiles",
+    "core:transport/logReplay",
+    "imports"
+  ],
+  [
+    "core:transport/fixtureFiles",
+    "doc:plans/02-on-car-validation",
+    "named"
+  ],
+  [
     "core:transport/logReplay",
     "core:transport/Transport",
     "imports"
   ],
   [
     "core:transport/logReplay",
+    "lib:bytes",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
+    "core:elm327/Elm327Client",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
+    "core:transport/logReplay",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
+    "doc:features/trip-recording",
+    "named"
+  ],
+  [
+    "core:transport/recordingTransport",
     "lib:bytes",
     "imports"
   ],
@@ -1631,6 +1726,41 @@
   ],
   [
     "core:transport/scenarios",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:obd/pids",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:transport/MockTransport",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:transport/logReplay",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:transport/recordingTransport",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:transport/scenarios",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
     "vehicle:registry",
     "imports"
   ],
@@ -2181,6 +2311,11 @@
   ],
   [
     "feature:connection",
+    "core:transport/recordingTransport",
+    "imports"
+  ],
+  [
+    "feature:connection",
     "core:transport/scenarios",
     "imports"
   ],
@@ -2192,11 +2327,6 @@
   [
     "feature:connection",
     "feature:onboarding",
-    "imports"
-  ],
-  [
-    "feature:connection",
-    "lib:bytes",
     "imports"
   ],
   [
@@ -2951,6 +3081,11 @@
   ],
   [
     "feature:settings",
+    "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "lib:appInfo",
     "imports"
   ],
@@ -2988,6 +3123,11 @@
     "feature:trip-recording",
     "core:analysis/trip",
     "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "core:transport/recordingTransport",
+    "named"
   ],
   [
     "feature:trip-recording",
@@ -3753,6 +3893,11 @@
     "vehicle:types",
     "core:obd/protocols",
     "imports"
+  ],
+  [
+    "vehicle:validatedOn",
+    "doc:plans/02-on-car-validation",
+    "named"
   ],
   [
     "vehicle:vinSuggest",

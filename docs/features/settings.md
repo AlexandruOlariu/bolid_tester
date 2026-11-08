@@ -9,7 +9,8 @@ Developer and runtime settings.
     explicit opt-in and, while it is on, an amber **simulator banner** stays visible on every screen
     (see [connection](./connection.md#simulator-banner)). The segments call
     `connectionService.switchAdapterSource()`, so switching disconnects any session built for the
-    other source (a simulator session never survives under the real adapter, or vice versa). In
+    other source (a simulator session never survives under the real adapter, or vice versa) and
+    clears the adapter log, so the log never mixes or carries over traffic from the other source. In
     simulator mode a picker chooses which car to emulate (generic / Golf / Punto / Passat).
   - **Injected DTCs** (simulator only) — **None** (default), **P0299**, **P0299+P0401**, or
     **Custom…**, which reveals a text field taking comma-separated codes. Each code must be a letter
@@ -28,7 +29,26 @@ Developer and runtime settings.
   - **Auto-reconnect** On / Off — copy: "On by default; pauses after 3 drops in a minute", then the
     backoff (2 s, 5 s, 10 s — up to 3 attempts) and that a manual disconnect / connect cancels it.
     See [connection](./connection.md#auto-reconnect-on-by-default-with-a-flap-guard).
-  - **Live log** of adapter I/O (sent commands ↔ raw responses), with clear + export-as-fixture.
+  - **Adapter log** — live log of adapter I/O (sent commands ↔ raw responses) with **Clear**, a
+    **Flow name** field (default `session`) and **Export as replay fixture** (plan 02). The export
+    (`model/replayExport.ts` → `api/replayFixtureFile.ts`, through `expo-file-system/legacy`, which
+    `hooks/useLogFixtureExport.ts` wraps) writes
+    `bolid-replay-<vehicleId>-<flow>-<stamp>.json` and opens the share sheet: a `ReplayFixture`
+    with `pairs`, `sequences` and `meta` — `source` (`car` on the real adapter, `simulator` in
+    simulator mode — read at export time, which is safe because a source switch clears the log and
+    a superseded link logs nothing more, so a simulator session can never pass for validation),
+    `vehicleId` (the selected
+    profile, or the simulated car), `flow`, `adapter` and `protocol` from the live session, and
+    `appVersion` (`APP_VERSION`). On success the copy reads "Saved <file>. Clear the log before
+    recording the next flow."; on failure it points at the error log, which always has a
+    `settings/replay-export` entry for it. **Clear** puts the default hint back, and the "log is
+    full" warning (next) replaces a saved message as soon as the log wraps further. The log keeps only the last
+    300 lines: once it has wrapped (`useAdapterLogStore`'s `dropped` > 0), the hint reads "The log
+    is full: the oldest N lines were dropped, so the export starts mid-session. Clear the log and
+    record a shorter flow.", the saved message says the same, and the fixture records
+    `meta.droppedEntries: N`. The file goes into
+    `src/shared/obd-core/transport/fixtures/<vehicleId>/` — see
+    [simulator.md → Replay fixtures](../simulator.md#replay-fixtures).
   - Units (metric default), poll interval, theme (system/light/dark).
   - **About** (plan 08) — "Bolid Tester <version>" (`APP_NAME` / `APP_VERSION` from
     `shared/lib/appInfo.ts`, read from `app.json`; the version is also the OTA runtime version), a
@@ -50,13 +70,19 @@ Developer and runtime settings.
 ## adapter I/O log (`shared/state/adapterLog.ts`)
 
 - The raw tx/rx traffic is a **module-level ring buffer** (fixed 300 entries, O(1) append), **not**
-  a zustand array. `connectionService.withLog` mirrors every tx command and rx chunk into it; a
+  a zustand array. It counts the entries it overwrites (`dropped`, reset by **Clear**) and publishes
+  the count with the snapshot, so the replay-fixture export can warn that it starts mid-session. `connectionService.withLog` mirrors every tx command and rx chunk into it; a
   separate **throttled publish (~4 Hz, trailing flush)** snapshots the buffer into a tiny zustand
   store (`useAdapterLogStore`) that the UI subscribes to. This kills the per-chunk array copies +
   re-renders the old design did during a CAN sniff (finding F5).
 - While the ELM client is in **monitor mode** (`ATMA` sniff), rx mirroring is **paused** — the
   sniffer feature has its own line listener on that firehose, so logging it here would
   double-handle hundreds of frames/sec. tx commands are still logged.
+- Text normalisation is obd-core's `logTxText` / `logRxText` (`transport/recordingTransport.ts`,
+  shared with `RecordingTransport`): tx loses its line ending; an rx chunk loses the `>` prompt but
+  **keeps its line breaks (each as one CR)** and is not trimmed, so an exported fixture still tells several
+  ECUs' answers and ISO-TP segment lines apart (plan 02). The log views collapse whitespace when
+  they display a line.
 - The log is **never persisted** (it never was) and is intentionally not part of `settingsStore`.
 
 ## model

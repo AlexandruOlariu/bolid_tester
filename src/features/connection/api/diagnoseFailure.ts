@@ -215,9 +215,11 @@ export interface DiagnosticsReportInput {
   adapterSource: 'mock' | 'ble';
 }
 
-/** One adapter-log line as Settings shows it: `» tx` / `« rx`. */
+/** One adapter-log line as Settings shows it: `» tx` / `« rx`, on one line (rx chunks keep their
+ *  CR line breaks in the log; see obd-core `logRxText`). */
 export function formatLogLine(e: { dir: 'tx' | 'rx'; text: string }): string {
-  return `${e.dir === 'tx' ? '»' : '«'} ${e.text === '' ? '(wake-up)' : e.text}`;
+  const text = e.text.replace(/\s+/g, ' ').trim();
+  return `${e.dir === 'tx' ? '»' : '«'} ${text === '' ? '(wake-up)' : text}`;
 }
 
 /** Plain-text report for **Copy details** (shared via the OS share sheet). */

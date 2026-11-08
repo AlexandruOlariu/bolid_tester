@@ -81,6 +81,20 @@ describe('switchAdapterSource', () => {
     expect(useSessionStore.getState().status).toBe('connected');
   });
 
+  it('clears the adapter log, so a simulator log is never exported under the real adapter', async () => {
+    await connect();
+    expect(adapterLogSnapshot().length).toBeGreaterThan(0);
+    await switchAdapterSource('ble');
+    expect(adapterLogSnapshot()).toEqual([]);
+  });
+
+  it('a connect superseded by a switch logs nothing after the switch', async () => {
+    const pending = connect();
+    await switchAdapterSource('ble');
+    await pending;
+    expect(adapterLogSnapshot()).toEqual([]);
+  });
+
   it('a connect started after the switch is unaffected', async () => {
     await switchAdapterSource('ble');
     await switchAdapterSource('mock');

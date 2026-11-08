@@ -31,6 +31,7 @@ export const ADAPTER_LOG_PUBLISH_INTERVAL_MS = 250;
 const buffer: LogEntry[] = new Array(ADAPTER_LOG_CAPACITY);
 let start = 0; // index of the oldest entry once the buffer is full
 let count = 0; // number of live entries (≤ capacity)
+let dropped = 0; // entries overwritten since the last clear (the log has wrapped when > 0)
 
 /** Snapshot the buffer into a fresh array in chronological (oldest-first) order. */
 export function adapterLogSnapshot(): LogEntry[] {
@@ -43,17 +44,20 @@ export function adapterLogSnapshot(): LogEntry[] {
 
 interface AdapterLogState {
   entries: LogEntry[];
+  /** Oldest entries lost to the ring buffer since the last clear. When > 0, `entries` starts
+   *  mid-session, so a replay fixture exported from it is incomplete (Settings warns). */
+  dropped: number;
 }
 
 /** Subscribe here (UI) — updated at most ~4 Hz. Never write from the hot path. */
-export const useAdapterLogStore = create<AdapterLogState>(() => ({ entries: [] }));
+export const useAdapterLogStore = create<AdapterLogState>(() => ({ entries: [], dropped: 0 }));
 
 let publishTimer: ReturnType<typeof setTimeout> | null = null;
 let lastPublishAt = 0;
 
 function publishNow(): void {
   lastPublishAt = Date.now();
-  useAdapterLogStore.setState({ entries: adapterLogSnapshot() });
+  useAdapterLogStore.setState({ entries: adapterLogSnapshot(), dropped });
 }
 
 /** Publish a snapshot, rate-limited to `ADAPTER_LOG_PUBLISH_INTERVAL_MS`. A publish that arrives too
@@ -81,6 +85,7 @@ export function appendAdapterLog(entry: LogEntry): void {
   } else {
     buffer[start] = entry;
     start = (start + 1) % ADAPTER_LOG_CAPACITY;
+    dropped++;
   }
   schedulePublish();
 }
@@ -89,6 +94,7 @@ export function appendAdapterLog(entry: LogEntry): void {
 export function clearAdapterLog(): void {
   start = 0;
   count = 0;
+  dropped = 0;
   if (publishTimer) {
     clearTimeout(publishTimer);
     publishTimer = null;

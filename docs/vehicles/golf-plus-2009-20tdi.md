@@ -6,6 +6,8 @@ vin: WVWZZZ1KZ9W903398
 engineCode: CBD
 supportedPidCount: 16
 extended: true
+validatedOn:
+observedProtocol:
 ---
 
 # VW Golf Plus 2009 — 2.0 TDI 81 kW / 109 cp (diesel)
@@ -66,11 +68,11 @@ Confirmed from a year of VCDS scans plus the 2026-05 OBD2 export. These populate
 `knownFaults`, which [`scenarios.ts`](../../src/shared/obd-core/transport/scenarios.ts) seeds into
 the default simulator scenario (so the DTC-read flow is exercised against ground-truth data):
 
-| Generic | VAG 5-digit | Fault | Observed over 212k→224k km |
-| --- | --- | --- | --- |
-| `P2183` | `08579` | Coolant temp sensor 2 / radiator outlet `G83` | Persistent, MIL on most of 2025; cleared in the last VCDS scans, back (confirmed) in the 2026-05 OBD2 scan |
-| `P2015` | `08213` | Intake manifold runner/flap position sensor (B1) | Persistent, oscillating intermittent↔confirmed; archived/inactive in the latest scans |
-| `P0121` | `00289` | Throttle/pedal position sensor `G69` | Transient — only in the ~220k–223k km window |
+| Generic | VAG 5-digit | Fault                                            | Observed over 212k→224k km                                                                                 |
+| ------- | ----------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `P2183` | `08579`     | Coolant temp sensor 2 / radiator outlet `G83`    | Persistent, MIL on most of 2025; cleared in the last VCDS scans, back (confirmed) in the 2026-05 OBD2 scan |
+| `P2015` | `08213`     | Intake manifold runner/flap position sensor (B1) | Persistent, oscillating intermittent↔confirmed; archived/inactive in the latest scans                      |
+| `P0121` | `00289`     | Throttle/pedal position sensor `G69`             | Transient — only in the ~220k–223k km window                                                               |
 
 > **Generic ↔ VAG cross-reference:** for VAG cars the 5-digit number is just the DTC's two raw bytes
 > read as a decimal (`P2183` → `0x2183` → `8579`). `vagCodeForDtc()` in
@@ -106,6 +108,16 @@ See [`../features/extended-pids.md`](../features/extended-pids.md) and the `exte
 5. Read DTCs and compare with the known VCDS engine faults `P2015` and `P2183`.
 6. If a harmless/handled code is cleared, re-read and confirm it is gone.
 7. Toggle the experimental extended PID; record whether a plausible value comes back.
+
+## Validated on the car
+
+Filled in after each on-car session ([testing.md → Recording results](../testing.md#recording-results)).
+One row per flow; the Fixture column names the committed car fixture in
+`src/shared/obd-core/transport/fixtures/<id>/`. Simulator fixtures (`sim-*.json`) never count.
+
+| Date                | App build | Adapter | Flow | Result | Fixture |
+| ------------------- | --------- | ------- | ---- | ------ | ------- |
+| _not yet validated_ |           |         |      |        |         |
 
 ## Notes
 

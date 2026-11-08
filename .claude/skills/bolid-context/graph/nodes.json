@@ -504,6 +504,25 @@
     ],
     "type": "concept"
   },
+  "concept:replay-fixtures": {
+    "path": null,
+    "summary": "Adapter sessions as CI tests: adapter log / RecordingTransport -> ReplayFixture (pairs + per-command sequences + meta + expect) -> ReplayTransport re\u2026",
+    "tokens": [
+      "adapter",
+      "export",
+      "fixture",
+      "fixtures",
+      "freshness",
+      "log",
+      "on-car",
+      "recording",
+      "replay",
+      "sequences",
+      "validated",
+      "validation"
+    ],
+    "type": "concept"
+  },
   "concept:scan-history-diff": {
     "path": null,
     "summary": "Auto-scans persist (vehicle-keyed, capped) in scanHistoryStore; scanReport formats the forum-pasteable VCDS-style text block; scanDiff compares two s\u2026",
@@ -1351,9 +1370,32 @@
     ],
     "type": "core"
   },
+  "core:transport/fixtureCheck": {
+    "path": "src/shared/obd-core/transport/fixtureCheck.ts",
+    "summary": "Replay a fixture through a real `DiagnosticSession` and compare the result with its `expect` block.",
+    "tests": [
+      "src/shared/obd-core/transport/fixtureCheck.test.ts"
+    ],
+    "tokens": [
+      "check",
+      "fixture",
+      "transport"
+    ],
+    "type": "core"
+  },
+  "core:transport/fixtureFiles": {
+    "path": "src/shared/obd-core/transport/fixtureFiles.ts",
+    "summary": "Node-only helper for the tests that read the committed replay fixtures (`transport/fixtures/<vehicleId>/<flow>.json`).",
+    "tokens": [
+      "files",
+      "fixture",
+      "transport"
+    ],
+    "type": "core"
+  },
   "core:transport/logReplay": {
     "path": "src/shared/obd-core/transport/logReplay.ts",
-    "summary": "Turn a captured adapter I/O log (Settings \u2192 adapter log) into a replayable simulator fixture: every tx command maps to the rx text that followed it o\u2026",
+    "summary": "Turn a captured adapter I/O log (Settings \u2192 adapter log, or a `RecordingTransport`) into a replayable simulator fixture: every tx command maps to the\u2026",
     "tests": [
       "src/shared/obd-core/transport/logReplay.test.ts"
     ],
@@ -1364,11 +1406,33 @@
     ],
     "type": "core"
   },
+  "core:transport/recordingTransport": {
+    "path": "src/shared/obd-core/transport/recordingTransport.ts",
+    "summary": "Record any Transport's traffic as `LoggedIo[]` \u2014 the same shape and normalisation as the app's adapter log (connectionService `withLog` uses `logTxTe\u2026",
+    "tests": [
+      "src/shared/obd-core/transport/recordingTransport.test.ts"
+    ],
+    "tokens": [
+      "recording",
+      "transport"
+    ],
+    "type": "core"
+  },
   "core:transport/scenarios": {
     "path": "src/shared/obd-core/transport/scenarios.ts",
     "summary": "Build a simulator scenario from a vehicle profile.",
     "tokens": [
       "scenarios",
+      "transport"
+    ],
+    "type": "core"
+  },
+  "core:transport/simFixtures": {
+    "path": "src/shared/obd-core/transport/simFixtures.ts",
+    "summary": "Record the simulator into replay fixtures: for every registry profile, `MockTransport( buildScenario(id))` is driven through the `connect`, `faults`\u2026",
+    "tokens": [
+      "fixtures",
+      "sim",
       "transport"
     ],
     "type": "core"
@@ -2760,7 +2824,9 @@
     "path": "src/features/settings",
     "summary": "Developer and runtime settings.",
     "tests": [
+      "src/features/settings/api/replayFixtureFile.test.ts",
       "src/features/settings/model/privacyPolicy.test.ts",
+      "src/features/settings/model/replayExport.test.ts",
       "src/features/settings/ui/SettingsScreen.test.tsx"
     ],
     "tokens": [
@@ -3420,6 +3486,15 @@
     "summary": "Vehicle profile types.",
     "tokens": [
       "types"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:validatedOn": {
+    "path": "src/shared/vehicles/validatedOn.ts",
+    "summary": "The \"Validated on the car\" table every vehicle doc carries (docs/vehicles/README.md): one row per on-car flow, its last column naming the committed r\u2026",
+    "tokens": [
+      "on",
+      "validated"
     ],
     "type": "vehicle"
   },

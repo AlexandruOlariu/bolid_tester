@@ -4,6 +4,7 @@ export * from './transport/Transport';
 export * from './transport/MockTransport';
 export * from './transport/scenarios';
 export * from './transport/logReplay';
+export * from './transport/recordingTransport';
 export * from './tp20/tp20';
 export * from './tp20/fakeTp20Bus';
 export * from './tp20/elmRawCan';

@@ -20,8 +20,34 @@ name: <human name>
 expectedProtocol: <ProtocolId> # e.g. ISO_15765_4_CAN_11_500, ISO_14230_4_KWP_FAST, ISO_9141_2, AUTO
 supportedPidCount: <number> # length of the supportedPids list in the TS profile
 extended: <true|false> # whether the profile declares experimental extended (Mode 22) PIDs
+validatedOn: <YYYY-MM-DD> # optional; empty until the first on-car session
+observedProtocol: <ProtocolId> # optional; what the adapter negotiated on the car
 ---
 ```
+
+`validatedOn` and `observedProtocol` stay empty until the car is driven, and are filled together
+from the same session. Once set, `observedProtocol` must equal `expectedProtocol` (the sync test
+checks it): when the car disagrees, the doc and then the profile are corrected to the observation.
+
+## Validated on the car
+
+Every vehicle doc carries this section (the sync test fails without it), filled after each on-car
+session by the procedure in [testing.md → Recording results](../testing.md#recording-results):
+
+```markdown
+## Validated on the car
+
+| Date                | App build | Adapter | Flow | Result | Fixture |
+| ------------------- | --------- | ------- | ---- | ------ | ------- |
+| _not yet validated_ |           |         |      |        |         |
+```
+
+One row per flow. The last column names the committed car fixture
+(`src/shared/obd-core/transport/fixtures/<id>/<flow>.json`, file name or link). The sync test
+requires every car fixture (`meta.source: 'car'`) under the vehicle's folder to be listed, and every
+listed file to exist. **Simulator fixtures (`sim-*.json`) are not validation:** they are recorded
+from the simulator to prove the pipeline and never appear in this table. See
+[simulator.md → Replay fixtures](../simulator.md#replay-fixtures).
 
 The TS `VehicleProfile` type (see `src/shared/vehicles/types.ts`):
 
