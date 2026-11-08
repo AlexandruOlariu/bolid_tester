@@ -1976,6 +1976,11 @@
   ],
   [
     "feature:connection",
+    "core:elm327/Elm327Client",
+    "imports"
+  ],
+  [
+    "feature:connection",
     "core:session/DiagnosticSession",
     "imports"
   ],

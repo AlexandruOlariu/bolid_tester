@@ -43,6 +43,9 @@ export interface FreezeFrame {
 /** Default PIDs captured in the freeze frame view. */
 const FREEZE_PIDS = ['010C', '0105', '010D', '0104', '010B', '0111'];
 
+/** The steps of `DiagnosticSession.connect`, reported through its `onStage` callback. */
+export type ConnectProgressStage = 'init' | 'probe' | 'identify';
+
 export class DiagnosticSession {
   readonly client: Elm327Client;
   private supported: string[] = [];
@@ -72,10 +75,15 @@ export class DiagnosticSession {
     }
   }
 
-  async connect(): Promise<SessionInfo> {
+  /** Connect, init the adapter, probe the car and read its details. `onStage` reports each step as
+   *  it begins (`init` = adapter AT setup, `probe` = the first `0100` to the car, `identify` =
+   *  protocol / voltage / PID bitmaps / VIN), so a failure can say how far the attempt got. */
+  async connect(onStage?: (stage: ConnectProgressStage) => void): Promise<SessionInfo> {
     if (this.transport.status !== 'connected') await this.transport.connect();
     this.client.attach();
+    onStage?.('init');
     await this.client.init();
+    onStage?.('probe');
 
     // The AT setup above is answered by the adapter itself; `0100` is the first request that has to
     // reach the car's ECU. If it gets no reply, every later read would fail the same way — so stop
@@ -94,6 +102,7 @@ export class DiagnosticSession {
       );
     }
 
+    onStage?.('identify');
     this.protocol = await this.client.protocolNumber();
     // K-line (ISO 9141-2 / KWP2000) is slower than CAN; give every command a longer timeout so
     // Mode 03/07/04 and KWP routines don't reject prematurely.
@@ -103,7 +112,14 @@ export class DiagnosticSession {
     this.supported = await this.discoverSupportedPids();
     const vin = await this.readVin();
     const calibrationId = await this.readCalibrationId();
-    return { protocol: this.protocol, voltage, version, supportedPids: this.supported, vin, calibrationId };
+    return {
+      protocol: this.protocol,
+      voltage,
+      version,
+      supportedPids: this.supported,
+      vin,
+      calibrationId,
+    };
   }
 
   /** Walk the 0100/0120/0140/0160 bitmaps, collecting the real (non-marker) supported PIDs.

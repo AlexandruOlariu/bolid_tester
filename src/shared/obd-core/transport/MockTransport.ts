@@ -50,6 +50,11 @@ export interface SimScenario {
   }[];
   latencyMs?: number;
   emitSearching?: boolean;
+  /** Adapter auto-sleep: after this idle gap (ms since the last write or reply) the next non-empty command is
+   *  swallowed (the byte only wakes the chip); a bare `\r` is answered with `\r>`. Mirrors ELM327
+   *  low-power behaviour. While set, a bare `\r` to an awake adapter also gets `\r>` (a real
+   *  ELM327 would repeat the last command; the client only sends it when that is harmless). */
+  sleepAfterIdleMs?: number;
 }
 
 /** Realistic raw data bytes per PID, chosen to decode to plausible idle values. */
@@ -91,6 +96,11 @@ export class MockTransport implements Transport {
   private craFilter: string | null = null;
   private monitorTimer: ReturnType<typeof setInterval> | null = null;
   private monitorIdx = 0;
+  /** Last adapter activity (a write in, or a reply out) for the `sleepAfterIdleMs` low-power model. */
+  private lastActivityAt = Date.now();
+  /** `dropResponses` budget: the next N matching commands get no reply at all. */
+  private dropBudget = 0;
+  private dropIncludesAt = false;
 
   constructor(public scenario: SimScenario) {}
 
@@ -103,7 +113,29 @@ export class MockTransport implements Transport {
 
   async connect(): Promise<void> {
     this.setStatus('connecting');
+    this.lastActivityAt = Date.now();
     this.setStatus('connected');
+  }
+
+  /** Test/sim hook: the next `n` non-AT commands get **no reply at all** (not even a prompt), so the
+   *  client times out — drives the timeout / drain / diagnostics paths. With `includeAt`, AT commands
+   *  count too (e.g. "no reply to ATZ" = an unpowered or asleep adapter). Bare `\r` is never
+   *  dropped. Calling it again replaces the previous budget. */
+  dropResponses(n: number, opts: { includeAt?: boolean } = {}): void {
+    this.dropBudget = Math.max(0, Math.floor(n));
+    this.dropIncludesAt = opts.includeAt ?? false;
+  }
+
+  /** Send adapter output to the listeners after the scenario's latency. */
+  private emit(text: string): void {
+    const out = stringToBytes(text);
+    setTimeout(() => this.deliver(out), this.scenario.latencyMs ?? 0);
+  }
+
+  /** Hand bytes to every listener now; replying counts as adapter activity (keeps it awake). */
+  private deliver(out: Uint8Array): void {
+    this.lastActivityAt = Date.now();
+    for (const l of [...this.listeners]) l(out);
   }
 
   async disconnect(): Promise<void> {
@@ -136,20 +168,37 @@ export class MockTransport implements Transport {
   }
 
   async write(bytes: Uint8Array): Promise<void> {
-    const cmd = bytesToString(bytes).replace(/[\r\n]+$/g, '').trim();
+    const cmd = bytesToString(bytes)
+      .replace(/[\r\n]+$/g, '')
+      .trim();
     // Any byte interrupts monitor mode (like a real ELM327), answering with a prompt.
     if (this.monitorTimer) {
       clearInterval(this.monitorTimer);
       this.monitorTimer = null;
       if (!cmd) {
-        const out = stringToBytes('\r>');
-        setTimeout(() => {
-          for (const l of [...this.listeners]) l(out);
-        }, this.scenario.latencyMs ?? 0);
+        this.emit('\r>');
         return;
       }
     }
+    // Low-power model: after the idle gap the chip is asleep — the byte that arrives only wakes it.
+    const sleepMs = this.scenario.sleepAfterIdleMs;
+    if (sleepMs !== undefined && sleepMs > 0) {
+      const now = Date.now();
+      const asleep = now - this.lastActivityAt > sleepMs;
+      this.lastActivityAt = now;
+      if (!cmd) {
+        this.emit('\r>');
+        return;
+      }
+      if (asleep) return; // swallowed: the command that carried the wake-up byte is lost
+    } else {
+      this.lastActivityAt = Date.now();
+    }
     if (!cmd) return;
+    if (this.dropBudget > 0 && (this.dropIncludesAt || !/^AT/i.test(cmd))) {
+      this.dropBudget -= 1;
+      return; // no reply at all — the client's timeout fires
+    }
     // ATMA starts streaming monitor lines with NO prompt until interrupted.
     if (cmd.toUpperCase() === 'ATMA') {
       const frames = this.scenario.monitorFrames ?? [];
@@ -158,17 +207,12 @@ export class MockTransport implements Transport {
         if (!frames.length) return;
         const line = frames[this.monitorIdx % frames.length];
         this.monitorIdx += 1;
-        const out = stringToBytes(line + '\r');
-        for (const l of [...this.listeners]) l(out);
+        this.deliver(stringToBytes(line + '\r'));
       }, 30);
       return;
     }
     const body = this.shapeResponse(cmd, this.respond(cmd));
-    const out = stringToBytes(body + '\r\r' + '>');
-    const delay = this.scenario.latencyMs ?? 0;
-    setTimeout(() => {
-      for (const l of [...this.listeners]) l(out);
-    }, delay);
+    this.emit(body + '\r\r' + '>');
   }
 
   /** Print CAN payloads > 7 bytes the way a REAL ELM327 does: a hex length line, then
@@ -216,7 +260,21 @@ export class MockTransport implements Transport {
     }
     if (
       c.startsWith('ATST') ||
-      ['ATE0', 'ATE1', 'ATL0', 'ATL1', 'ATS0', 'ATS1', 'ATH0', 'ATH1', 'ATAT0', 'ATAT1', 'ATAT2', 'ATCAF0', 'ATCAF1'].includes(c)
+      [
+        'ATE0',
+        'ATE1',
+        'ATL0',
+        'ATL1',
+        'ATS0',
+        'ATS1',
+        'ATH0',
+        'ATH1',
+        'ATAT0',
+        'ATAT1',
+        'ATAT2',
+        'ATCAF0',
+        'ATCAF1',
+      ].includes(c)
     ) {
       return 'OK';
     }
@@ -249,7 +307,11 @@ export class MockTransport implements Transport {
    *  (each answers even with no codes → `43 00`), joined with `\r` so the app sees the real
    *  multi-ECU ATH0 format (one line per responding ECU). With no secondary ECUs this is a single
    *  line, identical to a classic single-ECU response. */
-  private dtcLines(service: number, primary: string[], pick: (e: NonNullable<SimScenario['secondaryEcus']>[number]) => string[] | undefined): string {
+  private dtcLines(
+    service: number,
+    primary: string[],
+    pick: (e: NonNullable<SimScenario['secondaryEcus']>[number]) => string[] | undefined,
+  ): string {
     const lines = [this.dtcResponse(service, primary)];
     for (const ecu of this.scenario.secondaryEcus ?? []) {
       lines.push(this.dtcResponse(service, pick(ecu) ?? []));
@@ -282,7 +344,8 @@ export class MockTransport implements Transport {
       return cal ? '4904' + '01' + toHex(asciiToBytes(cal)) : 'NO DATA';
     }
     if (h === '03') return this.dtcLines(0x43, this.scenario.storedDtcs ?? [], (e) => e.storedDtcs);
-    if (h === '07') return this.dtcLines(0x47, this.scenario.pendingDtcs ?? [], (e) => e.pendingDtcs);
+    if (h === '07')
+      return this.dtcLines(0x47, this.scenario.pendingDtcs ?? [], (e) => e.pendingDtcs);
     if (h === '0A') return this.dtcResponse(0x4a, this.scenario.permanentDtcs ?? []);
     if (h === '04') {
       this.scenario.storedDtcs = [];

@@ -255,6 +255,51 @@ function InjectedDtcsSection() {
   );
 }
 
+/** Simulator-only test controls for the link-robustness paths (plan 12): drop the live simulated
+ *  link (auto-reconnect + flap guard), or make the next simulator connect get no reply to `ATZ`
+ *  (the Connect screen's diagnostics panel, stage "Adapter start-up"). */
+function SimulatorDeveloperSection() {
+  const status = useSessionStore((st) => st.status);
+  const [note, setNote] = useState<string | null>(null);
+
+  const drop = () => {
+    const dropped = connectionService.__sim.simulateDrop();
+    setNote(
+      dropped
+        ? 'Link dropped. With auto-reconnect on it reconnects in 2 s; three drops in a minute pause it.'
+        : 'Connect to the simulator first.',
+    );
+  };
+  const failNext = () => {
+    connectionService.__sim.failNextConnect();
+    setNote(
+      'Armed: the next simulator connect gets no reply to ATZ. Connect to see the diagnostics.',
+    );
+  };
+
+  return (
+    <YStack gap="$2">
+      <SectionLabel>Developer (simulator)</SectionLabel>
+      <SegGroup>
+        <YStack gap="$2">
+          <XStack gap="$2" flexWrap="wrap">
+            <Button size="$2" disabled={status !== 'connected'} onPress={drop}>
+              Simulate a link drop
+            </Button>
+            <Button size="$2" onPress={failNext}>
+              Fail next connect: no reply to ATZ
+            </Button>
+          </XStack>
+          <Paragraph theme="alt2" fontSize="$1">
+            {note ??
+              'Test the connection hardening without a car: a dropped link, and an adapter that never answers.'}
+          </Paragraph>
+        </YStack>
+      </SegGroup>
+    </YStack>
+  );
+}
+
 export function SettingsScreen() {
   const { exportFixture, busy: exportingFixture } = useLogFixtureExport();
   const s = useSettingsStore();
@@ -307,6 +352,8 @@ export function SettingsScreen() {
           </YStack>
 
           <InjectedDtcsSection />
+
+          <SimulatorDeveloperSection />
         </>
       ) : null}
 
@@ -353,8 +400,9 @@ export function SettingsScreen() {
               />
             </XStack>
             <Paragraph theme="alt2" fontSize="$1">
-              When the connection drops unexpectedly, reconnect to the same device with backoff (2s,
-              5s, 10s — up to 3 attempts). Cancelled the moment you disconnect or connect manually.
+              On by default; pauses after 3 drops in a minute. When the connection drops
+              unexpectedly, reconnect to the same device with backoff (2 s, 5 s, 10 s — up to 3
+              attempts). Cancelled the moment you disconnect or connect manually.
             </Paragraph>
           </YStack>
         </SegGroup>

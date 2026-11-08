@@ -140,13 +140,19 @@
       "bluetooth",
       "connect",
       "connection",
+      "diagnostics",
+      "drain",
       "elm327",
+      "flap",
       "lifecycle",
       "linkloss",
+      "mtu",
       "pairing",
       "reconnect",
       "session",
-      "statuschange"
+      "sleep",
+      "statuschange",
+      "wake"
     ],
     "type": "concept"
   },
@@ -2302,6 +2308,8 @@
     "summary": "Scan for, connect to, and initialize the ELM327 BLE adapter.",
     "tests": [
       "src/features/connection/api/connectionService.test.ts",
+      "src/features/connection/api/diagnoseFailure.test.ts",
+      "src/features/connection/api/flapGuard.test.ts",
       "src/features/connection/api/reconnect.test.ts"
     ],
     "tokens": [

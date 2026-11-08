@@ -13,6 +13,7 @@ import { switchToRealAdapter } from '../api/connectionService';
 import { useBluetoothState } from '../hooks/useBluetoothState';
 import { DeviceRow } from './DeviceRow';
 import { BluetoothPrompt } from './BluetoothPrompt';
+import { ConnectionDiagnostics } from './ConnectionDiagnostics';
 import { Panel } from '../styles/connection.styles';
 
 const STATUS_CONFIG: Record<ConnState, { icon: React.ElementType; color: string; label: string }> =
@@ -69,6 +70,9 @@ export function ConnectionScreen() {
           <Paragraph color="$red10">{error}</Paragraph>
         </Panel>
       ) : null}
+
+      {/* What failed and what to try — renders only while the session is in `error`. */}
+      <ConnectionDiagnostics bt={bt} />
 
       {adapterSource === 'mock' ? (
         <YStack gap="$3" marginTop="$2">

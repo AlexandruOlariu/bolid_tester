@@ -21,9 +21,21 @@ jest.mock('@/shared/transports/ble/permissions', () => ({
   requestBlePermissions: jest.fn(async () => false),
 }));
 
+import * as scenarios from '@/shared/obd-core/transport/scenarios';
+import { MockTransport } from '@/shared/obd-core/transport/MockTransport';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
-import { connect, disconnect, switchAdapterSource, switchToRealAdapter } from './connectionService';
+import { adapterLogSnapshot } from '@/shared/state/adapterLog';
+import {
+  __sim,
+  connect,
+  disconnect,
+  FLAP_PAUSED_MESSAGE,
+  switchAdapterSource,
+  switchToRealAdapter,
+} from './connectionService';
+import { diagnoseFailure } from './diagnoseFailure';
+import { useLinkStore } from '../model/linkStore';
 
 beforeEach(async () => {
   await disconnect();
@@ -74,5 +86,160 @@ describe('switchAdapterSource', () => {
     await switchAdapterSource('mock');
     await connect();
     expect(useSessionStore.getState().status).toBe('connected');
+  });
+});
+
+describe('auto-reconnect flap guard (plan 12)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    useSettingsStore.setState({ autoReconnect: true });
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  /** Run a connect to completion under fake timers (the simulator answers on setTimeout(0)). */
+  async function settle<T>(p: Promise<T>): Promise<T> {
+    await jest.advanceTimersByTimeAsync(500);
+    return p;
+  }
+
+  /** Drop the live simulator link and let the backoff (2 s) reconnect it if it is going to. */
+  async function dropAndWait(): Promise<void> {
+    expect(__sim.simulateDrop()).toBe(true);
+    await jest.advanceTimersByTimeAsync(3000);
+  }
+
+  it('reconnects on its own after a drop, and pauses on the third drop in a minute', async () => {
+    await settle(connect());
+    expect(useSessionStore.getState().status).toBe('connected');
+
+    await dropAndWait();
+    expect(useSessionStore.getState().status).toBe('connected'); // reconnected, toggle untouched
+    await dropAndWait();
+    expect(useSessionStore.getState().status).toBe('connected');
+
+    expect(__sim.simulateDrop()).toBe(true); // third drop inside 60 s
+    await jest.advanceTimersByTimeAsync(20_000);
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('disconnected');
+    expect(s.error).toBe(FLAP_PAUSED_MESSAGE);
+  });
+
+  it('a manual connect resets the flap guard', async () => {
+    await settle(connect());
+    await dropAndWait();
+    await dropAndWait();
+    await settle(connect()); // the user reconnects by hand
+    await dropAndWait();
+    expect(useSessionStore.getState().status).toBe('connected'); // reconnected again, not paused
+  });
+
+  it('drops spread over more than a minute never pause it', async () => {
+    await settle(connect());
+    for (let i = 0; i < 4; i++) {
+      await dropAndWait();
+      expect(useSessionStore.getState().status).toBe('connected');
+      await jest.advanceTimersByTimeAsync(31_000);
+    }
+  });
+
+  it('does nothing with auto-reconnect off', async () => {
+    useSettingsStore.setState({ autoReconnect: false });
+    await settle(connect());
+    await dropAndWait();
+    expect(useSessionStore.getState().status).toBe('disconnected');
+  });
+
+  it('ends in error (diagnostics panel up) with the last cause when every attempt fails', async () => {
+    await settle(connect());
+    // Every reconnect attempt fails while building the simulator (as a vanished adapter would).
+    const spy = jest.spyOn(scenarios, 'buildScenario').mockImplementation(() => {
+      throw new Error('ELM327 timeout after 5000ms for "ATZ"');
+    });
+    try {
+      expect(__sim.simulateDrop()).toBe(true);
+      await jest.advanceTimersByTimeAsync(20_000);
+      const s = useSessionStore.getState();
+      expect(s.status).toBe('error');
+      expect(s.error).toMatch(/Auto-reconnect failed after 3 attempts/);
+      expect(s.error).toMatch(/Last error: .*timeout.*"ATZ"/);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('simulateDrop is a no-op without a live simulator session', () => {
+    expect(__sim.simulateDrop()).toBe(false);
+  });
+});
+
+describe('simulator "fail next connect" (plan 12)', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('gives no reply to ATZ once, and the diagnostics classify it as stage init', async () => {
+    __sim.failNextConnect();
+    expect(__sim.isFailNextConnectArmed()).toBe(true);
+    const failing = connect().catch((e: unknown) => e);
+    await jest.advanceTimersByTimeAsync(6000);
+    const err = await failing;
+    expect(err).toBeInstanceOf(Error);
+    expect(__sim.isFailNextConnectArmed()).toBe(false);
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('error');
+    expect(s.error).toMatch(/timeout.*ATZ/);
+
+    const since = useLinkStore.getState().attemptStartedAt ?? 0;
+    const logTail = adapterLogSnapshot()
+      .filter((e) => e.ts >= since)
+      .slice(-20);
+    const d = diagnoseFailure({
+      error: s.error,
+      btState: 'checking',
+      adapterSource: 'mock',
+      logTail,
+      deviceName: null,
+    });
+    expect(d.stage).toBe('init');
+    expect(d.explanation).toMatch(/unpowered or asleep/);
+    expect(useLinkStore.getState().stage).toBe('init'); // the transport did come up
+    // The failed attempt's device is recorded even though setConnected never ran.
+    expect(s.deviceId).toBeNull();
+    expect(useLinkStore.getState().device).toEqual({
+      id: 'mock',
+      name: expect.stringMatching(/^Simulator · /),
+    });
+
+    // One-shot: the next connect works, and reaches the last stage.
+    const ok = connect();
+    await jest.advanceTimersByTimeAsync(500);
+    await ok;
+    expect(useSessionStore.getState().status).toBe('connected');
+    expect(useLinkStore.getState().stage).toBe('identify');
+  });
+
+  it('records the furthest stage as probe when the car does not answer 0100', async () => {
+    // The adapter answers its AT set-up, but the car never answers the first OBD2 request (0100).
+    const realConnect = MockTransport.prototype.connect;
+    const spy = jest.spyOn(MockTransport.prototype, 'connect').mockImplementation(async function (
+      this: MockTransport,
+    ) {
+      await realConnect.call(this);
+      this.dropResponses(1);
+    });
+    try {
+      const failing = connect().catch((e: unknown) => e);
+      await jest.advanceTimersByTimeAsync(20_000);
+      expect(await failing).toBeInstanceOf(Error);
+      expect(useSessionStore.getState().error).toMatch(/vehicle isn’t responding/);
+      expect(useLinkStore.getState().stage).toBe('probe');
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

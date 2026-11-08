@@ -47,7 +47,8 @@ export interface SettingsState {
   injectedDtcs: string[];
   units: UnitSystem;
   pollIntervalMs: number;
-  /** Automatically retry the last device with backoff after an unexpected link drop. Default off. */
+  /** Automatically retry the last device with backoff after an unexpected link drop. Default on
+   *  (plan 12); connectionService's flap guard pauses it after 3 drops in a minute. */
   autoReconnect: boolean;
   theme: ThemePref;
   ai: AiSettings;
@@ -86,15 +87,22 @@ export function parseDtcList(text: string): string[] {
   return out;
 }
 
-/** Persisted settings schema version. v2 = production defaults (real adapter, no injected DTC). */
-export const SETTINGS_VERSION = 2;
+/** Persisted settings schema version. v2 = production defaults (real adapter, no injected DTC);
+ *  v3 = auto-reconnect on by default (plan 12). */
+export const SETTINGS_VERSION = 3;
 
-/** v1 → v2: production defaults. Existing blobs keep their explicit adapterSource (a tester who chose
- *  the simulator must not be flipped under them); only *missing* fields get the new defaults. */
+/** Step a persisted blob up to `SETTINGS_VERSION`. Each step only fills *missing* fields with the new
+ *  default — an explicit stored choice always survives (a tester who chose the simulator, or turned
+ *  auto-reconnect off, must not be flipped under them).
+ *   - v1 → v2: production defaults (`adapterSource: 'ble'`, `injectedDtcs: []`).
+ *   - v2 → v3: `autoReconnect: true`. */
 export function migrateSettings(persisted: unknown, fromVersion: number): Partial<SettingsState> {
-  const p = (persisted ?? {}) as Partial<SettingsState>;
+  let p = { ...((persisted ?? {}) as Partial<SettingsState>) };
   if (fromVersion < 2) {
-    return { ...p, adapterSource: p.adapterSource ?? 'ble', injectedDtcs: p.injectedDtcs ?? [] };
+    p = { ...p, adapterSource: p.adapterSource ?? 'ble', injectedDtcs: p.injectedDtcs ?? [] };
+  }
+  if (fromVersion < 3) {
+    p = { ...p, autoReconnect: p.autoReconnect ?? true };
   }
   return p;
 }
@@ -109,7 +117,9 @@ export const useSettingsStore = create<SettingsState>()(
       injectedDtcs: [],
       units: 'metric',
       pollIntervalMs: 1000,
-      autoReconnect: false,
+      // On by default (plan 12): a drop on the Live tab reconnects on its own; the flap guard in
+      // connectionService pauses it after 3 drops in a minute.
+      autoReconnect: true,
       theme: 'dark',
       ai: DEFAULT_AI_SETTINGS,
       setAdapterSource: (adapterSource) => set({ adapterSource }),

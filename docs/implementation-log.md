@@ -5,6 +5,126 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 12 — BLE robustness and connection diagnostics (2026-11-08)
+
+[Plan 12](./plans/12-ble-robustness.md) landed (everything above its "Deferred until an on-car
+session" section; on-car confirmation pending).
+
+- **Auto-reconnect on by default + flap guard.** `settingsStore` default `autoReconnect: true`;
+  persist **version 3**, with plan 01's `migrateSettings` extended by a `fromVersion < 3` step
+  (`autoReconnect: p.autoReconnect ?? true` — a stored value survives). New pure
+  `connection/api/flapGuard.ts` (`FLAP_WINDOW_MS` 60 s, `MAX_DROPS_PER_WINDOW` 3,
+  `shouldAutoReconnect`, `pruneDrops`); `handleUnexpectedDrop()` records each drop and pauses with
+  `FLAP_PAUSED_MESSAGE` on the third in a minute; a manual `connect()` resets it.
+- **MTU + chunked writes** (`shared/transports/ble/BleTransport.ts`): `requestMTU: 247` only on
+  Android (`Platform.OS`), negotiated `device.mtu` read after connect (23 fallback), new
+  `linkInfo: BleLinkInfo | null` and `payloadForMtu()`; `write()` sends `mtu - 3` (floor 20) chunks
+  in order.
+- **Sleep / wake** (`obd-core/elm327/Elm327Client.ts`): `wakeAfterIdleMs` (default 20 000, 0
+  disables), `lastIoAt`, `execWake()` (≤ 600 ms, never rejects; a wake timeout starts a drain like a
+  command timeout), `init()` stamps after `ATZ`; monitor mode exempt. `connectionService` passes 20 000 for BLE and 0 for the simulator (half the
+  scenario's `sleepAfterIdleMs` when it models sleep).
+- **Drain-until-prompt**: a timeout starts a drain; `onData` discards the late reply through its
+  `>`; the next command awaits it (prompt or `DRAIN_GRACE_MS` = 300 ms).
+- **Diagnostics panel**: pure `connection/api/diagnoseFailure.ts` (stages
+  `bluetooth | transport | init | probe | identify`, 8 ordered rules, `formatDiagnosticsReport`),
+  `ui/ConnectionDiagnostics.tsx` mounted under the error panel on `ConnectionScreen` (stage chip,
+  explanation, suggestions, collapsible Details with the attempt's last 20 log lines, link info,
+  device, **Copy details** via `Share.share`, **Open error log**), and
+  `connection/model/linkStore.ts` (`link`, `stage`, `attemptStartedAt`, `device`).
+- **Simulator**: `SimScenario.sleepAfterIdleMs` (low-power model) and
+  `MockTransport.dropResponses(n, { includeAt? })`. Settings gained a simulator-only **Developer**
+  section — **Simulate a link drop** and **Fail next connect: no reply to ATZ** — through a new
+  `connectionService.__sim` hook (`simulateDrop`, `failNextConnect`, `isFailNextConnectArmed`).
+  Settings auto-reconnect copy now reads "On by default; pauses after 3 drops in a minute".
+- **Tests**: `flapGuard.test.ts`, `diagnoseFailure.test.ts` (one case per rule + fallback + report),
+  `BleTransport.test.ts` (39-byte write → 20 + 19 at MTU 23, one write at 247, with-response path,
+  `linkInfo`, iOS passes no `requestMTU`, and a 16-byte Golf coding write through an MTU-23 BLE fake
+  into the simulator), `Elm327Client.test.ts` (late reply, drain deadline, bare-CR wake, no-wake
+  times out, `ATI` wake after an unsafe command, late wake reply drained, `ATI` wake in raw-CAN
+  mode, no wake while busy, `isRepeatSafe` incl. raw-CAN), `MockTransport.test.ts` (sleep model,
+  `dropResponses`), `connectionService.test.ts` (reconnects after a drop and pauses on the third,
+  manual connect resets, spread-out drops never pause, off means off, all attempts failing ends in
+  `error` with the last cause, fail-next-connect → stage `init`, a successful connect reaches
+  `identify`, no 0100 reply → stage `probe`), `settingsStore.test.ts` (v3, v2 → v3 round-trips). The
+  late-reply, wake and late-wake tests fail with the client changes disabled. Suite **527 → 579
+  tests** (75 → 77 suites).
+- **Docs:** `features/connection.md` (auto-reconnect default + flap guard, MTU/chunking, sleep/wake,
+  drain, diagnostics panel + rules, `linkStore`, acceptance), `features/settings.md` (Developer
+  section, auto-reconnect copy, v3 migration), `simulator.md` (`sleepAfterIdleMs`, test/dev
+  controls), `obd2-reference.md` (bare-CR repeat; "Low power / auto-sleep"),
+  `adapter-vgate-icar-pro.md` (quirks + what to confirm on the car), the hardening note in
+  `improvement-plan-2026-07.md` marked resolved, `roadmap.md`; the context graph's connection
+  concept updated.
+
+**Review fixes (same plan):**
+
+- **K-line rule vs. split notifications.** On BLE each rx log entry is one GATT notification (≤ 20
+  bytes at MTU 23), so `UNABLE TO CONNECT` could straddle two entries and rule 6 never fired.
+  `diagnoseFailure` now matches the attempt's rx text joined with whitespace removed (test: three
+  split variants).
+- **Panel showed the wrong device on failure.** `sessionStore.deviceId/deviceName` are only set on
+  success (and kept after a drop), so a failed attempt was reported against "unknown" or the
+  previous adapter. `linkStore.beginAttempt(stage, device)` now records the attempt's target and
+  `ConnectionDiagnostics` reads it from there (`connectionService.test.ts` asserts it after a
+  failed connect).
+- **Bare-CR wake after an unconfirmed command.** `exec()` set `lastCmd` before the write, so after
+  `04` and a swallowed, timed-out `03` the next wake was a bare `\r` and a real ELM327 would repeat
+  its remembered `04`. A timeout, a failed write and an unanswered `ATI` wake now reset `lastCmd` to
+  null (→ `ATI` wake). A failed write also starts a drain (only while it still owns `pending`).
+  Tests: `04` → timed-out `03` → `ATI` wake; failed write → `ATI` wake.
+- **Half-sent chunked write.** A chunk failing after earlier ones left a fragment in the ELM327's
+  line buffer for the next command to be appended to. `BleTransport.write()` now sends a
+  best-effort `LINE_FLUSH` (`X\r`) before rethrowing, so the fragment is rejected with `?`; a bare
+  `\r` (the reviewer's suggestion) was not used because it would _execute_ the truncated fragment
+  (e.g. a short `2E` write). Tests: flush after a failed second chunk; no flush when the first fails.
+
+**Deviations from the plan:**
+
+- **Wake-up command.** A bare `\r` makes a real ELM327 _repeat the previous command_, so a bare-CR
+  wake after a clear (`04`/`14`), a coding write (`2E`), a routine (`31`) or an output test (`2F`)
+  would run it again. The client sends a bare `\r` only when `isRepeatSafe(lastCmd)` (reads,
+  `3E`, idempotent AT settings/queries) and otherwise — including a fresh connection, where the
+  adapter's last command is unknown — wakes with the harmless `ATI`. Because `ATSP0` (init's last
+  command) is not repeat-safe, the wake test reads `0100` after `init()` before idling.
+- **Simulator wake answer.** With `sleepAfterIdleMs` set, a bare `\r` is answered with `\r>` whether
+  the simulated chip is asleep or awake (so a wake never waits out the full 600 ms on an awake
+  adapter); without the option the simulator still ignores it. The idle gap counts from the last
+  write **or reply** (closer to a real chip than "last write").
+- **Test timings.** The plan's 10 ms sleep / 5 ms wake / 20 ms idle are below Windows' ~15 ms timer
+  tick (a `setTimeout(0)` reply took 22 ms), so the simulated chip fell asleep between init commands.
+  The tests use 120 / 60 / 200 ms (and 1 200 / 300 / 1 300 ms for the `ATI` case, whose swallowed
+  wake waits out the 600 ms timeout plus the 300 ms drain). The `MockTransport` sleep-model test uses
+  a 400 ms sleep against 60 ms listens and 600 ms idles — a tighter 80 ms threshold was flaky under
+  parallel Jest on Windows. The late-reply test sends the first command with a 50 ms timeout and
+  the second with the default 1 000 ms (the plan's single 50 ms timeout would time out the second
+  command too, at 200 ms latency).
+- **Flap guard count.** The plan's message, acceptance ("after three drops in a minute it stops") and
+  the Tests line ("false on the 4th") disagree; the guard pauses on the **third** drop inside 60 s,
+  matching the message and the acceptance.
+- **Classifier details.** Rule 5 ("vehicle isn't responding" → ignition) yields to rule 6 when the
+  log also shows `UNABLE TO CONNECT` / `BUS INIT` — a failed K-line start-up ends in the same probe
+  error, so in strict first-match order rule 6 could never fire for a connect. The Bluetooth rule
+  ignores the simulator and a still-settling (`checking`) radio. The panel feeds the classifier only
+  this attempt's log lines (`linkStore.attemptStartedAt`), so an older session's `ATZ` cannot
+  mislead it.
+- **`linkStore`** also records `attemptStartedAt`, and `link` is captured as soon as the transport
+  reports `connected` (not only after `session.connect()` resolves), so a failure during init still
+  shows the negotiated MTU. `stage` holds the furthest stage the attempt reached
+  (`bluetooth → transport → init → probe → identify`); `DiagnosticSession.connect()` gained an
+  optional `onStage` callback (`ConnectProgressStage`) for the last three.
+- **Auto-reconnect giving up** ends in `error`, not `disconnected` (the plan has every connection
+  failure open the diagnostics panel, which renders only on `error`), and appends the last
+  attempt's error to the message.
+- **Raw-CAN wake safety.** Not in the plan: while `ATCAF0` is in effect the client treats only AT
+  commands as repeat-safe, so a bare-CR wake can never resend a TP2.0 data frame.
+- **`MockTransport.dropResponses`** takes `{ includeAt }` (the acceptance's "extend the sim control
+  to AT when a flag is set").
+- The 16-byte coding-write acceptance test lives in `BleTransport.test.ts` (a BLE fake that
+  reassembles writes until `\r` and feeds the Golf simulator), not a separate file.
+
+---
+
 ## Plan 01 — Production first-run (2026-11-08)
 
 [Plan 01](./plans/01-production-first-run.md) landed: a fresh install now behaves like a product.

@@ -18,6 +18,16 @@ Developer and runtime settings.
     rejected); codes are uppercased, invalid ones ignored, duplicates dropped (`parseDtcList` in
     `settingsStore.ts`). The injected set is read
     when the simulator connects, so reconnect to apply a change.
+  - **Developer (simulator)** (simulator only) — two test controls for the link-robustness paths
+    (plan 12): **Simulate a link drop** (enabled while connected; calls
+    `connectionService.__sim.simulateDrop()` → `MockTransport.simulateDisconnect()`, so
+    auto-reconnect and the flap guard can be watched with no car) and **Fail next connect: no reply
+    to ATZ** (`__sim.failNextConnect()`: the next simulator connect's `MockTransport` gets
+    `dropResponses(1, { includeAt: true })`, so `ATZ` times out and the Connect screen's
+    diagnostics panel opens at stage "Adapter start-up").
+  - **Auto-reconnect** On / Off — copy: "On by default; pauses after 3 drops in a minute", then the
+    backoff (2 s, 5 s, 10 s — up to 3 attempts) and that a manual disconnect / connect cancels it.
+    See [connection](./connection.md#auto-reconnect-on-by-default-with-a-flap-guard).
   - **Live log** of adapter I/O (sent commands ↔ raw responses), with clear + export-as-fixture.
   - Units (metric default), poll interval, theme (system/light/dark).
 
@@ -47,12 +57,18 @@ Developer and runtime settings.
 - `settingsStore` (Zustand, **persisted**): `adapterSource`, `simulatedVehicleId`, `injectedDtcs`,
   `units`, `pollIntervalMs`, `autoReconnect`, `theme`, and the `ai` config (server URL, model,
   structured-output mode, timeout, key). It no longer holds the adapter I/O log (see above).
-- Persisted as `bolid.settings` at **version 2**. Defaults: `adapterSource: 'ble'`,
-  `simulatedVehicleId: 'golf-plus-2009-20tdi'`, `injectedDtcs: []`.
-- **Migration v1 → v2** (`migrateSettings`, pure and unit-tested): a v1 blob keeps its explicit
-  `adapterSource` and `injectedDtcs` — a tester who chose the simulator is never flipped under them —
-  and only _missing_ fields get the new defaults (`'ble'`, `[]`). From v2 on it is the identity. The
-  existing `merge` still deep-merges `ai` over the defaults.
+- Persisted as `bolid.settings` at **version 3**. Defaults: `adapterSource: 'ble'`,
+  `simulatedVehicleId: 'golf-plus-2009-20tdi'`, `injectedDtcs: []`, `autoReconnect: true`.
+- **Migrations** (`migrateSettings`, pure and unit-tested; each step only fills _missing_ fields, so
+  an explicit stored choice always survives):
+  - **v1 → v2** (plan 01): a v1 blob keeps its explicit `adapterSource` and `injectedDtcs` — a tester
+    who chose the simulator is never flipped under them — and only missing fields get the new
+    defaults (`'ble'`, `[]`).
+  - **v2 → v3** (plan 12): `autoReconnect: p.autoReconnect ?? true`. A stored value (including an
+    explicit `false`) is kept; a blob without the field, and every fresh install, gets `true`.
+    Because v2's `partialize` always wrote `autoReconnect`, upgraded installs keep whatever they had
+    (the old default was `false`) — only fresh installs and partial blobs get it on.
+  - From v3 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults.
 - **Known limitation:** v1's `partialize` always wrote `adapterSource` and `injectedDtcs`, so every
   real v1 file carries them — including installs that never chose anything and just persisted the
   old defaults (`'mock'`, `['P0299']`). The migration cannot tell those apart from a deliberate

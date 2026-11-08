@@ -6,11 +6,13 @@ interface and answers AT/OBD commands with realistic bytes, parameterized by a *
 from a vehicle profile.
 
 ## Why
+
 - Develop and demo the app with no car or adapter.
 - Deterministic, fast **unit/integration tests** (CI and this container).
 - Reproduce per-car quirks (CAN vs K-line, missing PIDs, slow init) so the UI is exercised honestly.
 
 ## What it models
+
 - **AT commands:** `ATZ` (version banner), `ATE0/L0/S0/H1`, `ATSP0`, `ATDPN` (returns the scenario's
   protocol number), `ATRV` (voltage), `ATI` (version). Unknown → `?`.
 - **Addressing, realistically:** bare `ATSH` is rejected with `?` (like real firmware — restoring
@@ -41,7 +43,9 @@ from a vehicle profile.
 - **Extended (Mode 22):** answers only the DIDs the scenario declares (Golf); otherwise `NO DATA`.
 
 ## Scenarios
+
 Built from the vehicle registry + overrides:
+
 - `generic` — CAN, broad PID set, sample VIN, no injected DTCs.
 - `golf-plus-2009-20tdi` — CAN 11/500, 16 PIDs, real VIN `WVWZZZ1KZ9W903398`,
   optional DTCs, one experimental Mode 22 DID.
@@ -54,12 +58,31 @@ Tests and the in-app Settings picker select a scenario. Latency is configurable 
 speed; non-zero to emulate K-line in the UI).
 
 ## Quirks toggles
+
 - `latencyMs` — per-response delay (K-line > CAN).
 - `emitSearching` — prefix the first OBD reply with `SEARCHING...`.
 - `vinSupported` — whether `0902` answers.
 - `secondaryEcus` — extra ECUs that answer functional `0100`/Mode 03/07 on their own line (multi-ECU).
 - `whitespaceInResponses` — emulate adapters that ignore `ATS0` (the client must still parse).
+- `sleepAfterIdleMs` — adapter auto-sleep (ELM327 low-power mode). After this idle gap (ms since
+  the last write in or reply out) the next non-empty command is **swallowed** — its byte only wakes
+  the chip — while a bare `\r` is answered with `\r>`. While the option is set, a bare `\r` to an
+  awake adapter also gets `\r>` (a real ELM327 would repeat its last command; the client only sends
+  a bare CR when that is harmless). Unset ⇒ the simulator never sleeps and ignores a bare `\r`, as
+  before. `connectionService` then sets the client's `wakeAfterIdleMs` to half the gap.
+
+## Test / dev controls
+
+- `simulateDisconnect()` — an unsolicited link drop (adapter pulled, out of range); drives the
+  link-loss path, auto-reconnect and the flap guard. Settings → Developer → **Simulate a link drop**.
+- `dropResponses(n, { includeAt? })` — the next `n` non-AT commands get **no reply at all** (not
+  even a prompt), so the client times out; drives the timeout, drain-until-prompt and diagnostics
+  paths. With `includeAt: true` AT commands count too — Settings → Developer → **Fail next connect:
+  no reply to ATZ** arms exactly that (`dropResponses(1, { includeAt: true })`) for the next
+  simulator connect. A bare `\r` is never dropped; calling it again replaces the budget.
+- For a **late** reply (rather than none), set `latencyMs` above the client's timeout.
 
 ## Contract
+
 The simulator's **outputs are bytes ending in the `>` prompt**, exactly like a real ELM327, so the
 `Elm327Client` is unaware it is talking to a mock. This is what makes the tests meaningful.

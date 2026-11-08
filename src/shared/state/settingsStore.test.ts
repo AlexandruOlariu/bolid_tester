@@ -1,4 +1,4 @@
-/** Production defaults + the v1 → v2 settings migration (plan 01). settingsStore pulls in
+/** Production defaults + the settings migrations (v1 → v2 plan 01, v2 → v3 plan 12). settingsStore pulls in
  *  persistStorage -> expo-file-system (ESM, not transformed for the node test env), so the file system
  *  is mocked with an in-memory map; that also lets the persist round-trip below exercise the real
  *  `migrate` wiring, not just the pure helper. */
@@ -29,38 +29,59 @@ describe('settings defaults', () => {
     expect(fresh.simulatedVehicleId).toBe('golf-plus-2009-20tdi');
   });
 
-  it('persists at schema version 2', () => {
-    expect(SETTINGS_VERSION).toBe(2);
-    expect(useSettingsStore.persist.getOptions().version).toBe(2);
+  it('a fresh install has auto-reconnect on (plan 12)', () => {
+    expect(useSettingsStore.getInitialState().autoReconnect).toBe(true);
+  });
+
+  it('persists at schema version 3', () => {
+    expect(SETTINGS_VERSION).toBe(3);
+    expect(useSettingsStore.persist.getOptions().version).toBe(3);
   });
 });
 
 describe('migrateSettings', () => {
-  it('v1 → v2 keeps an explicit simulator choice and its injected codes', () => {
-    expect(migrateSettings({ adapterSource: 'mock', injectedDtcs: ['P0299'] }, 1)).toEqual({
+  it('v1 → v3 keeps an explicit simulator choice, its injected codes and auto-reconnect', () => {
+    expect(
+      migrateSettings({ adapterSource: 'mock', injectedDtcs: ['P0299'], autoReconnect: false }, 1),
+    ).toEqual({
       adapterSource: 'mock',
       injectedDtcs: ['P0299'],
+      autoReconnect: false,
     });
   });
 
-  it('v1 → v2 fills missing fields with the production defaults', () => {
+  it('v1 → v3 fills missing fields with the production defaults', () => {
     expect(migrateSettings({ theme: 'dark' }, 1)).toEqual({
       theme: 'dark',
       adapterSource: 'ble',
       injectedDtcs: [],
+      autoReconnect: true,
     });
-    expect(migrateSettings(undefined, 1)).toEqual({ adapterSource: 'ble', injectedDtcs: [] });
+    expect(migrateSettings(undefined, 1)).toEqual({
+      adapterSource: 'ble',
+      injectedDtcs: [],
+      autoReconnect: true,
+    });
   });
 
-  it('is the identity from v2 on', () => {
+  it('v2 → v3 keeps a stored auto-reconnect choice and defaults a missing one to on', () => {
+    const blob = { adapterSource: 'mock' as const, injectedDtcs: ['P0420'], autoReconnect: false };
+    expect(migrateSettings(blob, 2)).toEqual(blob);
+    expect(migrateSettings({ theme: 'light' as const }, 2)).toEqual({
+      theme: 'light',
+      autoReconnect: true,
+    });
+  });
+
+  it('is the identity from v3 on', () => {
     const blob = {
       adapterSource: 'mock' as const,
       injectedDtcs: ['P0420'],
       theme: 'light' as const,
     };
-    expect(migrateSettings(blob, 2)).toEqual(blob);
+    expect(migrateSettings(blob, 3)).toEqual(blob);
     const partial = { theme: 'dark' as const };
-    expect(migrateSettings(partial, 2)).toEqual(partial);
+    expect(migrateSettings(partial, 3)).toEqual(partial);
   });
 });
 
@@ -91,6 +112,21 @@ describe('persisted v1 blob rehydration', () => {
     expect(s.adapterSource).toBe('ble');
     expect(s.injectedDtcs).toEqual([]);
     expect(s.pollIntervalMs).toBe(500);
+  });
+
+  it('a v2 blob that turned auto-reconnect off keeps it off', async () => {
+    writeBlob({ adapterSource: 'ble', injectedDtcs: [], autoReconnect: false }, 2);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().autoReconnect).toBe(false);
+  });
+
+  it('a v2 blob without an auto-reconnect field gets it on', async () => {
+    // Runtime state starts "off" (setState persists, so the blob is written after it): only the
+    // v2 -> v3 migration can turn it on.
+    useSettingsStore.setState({ autoReconnect: false });
+    writeBlob({ adapterSource: 'ble', injectedDtcs: [], theme: 'light' }, 2);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().autoReconnect).toBe(true);
   });
 });
 

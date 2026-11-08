@@ -61,6 +61,12 @@ no-op.
 
 - `connectionStore` (Zustand): `status`, `deviceId`, `deviceName`, `protocol`, `adapterVersion`,
   `voltage`, `error`.
+- `model/linkStore.ts` (`useLinkStore`, in-memory): `link: BleLinkInfo | null` (set the moment the
+  transport reports `connected`, so a failed init still shows it, and again after a successful
+  connect; null for the simulator), `stage: ConnectStage | null` (the furthest stage the latest
+  attempt reached: `bluetooth` → `transport` → `init` → `probe` → `identify`; the last three come
+  from `DiagnosticSession.connect(onStage)`) and `attemptStartedAt`. Written by
+  `connectionService.connectInternal`; read by the diagnostics panel.
 
 ## Behavior
 
@@ -91,13 +97,109 @@ no-op.
   rethrowing, so a probe failure (ignition off) leaves no GATT link, notify monitor, or attached
   client — a retry after failure works without an app restart.
 
-## Auto-reconnect (optional, default off)
+## Auto-reconnect (on by default, with a flap guard)
 
-- Behind the persisted `settingsStore.autoReconnect` toggle (Settings → Auto-reconnect). On an
-  unexpected link loss it retries the stored device with backoff (2 s / 5 s / 10 s, 3 attempts),
-  surfacing progress via `sessionStore` status `connecting` + an "attempt _n_ of 3" message. It
-  aborts immediately on a manual disconnect or a new manual connect. The backoff control flow is the
-  pure `reconnect.ts` (`runReconnect`), unit-tested with injected timers.
+- Behind the persisted `settingsStore.autoReconnect` toggle (Settings → Auto-reconnect), **on by
+  default** since plan 12 (settings v3; an upgraded install keeps its stored value — see
+  [settings](./settings.md#model)). On an unexpected link loss it retries the stored device with
+  backoff (2 s / 5 s / 10 s, 3 attempts), surfacing progress via `sessionStore` status `connecting`
+  - an "attempt _n_ of 3" message. It aborts immediately on a manual disconnect or a new manual
+    connect. The backoff control flow is the pure `reconnect.ts` (`runReconnect`), unit-tested with
+    injected timers. When all three attempts fail the session ends in `error` (so the diagnostics
+    panel stays up) with "Auto-reconnect failed after 3 attempts. … Last error: _cause_" — the last
+    attempt's message is kept so the classifier can still name the cause.
+- **Flap guard** (`api/flapGuard.ts`, pure): `handleUnexpectedDrop()` pushes `Date.now()` onto a
+  module-level `dropsAt`, prunes it to the last `FLAP_WINDOW_MS` (60 s), and only starts
+  auto-reconnect while `shouldAutoReconnect(dropsAt, now)` — fewer than `MAX_DROPS_PER_WINDOW` (3)
+  drops in the window, counting the one being handled. So the 1st and 2nd drop in a minute
+  reconnect; the 3rd leaves the session `disconnected` with "The link dropped 3 times in a minute —
+  auto-reconnect paused. Check the adapter is seated and reconnect manually." (`FLAP_PAUSED_MESSAGE`,
+  plus a warning in the error log). A manual `connect()` resets `dropsAt`; reconnect attempts do not.
+
+## BLE link: MTU and chunked writes
+
+- `BleTransport.connect()` asks for `requestMTU: 247` **on Android only** (`Platform.OS`); iOS
+  negotiates on its own. Either way it then reads the negotiated value from `device.mtu` (23 when the
+  stack reports none) and exposes the link as `linkInfo: BleLinkInfo | null` — `mtu`, `payload`
+  (`mtu - 3`, floor 20), `service`, `notifyCharacteristic`, `writeCharacteristic`,
+  `writeWithoutResponse`; null while not connected.
+- `write(bytes)` slices every command into `payload`-sized GATT writes sent strictly in order. A
+  16-byte UDS `2E` coding write is 39 bytes, which used to exceed the 20-byte default payload when
+  MTU negotiation failed. Without-response writes go back to back (the adapter buffers its UART input
+  until the `\r`); with-response writes are paced by awaiting each acknowledgement.
+- If a chunk fails after earlier chunks went out, the adapter holds a command fragment that the next
+  write would be appended to (a half-sent `2E` + `010C` would run as one malformed `2E`). Before
+  rethrowing, `write()` sends a best-effort `LINE_FLUSH` (`X\r`): `X` is no hex digit and no AT
+  command, so the ELM327 answers `?` and sends nothing to the car (a bare `\r` would run the
+  truncated fragment). The client drains that reply (see the drain section below).
+
+## Adapter sleep / wake
+
+- ELM327 adapters (the Vgate included) auto-sleep when idle; the first byte wakes the chip and the
+  command that carried it is lost, which used to surface as a confusing timeout.
+- `Elm327Options.wakeAfterIdleMs` (default 20 000 ms, `0` disables): the client tracks `lastIoAt`
+  (any byte out or in) and, before a queued command after a longer silence, runs a **wake-up**:
+  writes a short command, waits up to `WAKE_TIMEOUT_MS` (600 ms) for a `>` (resolves either way,
+  never rejects), clears the buffer, then sends the real command. Monitor mode is exempt. `init()`
+  stamps `lastIoAt` after `ATZ`, so a fresh connection wakes at most once (before `ATZ`).
+- The wake-up is a **bare `\r`** only when the last command is safe to repeat (`isRepeatSafe`: OBD
+  reads, UDS `22`/`19` reads, `3E`, idempotent AT settings/queries) — a real ELM327 **repeats the
+  previous command** on a bare CR, and repeating a clear (`04`/`14`), a write (`2E`), a routine
+  (`31`), an output test (`2F`), a reset or `ATMA` would be unsafe. Otherwise (and on a fresh
+  connection, where the last command is unknown) it wakes with the harmless `ATI`. The client only
+  trusts commands the adapter is known to have run: a command that **timed out** or whose **write
+  failed** (and an `ATI` wake-up that got no `>`) resets `lastCmd` to unknown, because a sleeping
+  adapter may have swallowed it and still remember an older, unsafe one (`04` → swallowed `03` →
+  a bare-CR wake would clear the codes again). While CAN
+  auto-formatting is off (`ATCAF0`, the TP2.0 raw-CAN link) every hex write is a raw CAN frame — a
+  TP2.0 data frame can start with `01`/`22`/… and carry a write — so only AT commands count as
+  repeat-safe (`isRepeatSafe(last, rawCan)`; `ATCAF1` and `ATZ`/`ATWS`/`ATD` end the mode).
+- A wake-up that times out starts the same **drain** as a timed-out command (below): a bare `\r`
+  repeats the last command, which can be a slow `19…`/`22…` read or a K-line request, and its late
+  `>` must not resolve the real command.
+- `connectionService` passes `wakeAfterIdleMs: 20_000` for BLE and `0` for the simulator, unless the
+  scenario models sleep (`sleepAfterIdleMs`), in which case it uses half that gap.
+
+## Drain-until-prompt after a timeout
+
+- `Elm327Client.exec()` clears its buffer on entry, so a reply that arrived after its command timed
+  out used to land in the next command's window and resolve the wrong promise.
+- Now a timeout also starts a **drain**: the client keeps accumulating, and when the late reply's `>`
+  arrives it discards everything through it (never touching `pending`). The next command awaits the
+  drain — prompt seen or `DRAIN_GRACE_MS` (300 ms) elapsed, whichever is first — then proceeds. A
+  late reply inside the grace period can only ever be discarded, never mis-attributed; the cost is at
+  most 300 ms after a timeout. A failed write starts the same drain (a partial write can still draw
+  a reply, e.g. the `?` to `LINE_FLUSH`).
+
+## Connection diagnostics panel
+
+- `ui/ConnectionDiagnostics.tsx`, mounted under the error `Panel` on `ConnectionScreen`, renders
+  whenever `sessionStore.status === 'error'` (`accessibilityLabel="Connection diagnostics"`): a
+  **stage** chip, a title, a plain-English explanation and up to four suggestions; a collapsible
+  **Details** (closed by default) shows this attempt's last 20 adapter-log entries (`» tx` / `« rx`,
+  a bare-CR wake-up as `(wake-up)`), the `linkStore` values when present (MTU, payload, service,
+  write mode), the device name/id of **this attempt** (`linkStore.device` — `sessionStore` only learns
+  the device on success and keeps the previous one after a drop) and the furthest stage reached, with
+  **Copy details**
+  (`Share.share({ message })` — no clipboard dependency) and **Open error log** (`/error-log`).
+- The rules are the pure `api/diagnoseFailure.ts` (`diagnoseFailure(input): FailureDiagnosis`),
+  first match wins. Stages: `bluetooth | transport | init | probe | identify`.
+  1. Real adapter and the radio is off / unauthorized / unsupported → `bluetooth` (the
+     `BluetoothPrompt` wording; a still-settling radio is not evidence).
+  2. Error `No suitable notify…` → `transport`: not a serial-over-BLE adapter, maybe classic
+     Bluetooth (SPP) — not supported yet (plan 27).
+  3. Error mentions permission → `bluetooth` (permission needed).
+  4. A timeout whose last command was `ATZ` → `init`: "accepted the link but did not answer `ATZ` —
+     it is unpowered or asleep".
+  5. "vehicle isn't responding" (DiagnosticSession's probe error) → `probe`, ignition guidance —
+     unless rule 6 also matches, since a failed bus start-up ends in the same error.
+  6. The log tail contains `UNABLE TO CONNECT` or `BUS INIT` → `probe`, K-line guidance. The rx
+     entries are joined with whitespace removed first: on BLE each entry is one notification (≤ 20
+     bytes at MTU 23), so the message can be split across two.
+  7. A timeout whose last command was an OBD request → `identify`.
+  8. Anything else → `transport` with the raw error.
+- The panel only feeds the classifier entries newer than `linkStore.attemptStartedAt`, so an older
+  session's traffic cannot mislead it. `formatDiagnosticsReport` builds the shared text.
 
 ## Troubleshooting — adapter visible in Android Bluetooth settings but not in the scan
 
@@ -133,3 +235,12 @@ the app never lists it." The connection flow handles it as follows:
 - Killing the link mid-session (sim `simulateDisconnect()` or pulling the adapter) flips the UI to
   disconnected within a poll interval with one actionable error entry — no timeout cascade. A failed
   ignition-off connect followed by a successful retry works without restarting the app.
+- Simulator connected → Settings → Developer → **Simulate a link drop** reconnects on its own
+  without touching the toggle; the third drop in a minute stops with the pause message.
+- Settings → Developer → **Fail next connect: no reply to ATZ**, then connect → the diagnostics
+  panel opens at stage "Adapter start-up" with the unpowered / asleep suggestion.
+- A 16-byte coding write succeeds over a BLE link stuck at MTU 23 (unit test through a BLE fake).
+- A late reply after a timeout is never attributed to the next command; an adapter that went to
+  sleep is woken before the next command (unit tests against the simulator).
+- On-car pending (plan 12, deferred): the Vgate's real sleep delay and whether a bare `\r` wakes it,
+  the negotiated MTU on the owner's phones, and one walk-out-of-range reconnect + flap-guard check.

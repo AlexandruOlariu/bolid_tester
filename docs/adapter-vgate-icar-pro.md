@@ -55,7 +55,17 @@ hints and by the presence of a serial-like service.
 - **Latency / buffering.** BLE notifications can split a response across packets; the client buffers
   incoming bytes until it sees `>`.
 - **MTU.** Default ~20-byte BLE payloads; long responses (VIN, many DTCs) arrive in several
-  notifications and are reassembled.
+  notifications and are reassembled. Writes are chunked to the negotiated payload (`device.mtu - 3`,
+  floor 20), so a long command (a 16-byte coding write is 39 bytes) also survives a failed MTU
+  negotiation. The negotiated MTU is shown in the Connect screen's diagnostics panel.
+- **Auto-sleep.** After an idle gap the client sends a wake-up (`\r`, or `ATI` when repeating the
+  last command is unsafe) before the next command — see
+  [connection](./features/connection.md#adapter-sleep--wake).
+- **Late replies.** After a timeout the client drains the late reply up to its `>` (≤ 300 ms) so it
+  can never be taken as the answer to the next command.
+- **To confirm on the car (plan 12, deferred):** the Vgate's actual sleep delay and whether a bare
+  `\r` wakes it (adjust `wakeAfterIdleMs`), and the negotiated MTU on the owner's Android and iOS
+  phones (read from the diagnostics panel).
 
 ## Init sequence
 
@@ -64,12 +74,13 @@ read `ATDPN` (protocol number) and `ATRV` (voltage). See [`obd2-reference.md`](.
 
 ## Expectations per example car
 
-| Car | Likely negotiated protocol | Notes |
-|-----|----------------------------|-------|
-| Golf Plus 2009 2.0 TDI | CAN 11/500 (`6`) | Full, fast, many PIDs. |
-| Fiat Grande Punto 1.2 2008 | CAN 11/500 (`6`) | 199-body petrol on CAN; auto-detect confirms. |
-| Passat B5.5 1.9 TDI | KWP2000 fast (`5`) / ISO 9141-2 (`3`) | Slower K-line; fewer live PIDs; engine DTC read/clear OK. |
+| Car                        | Likely negotiated protocol            | Notes                                                     |
+| -------------------------- | ------------------------------------- | --------------------------------------------------------- |
+| Golf Plus 2009 2.0 TDI     | CAN 11/500 (`6`)                      | Full, fast, many PIDs.                                    |
+| Fiat Grande Punto 1.2 2008 | CAN 11/500 (`6`)                      | 199-body petrol on CAN; auto-detect confirms.             |
+| Passat B5.5 1.9 TDI        | KWP2000 fast (`5`) / ISO 9141-2 (`3`) | Slower K-line; fewer live PIDs; engine DTC read/clear OK. |
 
 ## Sources
+
 - vgatemall.com, astools.eu (product specs: genuine ELM327, BLE, all OBD2 protocols, iOS).
 - carscanner.info "Choosing an OBD adapter" (BLE adapters, no MS/SW-CAN).
