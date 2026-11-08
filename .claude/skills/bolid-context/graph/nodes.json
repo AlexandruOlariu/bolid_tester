@@ -1635,6 +1635,15 @@
     ],
     "type": "doc"
   },
+  "doc:features/engine-host": {
+    "path": "docs/features/engine-host.md",
+    "summary": "Feature: engine-host",
+    "tokens": [
+      "engine",
+      "host"
+    ],
+    "type": "doc"
+  },
   "doc:features/error-log": {
     "path": "docs/features/error-log.md",
     "summary": "Feature: error log",
@@ -1714,6 +1723,14 @@
     ],
     "type": "doc"
   },
+  "doc:features/more": {
+    "path": "docs/features/more.md",
+    "summary": "Feature: more",
+    "tokens": [
+      "more"
+    ],
+    "type": "doc"
+  },
   "doc:features/notifications": {
     "path": "docs/features/notifications.md",
     "summary": "Feature: notifications",
@@ -1752,6 +1769,15 @@
       "settings",
       "tests",
       "write"
+    ],
+    "type": "doc"
+  },
+  "doc:features/sensor-readings": {
+    "path": "docs/features/sensor-readings.md",
+    "summary": "Feature: sensor-readings",
+    "tokens": [
+      "readings",
+      "sensor"
     ],
     "type": "doc"
   },
@@ -2634,7 +2660,7 @@
   },
   "feature:engine-host": {
     "path": "src/features/engine-host",
-    "summary": "Engine Host feature (screen + hooks + model).",
+    "summary": "The headless **engine host**: one component, mounted once at the app root, that owns every",
     "tests": [
       "src/features/engine-host/pollPids.test.ts"
     ],
@@ -2745,7 +2771,7 @@
   },
   "feature:more": {
     "path": "src/features/more",
-    "summary": "More feature (screen + hooks + model).",
+    "summary": "The **More** tab: the hub that reaches every screen that is not a tab, plus **Check for updates**.",
     "tests": [
       "src/features/more/ui/MoreScreen.test.tsx"
     ],
@@ -2795,7 +2821,10 @@
   },
   "feature:sensor-readings": {
     "path": "src/features/sensor-readings",
-    "summary": "Sensor Readings feature (screen + hooks + model).",
+    "summary": "Every live Mode 01 sensor the car reports, **grouped by system**, plus the profile's",
+    "tests": [
+      "src/features/sensor-readings/ui/SensorReadingsScreen.test.tsx"
+    ],
     "tokens": [
       "readings",
       "sensor"

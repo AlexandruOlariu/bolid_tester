@@ -105,8 +105,9 @@ The app is metric only. Remove, do not hide:
   `useLiveData()` with no PID argument registers the effective set when the sensors view is shown
   (the dashboard view keeps its explicit visible-PID registration).
 - Delete `src/features/sensor-readings/`, `src/app/sensor-readings.tsx`, the `_layout.tsx` hidden
-  route, the More entry; add a `sensor-readings → live-data` alias in `featureDocsSync.test.ts` only
-  if a doc with that name was created by plan 04 (otherwise nothing).
+  route, the More entry. Do **not** add a `sensor-readings → live-data` alias to
+  `featureDocsSync.test.ts`: the slice and `docs/features/sensor-readings.md` are deleted together,
+  and the test reports an alias whose slice does not exist (plan 04 review, 2026-11-09).
 
 ### Dashboard presets (roadmap item, same area)
 

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { YStack, XStack, Text, Paragraph, Card, Button, Spinner, H4 } from 'tamagui';
 import { Screen, ValueCard } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
@@ -13,7 +13,10 @@ const GROUPS: { title: string; pids: string[] }[] = [
   { title: 'Engine', pids: ['010C', '010D', '0104', '0111', '010E', '011F'] },
   { title: 'Temperatures', pids: ['0105', '010F', '0146', '015C'] },
   { title: 'Air & boost', pids: ['010B', '0110', '0133'] },
-  { title: 'Fuel & injection', pids: ['010A', '0122', '0123', '015E', '0106', '0107', '0144', '012F'] },
+  {
+    title: 'Fuel & injection',
+    pids: ['010A', '0122', '0123', '015E', '0106', '0107', '0144', '012F'],
+  },
   { title: 'Electrical', pids: ['0142'] },
   { title: 'Distance', pids: ['0121', '0131'] },
 ];
@@ -32,38 +35,63 @@ export function SensorReadingsScreen() {
   const selectedId = useVehicleStore((s) => s.selectedProfileId);
   const { values, polling } = useLiveData();
 
-  const profile = getVehicleProfile(selectedId);
-  const injectionPids = (profile.extendedPids ?? []).filter((p) => p.category === 'injection');
+  // Memoised so `readInjection` keeps its identity across renders: the mount effect below must
+  // run once per session / profile, not after every live-data update (each run is five Mode 22
+  // requests on a half-duplex adapter that EngineHost's poll loop also uses).
+  const injectionPids = useMemo(
+    () =>
+      (getVehicleProfile(selectedId).extendedPids ?? []).filter((p) => p.category === 'injection'),
+    [selectedId],
+  );
   const canInjection = injectionPids.length > 0 && isCan(session?.currentProtocol ?? 'UNKNOWN');
 
   const [injection, setInjection] = useState<InjectionReading[]>([]);
   const [injLoading, setInjLoading] = useState(false);
+  // Run id: every read (mount, session / profile change, Refresh) takes the next id, and the effect
+  // cleanup bumps it too. A read whose id is no longer current stops sending and never touches
+  // state, so an older profile's / session's values cannot overwrite a newer read's, and nothing is
+  // set after unmount.
+  const runRef = useRef(0);
 
   const readInjection = useCallback(async () => {
-    if (!session || !canInjection) return;
+    const run = ++runRef.current;
+    const current = () => runRef.current === run;
+    if (!session || !canInjection) {
+      setInjLoading(false);
+      return;
+    }
     setInjLoading(true);
     try {
       const out: InjectionReading[] = [];
       for (const p of injectionPids) {
         const raw = await session.readExtended(p.did);
+        if (!current()) return;
         out.push({ did: p.did, name: p.name, unit: p.unit, value: raw ? p.decode(raw) : null });
       }
       setInjection(out);
     } catch (e) {
-      logError({ source: 'sensor-readings', error: e, severity: 'warning' });
+      if (current()) logError({ source: 'sensor-readings', error: e, severity: 'warning' });
     } finally {
-      setInjLoading(false);
+      if (current()) setInjLoading(false);
     }
   }, [session, canInjection, injectionPids]);
 
+  // Invalidates any read in flight (a counter, not a DOM node, so bumping it in cleanup is intended).
+  const cancelReads = useCallback(() => {
+    runRef.current++;
+  }, []);
+
   useEffect(() => {
     void readInjection();
-  }, [readInjection]);
+    return cancelReads;
+  }, [readInjection, cancelReads]);
 
   if (status !== 'connected') {
     return (
       <Screen title="Sensor readings">
-        <Paragraph theme="alt2">Not connected. Connect an adapter or the simulator first.</Paragraph>
+        <Paragraph theme="alt2">
+          Not connected. Connect an adapter or the simulator first.
+        </Paragraph>
       </Screen>
     );
   }
@@ -111,7 +139,11 @@ export function SensorReadingsScreen() {
             Injection
           </Text>
           {canInjection ? (
-            <Button size="$2" onPress={readInjection} icon={injLoading ? () => <Spinner /> : undefined}>
+            <Button
+              size="$2"
+              onPress={readInjection}
+              icon={injLoading ? () => <Spinner /> : undefined}
+            >
               Refresh
             </Button>
           ) : null}
@@ -140,11 +172,11 @@ export function SensorReadingsScreen() {
           <Card bordered padding="$3" gap="$1">
             <H4>Per-injector data isn’t available here</H4>
             <Paragraph theme="alt2" size="$2">
-              Injection quantity, balance and per-cylinder corrections live in manufacturer measuring
-              blocks (VAG groups), which a generic ELM327 cannot read over standard OBD-II on this car —
-              especially on a K-line ECU. The fuel-system parameters in “Fuel & injection” above (rail
-              pressure, fuel rate, fuel trims) are what is available generically; full injector data
-              needs VCDS-style / enhanced tooling.
+              Injection quantity, balance and per-cylinder corrections live in manufacturer
+              measuring blocks (VAG groups), which a generic ELM327 cannot read over standard OBD-II
+              on this car — especially on a K-line ECU. The fuel-system parameters in “Fuel &
+              injection” above (rail pressure, fuel rate, fuel trims) are what is available
+              generically; full injector data needs VCDS-style / enhanced tooling.
             </Paragraph>
           </Card>
         )}

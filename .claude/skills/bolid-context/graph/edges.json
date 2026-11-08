@@ -1860,6 +1860,11 @@
     "documents"
   ],
   [
+    "doc:features/engine-host",
+    "feature:engine-host",
+    "documents"
+  ],
+  [
     "doc:features/error-log",
     "feature:error-log",
     "documents"
@@ -1915,6 +1920,11 @@
     "documents"
   ],
   [
+    "doc:features/more",
+    "feature:more",
+    "documents"
+  ],
+  [
     "doc:features/notifications",
     "feature:notifications",
     "documents"
@@ -1937,6 +1947,16 @@
   [
     "doc:features/routines",
     "feature:routines",
+    "documents"
+  ],
+  [
+    "doc:features/sensor-readings",
+    "feature:sensor-readings",
+    "documents"
+  ],
+  [
+    "doc:features/sensor-readings",
+    "feature:sensor-tests",
     "documents"
   ],
   [
@@ -2206,6 +2226,11 @@
   ],
   [
     "feature:can-sniffer",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
     "store:errorLogStore",
     "imports"
   ],
@@ -2418,6 +2443,11 @@
     "feature:engine-host",
     "core:session/DiagnosticSession",
     "imports"
+  ],
+  [
+    "feature:engine-host",
+    "doc:features/engine-host",
+    "named"
   ],
   [
     "feature:engine-host",
@@ -2841,6 +2871,11 @@
   ],
   [
     "feature:more",
+    "doc:features/more",
+    "named"
+  ],
+  [
+    "feature:more",
     "doc:plans/07-information-architecture",
     "named"
   ],
@@ -2961,7 +2996,7 @@
   ],
   [
     "feature:sensor-readings",
-    "doc:features/sensor-tests",
+    "doc:features/sensor-readings",
     "named"
   ],
   [
@@ -3003,11 +3038,6 @@
     "feature:sensor-tests",
     "core:obd/protocols",
     "imports"
-  ],
-  [
-    "feature:sensor-tests",
-    "doc:features/sensor-tests",
-    "named"
   ],
   [
     "feature:sensor-tests",
@@ -3486,6 +3516,11 @@
   ],
   [
     "screen:more",
+    "doc:features/more",
+    "named"
+  ],
+  [
+    "screen:more",
     "doc:plans/07-information-architecture",
     "named"
   ],
@@ -3526,18 +3561,13 @@
   ],
   [
     "screen:sensor-readings",
-    "doc:features/sensor-tests",
+    "doc:features/sensor-readings",
     "named"
   ],
   [
     "screen:sensor-readings",
     "feature:sensor-readings",
     "serves"
-  ],
-  [
-    "screen:sensor-readings",
-    "feature:sensor-tests",
-    "named"
   ],
   [
     "screen:sensors",

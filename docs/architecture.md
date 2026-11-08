@@ -23,6 +23,7 @@ UI — feature slices (Tamagui)  ──►  state stores (Zustand)  ──►  D
 ## Layers (bottom-up)
 
 ### 1. Transport (`src/shared/obd-core/transport`)
+
 A minimal byte pipe. The rest of the stack does not care whether bytes go over BLE, a mock, or
 (later) Web Bluetooth.
 
@@ -41,6 +42,7 @@ interface Transport {
   at runtime instead of hard-coding UUIDs, so it is robust across ELM327 BLE clones.
 
 ### 2. ELM327 client (`src/shared/obd-core/elm327`)
+
 Turns the byte pipe into a request/response command channel.
 
 - **Half-duplex command queue.** The ELM327 handles **one** command at a time. The client serializes
@@ -52,6 +54,7 @@ Turns the byte pipe into a request/response command channel.
 - **Timeouts & retries** per command, with a longer timeout while the adapter is `SEARCHING...`.
 
 ### 3. OBD2 layer (`src/shared/obd-core/obd`)
+
 Protocol-agnostic OBD2 semantics on top of the ELM327 client.
 
 - **PID registry** — declarative table of Mode 01 PIDs with `{ pid, name, unit, bytes, decode() }`.
@@ -61,11 +64,13 @@ Protocol-agnostic OBD2 semantics on top of the ELM327 client.
 - **Supported-PID discovery** — bitmaps `0100/0120/0140/0160`.
 
 ### 4. DiagnosticSession (`src/shared/obd-core/session`)
+
 High-level orchestration used by the UI:
 `connect → init → identify (protocol + supported PIDs + VIN) → poll live PIDs → read/clear DTCs`.
 Exposes reactive streams/snapshots the UI subscribes to.
 
 ### 5. Vehicle registry (`src/shared/vehicles`)
+
 Typed profiles (an **extensible registry**). A built-in `generic` auto-detect profile works for any
 car. Profiles drive protocol pre-selection, dashboard filtering, the simulator, and extended-PID
 gating. See [`vehicles/README.md`](./vehicles/README.md).
@@ -88,6 +93,19 @@ features/<name>/
 Shared, cross-cutting code (the OBD2 core, vehicle registry, BLE transport, design-system wrappers,
 theme, generic hooks, utils) lives under `src/shared/*`. Anything reused by two features is promoted
 to `shared`.
+
+**Engine host.** The one sanctioned cross-feature composition point is the headless
+`features/engine-host` ([spec](./features/engine-host.md)), mounted once in `src/app/_layout.tsx`.
+It owns the engines that must run whatever screen is on top: the single demand-driven poll loop,
+alert evaluation, diagnostic / connection notifications, trip sampling and the readiness coach. It
+is the only slice the rule allows to read several features' stores; everything else that two
+features need belongs in `src/shared/*`. The code does not match that yet: 19 slices import another
+feature, 16 of them only `vehicle-select`'s `vehicleStore`. The
+[engine-host spec](./features/engine-host.md#the-composition-rule) lists them. New code should
+not add to the list.
+
+**Specs.** Every slice has a spec in `docs/features/<slug>.md` (see [docs/README](./README.md));
+`src/shared/lib/featureDocsSync.test.ts` enforces it.
 
 **Routing.** `src/app/*` (expo-router) files are thin and just render a feature screen.
 

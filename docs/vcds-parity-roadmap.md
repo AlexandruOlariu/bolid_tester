@@ -69,7 +69,8 @@ All ten Phase 6b items have now landed (simulator-first, tested).
 ## Still open (⏳ / ❌)
 
 - **KWP login (`2B`) UI + code book** (⏳) — the UDS/adaptation write paths exist; a K-line KWP
-  login screen for pre-UDS adaptations is not built.
+  login screen for pre-UDS adaptations is not built, and no login code ships at all (no `2B`
+  request exists anywhere in the core). [Plan 22](./plans/22-kwp-login-code-book.md) adds it.
 - **Label-pack coverage** (⏳) — format + one EDC17 pack ship; more packs are a data effort.
 - **Real-hardware TP2.0 validation** (❌) — code + sim done; needs on-car confirmation per adapter.
 - **On-car validation of the UDS module scan / adaptations / routines** (❌) — unblocked by the
@@ -86,7 +87,7 @@ Written after a review of the then code-complete state (24 features, UDS write c
 
 - **SRI / service reset** — done, both methods (UDS routine + adaptation write), CAN and KWP paths.
 - **Long-coding read/edit/write** — done for UDS modules, profile-gated, with backup/diff/restore
-  (`coding` feature + `coding.ts` bit/byte schema — this *is* a long-coding editor).
+  (`coding` feature + `coding.ts` bit/byte schema — this _is_ a long-coding editor).
 - **Security access `27`** — pluggable seed/key per profile.
 - **Measuring-data reads** — engine Mode 22 DIDs (`extended-pids`), ABS module DIDs
   (`sensor-tests` module tier), DPF pack (`dpf`).
@@ -94,19 +95,19 @@ Written after a review of the then code-complete state (24 features, UDS write c
 
 ## The gap map (VCDS function → app status)
 
-| VCDS function | App today | What it takes |
-|---|---|---|
-| **Auto-Scan** (all modules: part no, coding, faults) | ❌ | Module registry + iterate: UDS `10 03` → `22 F187/F189/F19E` → `19 02`. UDS-only v1 is buildable **now** on existing infra. |
-| **Per-module fault codes** (ABS, airbag, cluster…) | ❌ engine-only (Mode 03/07/0A) | UDS `19 02` read / `14` clear / `19 04` freeze frame, addressed via existing `setHeader`/`setRxFilter`. |
-| **VAG fault-code texts** (5-digit codes + symptom bytes) | ❌ generic OBD2 dictionary only | VAG DTC dictionary + UDS status-byte decoding (intermittent/confirmed/…). |
-| **Output tests** (actuators) | ❌ (sensor-tests is read-only by design) | UDS `2F` InputOutputControl / KWP `30`, behind the same guardrails as coding. |
-| **Basic settings** (throttle-body align, SAS G85 cal, EGR learn, brake bleed, **forced DPF regen**) | ❌ (`routineControl 31` exists in core, unused for this) | A gated "guided routines" feature: pick routine from profile, show live values while it runs, hard safety interlocks (engine state, voltage). |
-| **Adaptation channels** (read → test → save) | ⚠️ writes possible via coding path; no channel browser | Generic browse/read/backup/write UI over `22`/`2E` (UDS) and read/write-local-id (KWP). |
-| **Measuring blocks** (grouped, labeled, per module) | ⚠️ flat experimental DID lists | Label packs (below) + group presentation; KWP `21 <group>` for pre-UDS modules. |
-| **Label files** (per-part-number names for blocks/bits/channels) | ⚠️ hardcoded in profiles | A JSON "label pack" format keyed by module part number — the single highest-leverage data investment; keeps profiles thin and community-extensible. (Own format — VCDS label files are proprietary.) |
-| **Gateway installation list** | ❌ | On PQ35 it's KWP-over-**TP2.0** to the gateway → needs the TP2.0 work below. |
-| **Login codes** (KWP `2B` 5-digit login) | ⚠️ only a comment in `udsCoding.ts` | Login-code entry UI + per-profile code book; needed before KWP adaptations. |
-| **SFD unlock** (2020+ cars) | — | Not applicable to these cars; out of scope. |
+| VCDS function                                                                                       | App today                                                                                                                  | What it takes                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Auto-Scan** (all modules: part no, coding, faults)                                                | ❌                                                                                                                         | Module registry + iterate: UDS `10 03` → `22 F187/F189/F19E` → `19 02`. UDS-only v1 is buildable **now** on existing infra.                                                                          |
+| **Per-module fault codes** (ABS, airbag, cluster…)                                                  | ❌ engine-only (Mode 03/07/0A)                                                                                             | UDS `19 02` read / `14` clear / `19 04` freeze frame, addressed via existing `setHeader`/`setRxFilter`.                                                                                              |
+| **VAG fault-code texts** (5-digit codes + symptom bytes)                                            | ❌ generic OBD2 dictionary only                                                                                            | VAG DTC dictionary + UDS status-byte decoding (intermittent/confirmed/…).                                                                                                                            |
+| **Output tests** (actuators)                                                                        | ❌ (sensor-tests is read-only by design)                                                                                   | UDS `2F` InputOutputControl / KWP `30`, behind the same guardrails as coding.                                                                                                                        |
+| **Basic settings** (throttle-body align, SAS G85 cal, EGR learn, brake bleed, **forced DPF regen**) | ❌ (`routineControl 31` exists in core, unused for this)                                                                   | A gated "guided routines" feature: pick routine from profile, show live values while it runs, hard safety interlocks (engine state, voltage).                                                        |
+| **Adaptation channels** (read → test → save)                                                        | ⚠️ writes possible via coding path; no channel browser                                                                     | Generic browse/read/backup/write UI over `22`/`2E` (UDS) and read/write-local-id (KWP).                                                                                                              |
+| **Measuring blocks** (grouped, labeled, per module)                                                 | ⚠️ flat experimental DID lists                                                                                             | Label packs (below) + group presentation; KWP `21 <group>` for pre-UDS modules.                                                                                                                      |
+| **Label files** (per-part-number names for blocks/bits/channels)                                    | ⚠️ hardcoded in profiles                                                                                                   | A JSON "label pack" format keyed by module part number — the single highest-leverage data investment; keeps profiles thin and community-extensible. (Own format — VCDS label files are proprietary.) |
+| **Gateway installation list**                                                                       | ❌                                                                                                                         | On PQ35 it's KWP-over-**TP2.0** to the gateway → needs the TP2.0 work below.                                                                                                                         |
+| **Login codes** (KWP `2B` 5-digit login)                                                            | ❌ no KWP login code ships: nothing sends `2B`, and `udsCoding.ts` only says "optional login" in a comment on the KWP path | Login-code entry UI + per-profile code book ([plan 22](./plans/22-kwp-login-code-book.md)); needed before KWP adaptations.                                                                           |
+| **SFD unlock** (2020+ cars)                                                                         | —                                                                                                                          | Not applicable to these cars; out of scope.                                                                                                                                                          |
 
 ## Hardware honesty (what parity is even possible)
 

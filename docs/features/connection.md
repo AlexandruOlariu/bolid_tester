@@ -4,10 +4,20 @@ Scan for, connect to, and initialize the ELM327 BLE adapter.
 
 ## UI
 
-- **ScanScreen** — list of nearby BLE devices (name + RSSI), with name hints highlighted
-  (`Vlink`, `IOS-Vlink`, `VEEPEAK`, `OBDII`). "Connect" per row. A connect/init progress state.
-- **StatusBadge** — shared component showing `disconnected / connecting / initializing / connected /
-error` and the negotiated protocol once known.
+- **ConnectionScreen** (`ui/ConnectionScreen.tsx`, the Connect tab at `/`) — top to bottom:
+  - a status card (`StatusHero`, local to the screen) showing `Disconnected / Connecting… /
+Initializing… / Connected / Error` with an icon and colour per `ConnState`;
+  - the first-run card (`FirstRunCard`, below);
+  - the session error, if any, and the **connection diagnostics panel** (below) while in `error`;
+  - in simulator mode, a panel to connect the simulated car (with **Use a real adapter**);
+  - otherwise the `BluetoothPrompt` banner when the radio is not ready, **Scan for adapters**, the
+    device list and, on Android, **Connect by address**.
+- **DeviceRow** — one scanned device: name (or "(unnamed)"), id and RSSI, a ⭐ when the name matches
+  an adapter hint (`ADAPTER_NAME_HINTS` in `shared/transports/ble/manager.ts`: `vlink`,
+  `ios-vlink`, `v-link`, `veepeak`, `obdii`, `obd`, `icar`), and a **Connect** button.
+- **SimulatorBanner** — the amber strip on every route (below).
+- The shared `StatusBadge` (`shared/ui`) renders the same states as a compact badge; the Connect
+  screen uses its own larger `StatusHero` instead.
 
 ## First run
 
@@ -44,28 +54,49 @@ no-op.
 
 ## hooks
 
-- `useScan()` — start/stop scanning, returns discovered devices. Guards on the radio being
-  `PoweredOn` before scanning, so a powered-off adapter fails with clear guidance, not a raw error.
-- `useConnect()` — connect to a chosen device, run the ELM327 init, expose progress/errors.
-- `useAdapterStatus()` — read connection status + protocol from the store.
+- `useScan()` — `{ scanning, devices, start, stop }`. `start()` requests the BLE permissions,
+  guards on the radio being `PoweredOn` (so a powered-off adapter fails with clear guidance, not a
+  raw error), merges already-connected adapters, then scans for 12 s (`SCAN_TIMEOUT_MS`). `devices`
+  is sorted likely adapters first, then by RSSI.
+- `useConnect()` — `{ status, error, adapterSource, busy, connect(target?), disconnect() }`.
+  `connect` calls `connectionService.connect` and, once the session is `connected`, pushes
+  `/vehicle`; errors are surfaced through `sessionStore.error`, not thrown.
 - `useBluetoothState(enabled?)` — subscribe to the phone's live Bluetooth radio state
   (`onStateChange`): `ready / poweredOff / unauthorized / unsupported / checking`. Pass `false` in
   simulator mode so the `BleManager` is never constructed. Drives `BluetoothPrompt`.
 
 ## api (service layer)
 
-- `connectionService` — builds the `Transport` (BLE or Mock per Settings), constructs the
-  `Elm327Client`, runs the init sequence, then hands a ready `DiagnosticSession` to the app.
+- `connectionService` (`api/connectionService.ts`, exported as a namespace from the slice) —
+  `connect(target?: ConnectTarget)` builds the `Transport` (`BleTransport` for `{ deviceId }`, or a
+  `MockTransport` over the simulated car per Settings), wraps it so all I/O is mirrored to the
+  adapter log, constructs the `DiagnosticSession` (which owns the `Elm327Client`), runs
+  `session.connect()` (init → probe → identify) and publishes the session with
+  `sessionStore.setConnected`. Also `disconnect()`, `switchAdapterSource(source)`,
+  `switchToRealAdapter()`, `FLAP_PAUSED_MESSAGE`, and the simulator dev hooks under `__sim`
+  (Settings → Developer). Link-loss, auto-reconnect and the flap guard live here too (below).
+- Pure helpers, unit-tested: `reconnect.ts` (`runReconnect`), `flapGuard.ts`
+  (`pruneDrops`, `shouldAutoReconnect`), `diagnoseFailure.ts` (`diagnoseFailure`,
+  `formatDiagnosticsReport`, `formatLogLine`).
 
 ## model
 
-- `connectionStore` (Zustand): `status`, `deviceId`, `deviceName`, `protocol`, `adapterVersion`,
-  `voltage`, `error`.
+- `shared/state/sessionStore.ts` (`useSessionStore`, shared because every feature reads it):
+  `status: ConnState` (`disconnected | connecting | initializing | connected | error`),
+  `deviceId`, `deviceName`, `info: SessionInfo | null` (protocol, ELM `version`, `voltage`,
+  supported PIDs, VIN, calibration id …), `error`, `session: DiagnosticSession | null`; actions
+  `setStatus`, `setError`, `setConnected`, `markDisconnected` (an unexpected drop: clears the session
+  but keeps the device so reconnect can be offered) and `reset`.
+- `model/scanStore.ts` (`useScanStore`, in-memory): `scanning`, `devices: ScannedDevice[]`
+  (`id`, `name`, `rssi`, `isLikelyAdapter`); `setScanning`, `upsert`, `clear`.
 - `model/linkStore.ts` (`useLinkStore`, in-memory): `link: BleLinkInfo | null` (set the moment the
   transport reports `connected`, so a failed init still shows it, and again after a successful
   connect; null for the simulator), `stage: ConnectStage | null` (the furthest stage the latest
   attempt reached: `bluetooth` → `transport` → `init` → `probe` → `identify`; the last three come
-  from `DiagnosticSession.connect(onStage)`) and `attemptStartedAt`. Written by
+  from `DiagnosticSession.connect(onStage)`), `attemptStartedAt` (ms) and
+  `device: AttemptDevice | null` (`{ id, name }` of the device this attempt targeted; `sessionStore`
+  only learns the device on success). Actions: `beginAttempt(stage, device, now?)` (clears `link`,
+  records the first stage, the device and the start time), `setStage` and `setLink`. Written by
   `connectionService.connectInternal`; read by the diagnostics panel.
 
 ## Behavior
@@ -76,10 +107,12 @@ no-op.
    **unsupported** → guidance to use the simulator. The banner clears itself the moment the radio
    comes on (state subscription).
 1. Request BLE permissions (Android 12+ scan/connect; iOS usage description).
-2. Scan; user picks a device (or auto-connect to the last used).
+2. Scan (or, on Android, enter the adapter's address); the user picks a device. There is no
+   auto-connect on launch; only auto-reconnect after a drop (below) reuses the last target.
 3. `BleTransport` connects, **discovers** services/characteristics, selects the notify + write pair.
 4. Run init: `ATZ → ATE0 → ATL0 → ATS0 → ATH0 → ATAT1 → ATSP0`, probe `0100`, read `ATDPN`/`ATRV`.
-5. On success → `connected`, store protocol + voltage; navigate onward.
+5. On success → `connected`, `sessionStore.info` holds protocol, version and voltage; `useConnect`
+   navigates to `/vehicle`.
 
 ## Link status events & loss
 
@@ -210,7 +243,7 @@ the app never lists it." The connection flow handles it as follows:
 - **Already-connected adapters are surfaced directly.** `useScan` also calls
   `BleManager.connectedDevices(OBD_SERVICE_UUIDS)` (common ELM327 services, see `manager.ts`) and
   merges those into the device list before the scan results.
-- **Connect by address (Android).** The scan screen offers a manual MAC entry; on Android
+- **Connect by address (Android).** The Connect screen offers a manual MAC entry; on Android
   `connectToDevice(mac)` works even for a device that never appears in a scan. iOS uses opaque
   device UUIDs (not MACs), and per the adapter doc you don't pair a BLE adapter on iOS — you scan.
 - **Permission / scan failures are no longer silent.** A denied permission or a scan error sets a

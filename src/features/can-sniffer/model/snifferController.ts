@@ -8,6 +8,7 @@ import {
   type CaptureHeader,
   type DiagnosticSession,
 } from '@/shared/obd-core';
+import { APP_VERSION } from '@/shared/lib/appInfo';
 import { logError } from '@/shared/state/errorLogStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
@@ -126,7 +127,7 @@ export class SnifferController {
 
 /** Header + lines of the finished capture, or null while a run is live (the buffer is still
  *  filling and the adapter belongs to the monitor) or when nothing was captured. The header uses
- *  the context frozen at Start, plus the current drop count. */
+ *  the context frozen at Start, plus the current drop count and the app version (`# app:`). */
 export function finishedCapture(): { header: CaptureHeader; lines: CapturedLine[] } | null {
   const { buffer, startedAt, context } = snifferCapture;
   if (useSnifferStore.getState().running || buffer.size === 0 || !context) return null;
@@ -137,6 +138,7 @@ export function finishedCapture(): { header: CaptureHeader; lines: CapturedLine[
     note: context.note,
     startedAt,
     dropped: buffer.dropped,
+    appVersion: APP_VERSION,
   });
   return { header, lines: buffer.lines() };
 }

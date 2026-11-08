@@ -17,6 +17,18 @@ service-interval reset — for any OBD2-compliant car.
 - ✅ **Phase 3** — readiness, freeze-frame, experimental Mode 22 PIDs, polish.
 - ✅ **Phase 4** — analysis, performance & module access (see below). Core verified here; the
   RN/Tamagui screens build on a dev machine / EAS.
+- ✅ **Phase 5** — diesel, ownership & screening: DPF / regen, used-car inspection, battery &
+  charging, VIN decoder, maintenance log.
+- ✅ **VCDS-parity expansion + Phase 6b** — module scan (UDS + TP2.0 gateway), per-module DTCs, VAG
+  fault texts, adaptations with label packs, guided routines & output tests, one-tap coding tweaks,
+  full-car backup, readiness coach, bus wake ([`docs/vcds-parity-roadmap.md`](./docs/vcds-parity-roadmap.md)).
+- ✅ **2026-07 improvement plan** — link-loss detection + auto-reconnect, the headless
+  [engine host](./docs/features/engine-host.md) (one app-wide poll loop, alerts, notifications, trip
+  sampling), API key in the OS keystore, root error boundary
+  ([`docs/improvement-plan-2026-07.md`](./docs/improvement-plan-2026-07.md)).
+- 🔄 **v0.2 "Trust the car"** — production first-run (BLE default), BLE robustness, sniffer
+  captures, full DTC database, signed releases + OTA, replay fixtures, every slice specced
+  ([`docs/roadmap.md`](./docs/roadmap.md)).
 - ⏳ on-car validation against the three example cars; store builds.
 
 See [`docs/implementation-log.md`](./docs/implementation-log.md) for details.
@@ -30,7 +42,7 @@ Core diagnostics: connection, vehicle select (or Auto/Generic), **live data**, *
 (stored/pending/permanent + readiness + freeze-frame), **vehicle info** (VIN, protocol, supported
 PIDs), **settings** (with a built-in **simulator** so the whole app runs with no hardware).
 
-Phase-4 additions (reachable from the **More** tab):
+Everything else is reachable from the **More** tab ([more](./docs/features/more.md)):
 
 | Feature                                                       | What it does                                                                                          | Notes                                      |
 | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -42,16 +54,30 @@ Phase-4 additions (reachable from the **More** tab):
 | [Alerts](./docs/features/alerts.md)                           | Threshold warnings (haptic/visual/sound)                                                              | —                                          |
 | [Notifications](./docs/features/notifications.md)             | Local notifications + maintenance reminders                                                           | on-device only                             |
 | [Sensor tests](./docs/features/sensor-tests.md)               | Mode 06 + experimental module sensors (ABS)                                                           | module reads CAN-only                      |
-| [Coding](./docs/features/coding.md)                           | Experimental UDS module coding                                                                        | gated, backup-first                        |
-| [Service reset](./docs/features/service-reset.md)             | Service-interval ("oil/SRI") reset                                                                    | gated; CAN (Golf) **and** KWP2000 (Passat) |
 | [DPF / regen](./docs/features/dpf.md)                         | Diesel soot load, regeneration status, EGT/EGR                                                        | experimental Mode 22; **CAN diesel only**  |
 | [Used-car inspection](./docs/features/used-car-inspection.md) | One-tap pre-purchase check incl. a "codes recently cleared?" tell                                     | standard OBD2; any car                     |
 | [Battery & charging](./docs/features/battery-health.md)       | Resting/cranking/charging voltage → health verdict                                                    | voltage-based, not a load test             |
 | [VIN decoder](./docs/features/vin-decode.md)                  | WMI / country / year / check-digit from the VIN, offline                                              | NA year/check conventions flagged          |
 | [Maintenance log](./docs/features/maintenance-log.md)         | Service logbook + what's-due by km/time                                                               | odometer user-entered                      |
 | [Error log](./docs/features/error-log.md)                     | Saves caught & uncaught errors; export as Markdown/JSON to fix later                                  | on-device, capped, clearable               |
+| [Adapter health](./docs/features/adapter-health.md)           | Grades the ELM327: firmware, voltage, protocol, timed `0100` burst, clone hints                       | read-only                                  |
+| [Sensor readings](./docs/features/sensor-readings.md)         | Every live sensor grouped by system + injection DIDs                                                  | injection DIDs CAN only                    |
 
-> ⚠️ Coding and service-reset are **experimental writes** to control modules. They ship gated
+Manufacturer / module tier 🧪 (CAN, VAG-first; also in **More**):
+
+| Feature                                           | What it does                                                                                          | Notes                                         |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| [Module scan](./docs/features/module-scan.md)     | VCDS-style auto-scan: per-module ident + fault codes (UDS `19`/`14`), TP2.0 gateway scan, saved scans | 🧪 only the engine address is confirmed       |
+| [Adaptations](./docs/features/adaptations.md)     | Adaptation-channel browser; read / write with backup + verify; label packs                            | 🧪 gated, backup-first                        |
+| [Routines](./docs/features/routines.md)           | Output tests (`2F`) and basic settings (`31`) incl. forced DPF regen, with live interlocks            | 🧪 gated, interlocks fail closed              |
+| [Coding](./docs/features/coding.md)               | Long-coding editor, one-tap tweaks, full-car backup with gated restore                                | 🧪 gated, backup-first                        |
+| [Service reset](./docs/features/service-reset.md) | Service-interval ("oil/SRI") reset                                                                    | 🧪 gated; CAN (Golf) **and** KWP2000 (Passat) |
+| [Bus sniffer](./docs/features/can-sniffer.md)     | Raw `ATMA` bus monitor; save and share captures (CSV / raw) to record what VCDS sends                 | 🧪 read-only (listen only)                    |
+
+🧪 = experimental: ships gated, and every non-standard address, DID and routine id is illustrative
+until it is confirmed on a real car.
+
+> ⚠️ Coding, adaptations, routines and service reset are **experimental writes** to control modules. They ship gated
 > (explicit confirmation), are profile-driven, back up the current values first, and the shipped
 > descriptors are **illustrative** — confirm on the real car. They are never offered for safety
 > modules (immobilizer/airbag/cluster mileage).

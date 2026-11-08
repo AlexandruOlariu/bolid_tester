@@ -5,6 +5,154 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 04 — Doc debt zero (2026-11-09)
+
+[Plan 04](./plans/04-doc-debt.md) landed: every slice under `src/features` has a spec, the 1:1
+rule is enforced by a test, and the overview docs describe the app as it is. The plan has no
+deferred or owner section.
+
+- **New specs.**
+  - [engine-host](./features/engine-host.md): why it exists (finding F1), where it is mounted, the
+    five engines (poll loop with period-not-gap timing and error dedup, alerts + default-rule
+    seeding, notifications fed by `dtcStore`, trip sampling, the 30 s readiness coach), the
+    demand-driven `computePollPids` union, the "only slice allowed to read several feature stores"
+    rule together with the 19 slices that break it today, and acceptance.
+  - [more](./features/more.md): the 22 entries with routes and specs, **Check for updates**
+    (`checkForUpdate` / `fetchAndReload`, `unavailable` in dev clients and builds without
+    `expo-updates`), and the hidden-route reachability rule: 22 hidden routes are More entries;
+    `/extended` (only from Info, plus a fault guide's **Related data**) and `/vin-decode` (also in
+    More) are the Info-linked ones.
+  - [sensor-readings](./features/sensor-readings.md): a standalone spec, because plan 07 is not
+    next (wave 2 comes first). It covers the seven groups, the CAN-only injection DIDs and the
+    "not available here" card. It says plan 07 deletes the slice and the spec together, with no
+    alias (an alias whose slice is gone fails the test).
+- **Verified.** [onboarding](./features/onboarding.md) matches the shipped code, so it is
+  unchanged. In [can-sniffer](./features/can-sniffer.md) the `# app:` header line is now wired (see
+  deviations).
+- **Enforcement test.** `src/shared/lib/featureDocsSync.test.ts` (core project) checks that every
+  `src/features/<slug>` has a `docs/features/<alias ?? slug>.md` and that every spec has a slice:
+  - `ALIASES`: `inspection` → `used-car-inspection`, `maintenance` → `maintenance-log`;
+  - `NO_SPEC_NEEDED` is empty;
+  - `KNOWN_SHARED`: `tp20`.
+
+  The rule is a pure `featureDocsProblems(slices, specs, rules)` that returns one message per
+  problem. Four unit tests run it on synthetic trees: aliases and exemptions pass, a deleted spec,
+  an aliased slice missing its aliased spec, a spec without a slice and a stale alias. A guard
+  checks that the real tree contains the `engine-host`, `more` and `connection` slices and specs,
+  so an empty directory listing cannot pass. It names slices rather than a count, so plan 07
+  deleting `sensor-readings` does not trip it.
+  Checked by hand as well: moving `engine-host.md` away turned the suite red
+  (`src/features/engine-host has no docs/features/engine-host.md`). Restored. The audit's
+  `for d in src/features/*/` loop prints no `MISSING`.
+
+- **Overview docs.**
+  - [phase2-mobile-app.md](./phase2-mobile-app.md): the feature map is now all 32 slices (slug ·
+    route · spec), grouped Tier A / B / C like the audit. A step 5 (More) was added. Step 1 already
+    said BLE is the default (plan 01).
+  - Root `README.md`:
+    - Status gains Phase 5, the VCDS-parity expansion + Phase 6b, the 2026-07 improvement plan and
+      v0.2 in progress;
+    - the More table gains Adapter health and Sensor readings;
+    - a new 🧪 manufacturer-tier table lists module scan, adaptations, routines, coding, service
+      reset and the bus sniffer, with the 🧪 note.
+
+    "Running the app" already described the BLE default.
+
+  - [docs/README.md](./README.md): the 1:1 rule now names the aliases, `tp20.md` and the new test.
+    The index gains `phase2-mobile-app.md`, `improvement-plan-2026-07.md` and
+    `vcds-parity-roadmap.md`. The `plans/`, audit and roadmap rows were already there.
+  - [connection.md](./features/connection.md): `ScanScreen` → `ConnectionScreen` (with
+    `StatusHero`, `DeviceRow`, the real `ADAPTER_NAME_HINTS`). The `linkStore` bullet lists all
+    its fields (`link`, `stage`, `attemptStartedAt`, `device`) and actions (`beginAttempt`,
+    `setStage`, `setLink`). The fictional `useAdapterStatus()`
+    is gone; `useScan` / `useConnect` are documented with their real return shapes. The fictional
+    `connectionStore` is replaced by `sessionStore` (shared) + `scanStore`, next to the existing
+    `linkStore`. The service section names its real exports. Behaviour step 2 no longer claims an
+    auto-connect to the last device. Every other identifier in the spec was grepped against the
+    slice and exists.
+  - [vcds-parity-roadmap.md](./vcds-parity-roadmap.md) "Login codes": it now says plainly that no
+    KWP login code ships. Nothing sends `2B`; `udsCoding.ts` only says "optional login" in a
+    comment. It links plan 22.
+  - [architecture.md](./architecture.md): new "Engine host" and "Specs" paragraphs under "UI:
+    feature-sliced".
+  - [live-data.md](./features/live-data.md): links to the engine-host and sensor-readings specs.
+    The fictional `usePidPolling(pids)`, `liveDataService` and `liveDataStore` shape are replaced
+    by the real `useLiveData(pids?)`, the `liveDataStore` fields and `dashboardLayoutStore`
+    (`bolid.dashboard-layout`). Two Behavior claims the code does not have are corrected: a PID with
+    no answer is not dropped from later sweeps, and there is no stale-value marking.
+  - [vehicle-info.md](./features/vehicle-info.md): the fictional `useVin()` / `useAdapterInfo()` /
+    `useSupportedPids()`, `vehicleInfoService`, `connectionStore` and `infoStore` are replaced by
+    `useVehicleInfo()`, `sessionStore.info` (`SessionInfo`) and `DiagnosticSession.connect()`. The
+    Calibration ID row and the two buttons are now documented, and a Tests section was added.
+
+- **Sensor-readings re-read loop fixed** (found in review). `injectionPids` was a new array on
+  every render, so `readInjection` changed identity and its mount effect re-ran after every
+  live-data update: five more Mode 22 requests per poll sweep, competing with EngineHost on the
+  half-duplex adapter. The list is now `useMemo`'d on the profile id. New
+  `SensorReadingsScreen.test.tsx` (simulated Golf) asserts 5 `readExtended` calls after mount and
+  still 5 after three live-data updates. Without the fix it sees 11. The spec's hooks, Acceptance
+  and Tests sections and [testing.md](./testing.md) were updated.
+- **Sensor-readings stale reads cancelled** (second review). The injection read had no
+  cancellation, so a session / profile change or **Refresh** during a five-DID read started a
+  second read alongside the first, and whichever finished last won. The callbacks also set state
+  after unmount. Each read now takes a run id (a `useRef` counter, bumped by every read and by the
+  effect cleanup), and a superseded read sends no further DIDs and sets no state. Two new tests
+  hold the first `readExtended` open: Refresh then release gives 6 calls (it was 7), and unmount
+  then release gives 1 (it was 2).
+- **Graph.** After `graph.py build`, `documents` edges went from 41 to 45: one each for
+  engine-host, more and sensor-readings, plus a name-match edge from `sensor-readings.md` to
+  `feature:sensor-tests`. `neighbors feature:engine-host` lists `doc:features/engine-host`. No new
+  concept was needed.
+- **Tests.** 102 suites, 759 tests (was 100 / 750). `npm run ci` is green.
+
+**Deviations from the plan.**
+
+- _Sniffer `# app:` line wired._ The can-sniffer spec said it was "not wired yet — plan 08 owns
+  versioning". Plan 08 has since shipped `APP_VERSION`, so instead of re-recording the gap,
+  `finishedCapture()` now passes `APP_VERSION` to `buildCaptureHeader`. The existing
+  `snifferController.test.ts` header test asserts `header.appVersion` and the `# app:` line, and
+  fails without the change. The spec example and its Tests section were updated.
+- _sensor-readings is standalone_ (the plan's "otherwise" branch), so `ALIASES` has no
+  `sensor-readings` entry. Plan 07 must not add one either: it deletes the slice and the spec
+  together, and `featureDocsProblems` reports an alias whose slice does not exist. The matching
+  instruction in [plan 07](./plans/07-information-architecture.md) ("add the alias only if plan 04
+  created the doc") was corrected to say so.
+- _Adapter health is not in the 🧪 table._ The plan lists it among the README's Tier C rows. The
+  [audit](./audit-2026-11.md) puts `adapter-health` in Tier B, and it is read-only, standard AT
+  commands with nothing illustrative. It is therefore in the plain More table, without 🧪. The 🧪
+  table has the other six (module scan, adaptations, routines, coding, service reset, sniffer).
+- _More: no grouping, badge or search._ The plan's "after plan 07, grouped" and "`experimental`
+  badge, search" describe plan 07's work. The spec documents today's flat list and says those parts
+  are not built yet.
+- _Phase-2 table._ The plan asked for "slug · route · spec". The Tier C table carries the 🧪 note
+  in its heading rather than in a column.
+- _Prettier._ It also normalised existing blank lines and table padding in `architecture.md`,
+  `live-data.md`, `vcds-parity-roadmap.md` and `docs/README.md`. These are whitespace-only changes.
+- _Not fixed: other layering debt._ The architecture rule "never on another feature" is broken
+  widely, not by a few slices. Outside engine-host, 19 slices import another feature in production
+  code (29 import lines). 16 of them read `vehicle-select`'s `vehicleStore`. The other imports are
+  adaptations → module-scan, coding → adaptations, connection → onboarding, history → fault-codes,
+  live-charts → live-data and onboarding, sensor-readings → live-data and settings → connection.
+  [engine-host.md](./features/engine-host.md#the-composition-rule) and
+  [architecture.md](./architecture.md) state the rule as the target and list the current breaks
+  instead of claiming it holds. This plan documents and does not refactor; moving `vehicleStore`
+  into `src/shared/state` would clear most of them, and is left for plan 07 / a later cleanup.
+- _Not fixed: identifier drift in other specs._ The plan asked for an identifier check only in
+  `connection.md`. Review extended it to `live-data.md` and `vehicle-info.md` (both fixed above).
+  A scan of `docs/features/*.md` for `useX` / `xStore` / `xService` names missing from `src`
+  still finds older placeholder names in specs this plan did not touch: `alerts.md`
+  (`alertService`, `notificationService`, `useAlertEngine`, `useAlertRules`), `coding.md`
+  (`codingService`, `useCodingUnlock`, `useCodingWrite`, `useModuleCoding`), `extended-pids.md`
+  (`extendedPidService`, `extendedStore`), `fault-codes.md` (`useClearDtcs`, `useReadiness`),
+  `live-charts.md` (`useChartConfig`), `notifications.md` (`useMaintenanceReminders`,
+  `useNotificationPermission`, `useNotificationPrefs`), `performance-tests.md`
+  (`performanceService`, `usePerformanceHistory`), `sensor-tests.md` (`sensorTestService`,
+  `useLiveSensor`, `useMode06`, `useModuleSensors`), `settings.md` (`useAdapterSource`) and
+  `vehicle-select.md` (`useSelectedVehicle`, `useVehicleProfiles`). "Doc debt zero" here means
+  every slice has a spec and the rule is enforced. These names are left for a later docs pass.
+
+---
+
 ## Plan 02 — Log → fixture pipeline (Part A) (2026-11-09)
 
 [Plan 02](./plans/02-on-car-validation.md) Part A landed: any adapter session can become a replay

@@ -46,6 +46,7 @@ Both files start with the same `#` comment header:
 # adapter: ELM327 v1.5 (IOS-Vlink)
 # started: 2026-11-08T10:00:00.000Z
 # note: VCDS Group 121 basic settings, engine idle
+# app: 0.1.0
 # lines: 1834 (frames 1830, unparsed 4)
 # dropped: 0
 # t_ms = milliseconds since started
@@ -53,8 +54,9 @@ Both files start with the same `#` comment header:
 
 - `vehicle` is the selected vehicle profile id; `protocol` and `adapter` come from the session
   (`SessionInfo.protocol`, `SessionInfo.version` plus the BLE device name when known); unknown
-  values print as `unknown`. A multi-line note is folded onto one line. A `# app:` line is added
-  when an app version is passed in (not wired yet — plan 08 owns versioning).
+  values print as `unknown`. A multi-line note is folded onto one line. A `# app:` line records
+  the app version (`APP_VERSION` from `shared/lib/appInfo.ts`, the `app.json` version), right after
+  `note`.
 - **CSV** — after the header, the column row `t_ms,id,dlc,bytes`, then one row per parsed frame:
   `t_ms` relative to `started` (so files diff well and line up with a laptop-clock note), `id` the
   11-bit (`7E8`) or 29-bit (`18DAF110`) id, or empty when headers were off, `dlc` the number of
@@ -147,7 +149,7 @@ raw dump), `session/sniffer.integration.test.ts` (start → 20 lines → stop �
 stream shape), `features/can-sniffer/api/captureExport.test.ts` (header, file name / MIME, write +
 share, failures logged), `features/can-sniffer/model/snifferStore.test.ts`,
 `features/can-sniffer/model/snifferController.test.ts` (Start clears the buffer and freezes the
-header context; export refused while running / empty; dispose stops `ATMA` and ends the run, also
+header context, which also carries the app version; export refused while running / empty; dispose stops `ATMA` and ends the run, also
 mid-setup; Stop mid-setup; double Start).
 
 ## Not yet (on-car)

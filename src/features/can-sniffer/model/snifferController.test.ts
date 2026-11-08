@@ -13,6 +13,7 @@ jest.mock('expo-file-system/legacy', () => ({
 }));
 
 import { DiagnosticSession, formatCaptureCsv } from '@/shared/obd-core';
+import { APP_VERSION } from '@/shared/lib/appInfo';
 import { MockTransport } from '@/shared/obd-core/transport/MockTransport';
 import { buildScenario } from '@/shared/obd-core/transport/scenarios';
 import { useSessionStore } from '@/shared/state/sessionStore';
@@ -88,6 +89,9 @@ describe('SnifferController against the simulator', () => {
     expect(capture!.header.adapter).toContain('(IOS-Vlink)');
     const csv = formatCaptureCsv(capture!.header, capture!.lines);
     expect(csv).toContain('# note: VCDS Group 121');
+    // The build that made the file is recorded (plan 04: wired once plan 08 gave APP_VERSION).
+    expect(capture!.header.appVersion).toBe(APP_VERSION);
+    expect(csv).toContain(`# app: ${APP_VERSION}`);
     expect(capture!.lines.length).toBeGreaterThan(0);
   });
 
