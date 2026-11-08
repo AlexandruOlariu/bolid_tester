@@ -176,6 +176,7 @@ export function MoreScreen() {
             backgroundColor="$color2"
             borderRadius="$4"
             pressStyle={{ backgroundColor: '$color4' }}
+            accessible
             accessibilityRole="button"
             accessibilityLabel={`${title}. ${subtitle}`}
             onPress={() => router.push(route)}
@@ -198,6 +199,7 @@ export function MoreScreen() {
           backgroundColor="$color2"
           borderRadius="$4"
           pressStyle={{ backgroundColor: '$color4' }}
+          accessible
           accessibilityRole="button"
           accessibilityLabel="Check for updates. Over-the-air app updates"
           onPress={checking ? undefined : onCheckUpdates}

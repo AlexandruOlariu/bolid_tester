@@ -2528,7 +2528,8 @@
       "src/features/connection/api/connectionService.test.ts",
       "src/features/connection/api/diagnoseFailure.test.ts",
       "src/features/connection/api/flapGuard.test.ts",
-      "src/features/connection/api/reconnect.test.ts"
+      "src/features/connection/api/reconnect.test.ts",
+      "src/features/connection/ui/ConnectionScreen.test.tsx"
     ],
     "tokens": [
       "connection"
@@ -2581,7 +2582,8 @@
     "summary": "Read and clear Diagnostic Trouble Codes (DTCs), show freeze frame and readiness monitors. Every read is saved to [History](./history.md).",
     "tests": [
       "src/features/fault-codes/api/dtcService.test.ts",
-      "src/features/fault-codes/model/dtcDetail.test.ts"
+      "src/features/fault-codes/model/dtcDetail.test.ts",
+      "src/features/fault-codes/ui/FaultCodesScreen.test.tsx"
     ],
     "tokens": [
       "codes",
@@ -2621,7 +2623,8 @@
     "path": "src/features/live-data",
     "summary": "Stream and display live engine parameters (Mode 01 PIDs).",
     "tests": [
-      "src/features/live-data/model/dashboardLayout.test.ts"
+      "src/features/live-data/model/dashboardLayout.test.ts",
+      "src/features/live-data/ui/DashboardScreen.test.tsx"
     ],
     "tokens": [
       "data",
@@ -2655,6 +2658,9 @@
   "feature:more": {
     "path": "src/features/more",
     "summary": "More feature (screen + hooks + model).",
+    "tests": [
+      "src/features/more/ui/MoreScreen.test.tsx"
+    ],
     "tokens": [
       "more"
     ],
@@ -2729,6 +2735,9 @@
   "feature:settings": {
     "path": "src/features/settings",
     "summary": "Developer and runtime settings.",
+    "tests": [
+      "src/features/settings/ui/SettingsScreen.test.tsx"
+    ],
     "tokens": [
       "settings"
     ],
@@ -2749,6 +2758,9 @@
   "feature:vehicle-info": {
     "path": "src/features/vehicle-info",
     "summary": "Show vehicle and adapter identity.",
+    "tests": [
+      "src/features/vehicle-info/ui/VehicleInfoScreen.test.tsx"
+    ],
     "tokens": [
       "info",
       "vehicle"
@@ -2758,6 +2770,9 @@
   "feature:vehicle-select": {
     "path": "src/features/vehicle-select",
     "summary": "Choose which vehicle profile to use (or **Auto / Generic**).",
+    "tests": [
+      "src/features/vehicle-select/ui/VehicleSelectScreen.test.tsx"
+    ],
     "tokens": [
       "select",
       "vehicle"

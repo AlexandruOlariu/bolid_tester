@@ -5,6 +5,99 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 10 — Component tests and an end-to-end smoke flow (2026-11-08)
+
+[Plan 10](./plans/10-component-e2e-tests.md) landed. The only part not exercised yet is the first
+Maestro run, so that acceptance item moved to a new **Owner actions** section of the plan (see the
+deviations). The workstation has the Android emulator and an AVD; what is missing is the Maestro
+CLI (not installed), an APK built for the emulator, and a dispatch of `e2e.yml` (needs the branch
+pushed). Details in [testing.md](./testing.md#end-to-end).
+
+- **Jest, two projects** (`jest.config.js`): `core` (ts-jest, Node, `*.test.ts`, unchanged
+  behaviour) and `ui` (`jest-expo` preset, `*.test.tsx`, roots `src/` + `test/`,
+  `jest.setup.ui.ts`). Scripts `test:core` / `test:ui`; `npm test` and `npm run ci` run both.
+  Dev dependencies: `jest-expo ~56.0.6` (via `npx expo install`), `@react-native/jest-preset
+0.85.3` (jest-expo 56's peer: RN 0.85 moved its preset out of `react-native`),
+  `@testing-library/react-native ^13.3.3`, `react-test-renderer 19.2.3` (= `react`), and
+  `react-refresh 0.18.0`. The last one is not a test dependency: installing under
+  `--legacy-peer-deps` regenerated the lockfile without the 26 auto-installed peer packages, and
+  `react-refresh` is a required peer of `babel-preset-expo` (it loads `react-refresh/babel` whenever
+  Metro bundles in dev with Fast Refresh). Without it `npm start` / `npm run android` could not
+  bundle after a clean install; Jest and release bundles were unaffected, so CI stayed green. It is
+  now an explicit devDependency, at the version the old lockfile had. The other dropped peers
+  (reanimated, gesture-handler, worklets, framer-motion) are optional at runtime.
+- **Tamagui renders under jest-expo with no shim.** `babel.config.js` skips the
+  `@tamagui/babel-plugin` compiler when `NODE_ENV === 'test'`. Decision recorded in
+  [testing.md](./testing.md#component-tests).
+- **Harness:** `jest.setup.ui.ts` mocks `react-native-ble-plx` (radio `PoweredOn`), the BLE
+  permission helper (granted), `expo-file-system` + `/legacy` (in-memory `Map`), `expo-sharing`,
+  `expo-notifications`, `expo-haptics`, `expo-location`, `expo-secure-store`, `expo-updates`
+  (`isEnabled: false`), `expo-router` and `react-native-safe-area-context`. It resets stores before
+  each test, then unmounts and closes any live simulator session after it. `test/`
+  (alias `@test/*`): `renderWithProviders`, `connectSimulator` (the real `connectionService.connect()`
+  against `MockTransport`), `resetStores`, `mocks/router.ts` (`mockPush`, `setMockSearchParams`, a
+  stand-in `Tabs`), `mocks/fileSystem.ts`.
+- **Suites (8, 24 tests):** one per tab screen (Connection, VehicleSelect, Dashboard, FaultCodes,
+  VehicleInfo, Settings, More) plus `test/app/RootLayout.test.tsx` (seven tab titles in order; every
+  `src/app` route file registered). The Faults suite reads two simulator-injected codes (both rows
+  and both descriptions), toggles the
+  guide and runs the full **Clear codes** → confirm → empty re-read path.
+- **Proved once:** removing `title: 'Faults'` from `_layout.tsx` fails the layout suite (the tab
+  falls back to the route name `faults`); pointing `useDtcs` at a missing store module fails the
+  Faults suite. Both reverted.
+- **App change:** the More screen's rows (and **Check for updates**) gain `accessible`, so each is
+  one accessibility element with its "Title. Subtitle" label. That is what makes
+  `getByRole('button', { name })` reach them, and the start of the accessibility pass (plan 20).
+  No rendering bugs turned up in the seven screens.
+- **Typecheck / lint:** `tsconfig.app.json` adds `jest` to `types`, includes `test/**` and
+  `jest.setup.ui.ts`, and maps `@test/*`. `npm run lint` / `format` also cover `test/` and the
+  setup file.
+- **E2E:** `.maestro/simulator-smoke.yaml` (fresh install → Settings → **Simulator (no car)** →
+  **P0299** → Connect → **Connect to simulator** → Connected → Faults → **P0299** → **Clear codes**
+  → confirm → **Stored (0)**) and `.github/workflows/e2e.yml` (manual dispatch + nightly cron, API 34
+  x86_64 emulator via `reactivecircus/android-emulator-runner@v2`, JUnit report artifact; not a
+  required check). Both are YAML-valid; the first run is pending (see above). CI's test step is renamed
+  "Test (core + component)".
+- **Numbers:** 668 tests / 92 suites (core 644 / 84, ui 24 / 8). The `ui` project adds about 10 s
+  on a warm cache and about 30 s cold, well under the 2-minute budget.
+
+Deviations from the plan:
+
+- **Tamagui buttons are pressed by text, not by role.** Tamagui `Button` renders a `role="button"`
+  view without `accessible`, so Testing Library's `getByRole` does not see it. Tests use `getByText`;
+  `getByRole` is used where the control is an accessibility element (More rows, gauges as
+  `progressbar`). Making every button accessible is plan 20's job.
+- **`modulePaths: ['<rootDir>/node_modules/expo/node_modules']`** in the `ui` project: npm nests
+  `expo-modules-core` under `expo/`, and jest-expo's setup requires it by name.
+- **The layout test lives in `test/app/`**, not `src/app/`: expo-router would treat a `*.test.tsx`
+  there as a route. `EngineHost` and `AppSplash` are mocked in that one file.
+- **Plan-07-dependent cases skipped:** Settings' collapsed Developer section and the More search
+  filter do not exist yet (plan 07). The Settings suite checks instead that the simulator sections
+  (Simulated vehicle, Injected DTCs, Developer (simulator)) appear only in simulator mode. The
+  Maestro flow omits the `Developer & simulator` tap.
+- **Maestro flow adjusted to the real UI:** a successful connect navigates to Vehicle, so the flow
+  goes back to the Connect tab before `assertVisible: 'Connected'`. It confirms the clear with a
+  case-insensitive `(?i)clear` (Android can upper-case dialog buttons), asserts `Stored \(0\)`
+  rather than `None`, and dismisses a first-launch notification prompt if one shows.
+- **E2E builds a release-variant APK** (`assembleRelease`, debug-signed by prebuild, x86_64 only)
+  instead of `assembleDebug`. The debug variant is an expo-dev-client build that loads JS from
+  Metro, so it cannot run the flow without a dev server.
+- **Store reset is by snapshot:** `resetStores` captures each store's state at module load and
+  restores it with `setState(initial, true)`, instead of hand-written initial objects.
+- **First e2e run moved to Owner actions** (review fix): installing the Maestro CLI and pushing to
+  dispatch `e2e.yml` are outside an implementing session, so the acceptance item now carries a
+  step-by-step procedure in the plan; the roadmap row reads "first Maestro run pending (owner)" and
+  the plans README lists it as plan 10's owner part.
+- **Pending persist writes are cancelled on reset** (review fix): restoring a store on
+  `debouncedStorage` (history, dashboard layout) scheduled a flush that landed in the emptied
+  filesystem during the next test and left an open timer after the last one
+  (`--detectOpenHandles`). `resetStores` now calls `persist.clearStorage()` on every persisted
+  store (its `removeItem` cancels the pending flush) before emptying the files, and
+  `jest.setup.ui.ts` runs the same `cancelPendingWrites()` in `afterAll`. `--detectOpenHandles` is
+  clean.
+
+---
+
 ## Plan 05 — DTC database and the DTC detail sheet (2026-11-08)
 
 [Plan 05](./plans/05-dtc-database.md) landed; only the Fiat P1 texts moved to a new **Deferred until

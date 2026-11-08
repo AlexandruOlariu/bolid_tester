@@ -72,13 +72,13 @@ Goal: the "send it to my mechanic" release.
 
 ### v0.5 — iOS, languages & accessibility
 
-|     | Feature                                                                  | Notes                                                                                                         |
-| --- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| ⬜  | **iOS build** · [plan 09](./plans/09-ios-eas.md)                         | EAS build + TestFlight; BLE discovery verified on iOS (no MFi needed for BLE)                                 |
-| ⬜  | **Localization** · [plan 11](./plans/11-i18n.md)                         | `i18next`; English + Romanian first; dates and number formats locale-aware; metric only                       |
-| ⬜  | **Accessibility pass** · [plan 20](./plans/20-accessibility-pass.md)     | Labels on every control, dynamic type, contrast check in both themes, reduced-motion respect                  |
-| ⬜  | **Component + e2e tests** · [plan 10](./plans/10-component-e2e-tests.md) | `jest-expo` + Testing Library for the 7 tabs; a Maestro smoke flow (simulator connect → faults → clear) in CI |
-| ⬜  | **Tablet layout** · [plan 21](./plans/21-tablet-layout.md)               | Two-pane Live / Charts on wide screens                                                                        |
+|     | Feature                                                                  | Notes                                                                                                                                                                                                                   |
+| --- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ⬜  | **iOS build** · [plan 09](./plans/09-ios-eas.md)                         | EAS build + TestFlight; BLE discovery verified on iOS (no MFi needed for BLE)                                                                                                                                           |
+| ⬜  | **Localization** · [plan 11](./plans/11-i18n.md)                         | `i18next`; English + Romanian first; dates and number formats locale-aware; metric only                                                                                                                                 |
+| ⬜  | **Accessibility pass** · [plan 20](./plans/20-accessibility-pass.md)     | Labels on every control, dynamic type, contrast check in both themes, reduced-motion respect                                                                                                                            |
+| ✅  | **Component + e2e tests** · [plan 10](./plans/10-component-e2e-tests.md) | `jest-expo` + Testing Library for the 7 tabs and the tab layout; a Maestro smoke flow (simulator connect → faults → clear) in a nightly / on-demand workflow — first Maestro run pending (owner, plan 10 Owner actions) |
+| ⬜  | **Tablet layout** · [plan 21](./plans/21-tablet-layout.md)               | Two-pane Live / Charts on wide screens                                                                                                                                                                                  |
 
 ### v0.6 — VCDS-class on the Golf 🧪
 

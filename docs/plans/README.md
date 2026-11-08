@@ -42,7 +42,7 @@ Work in waves; plans inside a wave are independent and can run on parallel branc
 | 03  | [Sniffer save & share](./03-sniffer-capture.md)               | —          | VCDS + Y-splitter recording session                    |
 | 05  | [DTC database + detail sheet](./05-dtc-database.md)           | —          | Fiat P1 texts from a Multiecuscan session on the Punto |
 | 08  | [Signed release, versioning, OTA](./08-signed-release-ota.md) | —          | Keystore, four GitHub secrets, Expo account            |
-| 10  | [Component + e2e tests](./10-component-e2e-tests.md)          | —          | —                                                      |
+| 10  | [Component + e2e tests](./10-component-e2e-tests.md)          | —          | First Maestro run + `e2e.yml` dispatch                 |
 | 12  | [BLE robustness + diagnostics](./12-ble-robustness.md)        | 01         | Confirming drop / wake behaviour on the real adapter   |
 
 ### Wave 2 — data, workshop prep, reports

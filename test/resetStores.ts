@@ -1,0 +1,61 @@
+/** Between-test reset for the `ui` Jest project (run from jest.setup.ui.ts `beforeEach`): every
+ *  zustand store a tab screen reads goes back to the state it had when its module first loaded, and
+ *  the in-memory filesystem behind `fileStateStorage` is emptied — so no test sees another's
+ *  settings, session, codes or dismissed hints. Add a store here when a new screen test reads it.
+ *
+ *  Restoring a persisted store makes zustand-persist write it again, and stores on
+ *  `debouncedStorage` (history, dashboard layout) only *schedule* that write. `persist.clearStorage()`
+ *  goes through the storage's `removeItem`, which cancels the pending flush, so no write lands in
+ *  the emptied filesystem during the next test and no timer outlives the file
+ *  (`cancelPendingWrites`, also run from `afterAll`). */
+import type { StoreApi, UseBoundStore } from 'zustand';
+import { useSettingsStore } from '@/shared/state/settingsStore';
+import { useSessionStore } from '@/shared/state/sessionStore';
+import { useDtcStore } from '@/shared/state/dtcStore';
+import { useHistoryStore } from '@/shared/state/historyStore';
+import { useErrorLogStore } from '@/shared/state/errorLogStore';
+import { clearAdapterLog } from '@/shared/state/adapterLog';
+import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useLiveDataStore } from '@/features/live-data/model/liveDataStore';
+import { useDashboardLayoutStore } from '@/features/live-data/model/dashboardLayoutStore';
+import { useOnboardingStore } from '@/features/onboarding/model/onboardingStore';
+import { useCoachStore } from '@/features/fault-codes/model/coachStore';
+import { useLinkStore } from '@/features/connection/model/linkStore';
+import { useScanStore } from '@/features/connection/model/scanStore';
+import { memoryFiles } from './mocks/fileSystem';
+import { setMockSearchParams } from './mocks/router';
+
+type AnyStore = UseBoundStore<StoreApi<any>> & {
+  persist?: { clearStorage: () => void };
+};
+
+const STORES: AnyStore[] = [
+  useSettingsStore,
+  useSessionStore,
+  useDtcStore,
+  useHistoryStore,
+  useErrorLogStore,
+  useVehicleStore,
+  useLiveDataStore,
+  useDashboardLayoutStore,
+  useOnboardingStore,
+  useCoachStore,
+  useLinkStore,
+  useScanStore,
+];
+
+/** Each store's state (actions included) captured at module load, before any test touched it. */
+const INITIAL = STORES.map((store) => ({ store, state: store.getState() }));
+
+/** Drop every persisted store's file and cancel its pending debounced write (if any). */
+export function cancelPendingWrites(): void {
+  for (const store of STORES) store.persist?.clearStorage();
+  memoryFiles.clear();
+}
+
+export function resetStores(): void {
+  for (const { store, state } of INITIAL) store.setState(state, true);
+  clearAdapterLog();
+  cancelPendingWrites();
+  setMockSearchParams({});
+}

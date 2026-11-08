@@ -152,5 +152,28 @@ Maestro. Mark the job non-required.
 - [ ] `npm run test:ui` runs ≥ 7 suites green; `npm test` runs both projects; CI time increase
       under 2 minutes.
 - [ ] Deleting a `Tabs.Screen` title or breaking a store import makes a UI test fail (prove once).
-- [ ] `maestro test` passes locally on the emulator; `e2e.yml` runs on dispatch.
+- [ ] `maestro test` passes locally on the emulator; `e2e.yml` runs on dispatch. (Moved to
+      **Owner actions** below when the plan landed.)
 - [ ] `docs/testing.md` updated.
+
+## Owner actions
+
+Added when the plan landed: the Maestro flow (`.maestro/simulator-smoke.yaml`) and the workflow
+(`.github/workflows/e2e.yml`) are written, YAML-valid and checked label by label against the source,
+but neither has run. The implementing session could not install the Maestro CLI (no external
+downloads) or push the branch to dispatch the workflow. Everything else in this plan is shipped.
+
+Procedure (owner, dev workstation with the Android emulator):
+
+1. Install the Maestro CLI ([install guide](https://docs.maestro.dev/getting-started/installing-maestro))
+   and check `maestro --version`.
+2. Boot the AVD, then install a build: `npm run prebuild:android` and `npm run android` with
+   `npm start` running, or a release APK (see the `android-apk` skill), which embeds the bundle.
+3. Run `maestro test .maestro/simulator-smoke.yaml`. Watch the two risky steps listed in
+   [testing.md → End-to-end](../testing.md#end-to-end): the bare `Connect` tab taps, and the
+   `(?i)clear` confirm matching the dialog button rather than **Clear codes**.
+4. Push the branch and run `e2e.yml` from the Actions tab (**Run workflow**); check the JUnit
+   artifact.
+5. With the results: fix any label or timing mismatch in the flow, tick the acceptance item above,
+   drop "first Maestro run pending (owner)" from the roadmap row and the plans README, and change the
+   **Status** paragraph in `docs/testing.md` to record the first green run.

@@ -20,7 +20,7 @@ jobs:
         run: npm run lint
       - name: Typecheck (core)
         run: npm run typecheck
-      - name: Test (core + simulator)
+      - name: Test (core + component)
         run: npm test
       - name: Typecheck (full app)
         run: npm run typecheck:app
