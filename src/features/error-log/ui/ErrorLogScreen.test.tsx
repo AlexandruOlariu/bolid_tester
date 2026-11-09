@@ -40,8 +40,10 @@ describe('ErrorLogScreen in the browser', () => {
     });
   });
   afterEach(() => {
-    act(() => clearDialogs());
-    useErrorLogStore.setState({ errors: [] });
+    act(() => {
+      clearDialogs();
+      useErrorLogStore.setState({ errors: [] });
+    });
     for (const [k, v] of Object.entries(saved)) {
       if (v === undefined) delete g[k];
       else g[k] = v;
