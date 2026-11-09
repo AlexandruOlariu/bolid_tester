@@ -5,6 +5,141 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 28 — Web Bluetooth PWA (2026-11-09)
+
+[Plan 28](./plans/28-web-bluetooth-pwa.md) landed: the app builds as a static Expo web site, connects
+to a Bluetooth LE ELM327 from Chrome / Edge through a `WebBluetoothTransport`, persists its stores in
+`localStorage`, and every native-only feature either has a web replacement or says "Not available on
+web yet" — nothing crashes. A GitHub Pages workflow deploys it on every push to `main`. What waits
+(the plan's "Deferred" section, roadmap "on-car pending"): the Vgate from Chrome on Android and on a
+laptop (chooser name, service UUID, latency grade into plan 29), whether it needs the 20-byte
+chunking, and the owner enabling Pages (Settings → Pages → Source: GitHub Actions).
+
+- **Transport.** `src/shared/transports/web-ble/WebBluetoothTransport.ts` — pure (no React Native,
+  no ble-plx), written against narrow `WebBluetoothLike` / `WebBt*` interfaces. `pickDevice(bt)`
+  (`acceptAllDevices` + `optionalServices: OBD_SERVICE_UUIDS`; must run in a user gesture);
+  `connect()` = `gatt.connect()` → first primary service with notify/indicate **and** write →
+  `startNotifications()`; no such service → `error` + GATT closed; a disconnect during connect tears
+  the half-built link down. Writes in 20-byte chunks (`writeValueWithoutResponse` when allowed, else
+  `writeValueWithResponse` / `writeValue`) with the native `LINE_FLUSH` on a partial failure;
+  `gattserverdisconnected` → `disconnected` once; `linkInfo` MTU 23 / payload 20.
+  `describeWebBluetoothError` turns `NotFoundError` / `SecurityError` / `NotAllowedError` /
+  `NetworkError` into plain English; `isWebBluetoothAvailable` / `getWebBluetooth`.
+- **Shared GATT facts.** `OBD_SERVICE_UUIDS` → `shared/transports/common/obdServiceUuids.ts`;
+  `DEFAULT_ATT_MTU`, `MIN_PAYLOAD`, `LINE_FLUSH`, `payloadForMtu`, `BleLinkInfo` →
+  `common/gatt.ts`. Both re-exported from their old homes (`ble/manager.ts`, `BleTransport.ts`).
+- **Gating.** `getBleManager()` throws "Bluetooth LE via react-native-ble-plx is not available on
+  web"; the Connect screen calls `useBluetoothState(false)` there. `ConnectTarget.webDevice` carries
+  the pick so `lastTarget` / auto-reconnect reopen it with no second chooser.
+  `connectionService.chooseWebAdapterAndConnect()` (+ `pickWebBluetoothAdapter`,
+  `isWebBluetoothSupported`, test seam `setWebBluetooth`); a cancelled chooser leaves the app
+  disconnected with "No adapter was chosen…" (no diagnostics panel; a live session is left alone —
+  see review fixes). `ui/WebBluetoothConnect.tsx`:
+  one **Choose adapter & connect** button + the browser note, or a blocking "not supported in this
+  browser" panel with **Use the simulator**. `isAdapterSourceSupported('wifi'|'spp', 'web')` is
+  false: Settings hides them and a stored one falls back to BLE with `WEB_SOURCE_FALLBACK_NOTICE`.
+- **Persistence.** `persistStorage.ts`: with no document directory (web) `fileStateStorage` uses
+  `webStateStorage()` over `localStorage` with the same `bolid.<area>` keys; quota / blocked
+  storage → `persist` warning, never a throw; `persistBackend()` reports `file | localStorage | none`.
+- **Exports.** `src/shared/lib/saveFile.ts` — `saveTextFile(name, body, mime, { dialogTitle })`:
+  Blob + object URL + temporary `<a download>` (URL revoked after 1 s) on web, legacy
+  `expo-file-system` + `expo-sharing` on native; `fileStamp()`. `isWebRuntime()`
+  (`shared/lib/webRuntime.ts`, "is there a DOM") lets Node-tested shared code branch without
+  importing React Native. New `toastStore` + `shared/ui/Toast` (mounted in the root layout) for
+  `NOT_ON_WEB_YET`.
+- **Expo web target.** `react-native-web` 0.21.2, `@expo/metro-runtime` 56.0.21, `react-dom`
+  19.2.3 moved to `dependencies`; `app.json` `web: { bundler: metro, output: single, favicon }`,
+  `experiments.baseUrl: "/bolid_tester"`. `npx expo export --platform web --output-dir web-build`
+  **succeeds** (3,535 modules, ~6 s warm, 4.7 MB entry bundle). Smoke-tested from the export in
+  headless Chrome under `/bolid_tester/`: Connect screen renders with **Choose adapter & connect**,
+  a `bolid.settings` seeded in `localStorage` survives a reload, **Connect to simulator** reaches
+  Connected and opens Vehicle, no console errors.
+- **Deploy.** `.github/workflows/web.yml` (push to `main` + dispatch): Node 24, `npm install
+--legacy-peer-deps --ignore-scripts`, export, `.nojekyll`, `upload-pages-artifact@v3`,
+  `deploy-pages@v4` (`pages: write`, `id-token: write`, environment `github-pages`); `index.html`
+  copied to `404.html` so deep links load the app (review fix).
+- **Tests.** `WebBluetoothTransport.test.ts`, `WebBluetoothTransport.session.integration.test.ts`
+  (fake GATT over `bridgeToMock`: identify, `010C`, `03`), `persistStorage.test.ts` (web backend
+  round-trip, no storage, failures logged, blocked getter, native keeps files), `saveFile.test.ts`,
+  `webDegradation.test.ts` (toast, exchange import/export, memory-only AI key),
+  `useErrorLogExport.test.tsx` (downloads a `.md`), `Toast.test.tsx`, and web cases in
+  `connectionService.test.ts`, `ConnectionScreen.test.tsx`, `SettingsScreen.test.tsx`,
+  `settingsStore.test.ts`. Fake: `web-ble/testing/fakeWebBluetooth.ts` (`webDeviceOverBridge`
+  notifies in 20-byte `DataView`s at an offset in a larger buffer).
+- **Docs.** New `docs/web.md`; `features/connection.md` (Web Bluetooth section),
+  `architecture.md` (diagram — the "future" note is now current), `phase2-mobile-app.md` (web
+  target), `features/settings.md`, `features/error-log.md`, `features/live-charts.md`,
+  `simulator.md`, root `README.md` ("Try it in the browser"), `docs/README.md`, roadmap ✅.
+- **Deviations.**
+  - Instead of an optional pre-step inside `useConnect().connect()`, a separate
+    `useConnect().chooseAndConnect()` → `connectionService.chooseWebAdapterAndConnect()` (keeps the
+    native `connect(target)` signature untouched; the chooser still opens synchronously in the
+    press handler).
+  - The plan migrated five export hooks to `saveTextFile` and gave the other four a toast; this
+    migrates **every text export** (error log, DTC report, auto-scan, adapter health, chart CSV,
+    measuring log, car backup, garage JSON, bus capture, replay fixture — `useLogFixtureExport` is
+    `settings/api/replayFixtureFile.ts`). The toast covers what is not a single text file: vehicle
+    report (HTML/PDF via expo-print), history re-share, trip CSV share, full backup / restore,
+    profile / label-pack import / export. Side fix: the hooks that used the root `expo-file-system`
+    (no `documentDirectory` on this SDK) now go through the legacy entry point.
+  - `WebBtCharacteristic` write methods take `Uint8Array` (not `BufferSource`) and the value event
+    is a `WebBtValueEvent`, so the core typecheck needs no DOM lib; `getWebBluetooth()` added.
+  - Wi-Fi is also unsupported on web (`isAdapterSourceSupported`) with its own fallback notice — the
+    plan only listed SPP implicitly.
+  - Location: `expo-location` ships a web module (browser geolocation), so the GPS toggle stays on.
+  - Local preview serves the export under a `bolid_tester/` folder (the baseUrl), not `npx serve
+web-build` directly.
+  - `saveFile.test.ts` mocked the native modules with `{ virtual: true }`, which failed in the full
+    `npm test` run (the real ESM `expo-file-system/legacy` was loaded); plain `jest.mock` now.
+- **Review fixes.**
+  - **Alerts did nothing in the browser.** react-native-web's `Alert.alert` is an empty stub, so the
+    Error log's Export (a Markdown / JSON chooser) never exported, and every confirm (Clear fault
+    codes, Clear error log, Reset all data, delete car / backup / label pack / plugin, OTA prompts)
+    and "Export unavailable" notice was a silent no-op. New `appAlert()` (`shared/ui/appAlert.ts`,
+    same arguments, forwarded unchanged to `Alert.alert` on the phone) queues the alert in
+    `shared/state/dialogStore.ts` on the web, rendered by `shared/ui/AlertDialog.tsx` (mounted in
+    the root layout next to `Toast`): any number of buttons, a follow-up alert from a button shows
+    next (two-step confirms), tap outside / Escape = Cancel. All 23 `Alert.alert` call sites
+    switched; `.eslintrc.cjs` `no-restricted-properties` forbids `Alert.alert` outside the wrapper.
+    Tests: `AlertDialog.test.tsx`, and `error-log/ui/ErrorLogScreen.test.tsx` drives the real
+    button path on web (Export → Markdown → a `.md` download; Clear → Cancel / Clear all).
+  - **Deep links 404'd on Pages.** `output: single` emits only `index.html`; Pages serves a missing
+    path's `404.html`, so `web.yml` now copies `index.html` → `404.html` (reloading `/vehicle` or
+    `/settings` gets the app). `docs/web.md` and the `app.json` comment no longer claim no rewrite
+    is needed.
+  - **Cancelled chooser left a stale state.** `chooseWebAdapterAndConnect` only set the error: after
+    a failed attempt the status stayed `error` (diagnostics described the old attempt), and while
+    connected a red error sat over the live session. Now an idle / `error` state becomes
+    `disconnected` + message, and a live or connecting session is left alone with the message as a
+    toast. Two new `connectionService.test.ts` cases.
+  - **Web discovery only sees listed services.** Chrome hides any service not in `optionalServices`,
+    so the web search is not UUID-agnostic like native. `OBD_SERVICE_UUIDS` gains the vendor 128-bit
+    service widely reported for the Vgate iCar Pro BLE 4.0 (`e7810a71-73ae-499d-8c15-faa9aef0c3f2`,
+    the owner's adapter; unconfirmed until the on-car session — harmless if absent, also used by the
+    native already-connected lookup). `docs/web.md` explains the limit and the failure it causes.
+- **Second review fixes.**
+  - **Two contradicting messages per tap in the browser.** With every alert now visible on the web
+    (`appAlert`), the callers of the web guards added their native "unavailable" follow-up after the
+    "Not available on web yet" toast. Vehicle report: Share PDF ran the guard twice (PDF, then the
+    HTML fallback) and then opened "Share unavailable"; history re-share added "Sharing
+    unavailable"; Backup's Back up now / Choose file / export added "see the Error log" (nothing was
+    logged) or "needs a newer build"; profile / label-pack import added "needs the file picker" and
+    their export "Could not export…". Each caller now stops after the toast when `isWebRuntime()`
+    (`ReportScreen` skips the HTML retry on web), so the toast is the one message. Test: a web case
+    in `ReportScreen.test.tsx` (one toast, one loader call, no alert).
+  - **Cancelled chooser during an auto-reconnect.** The "live session" check covered only
+    `connected` / `connecting`; an attempt in `initializing` (or an auto-reconnect between attempts,
+    when the status can read `error`) was overwritten with `disconnected` + the chooser message,
+    while the web button was still enabled (useConnect idle). Now `initializing` and a running
+    reconnect count as live → toast only. New `connectionService.test.ts` case.
+  - **Overlapping GATT writes.** `WebBluetoothTransport.write()` ordered chunks within one call but
+    not across calls; the ELM327 client fires writes without awaiting them, so a stalled write
+    (e.g. a wake that timed out) overlapped the next command, which Chrome rejects ("GATT operation
+    already in progress"; ble-plx queues on the phone). Writes now go through a promise-chain queue
+    (a failed write does not block the next; reset on teardown so a write hung on a dead link never
+    holds up a new connection). Two new `WebBluetoothTransport.test.ts` cases; whether real adapters
+    ever stall that long stays with the deferred on-car check.
+
 ## Plan 27 — Classic Bluetooth (SPP) transport, Android (2026-11-09)
 
 [Plan 27](./plans/27-bluetooth-spp-transport.md) landed: the cheap "Bluetooth 3.0" ELM327 adapters

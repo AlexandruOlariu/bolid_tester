@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { PROTOCOL_LABELS } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
+import { fileStamp, saveTextFile } from '@/shared/lib/saveFile';
 import { gradeAdapter } from '../api/gradeAdapter';
 import { formatAdapterReport } from '../api/adapterReport';
 import { useAdapterHealthStore, AdapterHealthReport } from '../model/adapterHealthStore';
@@ -83,22 +84,18 @@ export function useAdapterHealth() {
     }
   }, [session, running, setRunning, setReport, setPhase]);
 
-  /** Write the report to a text file and open the OS share sheet. Dependency-tolerant: a no-op when
-   *  expo-file-system / expo-sharing are absent (tests, web) — same idiom as the DTC export. */
+  /** Save the report as a text file: the OS share sheet on native, a browser download on web
+   *  (`saveTextFile`, plan 28). */
   const share = useCallback(async () => {
     if (!report) return;
     setSharing(true);
     try {
-      const FileSystem = await import('expo-file-system' as string);
-      const Sharing = await import('expo-sharing' as string);
-      const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
-      if (!dir) return;
-      const stamp = new Date(report.ranAt).toISOString().replace(/[:.]/g, '-');
-      const uri = `${dir}adapter-health-${stamp}.txt`;
-      await FileSystem.writeAsStringAsync(uri, formatAdapterReport(report));
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'text/plain', dialogTitle: 'Adapter health' });
-      }
+      await saveTextFile(
+        `adapter-health-${fileStamp(report.ranAt)}.txt`,
+        formatAdapterReport(report),
+        'text/plain',
+        { dialogTitle: 'Adapter health' },
+      );
     } catch (e) {
       logError({ source: 'adapter-health/share', error: e });
     } finally {

@@ -1,19 +1,10 @@
-/** Write a replay fixture (built by `model/replayExport.ts`) to the app's document directory and
- *  open the share sheet. Uses the legacy file-system entry point: on this Expo SDK the root
- *  `expo-file-system` has no `documentDirectory` and throws for `writeAsStringAsync` (same as the
- *  sniffer's `captureExport.ts`). Native modules load with a variable specifier so a platform
- *  without them (web) degrades to a logged warning instead of a crash. */
+/** Save a replay fixture (built by `model/replayExport.ts`): on native, written to the document
+ *  directory (legacy file-system entry point — the root `expo-file-system` has no
+ *  `documentDirectory` on this SDK) and handed to the share sheet; on web, downloaded by the browser
+ *  (`saveTextFile`, plan 28). A platform with neither degrades to a logged warning, never a crash. */
 import { logError } from '@/shared/state/errorLogStore';
+import { saveTextFile } from '@/shared/lib/saveFile';
 import { buildReplayExport, ReplayExportInput } from '../model/replayExport';
-
-interface LegacyFileSystem {
-  documentDirectory?: string | null;
-  writeAsStringAsync: (uri: string, contents: string) => Promise<void>;
-}
-interface SharingModule {
-  isAvailableAsync: () => Promise<boolean>;
-  shareAsync: (uri: string, opts?: { mimeType?: string; dialogTitle?: string }) => Promise<void>;
-}
 
 const SOURCE = 'settings/replay-export';
 
@@ -21,25 +12,20 @@ const SOURCE = 'settings/replay-export';
  *  the Settings copy ("See More → Error log") always has an entry to point at. */
 export async function saveReplayFixture(input: ReplayExportInput): Promise<string | null> {
   try {
-    const FileSystem = (await import('expo-file-system/legacy' as string)) as LegacyFileSystem;
-    const Sharing = (await import('expo-sharing' as string)) as SharingModule;
-    const dir = FileSystem.documentDirectory ?? '';
-    if (!dir) {
+    const { fileName, fixture } = buildReplayExport(input);
+    const saved = await saveTextFile(
+      fileName,
+      JSON.stringify(fixture, null, 2),
+      'application/json',
+      { dialogTitle: 'Share replay fixture' },
+    );
+    if (!saved) {
       logError({
         source: SOURCE,
         error: new Error('No document directory on this platform; the fixture was not saved.'),
         severity: 'warning',
       });
       return null;
-    }
-    const { fileName, fixture } = buildReplayExport(input);
-    const uri = `${dir}${fileName}`;
-    await FileSystem.writeAsStringAsync(uri, JSON.stringify(fixture, null, 2));
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, {
-        mimeType: 'application/json',
-        dialogTitle: 'Share replay fixture',
-      });
     }
     return fileName;
   } catch (e) {

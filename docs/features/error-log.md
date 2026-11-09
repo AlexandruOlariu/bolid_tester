@@ -44,9 +44,11 @@ logError({ source: 'my-feature', error: e, severity: 'warning', context: { id } 
   and message, and expands to reveal **context** and the **stack trace**. Per-error delete, a
   confirmed **Clear all**, and **Export** (shares the currently filtered set).
 - **Export** writes a file to the document directory and opens the OS share sheet (expo-sharing),
-  in either **Markdown** (human-readable report) or **JSON** (full records). Both native modules are
-  loaded with dependency-tolerant dynamic imports, so the build/tests don't require them and the
-  feature degrades to a no-op where sharing is unavailable (web/tests).
+  in either **Markdown** (human-readable report) or **JSON** (full records); in the browser the
+  file is downloaded instead (`saveTextFile` in `shared/lib/saveFile.ts`, plan 28 —
+  [web](../web.md)). The native modules are loaded with dependency-tolerant dynamic imports (the
+  legacy `expo-file-system` entry point, which has the document directory on this SDK), so the
+  build/tests don't require them.
 
 ## model
 

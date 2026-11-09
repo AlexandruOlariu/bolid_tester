@@ -40,6 +40,7 @@ import {
   setSettingsPlatform,
   SETTINGS_VERSION,
   SPP_FALLBACK_NOTICE,
+  WEB_SOURCE_FALLBACK_NOTICE,
   useSettingsStore,
 } from './settingsStore';
 import { setSecureStoreModule } from './secureApiKey';
@@ -525,5 +526,41 @@ describe('Classic Bluetooth source on iOS (plan 27)', () => {
     await useSettingsStore.persist.rehydrate();
     expect(useSettingsStore.getState().adapterSource).toBe('wifi');
     expect(useSettingsStore.getState().adapterSourceNotice).toBeNull();
+  });
+});
+
+describe('adapter sources in the browser (plan 28)', () => {
+  beforeEach(() => {
+    files.clear();
+    useSettingsStore.setState(useSettingsStore.getInitialState(), true);
+  });
+  afterEach(() => setSettingsPlatform(null));
+
+  it('the web offers Bluetooth LE and the simulator only', () => {
+    expect(isAdapterSourceSupported('ble', 'web')).toBe(true);
+    expect(isAdapterSourceSupported('mock', 'web')).toBe(true);
+    expect(isAdapterSourceSupported('wifi', 'web')).toBe(false);
+    expect(isAdapterSourceSupported('spp', 'web')).toBe(false);
+    expect(isAdapterSourceSupported('wifi', 'android')).toBe(true);
+  });
+
+  it.each(['wifi', 'spp'] as const)(
+    'a stored %s source (a phone backup) falls back to Bluetooth LE with the web notice',
+    async (source) => {
+      setSettingsPlatform('web');
+      files.set(
+        SETTINGS_FILE,
+        JSON.stringify({ state: { adapterSource: source }, version: SETTINGS_VERSION }),
+      );
+      await useSettingsStore.persist.rehydrate();
+      expect(useSettingsStore.getState().adapterSource).toBe('ble');
+      expect(useSettingsStore.getState().adapterSourceNotice).toBe(WEB_SOURCE_FALLBACK_NOTICE);
+    },
+  );
+
+  it('a Wi-Fi source chosen before the platform was known falls back once it is', () => {
+    useSettingsStore.setState({ adapterSource: 'wifi' });
+    setSettingsPlatform('web');
+    expect(useSettingsStore.getState().adapterSource).toBe('ble');
   });
 });

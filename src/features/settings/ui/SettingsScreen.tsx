@@ -1,9 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Linking, Platform } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScrollView, YStack, XStack, Text, Paragraph, Button, Card, Input, Spinner } from 'tamagui';
-import { Screen } from '@/shared/ui';
-import { useSettingsStore, parseDtcList } from '@/shared/state/settingsStore';
+import { Screen, appAlert } from '@/shared/ui';
+import {
+  useSettingsStore,
+  parseDtcList,
+  isAdapterSourceSupported,
+} from '@/shared/state/settingsStore';
 import {
   useAdapterLogStore,
   clearAdapterLogEntries,
@@ -216,10 +220,17 @@ function AiSection() {
                 autoCorrect={false}
                 accessibilityLabel={`${preset.label} API key`}
               />
-              <Paragraph theme="alt2" fontSize="$1">
-                Stored in the phone's secure keystore, never in backups. Each provider keeps its own
-                key.
-              </Paragraph>
+              {Platform.OS === 'web' ? (
+                // Web (plan 28): there is no keystore in the browser, so the key is memory-only.
+                <Paragraph theme="alt2" fontSize="$1" testID="settings-ai-key-web">
+                  In the browser the key is kept only until this tab closes — it is never saved.
+                </Paragraph>
+              ) : (
+                <Paragraph theme="alt2" fontSize="$1">
+                  Stored in the phone's secure keystore, never in backups. Each provider keeps its
+                  own key.
+                </Paragraph>
+              )}
             </YStack>
           ) : null}
 
@@ -799,7 +810,7 @@ function HintsAndResetSection({ resetAppData }: { resetAppData?: ResetAppData })
   };
 
   const confirmReset = () => {
-    Alert.alert(
+    appAlert(
       'Reset all app data?',
       'This deletes everything the app keeps on this phone: settings, garage, history, scans, trips, maintenance log, alert rules, coding backups, backup files, label packs, security-access plugins, login codes, AI keys and the copies of exported files the app keeps. Copies you already shared or saved elsewhere are kept.',
       [
@@ -808,7 +819,7 @@ function HintsAndResetSection({ resetAppData }: { resetAppData?: ResetAppData })
           text: 'Continue',
           style: 'destructive',
           onPress: () =>
-            Alert.alert(
+            appAlert(
               'Delete all app data?',
               'This cannot be undone. Make a backup first (Settings → Data) if you may want it back.',
               [
@@ -971,14 +982,17 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
                   label="Real adapter (Bluetooth)"
                   onPress={() => void connectionService.switchAdapterSource('ble')}
                 />
-                <Seg
-                  active={s.adapterSource === 'wifi'}
-                  label="Wi-Fi adapter"
-                  onPress={() => void connectionService.switchAdapterSource('wifi')}
-                />
+                {/* A browser cannot open a TCP socket to a Wi-Fi adapter (plan 28). */}
+                {isAdapterSourceSupported('wifi', Platform.OS) ? (
+                  <Seg
+                    active={s.adapterSource === 'wifi'}
+                    label="Wi-Fi adapter"
+                    onPress={() => void connectionService.switchAdapterSource('wifi')}
+                  />
+                ) : null}
                 {/* Classic Bluetooth (plan 27) is Android only: iOS opens classic accessories only
                     through MFi, which ELM327 clones are not. */}
-                {Platform.OS === 'android' ? (
+                {isAdapterSourceSupported('spp', Platform.OS) ? (
                   <Seg
                     active={s.adapterSource === 'spp'}
                     label="Classic Bluetooth"
@@ -992,7 +1006,9 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
                 />
               </XStack>
               <Paragraph theme="alt2" fontSize="$1">
-                Bluetooth LE and Wi-Fi ELM327 adapters connect to a real car
+                {Platform.OS === 'web'
+                  ? 'Bluetooth LE ELM327 adapters connect to a real car through the browser (Chrome or Edge)'
+                  : 'Bluetooth LE and Wi-Fi ELM327 adapters connect to a real car'}
                 {Platform.OS === 'android'
                   ? ', and so do classic Bluetooth (“3.0”) ones paired in Android’s Bluetooth settings'
                   : ''}

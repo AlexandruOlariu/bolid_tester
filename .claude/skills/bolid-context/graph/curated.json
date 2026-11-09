@@ -181,7 +181,10 @@
       "tokens": ["wifi","wi-fi","tcp","socket","35000","192.168.0.10","wifi_obdii","network","local","lan","adapter","endpoint"] },
     { "id": "classic-bluetooth-spp",
       "summary": "Classic Bluetooth SPP ELM327 ('Bluetooth 3.0', plan 27), Android only: iOS opens classic accessories only via MFi, which ELM327 clones lack, so the source is hidden there and a stored 'spp' falls back to 'ble' (settingsStore.setSettingsPlatform + merge, one-time notice). SppTransport (shared/transports/spp) over react-native-bluetooth-classic 1.73.0-rc.17 (variable-specifier loader, injected SppModuleLike): connectToDevice(mac, {delimiter:'>', charset:'ascii'}); the library hands over one message per '>' with it stripped, so the transport re-appends the prompt. Hence Transport.capabilities = {monitor:false}: ATMA cannot stream, DiagnosticSession.startSniffer / Elm327Client.startMonitor refuse with MONITOR_UNAVAILABLE_MESSAGE. Bonded devices only (pair in Android settings, PIN 1234/0000), no scan; RFCOMM errors (socket / read failed) -> 'paired but not reachable' diagnosis. Tested with sppDeviceOverBridge (re-chunks the simulator by '>').",
-      "tokens": ["spp","classic","bluetooth","rfcomm","serial","paired","bonded","pin","mfi","delimiter","prompt","monitor","capabilities","atma","3.0"] }
+      "tokens": ["spp","classic","bluetooth","rfcomm","serial","paired","bonded","pin","mfi","delimiter","prompt","monitor","capabilities","atma","3.0"] },
+    { "id": "web-bluetooth",
+      "summary": "Browser build (plan 28, docs/web.md): Expo web target (react-native-web, app.json web.output 'single', experiments.baseUrl '/bolid_tester', exported to web-build/ never dist/, deployed to GitHub Pages by .github/workflows/web.yml). BLE goes through WebBluetoothTransport (shared/transports/web-ble, pure, fake GATT in testing/fakeWebBluetooth): requestDevice only inside a user gesture -> one 'Choose adapter & connect' button (connectionService.chooseWebAdapterAndConnect), acceptAllDevices + optionalServices OBD_SERVICE_UUIDS (shared/transports/common), first service with notify+write, 20-byte writes (no MTU API), gattserverdisconnected -> link loss; ConnectTarget.webDevice lets auto-reconnect reuse the pick. getBleManager throws on web. Chrome/Edge desktop+Android over HTTPS only; Safari/Firefox/iOS -> not-supported panel + simulator. Web degradations: persistStorage falls back to localStorage (DIR ''), saveTextFile (shared/lib/saveFile) downloads text exports, other file flows show the NOT_ON_WEB_YET toast (toastStore + shared/ui Toast), AI key memory-only, Wi-Fi/SPP sources hidden (isAdapterSourceSupported(..,'web')). isWebRuntime() (shared/lib/webRuntime) = 'has a DOM' for Node-tested shared code.",
+      "tokens": ["web","browser","chrome","edge","pwa","web-bluetooth","navigator","gatt","requestdevice","gesture","localstorage","download","pages","export","safari","react-native-web"] }
   ],
   "links": [
     ["concept:wifi-adapter", "transport:TcpTransport", "relates"],
@@ -198,6 +201,11 @@
     ["concept:classic-bluetooth-spp", "feature:connection", "relates"],
     ["concept:classic-bluetooth-spp", "feature:can-sniffer", "relates"],
     ["concept:classic-bluetooth-spp", "doc:plans/27-bluetooth-spp-transport", "relates"],
+    ["concept:web-bluetooth", "feature:connection", "relates"],
+    ["concept:web-bluetooth", "concept:connection-lifecycle", "relates"],
+    ["concept:web-bluetooth", "core:transport/testing/bridge", "relates"],
+    ["concept:web-bluetooth", "store:persistStorage", "relates"],
+    ["concept:web-bluetooth", "doc:plans/28-web-bluetooth-pwa", "relates"],
     ["concept:live-value-keys", "core:obd/liveKeys", "relates"],
     ["concept:live-value-keys", "feature:engine-host", "relates"],
     ["concept:live-value-keys", "feature:live-charts", "relates"],

@@ -9,6 +9,8 @@
  *  available". Imported text is only `JSON.parse`d and rebuilt by the validator — never evaluated.
  *  See docs/exchange-formats.md. */
 import { logError } from './errorLogStore';
+import { NOT_ON_WEB_YET, showToast } from './toastStore';
+import { isWebRuntime } from '@/shared/lib/webRuntime';
 import { useGarageStore } from './garageStore';
 import { useLabelPackStore } from './labelPackStore';
 import { APP_VERSION } from '@/shared/lib/appInfo';
@@ -81,8 +83,13 @@ export interface ExchangeModules {
 const PICK_TYPES = ['application/json', 'text/plain', 'application/octet-stream'];
 
 /** Load expo-file-system (legacy), expo-sharing and expo-document-picker. Null (logged under
- *  `source`) when the file system itself is missing. */
+ *  `source`) when the file system itself is missing; null with the "not available on web yet"
+ *  toast in the browser (plan 28), where there is no file system to write to or pick from. */
 export async function loadExchangeModules(source: string): Promise<ExchangeModules | null> {
+  if (isWebRuntime()) {
+    showToast(NOT_ON_WEB_YET);
+    return null;
+  }
   let FileSystem: ExchangeFileSystem;
   try {
     FileSystem = (await import('expo-file-system/legacy' as string)) as ExchangeFileSystem;

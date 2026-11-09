@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
 import { YStack, XStack, Text, Paragraph, Button, Card, Switch } from 'tamagui';
 import type { SeedKeyPluginV1 } from '@/shared/obd-core';
 import { useSeedKeyStore, type SeedKeyIndexEntry } from '@/shared/state/seedKeyStore';
@@ -14,6 +13,7 @@ import {
 } from '@/shared/security/seedKeyFiles';
 import { testSeedKeyPluginInSimulator } from '@/shared/security/simulatorCheck';
 import { useSeedKeyVehicleKeys } from '@/shared/security/useUnlockStatus';
+import { appAlert } from '@/shared/ui';
 
 const hex2 = (n: number) => `0x${n.toString(16).toUpperCase().padStart(2, '0')}`;
 
@@ -172,7 +172,7 @@ export function SeedKeysSection() {
   };
 
   const confirmDelete = (entry: SeedKeyIndexEntry) =>
-    Alert.alert(
+    appAlert(
       'Delete this plugin?',
       `${entry.name} is removed from this phone. Writes that needed it are refused again.`,
       [

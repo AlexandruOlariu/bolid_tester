@@ -1220,6 +1220,31 @@
     "relates"
   ],
   [
+    "concept:web-bluetooth",
+    "concept:connection-lifecycle",
+    "relates"
+  ],
+  [
+    "concept:web-bluetooth",
+    "core:transport/testing/bridge",
+    "relates"
+  ],
+  [
+    "concept:web-bluetooth",
+    "doc:plans/28-web-bluetooth-pwa",
+    "relates"
+  ],
+  [
+    "concept:web-bluetooth",
+    "feature:connection",
+    "relates"
+  ],
+  [
+    "concept:web-bluetooth",
+    "store:persistStorage",
+    "relates"
+  ],
+  [
     "concept:wifi-adapter",
     "concept:connection-lifecycle",
     "relates"
@@ -2561,6 +2586,11 @@
   ],
   [
     "feature:adapter-health",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
     "store:errorLogStore",
     "imports"
   ],
@@ -2761,6 +2791,11 @@
   ],
   [
     "feature:backup",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "feature:backup",
     "store:adapterLog",
     "imports"
   ],
@@ -2807,6 +2842,11 @@
   [
     "feature:backup",
     "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:toastStore",
     "imports"
   ],
   [
@@ -2876,6 +2916,11 @@
   ],
   [
     "feature:can-sniffer",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
     "store:errorLogStore",
     "imports"
   ],
@@ -2932,6 +2977,11 @@
   [
     "feature:coding",
     "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "lib:saveFile",
     "imports"
   ],
   [
@@ -3042,6 +3092,11 @@
   [
     "feature:connection",
     "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "store:toastStore",
     "imports"
   ],
   [
@@ -3231,6 +3286,11 @@
   ],
   [
     "feature:error-log",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:error-log",
     "store:errorLogStore",
     "imports"
   ],
@@ -3267,6 +3327,11 @@
   [
     "feature:extended-pids",
     "lib:hex",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
+    "lib:saveFile",
     "imports"
   ],
   [
@@ -3342,6 +3407,11 @@
   [
     "feature:fault-codes",
     "lib:dtcReport",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "lib:saveFile",
     "imports"
   ],
   [
@@ -3446,6 +3516,11 @@
   ],
   [
     "feature:history",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "feature:history",
     "store:errorLogStore",
     "imports"
   ],
@@ -3457,6 +3532,11 @@
   [
     "feature:history",
     "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "store:toastStore",
     "imports"
   ],
   [
@@ -3527,6 +3607,11 @@
   [
     "feature:live-charts",
     "feature:onboarding",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "lib:saveFile",
     "imports"
   ],
   [
@@ -3736,6 +3821,11 @@
   ],
   [
     "feature:module-scan",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
     "store:errorLogStore",
     "imports"
   ],
@@ -3936,6 +4026,11 @@
   ],
   [
     "feature:report",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "feature:report",
     "store:activeProfile",
     "imports"
   ],
@@ -3962,6 +4057,11 @@
   [
     "feature:report",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:toastStore",
     "imports"
   ],
   [
@@ -4126,6 +4226,16 @@
   ],
   [
     "feature:settings",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "service:ai",
     "imports"
   ],
@@ -4241,6 +4351,11 @@
   ],
   [
     "feature:trip-recording",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
     "service:notify",
     "imports"
   ],
@@ -4272,6 +4387,11 @@
   [
     "feature:trip-recording",
     "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "store:toastStore",
     "imports"
   ],
   [
@@ -4323,6 +4443,16 @@
     "feature:vehicle-select",
     "doc:features/vehicle-select",
     "named"
+  ],
+  [
+    "feature:vehicle-select",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "lib:webRuntime",
+    "imports"
   ],
   [
     "feature:vehicle-select",
@@ -4530,6 +4660,16 @@
     "named"
   ],
   [
+    "lib:saveFile",
+    "doc:plans/03-sniffer-capture",
+    "named"
+  ],
+  [
+    "lib:saveFile",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
     "lib:schemas",
     "core:confirmation",
     "imports"
@@ -4618,6 +4758,16 @@
     "lib:vehicleReport",
     "lib:reportHtml",
     "imports"
+  ],
+  [
+    "lib:webRuntime",
+    "doc:plans/28-web-bluetooth-pwa",
+    "named"
+  ],
+  [
+    "lib:webRuntime",
+    "doc:web",
+    "named"
   ],
   [
     "screen:_layout",
@@ -5106,6 +5256,11 @@
   ],
   [
     "store:exchangeService",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
     "store:errorLogStore",
     "imports"
   ],
@@ -5117,6 +5272,11 @@
   [
     "store:exchangeService",
     "store:labelPackStore",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "store:toastStore",
     "imports"
   ],
   [
@@ -5227,6 +5387,11 @@
   [
     "store:secureApiKey",
     "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "store:secureApiKey",
+    "lib:webRuntime",
     "imports"
   ],
   [
@@ -5400,6 +5565,11 @@
     "imports"
   ],
   [
+    "ui:AlertDialog",
+    "store:dialogStore",
+    "imports"
+  ],
+  [
     "ui:AppSplash",
     "feature:maintenance",
     "imports"
@@ -5495,8 +5665,18 @@
     "imports"
   ],
   [
+    "ui:Toast",
+    "store:toastStore",
+    "imports"
+  ],
+  [
     "ui:VerificationBadge",
     "vehicle:confirmation",
+    "imports"
+  ],
+  [
+    "ui:appAlert",
+    "store:dialogStore",
     "imports"
   ],
   [
@@ -5513,6 +5693,11 @@
     "ui:useExchangeImport",
     "doc:plans/13-profile-labelpack-import-export",
     "named"
+  ],
+  [
+    "ui:useExchangeImport",
+    "lib:webRuntime",
+    "imports"
   ],
   [
     "ui:useExchangeImport",

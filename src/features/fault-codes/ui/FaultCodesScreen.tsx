@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Switch } from 'tamagui';
 import { useRouter } from 'expo-router';
 import { Share2, FileText, FileStack } from 'lucide-react-native';
-import { Screen, ValueCard } from '@/shared/ui';
+import { Screen, ValueCard, appAlert } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { curatedProfileId, vehicleLabel } from '@/shared/vehicles';
@@ -245,7 +244,7 @@ export function FaultCodesScreen() {
   const onExport = async () => {
     const body = formatDtcReport([buildCheck()], { title: 'Bolid Tester — fault codes' });
     const uri = await exportReport('bolid-fault-codes', body);
-    if (!uri) Alert.alert('Export unavailable', 'Sharing is not available on this device.');
+    if (!uri) appAlert('Export unavailable', 'Sharing is not available on this device.');
   };
 
   const onShareReport = async () => {
@@ -255,11 +254,11 @@ export function FaultCodesScreen() {
       mimeType: 'text/html',
       dialogTitle: 'Share diagnostic report',
     });
-    if (!uri) Alert.alert('Share unavailable', 'Sharing is not available on this device.');
+    if (!uri) appAlert('Share unavailable', 'Sharing is not available on this device.');
   };
 
   const confirmClear = () =>
-    Alert.alert(
+    appAlert(
       'Clear fault codes?',
       'This erases stored codes and resets readiness monitors. Codes will return if the fault persists.',
       [

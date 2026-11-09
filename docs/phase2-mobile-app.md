@@ -27,6 +27,20 @@ npx expo prebuild
 npm run android             # or: npm run ios   (iOS needs a Mac/Xcode or EAS)
 ```
 
+### Web target (plan 28)
+
+The same app also builds for the browser — the simulator everywhere, and real Bluetooth LE adapters
+through Web Bluetooth in Chrome / Edge. `react-native-web`, `react-dom` and `@expo/metro-runtime`
+are dependencies; `app.json` sets `web.output: "single"` and `experiments.baseUrl: "/bolid_tester"`.
+
+```bash
+npx expo start --web                                      # dev server
+npx expo export --platform web --output-dir web-build     # static site (never into dist/)
+```
+
+`.github/workflows/web.yml` deploys it to GitHub Pages on every push to `main`. Browser support, the
+native-only capability matrix and the Pages setup are in [web.md](./web.md).
+
 For cloud builds without a Mac, use EAS (profiles in `eas.json`):
 
 ```bash

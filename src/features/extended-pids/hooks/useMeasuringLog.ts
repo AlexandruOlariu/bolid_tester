@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
+import { fileStamp, saveTextFile } from '@/shared/lib/saveFile';
 import type { ExtendedPid } from '@/shared/vehicles';
 import {
   resetMeasuringLog,
@@ -25,7 +26,7 @@ export interface MeasuringLog {
   /** Writing/sharing the CSV on stop. */
   busy: boolean;
   start: (entries: ExtendedPid[]) => void;
-  /** Stop, build the CSV and open the OS share sheet. Returns the file URI, or null if unavailable. */
+  /** Stop, build the CSV and share it (a download on web). Returns the file URI / name, or null. */
   stop: () => Promise<string | null>;
 }
 
@@ -96,21 +97,13 @@ export function useMeasuringLog(): MeasuringLog {
     if (rows.length === 0) return null;
     setBusy(true);
     try {
-      const csv = buildMeasuringLogCsv(rows);
-      const FileSystem = await import('expo-file-system' as string);
-      const Sharing = await import('expo-sharing' as string);
-      const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
-      if (!dir) return null;
-      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const uri = `${dir}measuring-log-${stamp}.csv`;
-      await FileSystem.writeAsStringAsync(uri, csv);
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'text/csv',
-          dialogTitle: 'Export measuring log',
-        });
-      }
-      return uri;
+      // The OS share sheet on native, a browser download on web (plan 28).
+      return await saveTextFile(
+        `measuring-log-${fileStamp()}.csv`,
+        buildMeasuringLogCsv(rows),
+        'text/csv',
+        { dialogTitle: 'Export measuring log' },
+      );
     } catch (e) {
       logError({ source: 'extended-pids/log-export', error: e });
       return null;

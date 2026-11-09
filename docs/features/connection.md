@@ -1,7 +1,8 @@
 # Feature: connection
 
-Scan for, connect to, and initialize the ELM327 adapter — Bluetooth LE, Wi-Fi over TCP (plan 26), or
-Classic Bluetooth (SPP) on Android (plan 27).
+Scan for, connect to, and initialize the ELM327 adapter — Bluetooth LE, Wi-Fi over TCP (plan 26),
+Classic Bluetooth (SPP) on Android (plan 27), or Bluetooth LE through **Web Bluetooth** in the
+browser build (plan 28, [web](../web.md)).
 
 ## UI
 
@@ -25,6 +26,13 @@ Initializing… / Connected / Error` with an icon and colour per `ConnState`;
     `Linking.openSettings()`), **Refresh**, a list error (`connect-spp-error`: Bluetooth off,
     permission denied, module missing) and **Use a Bluetooth LE adapter**; no scan and no
     `BleManager` (see [Classic Bluetooth](#classic-bluetooth-spp-android--plan-27));
+  - with the Bluetooth source **in the browser** (`Platform.OS === 'web'`,
+    `ui/WebBluetoothConnect.tsx`, `testID="connect-web-bluetooth"`): no scan list and no address
+    entry — a short how-to, the note "Works in Chrome and Edge on a computer or an Android phone,
+    over HTTPS. Not in Safari, Firefox or on an iPhone." (`web-bt-note`), one **Choose adapter &
+    connect** button (`web-bt-choose`) and **No adapter? Try the simulator**. A browser without Web
+    Bluetooth shows the blocking panel "Bluetooth adapters are not supported in this browser"
+    (`web-bt-unsupported`) with **Use the simulator** (see [Web Bluetooth](#web-bluetooth-browser--plan-28));
   - otherwise (Bluetooth) the `BluetoothPrompt` banner when the radio is not ready, **Scan for
     adapters**, the device list, on Android **Connect by address**, a small **Using a Wi-Fi
     adapter instead?** link that switches the source to Wi-Fi and, on Android only, **Using a
@@ -117,7 +125,9 @@ no-op.
   whose restored settings may change the source; plan 18), `FLAP_PAUSED_MESSAGE`,
   `setTcpSocketFactory(factory?)` (test seam: Wi-Fi sockets from a fake instead of
   `react-native-tcp-socket`), `listPairedAdapters()` (the Classic Bluetooth picker's list),
-  `setSppModuleLoader(loader?)` (test seam: a fake `react-native-bluetooth-classic`), and the
+  `setSppModuleLoader(loader?)` (test seam: a fake `react-native-bluetooth-classic`),
+  `chooseWebAdapterAndConnect()` / `pickWebBluetoothAdapter()` / `isWebBluetoothSupported()` and
+  `setWebBluetooth(bt?)` (the browser build and its test seam, plan 28), and the
   simulator dev hooks under `__sim`
   (Settings → Developer & simulator). Link-loss, auto-reconnect and the flap guard live here too (below).
 - Pure helpers, unit-tested: `reconnect.ts` (`runReconnect`), `flapGuard.ts`
@@ -377,6 +387,61 @@ Classic Bluetooth adapter <MAC>: <library error>` (typically "read failed, socke
   (every read handed over as-is), which would allow `ATMA`; switching to it needs a real adapter
   first (plan 27 § Deferred). A real SPP adapter on the owner's phone: on-car pending.
 
+## Web Bluetooth (browser — plan 28)
+
+The web build ([web](../web.md)) reaches a Bluetooth LE ELM327 through the browser's Web Bluetooth
+API (Chrome / Edge on desktop and Android, over HTTPS) with `WebBluetoothTransport`
+(`src/shared/transports/web-ble/WebBluetoothTransport.ts`), the same `Transport` interface as every
+other link. It is pure (no React Native, no `react-native-ble-plx`) and written against narrow
+`WebBluetoothLike` / `WebBt*` interfaces so the Node tests inject a fake GATT.
+
+- **Picking.** `WebBluetoothTransport.pickDevice(bt)` calls `requestDevice({ acceptAllDevices: true,
+optionalServices: OBD_SERVICE_UUIDS })` — the four ELM327 services now live in the pure
+  `shared/transports/common/obdServiceUuids.ts` (re-exported by `ble/manager.ts`). Chrome opens the
+  chooser only inside a user gesture, so `useConnect().chooseAndConnect()` is wired straight to the
+  **Choose adapter & connect** press and calls `connectionService.chooseWebAdapterAndConnect()`,
+  which picks first and then connects. The pick travels on the target
+  (`ConnectTarget.webDevice`), so `lastTarget` replays it and **auto-reconnect** reopens the same
+  device with `gatt.connect()` — no second chooser.
+- **Connecting.** `connect()`: `gatt.connect()` → `getPrimaryServices()` → the first service with a
+  notify (or indicate) **and** a write characteristic → `startNotifications()` → `connected`
+  (mirroring `BleTransport.selectCharacteristics`; no hard-coded characteristic UUIDs). No
+  suitable service → `error`, GATT closed, "No suitable notify + write characteristics found on
+  this device". A disconnect during connect tears the half-built link down.
+- **Data.** Each `characteristicvaluechanged` `DataView` is copied out (only its own window of the
+  buffer). Writes go in **20-byte chunks** (no MTU API on the web) with
+  `writeValueWithoutResponse` when the characteristic allows it, else `writeValueWithResponse` /
+  `writeValue`; a chunk failing partway sends the same `LINE_FLUSH` as the native transport.
+  Separate `write()` calls are **queued** (one GATT operation at a time): the ELM327 client fires
+  command writes without awaiting them, and Chrome rejects a second operation while one is pending
+  ("GATT operation already in progress") where ble-plx on the phone queues it.
+  `linkInfo` reports MTU 23 / payload 20, so the diagnostics panel works unchanged.
+- **Link loss.** `gattserverdisconnected` → `disconnected` once (listeners removed first, so a
+  manual `disconnect()` is not mistaken for a drop) → the usual link-lost handling and
+  auto-reconnect.
+- **Errors.** `describeWebBluetoothError(e)` turns the browser's `DOMException` names into plain
+  English: a cancelled chooser (`NotFoundError`) → "No adapter was chosen…" — shown as a message
+  with the app **disconnected** (not a failed connection, so no diagnostics panel — an earlier
+  failed attempt's `error` is reset to `disconnected` too, so its stale diagnostics close); while a
+  session is live or in flight (`connected`, `connecting`, `initializing`, or an auto-reconnect run,
+  including its back-off pause) the session is left untouched and the message is only a toast; a device
+  without the OBD2 services; `SecurityError` (HTTPS / user gesture); `NotAllowedError` (Bluetooth
+  blocked for the site); `NetworkError` (link could not be opened). A browser without
+  `navigator.bluetooth` → the not-supported panel, simulator still offered.
+- **Native stack off.** On web `getBleManager()` throws "Bluetooth LE via react-native-ble-plx is
+  not available on web" and the Connect screen calls `useBluetoothState(false)`, so ble-plx is never
+  touched. Settings hides **Wi-Fi adapter** and **Classic Bluetooth** on the web
+  (`isAdapterSourceSupported(source, 'web')`); a stored Wi-Fi / SPP source falls back to Bluetooth LE
+  with `WEB_SOURCE_FALLBACK_NOTICE`.
+- **Tests:** `WebBluetoothTransport.test.ts` (fake GATT: service pick, notifications, 20 + 19 chunking,
+  `writeValue` fallback, with-response writes, line flush, queued writes, one `disconnected`, manual disconnect,
+  reconnect without a chooser, no-service rejection, disconnect during connect, error texts),
+  `WebBluetoothTransport.session.integration.test.ts` (`DiagnosticSession` over the bridged Golf:
+  identify, `010C`, `readDtcs('03')`), the Web Bluetooth cases in `connectionService.test.ts`,
+  `ConnectionScreen.test.tsx`, `SettingsScreen.test.tsx` and `settingsStore.test.ts`.
+- **On-car pending** (plan 28 § Deferred): the Vgate from Chrome on Android and on a laptop (chooser
+  name, service UUID, latency grade), and whether it needs the 20-byte chunking.
+
 ## Connection diagnostics panel
 
 - `ui/ConnectionDiagnostics.tsx`, mounted under the error `Panel` on `ConnectionScreen`, renders
@@ -474,5 +539,10 @@ the app never lists it." The connection flow handles it as follows:
   simulator (integration test). On iOS the segment and the Connect-screen link are absent and a
   stored `'spp'` source falls back to Bluetooth LE with a one-time notice. The Bus sniffer explains
   that monitoring is unavailable over SPP instead of failing. A real SPP adapter: on-car pending.
+- In the browser (plan 28), the Bluetooth source shows **Choose adapter & connect** and no scan /
+  address entry; cancelling the chooser shows "No adapter was chosen…" with the app still
+  disconnected; Safari / Firefox show the not-supported panel and keep the simulator (component +
+  service tests over a fake Web Bluetooth). Identify + DTC read work through the 20-byte-notifying
+  simulator (integration test). A real adapter from Chrome: on-car pending.
 - On-car pending (plan 12, deferred): the Vgate's real sleep delay and whether a bare `\r` wakes it,
   the negotiated MTU on the owner's phones, and one walk-out-of-range reconnect + flap-guard check.

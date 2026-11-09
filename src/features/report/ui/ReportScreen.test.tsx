@@ -23,6 +23,7 @@ import { useInspectionStore } from '@/features/inspection/model/inspectionStore'
 import { useBatteryStore } from '@/features/battery-health/model/batteryStore';
 import { useAiDiagnoseStore } from '@/features/ai-diagnose/model/aiDiagnoseStore';
 import { useMaintenanceStore } from '@/features/maintenance/model/maintenanceStore';
+import { NOT_ON_WEB_YET, hideToast, useToastStore } from '@/shared/state/toastStore';
 import { ReportScreen } from './ReportScreen';
 
 // The UI project cannot run the export's variable-specifier `import('expo-print')` & co. (babel
@@ -32,15 +33,20 @@ jest.mock('../api/reportExport', () => {
   const actual = jest.requireActual<object>('../api/reportExport');
   return {
     ...actual,
-    loadReportModules: async () => ({
+    loadReportModules: jest.fn(async () => ({
       FileSystem:
         jest.requireActual<typeof import('@test/mocks/fileSystem')>('@test/mocks/fileSystem')
           .fileSystemMock,
       Sharing: jest.requireMock('expo-sharing'),
       Print: jest.requireMock('expo-print'),
-    }),
+    })),
   };
 });
+const reportExport = jest.requireMock('../api/reportExport') as {
+  loadReportModules: jest.Mock;
+};
+const actualReportExport =
+  jest.requireActual<typeof import('../api/reportExport')>('../api/reportExport');
 
 const GOLF = 'golf-plus-2009-20tdi';
 const SECTION_TITLES = [
@@ -233,6 +239,29 @@ describe('ReportScreen', () => {
     expect(latestReportEntry().format).toBe('html');
     alert.mockRestore();
     quiet.mockRestore();
+  });
+
+  it('in the browser, Share PDF shows the one "not on web yet" toast and no second dialog', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    renderWithProviders(<ReportScreen />);
+    const g = globalThis as { document?: unknown };
+    // The real loader's web guard (toast + null), with the web runtime faked (`isWebRuntime`).
+    reportExport.loadReportModules.mockImplementationOnce(actualReportExport.loadReportModules);
+    reportExport.loadReportModules.mockClear();
+    g.document = { createElement: () => ({}) };
+    try {
+      await act(async () => {
+        fireEvent.press(screen.getByText('Share PDF'));
+      });
+    } finally {
+      delete g.document;
+    }
+    expect(useToastStore.getState().toast?.message).toBe(NOT_ON_WEB_YET);
+    expect(reportExport.loadReportModules).toHaveBeenCalledTimes(1); // no HTML retry
+    expect(alert).not.toHaveBeenCalled();
+    expect(fileEnding('.pdf')).toBeUndefined();
+    hideToast();
+    alert.mockRestore();
   });
 
   it('Share Markdown writes a .md with a heading per section', async () => {

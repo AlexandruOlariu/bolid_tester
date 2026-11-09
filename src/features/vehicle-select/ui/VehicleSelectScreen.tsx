@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Card, YStack, XStack, Text, Paragraph, Button, H4 } from 'tamagui';
 import { CheckCircle2 } from 'lucide-react-native';
-import { CardGrid, Screen } from '@/shared/ui';
+import { CardGrid, Screen, appAlert } from '@/shared/ui';
 import { ImportPreviewSheet } from '@/shared/ui/ImportPreviewSheet';
 import { useExchangeImport } from '@/shared/ui/useExchangeImport';
 import {
@@ -22,6 +21,7 @@ import { useVehicleStore } from '../model/vehicleStore';
 import { FUELS } from '../model/vehicleDraft';
 import { deleteGarageVehicle, learnFromConnectedCar } from '../api/learnVehicle';
 import { EXCHANGE_SOURCE, shareProfileSeedFile, shareVehicleFile } from '../api/exchange';
+import { isWebRuntime } from '@/shared/lib/webRuntime';
 import { VehicleEditorSheet } from './VehicleEditorSheet';
 
 const GREEN = '#2bb673';
@@ -61,7 +61,7 @@ function GarageCard({
   const fuel = FUELS.find((f) => f.value === v.fuel)?.label ?? v.fuel;
   const base = getVehicleProfile(v.baseProfileId);
   const confirmDelete = () =>
-    Alert.alert(
+    appAlert(
       'Delete this car?',
       `${v.name} is removed from your garage. Its history, scans and trips stay on this phone.`,
       [
@@ -161,12 +161,14 @@ export function VehicleSelectScreen() {
       : learnFromConnectedCar();
     if (learned) router.push('/dashboard');
   };
-  const exported = (uri: string | null) =>
+  const exported = (uri: string | null) => {
+    if (!uri && isWebRuntime()) return; // the "not available on web yet" toast already said why
     setExportNote(
       uri
         ? `Saved ${uri.slice(uri.lastIndexOf('/') + 1)}.`
         : 'Could not export the profile. See More → Error log for details.',
     );
+  };
   const exportCar = async (v: UserVehicle) => exported(await shareVehicleFile(v));
   const exportSeed = async (p: VehicleProfile) => exported(await shareProfileSeedFile(p));
 

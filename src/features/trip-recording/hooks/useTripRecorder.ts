@@ -21,6 +21,8 @@ import {
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { logError } from '@/shared/state/errorLogStore';
+import { isWebRuntime } from '@/shared/lib/webRuntime';
+import { NOT_ON_WEB_YET, showToast } from '@/shared/state/toastStore';
 import { notify } from '@/shared/notify';
 import { useTripStore } from '../model/tripStore';
 import { isSyntheticTrack, stopTrackCapture } from '../api/trackRecorder';
@@ -145,8 +147,13 @@ export async function deleteTrip(id: string): Promise<void> {
 }
 
 /** Open the OS share sheet for a trip's CSV (expo-sharing). Returns the file URI on success, or null
- *  when the file or sharing is unavailable (web/tests). */
+ *  when the file or sharing is unavailable. The web build keeps no trip CSVs (no file system), so
+ *  there it shows the "not available on web yet" toast instead (plan 28). */
 export async function shareTrip(header: TripHeader): Promise<string | null> {
+  if (isWebRuntime()) {
+    showToast(NOT_ON_WEB_YET);
+    return null;
+  }
   try {
     const FileSystem = await import('expo-file-system/legacy' as string);
     const Sharing = await import('expo-sharing' as string);

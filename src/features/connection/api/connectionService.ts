@@ -1,5 +1,6 @@
-/** The connection feature's service layer: builds the right Transport (simulator, BLE, Wi-Fi TCP —
- *  plan 26 — or Classic Bluetooth SPP — plan 27), wires the adapter I/O log, runs the DiagnosticSession, and updates the shared stores.
+/** The connection feature's service layer: builds the right Transport (simulator, BLE — native, or
+ *  Web Bluetooth in the browser, plan 28 — Wi-Fi TCP — plan 26 — or Classic Bluetooth SPP — plan
+ *  27), wires the adapter I/O log, runs the DiagnosticSession, and updates the shared stores.
  *  Note: "api" here means device/engine access, not a network API.
  *
  *  It also owns the *link-loss lifecycle*: once connected it watches the transport's status events
@@ -22,6 +23,13 @@ import {
 import { TcpTransport, type TcpSocketFactory } from '@/shared/transports/tcp/TcpTransport';
 import { formatEndpoint } from '@/shared/transports/tcp/endpoint';
 import {
+  WebBluetoothTransport,
+  describeWebBluetoothError,
+  getWebBluetooth,
+  type WebBluetoothLike,
+  type WebBtDevice,
+} from '@/shared/transports/web-ble/WebBluetoothTransport';
+import {
   SppTransport,
   listBondedAdapters,
   type BondedAdapter,
@@ -40,6 +48,7 @@ import {
   noteAdapterLogLink,
 } from '@/shared/state/adapterLog';
 import { logError } from '@/shared/state/errorLogStore';
+import { showToast } from '@/shared/state/toastStore';
 import { runReconnect, RECONNECT_DELAYS_MS } from './reconnect';
 import { pruneDrops, shouldAutoReconnect } from './flapGuard';
 import { useLinkStore, type AttemptDevice } from '../model/linkStore';
@@ -89,6 +98,10 @@ function withLog(inner: Transport, isMonitoring: () => boolean, isStale: () => b
 export interface ConnectTarget {
   deviceId: string;
   deviceName?: string;
+  /** The device picked in the browser's Web Bluetooth chooser (web build, plan 28). Kept on the
+   *  target so auto-reconnect reopens the same device without a new chooser (which would need a
+   *  user gesture). */
+  webDevice?: WebBtDevice;
 }
 
 const LINK_LOST_MESSAGE =
@@ -136,6 +149,69 @@ let sppModuleLoader: SppModuleLoader | undefined;
  *  of `react-native-bluetooth-classic`. `undefined` restores the default. */
 export function setSppModuleLoader(loader: SppModuleLoader | undefined): void {
   sppModuleLoader = loader;
+}
+
+/** The browser's Web Bluetooth; undefined = `navigator.bluetooth` (the web app). */
+let webBluetooth: WebBluetoothLike | null | undefined;
+
+/** Test seam (plan 28): pick Web Bluetooth devices from `bt` instead of `navigator.bluetooth`
+ *  (null = a browser without Web Bluetooth). `undefined` restores the default. */
+export function setWebBluetooth(bt: WebBluetoothLike | null | undefined): void {
+  webBluetooth = bt;
+}
+
+/** The Web Bluetooth in use: the test seam's, else `navigator.bluetooth` (null when absent). */
+function activeWebBluetooth(): WebBluetoothLike | null {
+  return webBluetooth === undefined ? getWebBluetooth() : webBluetooth;
+}
+
+/** True when this browser can open Bluetooth LE adapters (Chrome / Edge over HTTPS). */
+export function isWebBluetoothSupported(): boolean {
+  return activeWebBluetooth() !== null;
+}
+
+/** The name a Web Bluetooth attempt shows when the chooser reported none. */
+export const WEB_BLE_DEVICE_NAME = 'Bluetooth LE adapter';
+
+/** Open the browser's Bluetooth device chooser and turn the pick into a connect target. Must run
+ *  from the button's press handler (Chrome needs a user gesture). Rejects with the browser's error
+ *  (a cancelled chooser is a `NotFoundError`). */
+export async function pickWebBluetoothAdapter(): Promise<ConnectTarget> {
+  const device = await WebBluetoothTransport.pickDevice(activeWebBluetooth());
+  return { deviceId: device.id, deviceName: device.name ?? undefined, webDevice: device };
+}
+
+/** The web build's **Choose adapter & connect** (plan 28): open the chooser (first, inside the
+ *  user gesture), then connect to the picked adapter. A cancelled chooser or a browser without Web
+ *  Bluetooth is not a failed connection: from any idle state (including an earlier attempt's
+ *  `error`) the app ends `disconnected` with a plain-English message, so the diagnostics panel —
+ *  which would describe that earlier attempt — closes. A live (or in-flight) session is left alone;
+ *  the message is only a toast. Resolves true once connected. */
+export async function chooseWebAdapterAndConnect(): Promise<boolean> {
+  let target: ConnectTarget;
+  try {
+    target = await pickWebBluetoothAdapter();
+  } catch (e) {
+    const message = describeWebBluetoothError(e);
+    logError({ source: 'connection/web-bluetooth', error: e, severity: 'warning' });
+    const store = useSessionStore.getState();
+    // Live or in flight: connected, any connect stage (`connecting`, `initializing`), or an
+    // auto-reconnect run — including its back-off sleep, when the status may read `error`.
+    const live =
+      store.status === 'connected' ||
+      store.status === 'connecting' ||
+      store.status === 'initializing' ||
+      reconnectRun !== null;
+    if (live) {
+      showToast(message);
+    } else {
+      store.setStatus('disconnected');
+      store.setError(message);
+    }
+    return false;
+  }
+  await connect(target);
+  return useSessionStore.getState().status === 'connected';
 }
 
 /** The name an SPP attempt shows when the paired device has none. */
@@ -263,9 +339,9 @@ class StaleConnectError extends Error {
   }
 }
 
-/** The negotiated BLE link of `t`, or null for any other transport (the simulator). */
+/** The negotiated BLE link of `t` (native or Web Bluetooth), or null for any other transport. */
 function linkInfoOf(t: Transport) {
-  return t instanceof BleTransport ? t.linkInfo : null;
+  return t instanceof BleTransport || t instanceof WebBluetoothTransport ? t.linkInfo : null;
 }
 
 /** Build the transport + session, run init, and publish the connected state. Does NOT touch the
@@ -289,7 +365,13 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
       ? target
         ? {
             id: target.deviceId,
-            name: target.deviceName ?? (adapterSource === 'spp' ? SPP_DEVICE_NAME : null),
+            name:
+              target.deviceName ??
+              (adapterSource === 'spp'
+                ? SPP_DEVICE_NAME
+                : target.webDevice
+                  ? WEB_BLE_DEVICE_NAME
+                  : null),
           }
         : null
       : adapterSource === 'wifi'
@@ -319,7 +401,13 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
     let device: AttemptDevice;
     let wakeAfterIdleMs: number;
 
-    if (adapterSource === 'ble') {
+    if (adapterSource === 'ble' && target?.webDevice && attemptDevice) {
+      // Web Bluetooth (plan 28): the browser asked for permission in its own chooser, so there is
+      // no runtime prompt; the picked device is reopened as-is (auto-reconnect included).
+      rawTransport = new WebBluetoothTransport(target.webDevice);
+      device = attemptDevice;
+      wakeAfterIdleMs = DEFAULT_WAKE_AFTER_IDLE_MS;
+    } else if (adapterSource === 'ble') {
       if (!target || !attemptDevice) throw new Error('Select a Bluetooth device first');
       if (!(await requestBlePermissions())) throw new Error('Bluetooth permission denied');
       rawTransport = new BleTransport(getBleManager(), target.deviceId);
@@ -444,7 +532,12 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
     // A stale connect was superseded by an adapter switch, which already reset the session store:
     // tear down quietly, without publishing an error over the new source's state.
     if (stale()) return;
-    const message = e instanceof Error ? e.message : String(e);
+    // Web Bluetooth rejects with DOMException names (NetworkError, NotFoundError…): explain them.
+    const message = target?.webDevice
+      ? describeWebBluetoothError(e)
+      : e instanceof Error
+        ? e.message
+        : String(e);
     useSessionStore.getState().setStatus('error');
     useSessionStore.getState().setError(message);
     logError({ source: 'connection', error: e, context: { adapterSource } });

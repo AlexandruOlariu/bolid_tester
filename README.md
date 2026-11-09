@@ -108,6 +108,15 @@ amber banner stays visible so simulated readings are never mistaken for the real
 `npx expo install` (this project uses `expo-notifications`, `expo-file-system`, `expo-haptics`,
 `expo-location`, `expo-sharing`).
 
+## Try it in the browser
+
+The simulator runs in any modern browser, and in **Chrome or Edge** (desktop or Android, over HTTPS)
+the app connects to a real Bluetooth LE ELM327 through Web Bluetooth:
+**https://alexandruolariu.github.io/bolid_tester/** — live once GitHub Pages is enabled for the
+repository (Settings → Pages → Source: GitHub Actions). Build it yourself with
+`npx expo export --platform web --output-dir web-build`; see [docs/web.md](./docs/web.md) for browser
+support and what works on the web.
+
 ## Building an Android APK (local)
 
 ```bash

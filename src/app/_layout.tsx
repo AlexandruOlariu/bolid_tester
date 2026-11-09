@@ -15,15 +15,23 @@ import {
 import config from '../../tamagui.config';
 import { setSettingsPlatform, useSettingsStore } from '@/shared/state/settingsStore';
 import { installGlobalErrorHandlers } from '@/shared/state/errorLogStore';
-import { AppLogo, RootErrorBoundary, useLayoutClass, usesSideRail } from '@/shared/ui';
+import {
+  AlertDialog,
+  AppLogo,
+  RootErrorBoundary,
+  Toast,
+  useLayoutClass,
+  usesSideRail,
+} from '@/shared/ui';
 import { AppSplash } from '@/shared/ui/AppSplash';
 import { EngineHost } from '@/features/engine-host';
 import { SimulatorBanner } from '@/features/connection';
 
 // Capture uncaught errors & unhandled rejections into the in-app error log, once, at app start.
 installGlobalErrorHandlers();
-// Tell the settings store its platform, so a stored Classic Bluetooth source (Android only) falls
-// back to Bluetooth LE on iOS — before or after the settings file hydrates (plan 27).
+// Tell the settings store its platform, so a stored source this platform cannot use (Classic
+// Bluetooth off Android, plan 27; Wi-Fi in the browser, plan 28) falls back to Bluetooth LE —
+// before or after the settings file hydrates.
 setSettingsPlatform(Platform.OS);
 
 const ACCENT = '#2bb673';
@@ -189,6 +197,10 @@ export default function RootLayout() {
                 options={{ href: null, title: 'Adapter health' }}
               />
             </Tabs>
+            {/* Short messages such as "Not available on web yet" (plan 28). */}
+            <Toast />
+            {/* The browser's Alert.alert (react-native-web's is a no-op); nothing on the phone. */}
+            <AlertDialog />
             <AppSplash />
           </RootErrorBoundary>
         </View>

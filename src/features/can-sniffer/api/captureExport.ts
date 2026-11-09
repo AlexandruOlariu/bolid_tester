@@ -10,6 +10,7 @@ import {
   type SessionInfo,
 } from '@/shared/obd-core';
 import { logError } from '@/shared/state/errorLogStore';
+import { saveTextFile } from '@/shared/lib/saveFile';
 
 export type CaptureFormat = 'csv' | 'raw';
 
@@ -73,34 +74,16 @@ export function buildCaptureFile(
       };
 }
 
-interface LegacyFileSystem {
-  documentDirectory?: string | null;
-  writeAsStringAsync: (uri: string, contents: string) => Promise<void>;
-}
-interface SharingModule {
-  isAvailableAsync: () => Promise<boolean>;
-  shareAsync: (
-    uri: string,
-    opts?: { mimeType?: string; dialogTitle?: string; UTI?: string },
-  ) => Promise<void>;
-}
-
-/** Write the file to the app's document directory and open the share sheet. Returns the file URI,
- *  or null when there is nowhere to write (web/tests) or the write failed (logged). The legacy
- *  file-system entry point is used: on this Expo SDK the root `expo-file-system` throws for
- *  `writeAsStringAsync`. */
+/** Save the capture: written to the app's document directory and handed to the share sheet on
+ *  native, downloaded by the browser on web (`saveTextFile`, plan 28; the legacy file-system entry
+ *  point — on this Expo SDK the root `expo-file-system` throws for `writeAsStringAsync`). Returns
+ *  the file URI (native) or name (web), or null when there is nowhere to write or the write failed
+ *  (logged). */
 export async function shareCaptureFile(file: CaptureFile): Promise<string | null> {
   try {
-    const FileSystem = (await import('expo-file-system/legacy' as string)) as LegacyFileSystem;
-    const Sharing = (await import('expo-sharing' as string)) as SharingModule;
-    const dir = FileSystem.documentDirectory ?? '';
-    if (!dir) return null;
-    const uri = `${dir}${file.fileName}`;
-    await FileSystem.writeAsStringAsync(uri, file.body);
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, { mimeType: file.mimeType, dialogTitle: 'Share bus capture' });
-    }
-    return uri;
+    return await saveTextFile(file.fileName, file.body, file.mimeType, {
+      dialogTitle: 'Share bus capture',
+    });
   } catch (e) {
     logError({ source: 'can-sniffer/export', error: e });
     return null;

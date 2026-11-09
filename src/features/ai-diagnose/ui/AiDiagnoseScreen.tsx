@@ -1,9 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert } from 'react-native';
 import { useIsFocused, useLocalSearchParams, useNavigation } from 'expo-router';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Input } from 'tamagui';
 import { Stethoscope, Eraser, RefreshCw, Activity, MessageCircle, Send } from 'lucide-react-native';
-import { Screen } from '@/shared/ui';
+import { Screen, appAlert } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { describeDtc, followUpSuggestions } from '@/shared/obd-core';
 import type { AiChatMessage, AiReport, AiAction, DtcMake } from '@/shared/obd-core';
@@ -302,7 +301,7 @@ export function AiDiagnoseScreen() {
   const recheck = () => void run({ focusCode: focusCode ?? undefined });
 
   const confirmClear = () =>
-    Alert.alert(
+    appAlert(
       'Clear fault codes?',
       'This erases stored/pending codes and resets readiness monitors. Codes will return if the fault persists.',
       [

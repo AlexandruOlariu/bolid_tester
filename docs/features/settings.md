@@ -276,7 +276,11 @@ Then **Disconnect** while a session is connected. The parts in detail:
     was known, `setSettingsPlatform` applies the same fallback itself. A fallback made in `merge`
     is written back by `onRehydrateStorage` (zustand's persist rewrites the file after hydration
     only when a migration ran), so the next launch reads `'ble'` and the notice does not return.
-    With no platform set (tests) nothing is replaced.
+    With no platform set (tests) nothing is replaced. In the browser (plan 28, [web](../web.md))
+    Wi-Fi is unsupported too (no raw TCP sockets), so a stored `'wifi'` or `'spp'` source falls back
+    to `'ble'` with `WEB_SOURCE_FALLBACK_NOTICE`; the Developer section offers only **Real adapter
+    (Bluetooth)** and **Simulator (no car)** there, and under the AI key field a note says the key
+    is kept only until the tab closes (no keystore in the browser).
 - **Known limitation:** v1's `partialize` always wrote `adapterSource` and `injectedDtcs`, so every
   real v1 file carries them — including installs that never chose anything and just persisted the
   old defaults (`'mock'`, `['P0299']`). The migration cannot tell those apart from a deliberate
@@ -287,6 +291,10 @@ Then **Disconnect** while a session is connected. The parts in detail:
 - Persistence uses zustand's `persist` middleware over a small `StateStorage` backed by
   **expo-file-system** (`shared/state/persistStorage.ts`) — JSON files in the app document
   directory. No extra native dependency; best-effort (a filesystem error just means no persistence).
+  On the **web** there is no document directory, so the same storage uses the browser's
+  `localStorage` under the store's `bolid.<area>` key (plan 28; `persistBackend()` reports
+  `'file' | 'localStorage' | 'none'`); a full quota or blocked site data is logged as a `persist`
+  warning and the app keeps running on in-memory state.
 
 ## Behavior
 

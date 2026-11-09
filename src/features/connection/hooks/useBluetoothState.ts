@@ -20,7 +20,8 @@ export interface BluetoothState {
 
 /** Track the phone's Bluetooth radio state live. Subscribes to `onStateChange` (emitting the
  *  current state immediately) and cleans up on unmount. Constructs the BleManager lazily, so pass
- *  `enabled={false}` in simulator mode to avoid touching native BLE. */
+ *  `enabled={false}` in simulator mode — and always on web, where Web Bluetooth replaces ble-plx and
+ *  the browser's chooser reports the radio itself (plan 28) — to avoid touching native BLE. */
 export function useBluetoothState(enabled = true): BluetoothState {
   const [state, setState] = useState<State>(State.Unknown);
 

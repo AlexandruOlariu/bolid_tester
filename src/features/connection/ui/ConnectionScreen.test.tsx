@@ -7,7 +7,12 @@ import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import * as bleManager from '@/shared/transports/ble/manager';
 import { FakeSocket } from '@/shared/transports/tcp/testing/fakeSocket';
-import { setSppModuleLoader, setTcpSocketFactory } from '../api/connectionService';
+import { setSppModuleLoader, setTcpSocketFactory, setWebBluetooth } from '../api/connectionService';
+import {
+  FakeWebBluetooth,
+  namedError,
+  webDeviceOverBridge,
+} from '@/shared/transports/web-ble/testing/fakeWebBluetooth';
 import { bridgeToMock } from '@/shared/obd-core/transport/testing/bridge';
 import { buildScenario } from '@/shared/obd-core/transport/scenarios';
 import { FakeSppModule, sppDeviceOverBridge } from '@/shared/transports/spp/testing/fakeSppModule';
@@ -252,6 +257,64 @@ describe('ConnectionScreen', () => {
       fireEvent.press(screen.getByText('OK'));
       expect(screen.queryByTestId('adapter-source-notice')).toBeNull();
       expect(useSettingsStore.getState().adapterSourceNotice).toBeNull();
+    });
+  });
+
+  describe('Web Bluetooth in the browser (plan 28)', () => {
+    let bt: FakeWebBluetooth;
+    beforeEach(() => {
+      jest.replaceProperty(Platform, 'OS', 'web');
+      bt = new FakeWebBluetooth(
+        webDeviceOverBridge(bridgeToMock(buildScenario('golf-plus-2009-20tdi'))),
+      );
+      setWebBluetooth(bt);
+      useSettingsStore.setState({ adapterSource: 'ble' });
+    });
+    afterEach(() => {
+      setWebBluetooth(undefined);
+      jest.restoreAllMocks();
+    });
+
+    it('offers one Choose adapter & connect button and the browser note — no scan, no address', () => {
+      const spy = jest.spyOn(bleManager, 'getBleManager');
+      renderWithProviders(<ConnectionScreen />);
+      expect(screen.getByText('Choose adapter & connect')).toBeTruthy();
+      expect(screen.getByTestId('web-bt-note')).toHaveTextContent(/Chrome and Edge/);
+      expect(screen.queryByText('Scan for adapters')).toBeNull();
+      expect(screen.queryByText('Connect by address')).toBeNull();
+      expect(screen.queryByText('Using a Wi-Fi adapter instead?')).toBeNull();
+      // ble-plx is never touched in the browser (its radio state hook stays disabled).
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('picks the adapter in the browser chooser and connects to it', async () => {
+      renderWithProviders(<ConnectionScreen />);
+      fireEvent.press(screen.getByText('Choose adapter & connect'));
+      await waitFor(() => expect(useSessionStore.getState().status).toBe('connected'), {
+        timeout: 10000,
+      });
+      expect(bt.requests).toHaveLength(1);
+      expect(useSessionStore.getState().deviceName).toBe('IOS-Vlink');
+      expect(mockPush).toHaveBeenCalledWith('/vehicle');
+    });
+
+    it('a cancelled chooser shows a clean message, not a crash or the failure panel', async () => {
+      bt.error = namedError('NotFoundError', 'User cancelled the requestDevice() chooser.');
+      renderWithProviders(<ConnectionScreen />);
+      fireEvent.press(screen.getByText('Choose adapter & connect'));
+      expect(await screen.findByText(/No adapter was chosen/)).toBeTruthy();
+      expect(useSessionStore.getState().status).toBe('disconnected');
+      expect(screen.getByText('Choose adapter & connect')).toBeTruthy();
+    });
+
+    it('a browser without Web Bluetooth shows the not-supported panel and keeps the simulator', async () => {
+      setWebBluetooth(null);
+      renderWithProviders(<ConnectionScreen />);
+      expect(screen.getByTestId('web-bt-unsupported')).toHaveTextContent(/Safari, Firefox/);
+      expect(screen.queryByText('Choose adapter & connect')).toBeNull();
+      fireEvent.press(screen.getByText('Use the simulator'));
+      await waitFor(() => expect(useSettingsStore.getState().adapterSource).toBe('mock'));
+      expect(await screen.findByText('Connect to simulator')).toBeTruthy();
     });
   });
 });

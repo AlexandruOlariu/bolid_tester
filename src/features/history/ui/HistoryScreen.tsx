@@ -5,7 +5,6 @@
  *  its file. This slice is a composition point (it reads the module-scan, trip, maintenance and
  *  coding stores) — see docs/features/history.md and docs/architecture.md. */
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Sheet, YStack, XStack, Card, Text, Paragraph, Button, Input } from 'tamagui';
 import {
@@ -21,7 +20,7 @@ import {
   Car,
   Share2,
 } from 'lucide-react-native';
-import { Screen } from '@/shared/ui';
+import { Screen, appAlert } from '@/shared/ui';
 import {
   useHistoryStore,
   type AiHistoryEntry,
@@ -42,6 +41,7 @@ import { useDtcExport } from '@/features/fault-codes';
 import { AiReportView } from '@/features/ai-diagnose';
 import { useTimeline } from '../hooks/useTimeline';
 import { loadReshareModules, reshareReport } from '../api/reportFile';
+import { isWebRuntime } from '@/shared/lib/webRuntime';
 
 const KIND_ICON: Record<TimelineKind, typeof Sparkles> = {
   ai: Sparkles,
@@ -285,19 +285,20 @@ export function HistoryScreen() {
     }));
     const body = formatDtcReport(checks, { title: 'Bolid Tester — fault-code history' });
     const uri = await exportReport('bolid-fault-history', body);
-    if (!uri) Alert.alert('Export unavailable', 'Sharing is not available on this device.');
+    if (!uri) appAlert('Export unavailable', 'Sharing is not available on this device.');
   };
 
   const onReshare = async (entry: HistoryEntry | undefined) => {
     if (entry?.kind !== 'report') return;
     const result = await reshareReport(entry, await loadReshareModules());
     if (result === 'missing') {
-      Alert.alert(
+      appAlert(
         'File no longer on device',
         `${entry.fileName} was deleted. Make a new one from Vehicle report.`,
       );
-    } else if (result === 'unavailable') {
-      Alert.alert('Sharing unavailable', 'Sharing is not available on this device.');
+    } else if (result === 'unavailable' && !isWebRuntime()) {
+      // (In the browser the "not available on web yet" toast already explained it — plan 28.)
+      appAlert('Sharing unavailable', 'Sharing is not available on this device.');
     }
   };
 
@@ -316,7 +317,7 @@ export function HistoryScreen() {
   };
 
   const confirmClear = () =>
-    Alert.alert(
+    appAlert(
       'Clear history?',
       'This permanently deletes the saved AI diagnoses, fault-code checks and report records for every car. Module scans, trips, service entries and coding backups are kept — delete those on their own screens.',
       [

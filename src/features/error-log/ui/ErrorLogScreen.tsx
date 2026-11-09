@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Platform, Alert } from 'react-native';
+import { Platform } from 'react-native';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner } from 'tamagui';
 import { Trash2, Download, ChevronDown, ChevronRight, Bug } from 'lucide-react-native';
-import { Screen } from '@/shared/ui';
+import { Screen, appAlert } from '@/shared/ui';
 import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import type { ErrorSeverity, LoggedError } from '@/shared/lib/errorLog';
 import { useErrorLogExport } from '../hooks/useErrorLogExport';
@@ -65,7 +65,13 @@ function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => 
           chromeless
           alignSelf="flex-start"
           paddingHorizontal="$0"
-          icon={() => (open ? <ChevronDown size={14} color="#8B949E" /> : <ChevronRight size={14} color="#8B949E" />)}
+          icon={() =>
+            open ? (
+              <ChevronDown size={14} color="#8B949E" />
+            ) : (
+              <ChevronRight size={14} color="#8B949E" />
+            )
+          }
           onPress={() => setOpen((v) => !v)}
         >
           <Text fontSize="$1" color="#8B949E">
@@ -114,13 +120,13 @@ export function ErrorLogScreen() {
   );
 
   const confirmClear = () =>
-    Alert.alert('Clear error log?', 'This permanently deletes every saved error.', [
+    appAlert('Clear error log?', 'This permanently deletes every saved error.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Clear all', style: 'destructive', onPress: () => clear() },
     ]);
 
   const onExport = () =>
-    Alert.alert('Export error log', 'Choose a format to share.', [
+    appAlert('Export error log', 'Choose a format to share.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Markdown', onPress: () => void exportErrors(shown, 'md') },
       { text: 'JSON', onPress: () => void exportErrors(shown, 'json') },
@@ -129,10 +135,26 @@ export function ErrorLogScreen() {
   return (
     <Screen title="Error log" subtitle="Saved errors to review and export">
       <XStack gap="$2" alignItems="center" flexWrap="wrap">
-        <Chip active={filter === 'all'} label={`All (${errors.length})`} onPress={() => setFilter('all')} />
-        <Chip active={filter === 'fatal'} label={`Fatal (${counts.fatal})`} onPress={() => setFilter('fatal')} />
-        <Chip active={filter === 'error'} label={`Errors (${counts.error})`} onPress={() => setFilter('error')} />
-        <Chip active={filter === 'warning'} label={`Warnings (${counts.warning})`} onPress={() => setFilter('warning')} />
+        <Chip
+          active={filter === 'all'}
+          label={`All (${errors.length})`}
+          onPress={() => setFilter('all')}
+        />
+        <Chip
+          active={filter === 'fatal'}
+          label={`Fatal (${counts.fatal})`}
+          onPress={() => setFilter('fatal')}
+        />
+        <Chip
+          active={filter === 'error'}
+          label={`Errors (${counts.error})`}
+          onPress={() => setFilter('error')}
+        />
+        <Chip
+          active={filter === 'warning'}
+          label={`Warnings (${counts.warning})`}
+          onPress={() => setFilter('warning')}
+        />
       </XStack>
 
       {errors.length > 0 ? (

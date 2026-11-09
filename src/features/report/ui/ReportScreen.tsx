@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner } from 'tamagui';
 import { SquareCheck, Square, FileText, FileCode, FileType } from 'lucide-react-native';
-import { Screen } from '@/shared/ui';
+import { Screen, appAlert } from '@/shared/ui';
 import {
   REPORT_SECTIONS,
   REPORT_SECTION_TITLES,
@@ -15,6 +14,7 @@ import {
 } from '@/shared/lib/vehicleReport';
 import { useVehicleReport } from '../hooks/useVehicleReport';
 import { useReportExport } from '../hooks/useReportExport';
+import { isWebRuntime } from '@/shared/lib/webRuntime';
 
 /** Where each section's data comes from — the "Run now" link of a section that has none yet. */
 const RUN_ROUTE: Record<ReportSectionId, string> = {
@@ -133,18 +133,22 @@ export function ReportScreen() {
       return next;
     });
 
+  // In the browser the export layer already said "not available on web yet" (a toast, plan 28);
+  // a second, native-worded "could not be saved" dialog would contradict it.
   const done = (uri: string | null) => {
     if (uri) setLastFile(uri.slice(uri.lastIndexOf('/') + 1));
-    else Alert.alert('Share unavailable', 'The report could not be saved on this device.');
+    else if (!isWebRuntime())
+      appAlert('Share unavailable', 'The report could not be saved on this device.');
   };
 
   const onPdf = async () => {
     const model = build(include);
     const uri = await sharePdf(model);
     if (uri) return done(uri);
+    if (isWebRuntime()) return; // toast shown once; the HTML fallback would only repeat it
     // No PDF printer in this build (or it failed): share the same document as HTML instead.
     const html = await shareHtml(model);
-    if (html) Alert.alert('PDF unavailable', 'The report was shared as an HTML page instead.');
+    if (html) appAlert('PDF unavailable', 'The report was shared as an HTML page instead.');
     done(html);
   };
   const onHtml = async () => done(await shareHtml(build(include)));

@@ -4,6 +4,7 @@ import type { AdaptationChannel, CodingModule } from '@/shared/vehicles';
 import { vehicleLabel, type VehicleProfile } from '@/shared/vehicles';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
+import { fileStamp, saveTextFile } from '@/shared/lib/saveFile';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 // Reuse the adaptations feature's read path (the restore writes live in useAdaptationRestore).
 import { readChannel } from '@/features/adaptations/api/adaptationService';
@@ -143,23 +144,15 @@ export function useCarBackup() {
     }
   }, [session, specs, profile, save]);
 
-  /** Write a snapshot to a JSON file and open the OS share sheet (dependency-tolerant). */
+  /** Save a snapshot as JSON: the OS share sheet on native, a browser download on web (plan 28). */
   const exportBackup = useCallback(async (backup: CarBackup): Promise<string | null> => {
     try {
-      const FileSystem = await import('expo-file-system' as string);
-      const Sharing = await import('expo-sharing' as string);
-      const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
-      if (!dir) return null;
-      const stamp = new Date(backup.ts).toISOString().replace(/[:.]/g, '-');
-      const uri = `${dir}car-backup-${stamp}.json`;
-      await FileSystem.writeAsStringAsync(uri, JSON.stringify(backup, null, 2));
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, {
-          mimeType: 'application/json',
-          dialogTitle: 'Export car backup',
-        });
-      }
-      return uri;
+      return await saveTextFile(
+        `car-backup-${fileStamp(backup.ts)}.json`,
+        JSON.stringify(backup, null, 2),
+        'application/json',
+        { dialogTitle: 'Export car backup' },
+      );
     } catch (e) {
       logError({ source: 'coding/backup/export', error: e });
       return null;

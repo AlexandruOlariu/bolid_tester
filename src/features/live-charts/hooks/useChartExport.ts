@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react';
 import { Point } from '@/shared/obd-core';
 import { logError } from '@/shared/state/errorLogStore';
+import { fileStamp, saveTextFile } from '@/shared/lib/saveFile';
 import { seriesToCsv } from '../api/chartCsv';
 
-/** Share the current chart window as a CSV file via the OS share sheet. Dependency-tolerant: a no-op
- *  when expo-file-system / expo-sharing are absent (tests, web) — same idiom as the DTC export. PNG
- *  export would need a new native dependency, so CSV is the share format for now. */
+/** Share the current chart window as a CSV file: the OS share sheet on native, a browser download on
+ *  web (`saveTextFile`, plan 28). PNG export would need a new native dependency, so CSV is the share
+ *  format for now. */
 export function useChartExport() {
   const [busy, setBusy] = useState(false);
 
@@ -13,20 +14,12 @@ export function useChartExport() {
     async (baseName: string, series: Record<string, Point[]>, labels?: Record<string, string>) => {
       setBusy(true);
       try {
-        const FileSystem = await import('expo-file-system' as string);
-        const Sharing = await import('expo-sharing' as string);
-        const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
-        if (!dir) return null;
-        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const uri = `${dir}${baseName}-${stamp}.csv`;
-        await FileSystem.writeAsStringAsync(uri, seriesToCsv(series, labels));
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'text/csv',
-            dialogTitle: 'Share chart window (CSV)',
-          });
-        }
-        return uri;
+        return await saveTextFile(
+          `${baseName}-${fileStamp()}.csv`,
+          seriesToCsv(series, labels),
+          'text/csv',
+          { dialogTitle: 'Share chart window (CSV)' },
+        );
       } catch (e) {
         logError({ source: 'live-charts/export', error: e });
         return null;

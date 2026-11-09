@@ -5,8 +5,8 @@
 A pure-TypeScript **OBD2 core** (no platform APIs) sits behind a swappable **Transport** interface.
 A thin React Native (Expo) UI, organized as **feature slices**, sits on top. This keeps the
 diagnostic engine unit-testable with **no hardware** and reusable across the BLE transport, the
-Wi-Fi TCP transport, the Classic Bluetooth (SPP) transport, a future Web Bluetooth build, and the
-in-memory simulator.
+Wi-Fi TCP transport, the Classic Bluetooth (SPP) transport, the Web Bluetooth transport of the
+browser build ([web](./web.md), plan 28), and the in-memory simulator.
 
 ```
 UI — feature slices (Tamagui)  ──►  state stores (Zustand)  ──►  DiagnosticSession
@@ -16,11 +16,12 @@ UI — feature slices (Tamagui)  ──►  state stores (Zustand)  ──►  D
                                                        ELM327 client (AT cmds, queue, parsing)
                                                               │
                                                    Transport interface
-                ┌──────────────────┬──────────────────┬───┴──────────┬─────────────────┐
-         BleTransport         TcpTransport        SppTransport     MockTransport  (WebBluetoothTransport
- (react-native-ble-plx)  (react-native-tcp-socket, (react-native-     (simulator)   — future, optional)
-                          Wi-Fi ELM327, plan 26)   bluetooth-classic,
-                                                   Android SPP, plan 27)
+         ┌──────────────────┬──────────────────┬─────────┴────────┬──────────────────┬──────────────┐
+    BleTransport         TcpTransport         SppTransport     WebBluetoothTransport  MockTransport
+(react-native-ble-plx) (react-native-tcp-   (react-native-     (browser Web Bluetooth,  (simulator)
+                        socket, Wi-Fi        bluetooth-classic, Chrome / Edge, plan 28)
+                        ELM327, plan 26)     Android SPP,
+                                             plan 27)
 ```
 
 ## Layers (bottom-up)
@@ -28,7 +29,7 @@ UI — feature slices (Tamagui)  ──►  state stores (Zustand)  ──►  D
 ### 1. Transport (`src/shared/obd-core/transport`)
 
 A minimal byte pipe. The rest of the stack does not care whether bytes go over BLE, a TCP socket,
-a classic Bluetooth serial port, a mock, or (later) Web Bluetooth.
+a classic Bluetooth serial port, Web Bluetooth in the browser, or a mock.
 
 ```ts
 interface Transport {
@@ -220,5 +221,6 @@ backup reads complete files).
 
 - **Testable without a car** — the core + simulator run in plain Node/Jest in CI and in this
   container.
-- **Portable** — swapping `BleTransport` for `WebBluetoothTransport` later is a single-file change.
+- **Portable** — the browser build swaps `BleTransport` for `WebBluetoothTransport` (plan 28); the
+  stack above the transport is unchanged.
 - **Generic-first** — no car model is hard-coded in the engine; cars are data (profiles).

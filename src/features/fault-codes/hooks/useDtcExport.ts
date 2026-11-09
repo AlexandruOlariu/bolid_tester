@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { logError } from '@/shared/state/errorLogStore';
+import { fileStamp, saveTextFile } from '@/shared/lib/saveFile';
 
 /** Optional format overrides for a report export. Defaults produce the Markdown report; the Faults
  *  screen passes `{ ext: 'html', mimeType: 'text/html' }` for the shareable HTML report. */
@@ -12,35 +13,27 @@ export interface ExportReportOptions {
   dialogTitle?: string;
 }
 
-/** Write a fault-code report to a file (expo-file-system) and open the OS share sheet (expo-sharing).
- *  Both native modules are loaded via variable specifiers so the project builds and tests without them
- *  present — the same dependency-tolerant pattern used by useErrorLogExport and the trip recorder.
- *  `baseName` is the filename stem; a timestamp and the extension (`.md` by default, `.html` for the
- *  HTML report) are appended. Returns the file URI on success, or null when storage/sharing is
- *  unavailable (e.g. web/tests). */
+/** Save a fault-code report: a document-directory file + the OS share sheet on native, a browser
+ *  download on web (`saveTextFile`, plan 28). `baseName` is the filename stem; a timestamp and the
+ *  extension (`.md` by default, `.html` for the HTML report) are appended. Returns the file URI
+ *  (native) or name (web), or null when nothing was written. */
 export function useDtcExport() {
   const [busy, setBusy] = useState(false);
 
   const exportReport = useCallback(
-    async (baseName: string, body: string, opts: ExportReportOptions = {}): Promise<string | null> => {
+    async (
+      baseName: string,
+      body: string,
+      opts: ExportReportOptions = {},
+    ): Promise<string | null> => {
       setBusy(true);
       try {
-        const FileSystem = await import('expo-file-system' as string);
-        const Sharing = await import('expo-sharing' as string);
-        const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
-        if (!dir) return null;
-
-        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const uri = `${dir}${baseName}-${stamp}.${opts.ext ?? 'md'}`;
-        await FileSystem.writeAsStringAsync(uri, body);
-
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(uri, {
-            mimeType: opts.mimeType ?? 'text/markdown',
-            dialogTitle: opts.dialogTitle ?? 'Export fault codes',
-          });
-        }
-        return uri;
+        return await saveTextFile(
+          `${baseName}-${fileStamp()}.${opts.ext ?? 'md'}`,
+          body,
+          opts.mimeType ?? 'text/markdown',
+          { dialogTitle: opts.dialogTitle ?? 'Export fault codes' },
+        );
       } catch (e) {
         // Don't let an export failure vanish — record it in the in-app error log.
         logError({ source: 'fault-codes/export', error: e });

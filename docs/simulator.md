@@ -154,6 +154,14 @@ speed; non-zero to emulate K-line in the UI).
   `SppTransport.session.integration.test.ts` only identifies the Golf and reads `03` if the
   transport re-appends every prompt. `FakeSppModule` also scripts the bonded list, the radio state
   and the library's device-disconnected event.
+  `shared/transports/web-ble/testing/fakeWebBluetooth.ts` is the Web Bluetooth example (plan 28):
+  `webDeviceOverBridge(bridge)` builds a fake GATT tree (a generic service to skip, then FFF0 with
+  FFF1 notify + FFF2 write) whose FFF2 writes reach the simulator and whose replies come back as
+  FFF1 `characteristicvaluechanged` events in **20-byte `DataView`s** at an offset inside a larger
+  buffer, like a browser's; `FakeWebBluetooth` plays `navigator.bluetooth` (resolve the chooser, or
+  reject it with a `NotFoundError` for a cancel). `WebBluetoothTransport.session.integration.test.ts`
+  identifies the Golf and reads `03` over it. The simulator is also the primary web experience: in
+  the browser build every screen runs against it with no adapter ([web](./web.md)).
 
 ## Replay fixtures
 

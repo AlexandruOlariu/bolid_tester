@@ -36,6 +36,8 @@ import {
   listPairedAdapters,
   setSppModuleLoader,
   setTcpSocketFactory,
+  setWebBluetooth,
+  chooseWebAdapterAndConnect,
   switchAdapterSource,
   switchToRealAdapter,
 } from './connectionService';
@@ -52,6 +54,14 @@ import {
   requestClassicBluetoothPermissions,
 } from '@/shared/transports/ble/permissions';
 import { MONITOR_UNAVAILABLE_MESSAGE } from '@/shared/obd-core/transport/Transport';
+import {
+  FakeWebBluetooth,
+  namedError,
+  webDeviceOverBridge,
+  type FakeWebBtDevice,
+} from '@/shared/transports/web-ble/testing/fakeWebBluetooth';
+import { getBleManager } from '@/shared/transports/ble/manager';
+import { hideToast, useToastStore } from '@/shared/state/toastStore';
 import { diagnoseFailure } from './diagnoseFailure';
 import { useLinkStore } from '../model/linkStore';
 
@@ -549,5 +559,127 @@ describe('Classic Bluetooth adapter (plan 27)', () => {
     const list = await listPairedAdapters();
     expect(list.map((d) => d.name)).toEqual(['OBDII', 'Headphones']);
     expect(list[0].isLikelyAdapter).toBe(true);
+  });
+});
+
+describe('Web Bluetooth adapter (plan 28)', () => {
+  let device: FakeWebBtDevice;
+  let bt: FakeWebBluetooth;
+  const blePermissions = requestBlePermissions as jest.Mock;
+
+  beforeEach(() => {
+    device = webDeviceOverBridge(bridgeToMock(scenarios.buildScenario('golf-plus-2009-20tdi')));
+    bt = new FakeWebBluetooth(device);
+    setWebBluetooth(bt);
+    useSettingsStore.setState({ adapterSource: 'ble', autoReconnect: false });
+  });
+  afterEach(() => {
+    setWebBluetooth(undefined);
+    useSettingsStore.setState({ autoReconnect: true });
+  });
+
+  it('opens the chooser, connects to the pick over GATT and publishes the session', async () => {
+    await expect(chooseWebAdapterAndConnect()).resolves.toBe(true);
+    expect(bt.requests).toHaveLength(1);
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('connected');
+    expect(s.deviceId).toBe('web-ble-golf');
+    expect(s.deviceName).toBe('IOS-Vlink');
+    expect(s.info?.protocol).toBe('ISO_15765_4_CAN_11_500');
+    // Never the native stack: no runtime permission prompt, no BleManager.
+    expect(blePermissions).not.toHaveBeenCalled();
+    expect(getBleManager).not.toHaveBeenCalled();
+    const link = useLinkStore.getState();
+    expect(link.kind).toBe('ble');
+    expect(link.link).toMatchObject({ mtu: 23, payload: 20, writeWithoutResponse: true });
+    expect(s.session?.canMonitor).toBe(true);
+
+    await disconnect();
+    expect(device.gatt.connected).toBe(false);
+    expect(useSessionStore.getState().status).toBe('disconnected');
+  });
+
+  it('a cancelled chooser leaves the app disconnected with a plain-English message', async () => {
+    bt.error = namedError('NotFoundError', 'User cancelled the requestDevice() chooser.');
+    await expect(chooseWebAdapterAndConnect()).resolves.toBe(false);
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('disconnected');
+    expect(s.error).toMatch(/^No adapter was chosen/);
+    expect(device.gatt.connectCalls).toBe(0);
+  });
+
+  it('a cancelled chooser after a failed attempt closes the old diagnostics (error → disconnected)', async () => {
+    device.gatt.failConnect = namedError('NetworkError', 'Connection failed for unknown reason.');
+    await expect(chooseWebAdapterAndConnect()).rejects.toMatchObject({ name: 'NetworkError' });
+    expect(useSessionStore.getState().status).toBe('error');
+    bt.error = namedError('NotFoundError', 'User cancelled the requestDevice() chooser.');
+    await expect(chooseWebAdapterAndConnect()).resolves.toBe(false);
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('disconnected');
+    expect(s.error).toMatch(/^No adapter was chosen/);
+  });
+
+  it('a cancelled chooser while connected leaves the live session alone (toast only)', async () => {
+    await expect(chooseWebAdapterAndConnect()).resolves.toBe(true);
+    const session = useSessionStore.getState().session;
+    bt.error = namedError('NotFoundError', 'User cancelled the requestDevice() chooser.');
+    await expect(chooseWebAdapterAndConnect()).resolves.toBe(false);
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('connected');
+    expect(s.session).toBe(session);
+    expect(s.error).toBeNull();
+    expect(useToastStore.getState().toast?.message).toMatch(/^No adapter was chosen/);
+    hideToast();
+    await disconnect();
+  });
+
+  it('a cancelled chooser while a session is initializing leaves it alone (toast only)', async () => {
+    // e.g. an auto-reconnect in its init / probe stage: the button is enabled (useConnect is idle).
+    useSessionStore.getState().setStatus('initializing');
+    useSessionStore.getState().setError('Reconnecting to the adapter… attempt 1 of 3.');
+    bt.error = namedError('NotFoundError', 'User cancelled the requestDevice() chooser.');
+    await expect(chooseWebAdapterAndConnect()).resolves.toBe(false);
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('initializing');
+    expect(s.error).toBe('Reconnecting to the adapter… attempt 1 of 3.');
+    expect(useToastStore.getState().toast?.message).toMatch(/^No adapter was chosen/);
+    hideToast();
+    useSessionStore.getState().setStatus('disconnected');
+    useSessionStore.getState().setError(null);
+  });
+
+  it('a browser without Web Bluetooth explains which browsers work', async () => {
+    setWebBluetooth(null);
+    await expect(chooseWebAdapterAndConnect()).resolves.toBe(false);
+    expect(useSessionStore.getState().error).toMatch(/Chrome or Edge/);
+  });
+
+  it('a GATT failure ends in error with the browser error explained', async () => {
+    device.gatt.failConnect = namedError('NetworkError', 'Connection failed for unknown reason.');
+    await expect(chooseWebAdapterAndConnect()).rejects.toMatchObject({ name: 'NetworkError' });
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('error');
+    expect(s.error).toMatch(/^Could not open the Bluetooth link to the adapter/);
+    expect(useLinkStore.getState().device).toEqual({ id: 'web-ble-golf', name: 'IOS-Vlink' });
+  });
+
+  it('the adapter going away is a link loss, and auto-reconnect reopens the same device', async () => {
+    jest.useFakeTimers();
+    try {
+      useSettingsStore.setState({ autoReconnect: true });
+      const first = chooseWebAdapterAndConnect();
+      await jest.advanceTimersByTimeAsync(500);
+      await first;
+      device.dropLink();
+      expect(useSessionStore.getState().status).toBe('disconnected');
+      expect(useSessionStore.getState().error).toMatch(/Adapter link lost/);
+      await jest.advanceTimersByTimeAsync(3000);
+      expect(useSessionStore.getState().status).toBe('connected');
+      // Reconnected through the picked device: no second chooser (it would need a user gesture).
+      expect(bt.requests).toHaveLength(1);
+      expect(device.gatt.connectCalls).toBe(2);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

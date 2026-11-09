@@ -16,6 +16,7 @@ import { DeviceRow } from './DeviceRow';
 import { BluetoothPrompt } from './BluetoothPrompt';
 import { ConnectionDiagnostics } from './ConnectionDiagnostics';
 import { SppConnect } from './SppConnect';
+import { WebBluetoothConnect } from './WebBluetoothConnect';
 import { Panel } from '../styles/connection.styles';
 
 const STATUS_CONFIG: Record<ConnState, { icon: React.ElementType; color: string; label: string }> =
@@ -110,10 +111,12 @@ export function ConnectionScreen() {
   const status = useSessionStore((s) => s.status);
   const error = useSessionStore((s) => s.error);
   const { scanning, devices, start, stop } = useScan();
-  const { connect, busy } = useConnect();
-  // Only the Bluetooth LE source touches the BLE stack: the simulator, Wi-Fi and Classic Bluetooth
-  // never construct a BleManager (plans 26, 27).
-  const bt = useBluetoothState(adapterSource === 'ble');
+  const { connect, chooseAndConnect, busy } = useConnect();
+  // In the browser, Bluetooth LE goes through Web Bluetooth and the browser's own chooser (plan 28).
+  const web = Platform.OS === 'web';
+  // Only the native Bluetooth LE source touches the BLE stack: the simulator, Wi-Fi, Classic
+  // Bluetooth and the web build never construct a BleManager (plans 26, 27, 28).
+  const bt = useBluetoothState(adapterSource === 'ble' && !web);
   const [manualId, setManualId] = useState('');
 
   // Positively-known "not ready" states block scanning; while still settling we let the scan run and
@@ -171,6 +174,8 @@ export function ConnectionScreen() {
         <WifiConnect busy={busy} onConnect={() => void connect()} />
       ) : adapterSource === 'spp' ? (
         <SppConnect busy={busy} onConnect={(target) => void connect(target)} />
+      ) : web ? (
+        <WebBluetoothConnect busy={busy} onChoose={() => void chooseAndConnect()} />
       ) : (
         <YStack gap="$3" marginTop="$2">
           <BluetoothPrompt bt={bt} />

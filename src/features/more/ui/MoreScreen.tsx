@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import { YStack, XStack, Paragraph, H4, Spinner, Text, Input } from 'tamagui';
 import { useRouter } from 'expo-router';
 import {
@@ -28,7 +27,7 @@ import {
   FileStack,
   Archive,
 } from 'lucide-react-native';
-import { CardGrid, Screen } from '@/shared/ui';
+import { CardGrid, Screen, appAlert } from '@/shared/ui';
 import { checkForUpdate, fetchAndReload } from '../api/updates';
 import {
   MORE_SECTIONS,
@@ -151,14 +150,14 @@ export function MoreScreen() {
     try {
       const result = await checkForUpdate();
       if (result === 'available') {
-        Alert.alert('Update available', 'Download and restart now?', [
+        appAlert('Update available', 'Download and restart now?', [
           { text: 'Later', style: 'cancel' },
           { text: 'Update', onPress: () => fetchAndReload() },
         ]);
       } else if (result === 'up-to-date') {
-        Alert.alert('Up to date', 'You already have the latest version.');
+        appAlert('Up to date', 'You already have the latest version.');
       } else {
-        Alert.alert('Updates unavailable', 'Over-the-air updates are not enabled in this build.');
+        appAlert('Updates unavailable', 'Over-the-air updates are not enabled in this build.');
       }
     } finally {
       setChecking(false);

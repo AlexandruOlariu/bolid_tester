@@ -3,6 +3,8 @@
  *  `exportVehicleReport` takes them as a parameter, so it is unit-tested with fakes in the core
  *  project. See docs/features/report.md. */
 import { logError } from '@/shared/state/errorLogStore';
+import { isWebRuntime } from '@/shared/lib/webRuntime';
+import { NOT_ON_WEB_YET, showToast } from '@/shared/state/toastStore';
 import { useHistoryStore } from '@/shared/state/historyStore';
 import {
   renderReportHtml,
@@ -46,6 +48,11 @@ export const REPORT_MIME: Record<ReportFormat, string> = {
 /** Load expo-file-system (legacy), expo-sharing and expo-print. Resolves null when the file system
  *  or sharing is missing; `Print` is null on its own when only printing is missing. */
 export async function loadReportModules(): Promise<ReportModules | null> {
+  // Web (plan 28): no file system to write the report to yet.
+  if (isWebRuntime()) {
+    showToast(NOT_ON_WEB_YET);
+    return null;
+  }
   let FileSystem: ReportFileSystem;
   let Sharing: ReportSharing;
   try {

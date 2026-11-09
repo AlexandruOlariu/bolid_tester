@@ -28,9 +28,22 @@ export function useConnect() {
     [router],
   );
 
+  /** Web build (plan 28): open the browser's Bluetooth chooser, then connect to the pick. Wired
+   *  straight to the button's press handler — Chrome only opens the chooser from a user gesture. */
+  const chooseAndConnect = useCallback(async () => {
+    setBusy(true);
+    try {
+      if (await connectionService.chooseWebAdapterAndConnect()) router.push('/vehicle');
+    } catch {
+      // error is surfaced via the session store
+    } finally {
+      setBusy(false);
+    }
+  }, [router]);
+
   const disconnect = useCallback(async () => {
     await connectionService.disconnect();
   }, []);
 
-  return { status, error, adapterSource, busy, connect, disconnect };
+  return { status, error, adapterSource, busy, connect, chooseAndConnect, disconnect };
 }

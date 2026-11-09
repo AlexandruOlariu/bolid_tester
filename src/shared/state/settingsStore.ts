@@ -40,15 +40,24 @@ export type AdapterSource = 'mock' | 'ble' | 'wifi' | 'spp';
 
 /** Whether `source` can be used on platform `os` (`Platform.OS`): Classic Bluetooth is Android
  *  only — iOS opens classic accessories only through Apple's MFi programme, which ELM327 clones are
- *  not part of. */
+ *  not part of — and a browser can open neither a raw TCP socket (Wi-Fi) nor an RFCOMM link, so the
+ *  web build (plan 28) offers Bluetooth LE (Web Bluetooth) and the simulator only. */
 export function isAdapterSourceSupported(source: AdapterSource, os: string): boolean {
-  return source !== 'spp' || os === 'android';
+  if (source === 'spp') return os === 'android';
+  if (source === 'wifi') return os !== 'web';
+  return true;
 }
 
 /** The one-time notice shown when a stored Classic Bluetooth source was replaced on iOS. */
 export const SPP_FALLBACK_NOTICE =
   'Classic Bluetooth adapters work only on Android, so the app switched to Bluetooth LE. ' +
   'Use a Bluetooth LE or Wi-Fi OBD2 adapter on this device.';
+
+/** The one-time notice shown when a stored Wi-Fi or Classic Bluetooth source was replaced in the
+ *  browser (a backup restored from a phone, plan 28). */
+export const WEB_SOURCE_FALLBACK_NOTICE =
+  'A browser cannot reach Wi-Fi or classic Bluetooth adapters, so the app switched to Bluetooth LE. ' +
+  'Use a Bluetooth LE OBD2 adapter in Chrome or Edge, or the simulator.';
 
 /** `Platform.OS`, once the app told the store (`setSettingsPlatform`); null = unknown (tests, or
  *  before startup), in which case no source is replaced. Kept out of the store module's imports so
@@ -300,12 +309,16 @@ function platformFallback(
   if (!source || settingsPlatform === null || isAdapterSourceSupported(source, settingsPlatform)) {
     return {};
   }
-  return { adapterSource: 'ble', adapterSourceNotice: SPP_FALLBACK_NOTICE };
+  return {
+    adapterSource: 'ble',
+    adapterSourceNotice:
+      settingsPlatform === 'web' ? WEB_SOURCE_FALLBACK_NOTICE : SPP_FALLBACK_NOTICE,
+  };
 }
 
 /** Tell the store which platform it runs on (`Platform.OS`; called once at app start, from the
- *  root layout). A stored source this platform cannot use — Classic Bluetooth on iOS — falls back
- *  to Bluetooth LE with a one-time notice, whether hydration already ran or runs later (`merge`).
+ *  root layout). A stored source this platform cannot use — Classic Bluetooth on iOS, Wi-Fi or
+ *  Classic Bluetooth on the web — falls back to Bluetooth LE with a one-time notice, whether hydration already ran or runs later (`merge`).
  *  `null` forgets the platform (tests). */
 export function setSettingsPlatform(os: string | null): void {
   settingsPlatform = os;

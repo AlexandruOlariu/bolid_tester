@@ -7,6 +7,9 @@ export { Gauge } from './Gauge';
 export { VerificationBadge } from './VerificationBadge';
 export { UnlockBadge, unlockBadgeText } from './UnlockBadge';
 export { CardGrid } from './CardGrid';
+export { Toast } from './Toast';
+export { AlertDialog } from './AlertDialog';
+export { appAlert } from './appAlert';
 export { useLayoutClass } from './useLayoutClass';
 export {
   classify,

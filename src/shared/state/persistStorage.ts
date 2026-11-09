@@ -1,7 +1,11 @@
 /** A zustand `StateStorage` backed by a JSON file in the app's document directory, using the
  *  already-installed **expo-file-system** (no extra native dependency, so it works in the existing
  *  build after a reload). Best-effort: any filesystem error degrades to "no persistence" rather than
- *  crashing, and on platforms without a document directory (e.g. web) it is a silent no-op.
+ *  crashing.
+ *
+ *  On web (plan 28) there is no document directory, so the same storage falls back to the browser's
+ *  `localStorage`, under the store's own `bolid.<area>` key. Without either (a sandboxed iframe with
+ *  site data blocked) it is a no-op and the app runs with in-memory state.
  *
  *  We use the `legacy` entry point because its read/write-string API is stable and synchronous to
  *  reason about; see docs/features/settings.md. */
@@ -41,9 +45,82 @@ function fileFor(name: string): string {
   return `${DIR}${name.replace(/[^a-zA-Z0-9._-]/g, '_')}.json`;
 }
 
+/** The slice of the browser's Web Storage (`window.localStorage`) the web backend uses. */
+export interface WebStorageLike {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+/** The browser's `localStorage`, or null when there is none (native, Node) or it is blocked —
+ *  reading the property itself throws a `SecurityError` when the browser denies site data. */
+export function browserLocalStorage(): WebStorageLike | null {
+  try {
+    const ls = (globalThis as { localStorage?: Partial<WebStorageLike> }).localStorage;
+    return ls && typeof ls.getItem === 'function' && typeof ls.setItem === 'function'
+      ? (ls as WebStorageLike)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Where persisted stores live on this platform: a JSON file per store (native), the browser's
+ *  `localStorage` (web — there is no document directory), or nowhere (in-memory only). */
+export type PersistBackend = 'file' | 'localStorage' | 'none';
+
+export function persistBackend(): PersistBackend {
+  if (DIR) return 'file';
+  return browserLocalStorage() ? 'localStorage' : 'none';
+}
+
+/** A `StateStorage` over Web Storage (plan 28): the key is the store's `name` (`bolid.settings`, …),
+ *  the value the same JSON string the file backend writes. Every call is wrapped like the file
+ *  backend's: a quota error or a blocked storage is logged as a `persist` warning and degrades to
+ *  "not persisted", never a crash. `getStorage` is injectable for tests. */
+export function webStateStorage(
+  getStorage: () => WebStorageLike | null = browserLocalStorage,
+): StateStorage {
+  return {
+    getItem: (name) => {
+      const ls = getStorage();
+      if (!ls) return null;
+      try {
+        return ls.getItem(name);
+      } catch (e) {
+        logPersistFailure(name, 'read', e);
+        return null;
+      }
+    },
+    setItem: (name, value) => {
+      const ls = getStorage();
+      if (!ls) return;
+      try {
+        ls.setItem(name, value);
+      } catch (e) {
+        // QuotaExceededError (the ~5 MB per-origin budget) or storage blocked mid-session.
+        logPersistFailure(name, 'write', e);
+      }
+    },
+    removeItem: (name) => {
+      const ls = getStorage();
+      if (!ls) return;
+      try {
+        ls.removeItem(name);
+      } catch (e) {
+        logPersistFailure(name, 'remove', e);
+      }
+    },
+  };
+}
+
+const webBackend = webStateStorage();
+
+/** The storage every durable store uses: the document-directory file on native, `localStorage` on
+ *  web (no document directory there), else a no-op. Kept under its historical name. */
 export const fileStateStorage: StateStorage = {
   getItem: async (name) => {
-    if (!DIR) return null;
+    if (!DIR) return webBackend.getItem(name);
     try {
       const uri = fileFor(name);
       const info = await getInfoAsync(uri);
@@ -56,7 +133,7 @@ export const fileStateStorage: StateStorage = {
     }
   },
   setItem: async (name, value) => {
-    if (!DIR) return;
+    if (!DIR) return webBackend.setItem(name, value);
     try {
       await writeAsStringAsync(fileFor(name), value);
     } catch (e) {
@@ -65,7 +142,7 @@ export const fileStateStorage: StateStorage = {
     }
   },
   removeItem: async (name) => {
-    if (!DIR) return;
+    if (!DIR) return webBackend.removeItem(name);
     try {
       await deleteAsync(fileFor(name), { idempotent: true });
     } catch (e) {

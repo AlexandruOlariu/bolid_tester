@@ -968,6 +968,30 @@
     ],
     "type": "concept"
   },
+  "concept:web-bluetooth": {
+    "path": null,
+    "summary": "Browser build (plan 28, docs/web.md): Expo web target (react-native-web, app.json web.output 'single', experiments.baseUrl '/bolid_tester', exported\u2026",
+    "tokens": [
+      "bluetooth",
+      "browser",
+      "chrome",
+      "download",
+      "edge",
+      "export",
+      "gatt",
+      "gesture",
+      "localstorage",
+      "navigator",
+      "pages",
+      "pwa",
+      "react-native-web",
+      "requestdevice",
+      "safari",
+      "web",
+      "web-bluetooth"
+    ],
+    "type": "concept"
+  },
   "concept:wifi-adapter": {
     "path": null,
     "summary": "Wi-Fi ELM327 (WiFi_OBDII class, plan 26): the adapter is its own access point and a raw TCP byte pipe on 192.168.0.10:35000. TcpTransport (shared/tra\u2026",
@@ -2994,6 +3018,16 @@
     ],
     "type": "doc"
   },
+  "doc:web": {
+    "path": "docs/web.md",
+    "summary": "Web build (Web Bluetooth)",
+    "tokens": [
+      "bluetooth",
+      "build",
+      "web"
+    ],
+    "type": "doc"
+  },
   "feature:adaptations": {
     "path": "src/features/adaptations",
     "summary": "VCDS-style **adaptation channels**: small numeric module values (idle offset, base duties, service",
@@ -3101,7 +3135,7 @@
   },
   "feature:connection": {
     "path": "src/features/connection",
-    "summary": "Scan for, connect to, and initialize the ELM327 adapter \u2014 Bluetooth LE, Wi-Fi over TCP (plan 26), or",
+    "summary": "Scan for, connect to, and initialize the ELM327 adapter \u2014 Bluetooth LE, Wi-Fi over TCP (plan 26),",
     "tests": [
       "src/features/connection/api/connectionService.test.ts",
       "src/features/connection/api/diagnoseFailure.test.ts",
@@ -3144,6 +3178,10 @@
   "feature:error-log": {
     "path": "src/features/error-log",
     "summary": "A persistent, on-device **logging zone**: a capped store of the errors the app has hit, so they can",
+    "tests": [
+      "src/features/error-log/hooks/useErrorLogExport.test.tsx",
+      "src/features/error-log/ui/ErrorLogScreen.test.tsx"
+    ],
     "tokens": [
       "error",
       "log"
@@ -3523,6 +3561,18 @@
     ],
     "type": "lib"
   },
+  "lib:saveFile": {
+    "path": "src/shared/lib/saveFile.ts",
+    "summary": "Save a text export where the platform keeps files (plan 28): - **native** \u2014 write `<documentDirectory><name>` with expo-file-system (legacy entry poi\u2026",
+    "tests": [
+      "src/shared/lib/saveFile.test.ts"
+    ],
+    "tokens": [
+      "file",
+      "save"
+    ],
+    "type": "lib"
+  },
   "lib:schemas": {
     "path": "src/shared/lib/exchange/schemas.ts",
     "summary": "Validators for the exchange files (plan 13), built from the `validate.ts` combinators.",
@@ -3585,6 +3635,15 @@
     "tokens": [
       "report",
       "vehicle"
+    ],
+    "type": "lib"
+  },
+  "lib:webRuntime": {
+    "path": "src/shared/lib/webRuntime.ts",
+    "summary": "Whether the app runs in a browser (the Expo web build, plan 28) rather than on a phone.",
+    "tokens": [
+      "runtime",
+      "web"
     ],
     "type": "lib"
   },
@@ -3910,6 +3969,14 @@
     ],
     "type": "store"
   },
+  "store:dialogStore": {
+    "path": "src/shared/state/dialogStore.ts",
+    "summary": "The in-app replacement for `Alert.alert` in the browser (plan 28 review).",
+    "tokens": [
+      "dialog"
+    ],
+    "type": "store"
+  },
   "store:dtcStore": {
     "path": "src/shared/state/dtcStore.ts",
     "summary": "One freeze frame per stored code (frame n belongs to stored[n] on most ECUs).",
@@ -4054,6 +4121,14 @@
     ],
     "type": "store"
   },
+  "store:toastStore": {
+    "path": "src/shared/state/toastStore.ts",
+    "summary": "A single, short-lived message at the bottom of the screen (plan 28) \u2014 the app had no toast.",
+    "tokens": [
+      "toast"
+    ],
+    "type": "store"
+  },
   "store:vehicleStore": {
     "path": "src/shared/state/vehicleStore.ts",
     "summary": "The selected vehicle id (`bolid.vehicle` v1): a registry profile id or a garage `user:` id.",
@@ -4156,6 +4231,18 @@
     ],
     "type": "transport"
   },
+  "ui:AlertDialog": {
+    "path": "src/shared/ui/AlertDialog.tsx",
+    "summary": "The browser's alert box (plan 28 review): renders the dialog `appAlert()` queued on the web \u2014 title, message and the caller's buttons (any number, e.\u2026",
+    "tests": [
+      "src/shared/ui/AlertDialog.test.tsx"
+    ],
+    "tokens": [
+      "alert",
+      "dialog"
+    ],
+    "type": "ui"
+  },
   "ui:AppLogo": {
     "path": "src/shared/ui/AppLogo.tsx",
     "summary": "exports AppLogo",
@@ -4232,6 +4319,17 @@
     ],
     "type": "ui"
   },
+  "ui:Toast": {
+    "path": "src/shared/ui/Toast.tsx",
+    "summary": "The app's one toast (plan 28): a short message pinned above the tab bar, from `showToast()`.",
+    "tests": [
+      "src/shared/ui/Toast.test.tsx"
+    ],
+    "tokens": [
+      "toast"
+    ],
+    "type": "ui"
+  },
   "ui:UnlockBadge": {
     "path": "src/shared/ui/UnlockBadge.tsx",
     "summary": "The text of an unlock badge (plan 23).",
@@ -4262,6 +4360,15 @@
     "tokens": [
       "badge",
       "verification"
+    ],
+    "type": "ui"
+  },
+  "ui:appAlert": {
+    "path": "src/shared/ui/appAlert.ts",
+    "summary": "The app's `Alert.alert` (plan 28 review): the system alert on the phone, the in-app `AlertDialog` in the browser \u2014 react-native-web's `Alert.alert` i\u2026",
+    "tokens": [
+      "alert",
+      "app"
     ],
     "type": "ui"
   },

@@ -1,8 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Alert } from 'react-native';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner } from 'tamagui';
 import { SquareCheck, Square } from 'lucide-react-native';
-import { Screen } from '@/shared/ui';
+import { Screen, appAlert } from '@/shared/ui';
 import {
   LARGE_BACKUP_BYTES,
   formatBytes,
@@ -13,6 +12,7 @@ import { PERSISTED_STORES, storeRef } from '../api/registry';
 import type { RestoreResult } from '../api/backupService';
 import { MAX_BACKUP_RECORDS, type BackupRecord } from '../model/backupStore';
 import { useBackup } from '../hooks/useBackup';
+import { isWebRuntime } from '@/shared/lib/webRuntime';
 
 const ACCENT = '#2bb673';
 const fmtDate = (ts: number) => (ts > 0 ? new Date(ts).toLocaleString() : 'unknown date');
@@ -297,6 +297,9 @@ export function BackupScreen() {
   const onBackUp = async () => {
     setStatus(null);
     const created = await backUpNow(tripsIncluded);
+    // Browser: useBackup showed the "not available on web yet" toast and wrote (or logged) nothing,
+    // so the native "see the error log" follow-ups below would be wrong there (plan 28).
+    if (!created && isWebRuntime()) return;
     setStatus(
       created
         ? `Saved ${created.record.fileName} (${formatBytes(created.record.bytes)}).${created.shared ? '' : ' Sharing is not available here; the file is in the list below.'}`
@@ -317,6 +320,7 @@ export function BackupScreen() {
 
   const onPick = async () => {
     const res = await pick();
+    if (res.status === 'unavailable' && isWebRuntime()) return; // the toast already said why
     if (res.status === 'unavailable') {
       setPickError(
         'Choosing a file needs a newer build of the app. You can still restore a backup from the list below.',
@@ -329,7 +333,7 @@ export function BackupScreen() {
       ...stores.map(labelOf),
       ...(withTrips ? [`${bundleToRestore.tripFiles?.length ?? 0} trip recordings`] : []),
     ].join(', ');
-    Alert.alert(
+    appAlert(
       'Restore from this backup?',
       `This replaces: ${what}. Your current data is snapshotted first, so you can undo.`,
       [
@@ -337,7 +341,7 @@ export function BackupScreen() {
         {
           text: 'Continue',
           onPress: () =>
-            Alert.alert(
+            appAlert(
               'Replace your data?',
               'The selected data on this phone is replaced by the backup. The adapter is disconnected first.',
               [
@@ -359,13 +363,14 @@ export function BackupScreen() {
   };
 
   const onDelete = (record: BackupRecord) =>
-    Alert.alert('Delete this backup?', `${record.fileName} is deleted from this phone.`, [
+    appAlert('Delete this backup?', `${record.fileName} is deleted from this phone.`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: () => void remove(record) },
     ]);
 
   const onExport = async (name: string, format: 'json' | 'csv') => {
     const uri = await exportOne(name, format);
+    if (!uri && isWebRuntime()) return; // the toast already said why
     setExported(
       uri
         ? `Saved ${uri.slice(uri.lastIndexOf('/') + 1)}.`

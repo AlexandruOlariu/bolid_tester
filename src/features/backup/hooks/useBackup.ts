@@ -6,6 +6,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
 import type { BackupBundle, BackupValidation } from '@/shared/lib/backup';
+import { isWebRuntime } from '@/shared/lib/webRuntime';
+import { NOT_ON_WEB_YET, showToast } from '@/shared/state/toastStore';
 import { connectionService } from '@/features/connection';
 import { useTripStore } from '@/features/trip-recording/model/tripStore';
 import { useBackupStore, type BackupRecord } from '../model/backupStore';
@@ -60,6 +62,11 @@ export function useBackup() {
       fallback: T,
       fn: (m: BackupModules) => Promise<T>,
     ): Promise<T> => {
+      // Web (plan 28): backups are files on the phone; the browser has none to write or pick yet.
+      if (isWebRuntime()) {
+        showToast(NOT_ON_WEB_YET);
+        return fallback;
+      }
       setBusy(action);
       try {
         const mods = await loadBackupModules();

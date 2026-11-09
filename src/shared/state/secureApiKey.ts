@@ -11,6 +11,7 @@
  *  unavailable (Expo Go without a dev-client, web, unit tests) every call degrades to a best-effort
  *  no-op and the key simply lives in memory for the session (documented degradation). */
 import { logError } from '@/shared/state/errorLogStore';
+import { isWebRuntime } from '@/shared/lib/webRuntime';
 import type { AiProviderId } from '@/shared/obd-core';
 
 const SECURE_STORE_MODULE = 'expo-secure-store';
@@ -43,6 +44,9 @@ export function setSecureStoreModule(store: SecureStoreLike | null | undefined):
  *  call is a real failure. */
 async function loadSecureStore(): Promise<any> {
   if (injectedStore !== undefined) return injectedStore;
+  // Web (plan 28): expo-secure-store resolves there but every call throws "unavailable" — treat it
+  // as missing (memory only, the documented degradation) instead of logging a warning per call.
+  if (isWebRuntime()) return null;
   try {
     return await import(SECURE_STORE_MODULE);
   } catch {

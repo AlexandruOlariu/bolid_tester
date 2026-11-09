@@ -4,6 +4,8 @@
  *  The native modules are loaded with variable specifiers (tolerant imports) and handed to
  *  `reshareReport` as a parameter, so it is unit-tested with fakes. See docs/features/history.md. */
 import { logError } from '@/shared/state/errorLogStore';
+import { isWebRuntime } from '@/shared/lib/webRuntime';
+import { NOT_ON_WEB_YET, showToast } from '@/shared/state/toastStore';
 import type { ReportHistoryEntry } from '@/shared/state/historyStore';
 
 export interface ReshareFileSystem {
@@ -34,6 +36,11 @@ const MIME: Record<ReportHistoryEntry['format'], string> = {
 /** Load expo-file-system (legacy entry point: the root one has no `documentDirectory` on this SDK)
  *  and expo-sharing; null when either is missing. */
 export async function loadReshareModules(): Promise<ReshareModules | null> {
+  // Web (plan 28): reports are never written to a file there, so there is nothing to re-share.
+  if (isWebRuntime()) {
+    showToast(NOT_ON_WEB_YET);
+    return null;
+  }
   try {
     const FileSystem = (await import('expo-file-system/legacy' as string)) as ReshareFileSystem;
     const Sharing = (await import('expo-sharing' as string)) as ReshareSharing;

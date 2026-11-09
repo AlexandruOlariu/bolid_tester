@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
 import { YStack, XStack, Text, Paragraph, Button, Card } from 'tamagui';
 import { LABEL_PACKS, type LabelPack } from '@/shared/labels';
 import { labelPackCounts } from '@/shared/lib/exchange';
@@ -7,6 +6,8 @@ import { useLabelPackStore } from '@/shared/state/labelPackStore';
 import { ImportPreviewSheet } from '@/shared/ui/ImportPreviewSheet';
 import { useExchangeImport } from '@/shared/ui/useExchangeImport';
 import { LABEL_PACKS_SOURCE, shareLabelPackFile } from '../api/labelPackFile';
+import { appAlert } from '@/shared/ui';
+import { isWebRuntime } from '@/shared/lib/webRuntime';
 
 function countsText(pack: LabelPack): string {
   const c = labelPackCounts(pack);
@@ -77,6 +78,7 @@ export function LabelPacksSection() {
 
   const share = async (pack: LabelPack) => {
     const uri = await shareLabelPackFile(pack);
+    if (!uri && isWebRuntime()) return; // the "not available on web yet" toast already said why
     setNote(
       uri
         ? `Saved ${uri.slice(uri.lastIndexOf('/') + 1)}.`
@@ -84,7 +86,7 @@ export function LabelPacksSection() {
     );
   };
   const confirmDelete = (pack: LabelPack) =>
-    Alert.alert(
+    appAlert(
       'Delete this label pack?',
       `${pack.module} is removed from this phone. Bundled names for the same part numbers come back.`,
       [

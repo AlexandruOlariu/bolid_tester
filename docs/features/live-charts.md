@@ -84,8 +84,8 @@ the buffered time span so the pan can be clamped.
   A value becomes a point only when its `ts` is newer than the buffer's last point
   (`ChartBuffer.pushIfNewer`): a re-render on pan / zoom, or a sweep that republishes a key's old
   value (Mode 01 failed while the extended DIDs answered), never adds a duplicate point or CSV row.
-- `useChartExport()` — `shareCsv(baseName, series, labels?)`; dependency-tolerant no-op without
-  file-system/sharing (tests, web).
+- `useChartExport()` — `shareCsv(baseName, series, labels?)` through `saveTextFile` (plan 28): the
+  share sheet on a phone, a browser download on the web; null when there is nowhere to write.
 - `useChartConfig()` — not built: panels live in the in-memory `chartsStore` (see model).
 
 ## api (service layer)

@@ -667,3 +667,21 @@ describe('Settings → Classic Bluetooth (plan 27)', () => {
     expect(screen.queryByText('Classic Bluetooth')).toBeNull();
   });
 });
+
+describe('Settings in the browser (plan 28)', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('offers no Wi-Fi or Classic Bluetooth source, and says the AI key is memory-only', () => {
+    jest.replaceProperty(Platform, 'OS', 'web');
+    useSettingsStore.setState({ adapterSource: 'ble' });
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    fireEvent.press(screen.getByText('Anthropic'));
+    expect(screen.getByTestId('settings-ai-key-web')).toHaveTextContent(/never saved/);
+    expect(screen.queryByText(/secure keystore, never in backups/)).toBeNull();
+    openDeveloper();
+    expect(screen.getByText('Real adapter (Bluetooth)')).toBeTruthy();
+    expect(screen.getByText('Simulator (no car)')).toBeTruthy();
+    expect(screen.queryByText('Wi-Fi adapter')).toBeNull();
+    expect(screen.queryByText('Classic Bluetooth')).toBeNull();
+  });
+});

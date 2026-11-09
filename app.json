@@ -41,6 +41,12 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/icon.png",
+      "_comment": "Web target (plan 28, docs/web.md): a static single-page export (`npx expo export --platform web --output-dir web-build`, never dist/) deployed to GitHub Pages by .github/workflows/web.yml. `single` emits one index.html with expo-router routing client-side; the workflow copies it to 404.html so GitHub Pages answers deep URLs (e.g. /bolid_tester/settings) with the app."
+    },
     "plugins": [
       "expo-router",
       [
@@ -61,6 +67,10 @@
       ],
       "./plugins/withReleaseSigning"
     ],
+    "experiments": {
+      "baseUrl": "/bolid_tester",
+      "_comment": "GitHub project pages serve the site under /bolid_tester/ (plan 28). Native builds ignore baseUrl."
+    },
     "_comment": "Phase 2 scaffolding. The native build (Expo prebuild / EAS) is done on a developer machine; not exercised in the cloud container."
   }
 }

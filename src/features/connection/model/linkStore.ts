@@ -5,7 +5,7 @@
  *  started (so the panel only shows this attempt's adapter-log lines).
  *  Written by connectionService; in-memory only. See docs/features/connection.md. */
 import { create } from 'zustand';
-import type { BleLinkInfo } from '@/shared/transports/ble/BleTransport';
+import type { BleLinkInfo } from '@/shared/transports/common/gatt';
 import type { ConnectStage } from '../api/diagnoseFailure';
 
 /** The kind of real-adapter link an attempt uses; null for the simulator. */

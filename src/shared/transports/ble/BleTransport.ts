@@ -8,41 +8,19 @@ import { Platform } from 'react-native';
 import type { BleManager, Device, Subscription } from 'react-native-ble-plx';
 import { Transport, TransportStatus } from '../../obd-core/transport/Transport';
 import { base64ToBytes, bytesToBase64 } from '../../lib/base64';
+import { DEFAULT_ATT_MTU, LINE_FLUSH, payloadForMtu, type BleLinkInfo } from '../common/gatt';
 
-/** The BLE default ATT MTU (used when the stack does not report a negotiated value). */
-export const DEFAULT_ATT_MTU = 23;
+/** Shared with the Web Bluetooth transport (plan 28); re-exported for existing importers. */
+export { DEFAULT_ATT_MTU, LINE_FLUSH, payloadForMtu, type BleLinkInfo };
+
 /** The MTU asked for on Android (iOS negotiates on its own and rejects an explicit request). */
 export const REQUESTED_MTU = 247;
-/** ATT header bytes per write (opcode + handle); the usable payload is `mtu - 3`. */
-const ATT_HEADER_BYTES = 3;
-/** Never chunk below the BLE 4.0 minimum payload. */
-const MIN_PAYLOAD = 20;
-/** Sent after a chunked write fails partway: `X` is not a hex digit nor part of any AT command, so
- *  the ELM327 answers the buffered fragment + `X` with `?` instead of running it (see `write`). */
-export const LINE_FLUSH = Uint8Array.from([0x58, 0x0d]); // 'X\r'
-
-/** What the live link negotiated — shown by the Connect screen's diagnostics panel. */
-export interface BleLinkInfo {
-  /** Negotiated ATT MTU (`device.mtu`), or 23 when unknown. */
-  mtu: number;
-  /** Usable bytes per GATT write: `mtu - 3`, floor 20. */
-  payload: number;
-  service: string;
-  notifyCharacteristic: string;
-  writeCharacteristic: string;
-  writeWithoutResponse: boolean;
-}
 
 interface WriteTarget {
   service: string;
   characteristic: string;
   notifyCharacteristic: string;
   withoutResponse: boolean;
-}
-
-/** Usable payload for a negotiated MTU (`mtu - 3`, never below 20). */
-export function payloadForMtu(mtu: number): number {
-  return Math.max(MIN_PAYLOAD, mtu - ATT_HEADER_BYTES);
 }
 
 export class BleTransport implements Transport {
