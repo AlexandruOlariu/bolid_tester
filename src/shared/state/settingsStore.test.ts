@@ -62,9 +62,16 @@ describe('settings defaults', () => {
     expect(useSettingsStore.getInitialState().autoSelectByVin).toBe(true);
   });
 
-  it('persists at schema version 5', () => {
-    expect(SETTINGS_VERSION).toBe(5);
-    expect(useSettingsStore.persist.getOptions().version).toBe(5);
+  it('persists at schema version 6', () => {
+    expect(SETTINGS_VERSION).toBe(6);
+    expect(useSettingsStore.persist.getOptions().version).toBe(6);
+  });
+
+  it('is metric only: no units field in state or in the written file (plan 07)', () => {
+    expect(useSettingsStore.getInitialState()).not.toHaveProperty('units');
+    expect(useSettingsStore.getInitialState()).not.toHaveProperty('setUnits');
+    const partialize = useSettingsStore.persist.getOptions().partialize!;
+    expect(partialize(useSettingsStore.getInitialState())).not.toHaveProperty('units');
   });
 
   it('a fresh install starts on the local-server provider (plan 19)', () => {
@@ -143,16 +150,23 @@ describe('migrateSettings', () => {
     expect(migrateSettings({ theme: 'dark' as const }, 4)).toEqual({ theme: 'dark' });
   });
 
-  it('is the identity from v5 on', () => {
+  it('v5 → v6 drops the dead units key and keeps everything else (plan 07)', () => {
+    const blob = { theme: 'light' as const, pollIntervalMs: 500 };
+    expect(migrateSettings({ ...blob, units: 'metric' }, 5)).toEqual(blob);
+    expect(migrateSettings({ ...blob, units: 'metric' }, 1)).not.toHaveProperty('units');
+    expect(migrateSettings(blob, 5)).toEqual(blob);
+  });
+
+  it('is the identity from v6 on', () => {
     const blob = {
       adapterSource: 'mock' as const,
       injectedDtcs: ['P0420'],
       theme: 'light' as const,
       ai: { ...DEFAULT_AI_SETTINGS, provider: 'local' as const, baseUrl: 'https://api.openai.com' },
     };
-    expect(migrateSettings(blob, 5)).toEqual(blob);
+    expect(migrateSettings(blob, 6)).toEqual(blob);
     const partial = { theme: 'dark' as const };
-    expect(migrateSettings(partial, 5)).toEqual(partial);
+    expect(migrateSettings(partial, 6)).toEqual(partial);
   });
 });
 
@@ -183,6 +197,15 @@ describe('persisted v1 blob rehydration', () => {
     expect(s.adapterSource).toBe('ble');
     expect(s.injectedDtcs).toEqual([]);
     expect(s.pollIntervalMs).toBe(500);
+  });
+
+  it('a v5 blob with the dead units key rehydrates without it, in state and in the file', async () => {
+    writeBlob({ adapterSource: 'ble', injectedDtcs: [], theme: 'light', units: 'metric' }, 5);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState()).not.toHaveProperty('units');
+    expect(useSettingsStore.getState().theme).toBe('light');
+    useSettingsStore.getState().setTheme('dark'); // the next write
+    expect(JSON.parse(files.get(SETTINGS_FILE) ?? '{}').state).not.toHaveProperty('units');
   });
 
   it('a v2 blob that turned auto-reconnect off keeps it off', async () => {

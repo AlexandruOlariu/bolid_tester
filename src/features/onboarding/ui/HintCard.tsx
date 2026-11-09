@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, XStack, YStack, Text, Paragraph } from 'tamagui';
 import { Lightbulb, X } from 'lucide-react-native';
-import { useOnboardingStore } from '../model/onboardingStore';
+import { useOnboardingStore } from '@/shared/state/onboardingStore';
 
 interface HintCardProps {
   /** Stable id for this hint; once dismissed it stays hidden across launches. */

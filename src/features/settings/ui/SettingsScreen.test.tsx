@@ -1,11 +1,12 @@
 import React from 'react';
+import { Alert, Linking } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { mockPush } from '@test/mocks/router';
 import { connectSimulator } from '@test/simulator';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { disconnect } from '@/features/connection/api/connectionService';
+import { connect, disconnect } from '@/features/connection/api/connectionService';
 import { APP_VERSION } from '@/shared/lib/appInfo';
 import { setAiFetch } from '@/shared/ai';
 import {
@@ -15,8 +16,15 @@ import {
   clearAdapterLog,
   useAdapterLogStore,
 } from '@/shared/state/adapterLog';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useVehicleStore } from '@/shared/state/vehicleStore';
+import { useGarageStore } from '@/shared/state/garageStore';
+import { useHistoryStore } from '@/shared/state/historyStore';
+import { useOnboardingStore } from '@/shared/state/onboardingStore';
+import { FIRST_RUN_HINT_ID, FirstRunCard } from '@/features/onboarding';
+import { useDtcStore } from '@/shared/state/dtcStore';
+import { DOCS_URL } from '@/shared/lib/appInfo';
 import { buildReplayExport, type ReplayExportInput } from '../model/replayExport';
+import { resetAllAppData } from '@/features/backup';
 import { SettingsScreen } from './SettingsScreen';
 
 // The real hook loads expo-file-system / expo-sharing with a variable-specifier dynamic import,
@@ -29,27 +37,84 @@ jest.mock('../hooks/useLogFixtureExport', () => ({
   useLogFixtureExport: () => ({ exportFixture: mockExportFixture, busy: false }),
 }));
 
+/** Developer & simulator is collapsed on open (plan 07): expand it. */
+function openDeveloper() {
+  fireEvent.press(screen.getByText('Developer & simulator'));
+}
+
+type AlertButtons = { text?: string; onPress?: () => void }[];
+
+/** Press `text` in the buttons of the `index`-th `Alert.alert` call. */
+function pressAlertButton(alert: jest.SpyInstance, index: number, text: string) {
+  const buttons = alert.mock.calls[index][2] as AlertButtons;
+  const button = buttons.find((b) => b.text === text);
+  if (!button?.onPress) throw new Error(`no "${text}" button in alert ${index}`);
+  button.onPress();
+}
+
 describe('SettingsScreen', () => {
   beforeEach(() => mockExportFixture.mockClear());
 
+  it('opens with the sections in order and Developer & simulator collapsed (plan 07)', () => {
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    const order = [
+      'General',
+      'Connection',
+      'AI assistant (auto-diagnose)',
+      'Notifications',
+      'Data',
+      'Developer & simulator',
+      'About',
+    ];
+    const tops = order.map((label) => screen.getByText(label));
+    const all = screen.UNSAFE_root.findAll(() => true);
+    const positions = tops.map((el) => all.indexOf(el));
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+
+    // Collapsed: the header offers "Show"; none of the developer controls is rendered.
+    expect(screen.getByRole('button', { name: 'Developer & simulator. Show' })).toBeTruthy();
+    expect(screen.queryByText('Simulator (no car)')).toBeNull();
+    expect(screen.queryByText('Export as replay fixture')).toBeNull();
+    expect(screen.queryByText('Reset all app data')).toBeNull();
+    expect(screen.queryByText('Show hints again')).toBeNull();
+
+    openDeveloper();
+    expect(screen.getByRole('button', { name: 'Developer & simulator. Hide' })).toBeTruthy();
+    expect(screen.getByText('Simulator (no car)')).toBeTruthy();
+    expect(screen.getByText('Export as replay fixture')).toBeTruthy();
+    expect(screen.getByText('Reset all app data')).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Developer & simulator'));
+    expect(screen.queryByText('Simulator (no car)')).toBeNull();
+  });
+
+  it('hides Reset all app data when the route passes no reset action', () => {
+    renderWithProviders(<SettingsScreen />);
+    openDeveloper();
+    expect(screen.getByText('Show hints again')).toBeTruthy();
+    expect(screen.queryByText('Reset all app data')).toBeNull();
+  });
+
   it('the adapter-source segment switches to the simulator and reveals its sections', async () => {
     useSettingsStore.setState({ adapterSource: 'ble' });
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
     expect(screen.queryByText('Simulated vehicle')).toBeNull();
-    expect(screen.queryByText('Developer (simulator)')).toBeNull();
+    expect(screen.queryByText('Simulator test controls')).toBeNull();
 
     fireEvent.press(screen.getByText('Simulator (no car)'));
 
     await waitFor(() => expect(useSettingsStore.getState().adapterSource).toBe('mock'));
     expect(screen.getByText('Simulated vehicle')).toBeTruthy();
     expect(screen.getByText('Injected DTCs')).toBeTruthy();
-    expect(screen.getByText('Developer (simulator)')).toBeTruthy();
+    expect(screen.getByText('Simulator test controls')).toBeTruthy();
   });
 
   it('switching back to the real adapter drops a live simulator session', async () => {
     await connectSimulator();
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
     expect(screen.getByText('Disconnect')).toBeTruthy();
+    openDeveloper();
 
     fireEvent.press(screen.getByText('Real adapter (Bluetooth)'));
 
@@ -59,7 +124,7 @@ describe('SettingsScreen', () => {
   });
 
   it('the theme segment updates the store', () => {
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
     expect(useSettingsStore.getState().theme).toBe('dark');
 
     fireEvent.press(screen.getByText('light'));
@@ -68,14 +133,15 @@ describe('SettingsScreen', () => {
 
   it('a simulator fault preset sets the injected codes', () => {
     useSettingsStore.setState({ adapterSource: 'mock' });
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
 
     fireEvent.press(screen.getByText('P0299+P0401'));
     expect(useSettingsStore.getState().injectedDtcs).toEqual(['P0299', 'P0401']);
   });
 
   it('the Data section opens Backup & restore', () => {
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
     expect(screen.getByText('Data')).toBeTruthy();
     fireEvent.press(screen.getByText('Backup & restore'));
     expect(mockPush).toHaveBeenCalledWith('/backup');
@@ -83,8 +149,132 @@ describe('SettingsScreen', () => {
     expect(mockPush).toHaveBeenLastCalledWith('/backup');
   });
 
+  it('Notifications opens the notification settings screen', () => {
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    fireEvent.press(screen.getByRole('button', { name: /^Notification settings\./ }));
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
+  });
+
+  it('the app is metric only: General says so and offers no unit choice', () => {
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    expect(screen.getByText(/Units are metric: km\/h, °C, km, kPa and L\/100 km/)).toBeTruthy();
+    expect(screen.queryByText(/mph|°F|miles/i)).toBeNull();
+  });
+
+  it('Show hints again brings back the dismissed first-run card', () => {
+    useOnboardingStore.getState().dismiss(FIRST_RUN_HINT_ID);
+    useOnboardingStore.getState().dismiss('charts-tip');
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
+
+    fireEvent.press(screen.getByText('Show hints again'));
+
+    expect(useOnboardingStore.getState().dismissed).toEqual([]);
+    expect(screen.getByText(/Hints are back/)).toBeTruthy();
+  });
+
+  it('Show hints again brings the first-run card back even when its steps are all done', () => {
+    // The Connect tab's card and Settings, mounted together as the tabs are.
+    renderWithProviders(
+      <>
+        <FirstRunCard />
+        <SettingsScreen resetAppData={resetAllAppData} />
+      </>,
+    );
+    expect(screen.getByText('Getting started')).toBeTruthy();
+
+    // Pick a car, connect, read faults: the third step auto-dismisses the card.
+    act(() => {
+      useVehicleStore.setState({ selectedProfileId: 'golf-plus-2009-20tdi' });
+      useSessionStore.setState({ status: 'connected' });
+      useDtcStore.setState({ lastReadAt: 1 });
+    });
+    expect(screen.queryByText('Getting started')).toBeNull();
+    expect(useOnboardingStore.getState().dismissed).toContain(FIRST_RUN_HINT_ID);
+
+    openDeveloper();
+    fireEvent.press(screen.getByText('Show hints again'));
+
+    // Every step is still done this session, yet the card is back (all ticked) and stays.
+    expect(screen.getByText('Getting started')).toBeTruthy();
+    expect(screen.getByLabelText('Step 3: Read fault codes, done')).toBeTruthy();
+    expect(useOnboardingStore.getState().dismissed).toEqual([]);
+  });
+
+  it('Reset all app data asks twice, then returns the app to a fresh state', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    await connectSimulator();
+    useSettingsStore.setState({ theme: 'light' });
+    useGarageStore.setState({
+      vehicles: [
+        {
+          id: 'user:a',
+          name: 'Dacia',
+          fuel: 'petrol',
+          baseProfileId: 'generic',
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      ],
+    });
+    useVehicleStore.setState({ selectedProfileId: 'user:a' });
+    useHistoryStore.getState().addDtcCheck({ profileId: 'generic', codes: [] } as never);
+    useOnboardingStore.getState().dismiss(FIRST_RUN_HINT_ID);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
+
+    fireEvent.press(screen.getByText('Reset all app data'));
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(alert.mock.calls[0][0]).toBe('Reset all app data?');
+    // Nothing changes before the second confirmation.
+    expect(useGarageStore.getState().vehicles).toHaveLength(1);
+    pressAlertButton(alert, 0, 'Continue');
+    expect(alert).toHaveBeenCalledTimes(2);
+    expect(alert.mock.calls[1][0]).toBe('Delete all app data?');
+    expect(useGarageStore.getState().vehicles).toHaveLength(1);
+    await act(async () => pressAlertButton(alert, 1, 'Reset everything'));
+
+    await waitFor(() => expect(screen.getByText(/All app data was reset/)).toBeTruthy());
+    expect(useSessionStore.getState().status).toBe('disconnected');
+    const settings = useSettingsStore.getState();
+    expect(settings.adapterSource).toBe('ble');
+    expect(settings.theme).toBe('dark');
+    expect(useGarageStore.getState().vehicles).toEqual([]);
+    expect(useVehicleStore.getState().selectedProfileId).toBe('generic');
+    expect(useHistoryStore.getState().entries).toEqual([]);
+    expect(useOnboardingStore.getState().dismissed).toEqual([]);
+    // Back on the real adapter, so the simulator controls are gone.
+    expect(screen.queryByText('Simulated vehicle')).toBeNull();
+    alert.mockRestore();
+  });
+
+  it('Reset all app data invalidates a connect still in flight (no stale session is published)', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    useSettingsStore.setState({ adapterSource: 'mock' });
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
+    // A simulator connect is mid-handshake when the owner confirms the reset.
+    const inFlight = connect().catch(() => undefined);
+
+    fireEvent.press(screen.getByText('Reset all app data'));
+    pressAlertButton(alert, 0, 'Continue');
+    await act(async () => pressAlertButton(alert, 1, 'Reset everything'));
+    await waitFor(() => expect(screen.getByText(/All app data was reset/)).toBeTruthy());
+    await act(async () => {
+      await inFlight;
+    });
+
+    // The superseded connect tore itself down instead of publishing a simulator session under the
+    // real-adapter setting the reset restored.
+    expect(useSettingsStore.getState().adapterSource).toBe('ble');
+    expect(useSessionStore.getState().session).toBeNull();
+    expect(useSessionStore.getState().status).not.toBe('connected');
+    expect(adapterLogSnapshot()).toEqual([]);
+    alert.mockRestore();
+  });
+
   it('About shows the app version and opens the privacy policy', () => {
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
     expect(screen.getByText(`Bolid Tester ${APP_VERSION}`)).toBeTruthy();
     expect(screen.queryByText('When the app uses the internet')).toBeNull();
 
@@ -98,6 +288,14 @@ describe('SettingsScreen', () => {
     expect(screen.queryByText('What stays on your phone')).toBeNull();
   });
 
+  it('About links to the documentation', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    fireEvent.press(screen.getByLabelText('Open the documentation on GitHub'));
+    expect(open).toHaveBeenCalledWith(DOCS_URL);
+    open.mockRestore();
+  });
+
   it('exports the adapter log as a replay fixture named after the vehicle and the flow', async () => {
     clearAdapterLog(); // the log is module-level: start from this test's own session
     await connectSimulator({ injectedDtcs: ['P0299'] });
@@ -105,7 +303,8 @@ describe('SettingsScreen', () => {
     await waitFor(() =>
       expect(useAdapterLogStore.getState().entries.some((e) => e.text === '0904')).toBe(true),
     );
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
 
     fireEvent.changeText(screen.getByLabelText('Flow name'), 'faults');
     fireEvent.press(screen.getByText('Export as replay fixture'));
@@ -149,7 +348,8 @@ describe('SettingsScreen', () => {
     });
     useSettingsStore.setState({ adapterSource: 'ble', simulatedVehicleId: 'fiat-punto-2008-12' });
     useVehicleStore.setState({ selectedProfileId: 'passat-b55-19tdi' });
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
 
     fireEvent.changeText(screen.getByLabelText('Flow name'), 'connect');
     fireEvent.press(screen.getByText('Export as replay fixture'));
@@ -171,7 +371,8 @@ describe('SettingsScreen', () => {
     await waitFor(() =>
       expect(useAdapterLogStore.getState().entries.some((e) => e.text === '0904')).toBe(true),
     );
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
     // The documented workflow: Clear, run the next flow on the same session, export it. Meanwhile
     // another simulated car is picked (a plain setting: the Golf session keeps running).
     fireEvent.press(screen.getByText('Clear'));
@@ -210,7 +411,8 @@ describe('SettingsScreen', () => {
     appendAdapterLog({ dir: 'tx', text: '03', ts: 1 });
     appendAdapterLog({ dir: 'rx', text: '4300\r', ts: 2 });
     await waitFor(() => expect(useAdapterLogStore.getState().entries).toHaveLength(2));
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
 
     fireEvent.changeText(screen.getByLabelText('Flow name'), 'faults');
     fireEvent.press(screen.getByText('Export as replay fixture'));
@@ -233,7 +435,8 @@ describe('SettingsScreen', () => {
     const total = ADAPTER_LOG_CAPACITY + 10;
     for (let i = 0; i < total; i++) appendAdapterLog({ dir: 'tx', text: `ATI${i}`, ts: i });
     await waitFor(() => expect(useAdapterLogStore.getState().dropped).toBe(10));
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
     expect(screen.getByText(/The log is full: the oldest 10 lines were dropped/)).toBeTruthy();
 
     fireEvent.press(screen.getByText('Export as replay fixture'));
@@ -252,7 +455,8 @@ describe('SettingsScreen', () => {
     useSettingsStore.setState({ adapterSource: 'ble' });
     appendAdapterLog({ dir: 'tx', text: '0100', ts: 1 });
     await waitFor(() => expect(useAdapterLogStore.getState().entries).toHaveLength(1));
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
 
     fireEvent.press(screen.getByText('Export as replay fixture'));
     await waitFor(() =>
@@ -285,7 +489,7 @@ describe('SettingsScreen AI provider (plan 19)', () => {
   afterEach(() => setAiFetch(null));
 
   it('Anthropic fills the URL and model, hides Structured output and shows the key field', async () => {
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
     expect(screen.getByTestId('ai-structured-output')).toBeTruthy();
     expect(screen.queryByLabelText('Anthropic API key')).toBeNull();
 
@@ -304,7 +508,7 @@ describe('SettingsScreen AI provider (plan 19)', () => {
   });
 
   it('Edit on a cloud URL flips to Custom and keeps the address', async () => {
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
     fireEvent.press(screen.getByText('OpenAI'));
     await waitFor(() => expect(useSettingsStore.getState().ai.provider).toBe('openai'));
 
@@ -329,7 +533,7 @@ describe('SettingsScreen AI provider (plan 19)', () => {
         text: async () => '',
       } as Response;
     });
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
     fireEvent.press(screen.getByText('Anthropic'));
     fireEvent.changeText(screen.getByLabelText('Anthropic API key'), 'sk-ant-test');
 
@@ -359,7 +563,7 @@ describe('SettingsScreen AI provider (plan 19)', () => {
     useSettingsStore.setState((s) => ({
       ai: { ...s.ai, provider: 'local', baseUrl: 'http://192.168.1.50:1234' },
     }));
-    renderWithProviders(<SettingsScreen />);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
     fireEvent.press(screen.getByText('Detect model'));
     expect(await screen.findByText('Connecting…')).toBeTruthy();
 

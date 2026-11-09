@@ -610,6 +610,21 @@
     "relates"
   ],
   [
+    "concept:metric-only",
+    "doc:features/settings",
+    "relates"
+  ],
+  [
+    "concept:metric-only",
+    "feature:live-data",
+    "relates"
+  ],
+  [
+    "concept:metric-only",
+    "feature:settings",
+    "relates"
+  ],
+  [
     "concept:mobile-build-adapter",
     "concept:connection-lifecycle",
     "relates"
@@ -856,7 +871,7 @@
   ],
   [
     "concept:sensor-monitoring",
-    "feature:sensor-readings",
+    "feature:live-data",
     "relates"
   ],
   [
@@ -2265,23 +2280,8 @@
     "documents"
   ],
   [
-    "doc:features/sensor-readings",
-    "feature:sensor-readings",
-    "documents"
-  ],
-  [
-    "doc:features/sensor-readings",
-    "feature:sensor-tests",
-    "documents"
-  ],
-  [
     "doc:features/sensor-tests",
     "feature:performance-tests",
-    "documents"
-  ],
-  [
-    "doc:features/sensor-tests",
-    "feature:sensor-readings",
     "documents"
   ],
   [
@@ -2561,7 +2561,22 @@
   ],
   [
     "feature:backup",
+    "feature:adapter-health",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:ai-diagnose",
+    "imports"
+  ],
+  [
+    "feature:backup",
     "feature:alerts",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:battery-health",
     "imports"
   ],
   [
@@ -2572,6 +2587,16 @@
   [
     "feature:backup",
     "feature:connection",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:dpf",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:inspection",
     "imports"
   ],
   [
@@ -2596,11 +2621,6 @@
   ],
   [
     "feature:backup",
-    "feature:onboarding",
-    "imports"
-  ],
-  [
-    "feature:backup",
     "feature:trip-recording",
     "imports"
   ],
@@ -2612,6 +2632,16 @@
   [
     "feature:backup",
     "lib:backup",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:adapterLog",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:dtcStore",
     "imports"
   ],
   [
@@ -2636,7 +2666,17 @@
   ],
   [
     "feature:backup",
+    "store:onboardingStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
     "store:persistStorage",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:seedKeyStore",
     "imports"
   ],
   [
@@ -3321,6 +3361,16 @@
   ],
   [
     "feature:live-data",
+    "core:obd/liveKeys",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:live-data",
     "doc:features/live-data",
     "named"
   ],
@@ -3331,7 +3381,12 @@
   ],
   [
     "feature:live-data",
-    "lib:units",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "store:errorLogStore",
     "imports"
   ],
   [
@@ -3351,7 +3406,7 @@
   ],
   [
     "feature:live-data",
-    "store:settingsStore",
+    "vehicle:types",
     "imports"
   ],
   [
@@ -3566,7 +3621,7 @@
   ],
   [
     "feature:onboarding",
-    "store:persistStorage",
+    "store:onboardingStore",
     "imports"
   ],
   [
@@ -3760,41 +3815,6 @@
     "imports"
   ],
   [
-    "feature:sensor-readings",
-    "core:obd/liveKeys",
-    "imports"
-  ],
-  [
-    "feature:sensor-readings",
-    "core:obd/protocols",
-    "imports"
-  ],
-  [
-    "feature:sensor-readings",
-    "doc:features/sensor-readings",
-    "named"
-  ],
-  [
-    "feature:sensor-readings",
-    "feature:live-data",
-    "imports"
-  ],
-  [
-    "feature:sensor-readings",
-    "feature:vehicle-select",
-    "imports"
-  ],
-  [
-    "feature:sensor-readings",
-    "store:errorLogStore",
-    "imports"
-  ],
-  [
-    "feature:sensor-readings",
-    "store:sessionStore",
-    "imports"
-  ],
-  [
     "feature:sensor-tests",
     "core:confirmation",
     "imports"
@@ -3813,6 +3833,11 @@
     "feature:sensor-tests",
     "core:obd/protocols",
     "imports"
+  ],
+  [
+    "feature:sensor-tests",
+    "doc:features/sensor-tests",
+    "named"
   ],
   [
     "feature:sensor-tests",
@@ -3891,11 +3916,6 @@
   ],
   [
     "feature:settings",
-    "feature:vehicle-select",
-    "imports"
-  ],
-  [
-    "feature:settings",
     "lib:appInfo",
     "imports"
   ],
@@ -3936,6 +3956,11 @@
   ],
   [
     "feature:settings",
+    "store:onboardingStore",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "store:seedKeyStore",
     "imports"
   ],
@@ -3947,6 +3972,11 @@
   [
     "feature:settings",
     "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "store:vehicleStore",
     "imports"
   ],
   [
@@ -4650,16 +4680,6 @@
     "serves"
   ],
   [
-    "screen:sensor-readings",
-    "doc:features/sensor-readings",
-    "named"
-  ],
-  [
-    "screen:sensor-readings",
-    "feature:sensor-readings",
-    "serves"
-  ],
-  [
     "screen:sensors",
     "feature:sensor-tests",
     "serves"
@@ -4678,6 +4698,11 @@
     "screen:service-reset",
     "store:exchangeService",
     "named"
+  ],
+  [
+    "screen:settings",
+    "feature:backup",
+    "serves"
   ],
   [
     "screen:settings",
@@ -4958,6 +4983,16 @@
     "store:liveDataStore",
     "doc:features/live-data",
     "named"
+  ],
+  [
+    "store:onboardingStore",
+    "doc:features/onboarding",
+    "named"
+  ],
+  [
+    "store:onboardingStore",
+    "store:persistStorage",
+    "imports"
   ],
   [
     "store:persistStorage",

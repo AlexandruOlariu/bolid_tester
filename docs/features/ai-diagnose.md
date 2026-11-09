@@ -174,8 +174,8 @@ For development without any AI server: set **Provider → Custom** and the addre
 serves `shared/ai/__mocks__/mockAiServer.ts`: Detect model lists `mock-diagnostic-model`; a
 diagnosis returns a canned AI report with one `warn` finding per fault code in the snapshot; a
 follow-up returns "Mock answer N: you asked "…"", numbered by the questions it can see in the
-bounded prompt. With the simulator Golf and the injected codes `P0401, P2015` (Settings → Injected
-DTCs → Custom…) the report shows both Golf guides with their **Related data** / **Open routine**
+bounded prompt. With the simulator Golf and the injected codes `P0401, P2015` (Settings → Developer &
+simulator → Injected DTCs → Custom…) the report shows both Golf guides with their **Related data** / **Open routine**
 buttons. The local heuristic path stays the default.
 
 ## Data flow

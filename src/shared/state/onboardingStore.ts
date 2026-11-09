@@ -1,10 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { fileStateStorage } from '@/shared/state/persistStorage';
+import { fileStateStorage } from './persistStorage';
 
 /** First-run hints are dismissible and stay dismissed across launches. We persist the *set of
  *  dismissed hint ids* (not per-hint booleans) so adding a new hint later doesn't need a migration —
- *  an unknown id is simply "not yet dismissed". Same persistStorage idiom as the other stores. */
+ *  an unknown id is simply "not yet dismissed". Same persistStorage idiom as the other stores.
+ *  Lives in shared/state (plan 07 review) because Settings resets it (**Show hints again**) and the
+ *  onboarding slice renders the hints; `features/onboarding/index.ts` re-exports it. */
 interface OnboardingState {
   dismissed: string[];
   dismiss: (id: string) => void;

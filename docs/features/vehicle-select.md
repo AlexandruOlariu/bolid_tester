@@ -150,14 +150,14 @@ stay a suggestion on this screen.
 - **Trips** record `vehicleId`; the Trips screen filters by car — see
   [trip-recording](./trip-recording.md).
 - Deleting a garage car (`deleteGarageVehicle`) falls back to `generic` when it was selected, and
-  resets Settings → Simulated vehicle to the registry profile it was simulating (its base) when it
+  resets Settings → Developer & simulator → Simulated vehicle to the registry profile it was simulating (its base) when it
   was the simulated car; it keeps all of the above (history is VIN-keyed, not deleted).
 - **Replay-fixture export** (Settings) files a garage car under its base registry id
   (`fixtureVehicleId`), never a `user:` id, so the fixture fits `fixtures/<registry id>/`.
 
 ## Simulator
 
-Settings → Simulated vehicle also lists the garage cars. A garage car is simulated from its base
+Settings → Developer & simulator → Simulated vehicle also lists the garage cars. A garage car is simulated from its base
 profile with the learned VIN, PID set and calibration id on top (`simulatorSourceFor`), so a car
 learned from the simulated Golf reconnects with the same VIN and PIDs and is auto-selected again.
 See [simulator.md](../simulator.md).

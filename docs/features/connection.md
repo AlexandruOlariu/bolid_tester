@@ -80,7 +80,7 @@ no-op.
   connect invalidated, auto-reconnect cancelled, adapter log cleared — run before a data restore,
   whose restored settings may change the source; plan 18), `FLAP_PAUSED_MESSAGE`, and the
   simulator dev hooks under `__sim`
-  (Settings → Developer). Link-loss, auto-reconnect and the flap guard live here too (below).
+  (Settings → Developer & simulator). Link-loss, auto-reconnect and the flap guard live here too (below).
 - Pure helpers, unit-tested: `reconnect.ts` (`runReconnect`), `flapGuard.ts`
   (`pruneDrops`, `shouldAutoReconnect`), `diagnoseFailure.ts` (`diagnoseFailure`,
   `formatDiagnosticsReport`, `formatLogLine`).
@@ -269,10 +269,10 @@ the app never lists it." The connection flow handles it as follows:
 ## Acceptance
 
 - A fresh install opens on **Scan for adapters** with the first-run card and no simulator banner.
-- Settings → **Simulator (no car)** shows the amber banner on Connect, Live, Faults, More and hidden
+- Settings → **Developer & simulator** → **Simulator (no car)** shows the amber banner on Connect, Live, Faults, More and hidden
   routes; **Use real adapter** switches back and disconnects a live simulator session.
 - Completing pick-car → connect → read faults auto-dismisses the first-run card for good.
-- Connects to the simulator in dev with no hardware (Settings → Simulator (no car)).
+- Connects to the simulator in dev with no hardware (Settings → Developer & simulator → Simulator (no car)).
 - With Bluetooth off, the Connect screen prompts to enable it (one-tap on Android) and re-enables
   scanning automatically once the radio is on — never a raw "powered off" scan error.
 - Surfaces a clear error on permission denial, no device, or failed init.
@@ -281,9 +281,9 @@ the app never lists it." The connection flow handles it as follows:
 - Killing the link mid-session (sim `simulateDisconnect()` or pulling the adapter) flips the UI to
   disconnected within a poll interval with one actionable error entry — no timeout cascade. A failed
   ignition-off connect followed by a successful retry works without restarting the app.
-- Simulator connected → Settings → Developer → **Simulate a link drop** reconnects on its own
+- Simulator connected → Settings → Developer & simulator → **Simulate a link drop** reconnects on its own
   without touching the toggle; the third drop in a minute stops with the pause message.
-- Settings → Developer → **Fail next connect: no reply to ATZ**, then connect → the diagnostics
+- Settings → Developer & simulator → **Fail next connect: no reply to ATZ**, then connect → the diagnostics
   panel opens at stage "Adapter start-up" with the unpowered / asleep suggestion.
 - A 16-byte coding write succeeds over a BLE link stuck at MTU 23 (unit test through a BLE fake).
 - A late reply after a timeout is never attributed to the next command; an adapter that went to

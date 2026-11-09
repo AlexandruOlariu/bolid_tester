@@ -193,9 +193,17 @@ list still works.
 ## Plans that build on this
 
 Plan 32 (feedback / log bundle) reuses `exportStore` and `createBackup` (exported from
-`src/features/backup/index.ts`). Plan 07's "Reset all app data" is the natural partner of restore;
-until it lands, clearing app storage in Android settings gives the "cleared app" a restore is tested
-against.
+`src/features/backup/index.ts`). Plan 07's **Reset all app data** (Settings → Developer &
+simulator) lives here too, in `api/resetAppData.ts`, because this slice already composes every
+persisted store: `resetAllAppData()` clears the stores in `PERSISTED_STORES` **and** the two in
+`NOT_BACKED_UP`, the AI keys, the files they point at (`backups/`, `seedkeys/`, each
+`trip-<id>.csv`) and the exports' staging copies in the document directory (`isExportFile`), plus the in-memory result stores (inspection, battery, AI diagnosis, module
+scan, DPF, adapter health, fault codes) — the fresh-install state a restore is tested against.
+No feature imports it: the route `src/app/settings.tsx` hands it to the Settings screen as its
+`resetAppData` prop, and Settings calls `connectionService.resetForRestore()` first, the same
+teardown a restore uses. `resetAppData.test.ts`
+scans the source the way `storeVersions.test.ts` does and fails when a `bolid.*` store is missing
+from the reset. See [settings](./settings.md).
 
 ## Acceptance
 

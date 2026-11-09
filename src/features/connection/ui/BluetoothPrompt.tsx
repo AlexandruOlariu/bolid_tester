@@ -36,7 +36,7 @@ export function BluetoothPrompt({ bt }: { bt: BluetoothState }) {
     title = 'Bluetooth LE not available';
     body =
       'This device doesn’t support Bluetooth Low Energy, so a wireless OBD2 adapter can’t be used. ' +
-      'You can still use the built-in simulator (Settings).';
+      'You can still use the built-in simulator (Settings → Developer & simulator).';
   } else if (bt.unauthorized) {
     title = 'Bluetooth permission needed';
     body =

@@ -38,11 +38,13 @@ implementation plan under [`docs/plans/`](./docs/plans/README.md).
 
 ## Features
 
-Core diagnostics: connection, vehicle select (or Auto/Generic), **live data**, **fault codes**
-(stored/pending/permanent + readiness + freeze-frame), **vehicle info** (VIN, protocol, supported
-PIDs), **settings** (with a built-in **simulator** so the whole app runs with no hardware).
+Core diagnostics: connection, vehicle select (or Auto/Generic), **live data** (a dashboard with
+per-fuel presets, plus **All sensors** grouped by system), **fault codes** (stored, pending and
+permanent, with readiness and freeze-frame), **vehicle info** (VIN, protocol, supported PIDs),
+**settings** (with a built-in **simulator** so the whole app runs with no hardware). Metric only.
 
-Everything else is reachable from the **More** tab ([more](./docs/features/more.md)):
+Everything else is reachable from the **More** tab ([more](./docs/features/more.md)), grouped into
+Diagnose · Drive · Ownership · Workshop (experimental) · Tools, with search:
 
 | Feature                                                       | What it does                                                                                          | Notes                                      |
 | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------ |
@@ -61,7 +63,6 @@ Everything else is reachable from the **More** tab ([more](./docs/features/more.
 | [Maintenance log](./docs/features/maintenance-log.md)         | Service logbook + what's-due by km/time                                                               | odometer user-entered                      |
 | [Error log](./docs/features/error-log.md)                     | Saves caught & uncaught errors; export as Markdown/JSON to fix later                                  | on-device, capped, clearable               |
 | [Adapter health](./docs/features/adapter-health.md)           | Grades the ELM327: firmware, voltage, protocol, timed `0100` burst, clone hints                       | read-only                                  |
-| [Sensor readings](./docs/features/sensor-readings.md)         | Every live sensor grouped by system + injection DIDs                                                  | injection DIDs CAN only                    |
 
 Manufacturer / module tier 🧪 (CAN, VAG-first; also in **More**):
 
@@ -101,8 +102,8 @@ npm install
 npx expo start --dev-client -c     # -c clears Metro's cache (needed after adding files)
 ```
 
-A fresh install uses the **real Bluetooth adapter**. To work with no car, switch **Settings → Adapter
-source** to **Simulator (no car)** — every screen then runs against the built-in virtual ECU, and an
+A fresh install uses the **real Bluetooth adapter**. To work with no car, open **Settings → Developer &
+simulator** (collapsed; tap it to expand) and switch **Adapter source** to **Simulator (no car)** — every screen then runs against the built-in virtual ECU, and an
 amber banner stays visible so simulated readings are never mistaken for the real car. After pulling new native dependencies, install them with
 `npx expo install` (this project uses `expo-notifications`, `expo-file-system`, `expo-haptics`,
 `expo-location`, `expo-sharing`).

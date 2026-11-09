@@ -1,6 +1,6 @@
 export { HintCard } from './ui/HintCard';
 export { FirstRunCard } from './ui/FirstRunCard';
-export { useOnboardingStore } from './model/onboardingStore';
+export { useOnboardingStore } from '@/shared/state/onboardingStore';
 export {
   firstRunSteps,
   firstRunComplete,

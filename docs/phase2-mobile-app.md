@@ -53,7 +53,7 @@ exercisable end-to-end without a car — and is what the core integration tests 
 
 ## Feature ↔ code map
 
-All 32 slices, grouped as in the [feature audit](./audit-2026-11.md#feature-inventory). Routes are
+All 33 slices, grouped as in the [feature audit](./audit-2026-11.md#feature-inventory). Routes are
 files in `src/app/` (expo-router); every hidden route is reached from **More** or **Info** (see
 [more](./features/more.md#hidden-routes-and-where-they-are-reached)). Two specs carry another name
 (`inspection` → `used-car-inspection`, `maintenance` → `maintenance-log`), and
@@ -62,22 +62,21 @@ files in `src/app/` (expo-router); every hidden route is reached from **More** o
 
 ### Tier A — generic OBD2 (any car)
 
-| Slice (`src/features/*`) | Route                           | Spec                                                           |
-| ------------------------ | ------------------------------- | -------------------------------------------------------------- |
-| `connection`             | `/` (Connect tab)               | [`features/connection.md`](./features/connection.md)           |
-| `vehicle-select`         | `/vehicle` (Vehicle tab)        | [`features/vehicle-select.md`](./features/vehicle-select.md)   |
-| `live-data`              | `/dashboard` (Live tab)         | [`features/live-data.md`](./features/live-data.md)             |
-| `fault-codes`            | `/faults` (Faults tab)          | [`features/fault-codes.md`](./features/fault-codes.md)         |
-| `vehicle-info`           | `/info` (Info tab)              | [`features/vehicle-info.md`](./features/vehicle-info.md)       |
-| `vin-decode`             | `/vin-decode`                   | [`features/vin-decode.md`](./features/vin-decode.md)           |
-| `extended-pids`          | `/extended` (from Info)         | [`features/extended-pids.md`](./features/extended-pids.md)     |
-| `sensor-readings`        | `/sensor-readings`              | [`features/sensor-readings.md`](./features/sensor-readings.md) |
-| `sensor-tests`           | `/sensors`                      | [`features/sensor-tests.md`](./features/sensor-tests.md)       |
-| `settings`               | `/settings` (Settings tab)      | [`features/settings.md`](./features/settings.md)               |
-| `error-log`              | `/error-log`                    | [`features/error-log.md`](./features/error-log.md)             |
-| `more`                   | `/more` (More tab)              | [`features/more.md`](./features/more.md)                       |
-| `onboarding`             | — (cards on Connect and Charts) | [`features/onboarding.md`](./features/onboarding.md)           |
-| `engine-host`            | — (headless, `_layout.tsx`)     | [`features/engine-host.md`](./features/engine-host.md)         |
+| Slice (`src/features/*`) | Route                                            | Spec                                                         |
+| ------------------------ | ------------------------------------------------ | ------------------------------------------------------------ |
+| `connection`             | `/` (Connect tab)                                | [`features/connection.md`](./features/connection.md)         |
+| `vehicle-select`         | `/vehicle` (Vehicle tab)                         | [`features/vehicle-select.md`](./features/vehicle-select.md) |
+| `live-data`              | `/dashboard` (Live tab; Dashboard + All sensors) | [`features/live-data.md`](./features/live-data.md)           |
+| `fault-codes`            | `/faults` (Faults tab)                           | [`features/fault-codes.md`](./features/fault-codes.md)       |
+| `vehicle-info`           | `/info` (Info tab)                               | [`features/vehicle-info.md`](./features/vehicle-info.md)     |
+| `vin-decode`             | `/vin-decode`                                    | [`features/vin-decode.md`](./features/vin-decode.md)         |
+| `extended-pids`          | `/extended` (from Info)                          | [`features/extended-pids.md`](./features/extended-pids.md)   |
+| `sensor-tests`           | `/sensors`                                       | [`features/sensor-tests.md`](./features/sensor-tests.md)     |
+| `settings`               | `/settings` (Settings tab)                       | [`features/settings.md`](./features/settings.md)             |
+| `error-log`              | `/error-log`                                     | [`features/error-log.md`](./features/error-log.md)           |
+| `more`                   | `/more` (More tab)                               | [`features/more.md`](./features/more.md)                     |
+| `onboarding`             | — (cards on Connect and Charts)                  | [`features/onboarding.md`](./features/onboarding.md)         |
+| `engine-host`            | — (headless, `_layout.tsx`)                      | [`features/engine-host.md`](./features/engine-host.md)       |
 
 ### Tier B — analysis, ownership, tooling
 

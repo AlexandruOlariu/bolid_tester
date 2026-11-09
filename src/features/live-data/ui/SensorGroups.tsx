@@ -1,14 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { YStack, XStack, Text, Paragraph, Card, Button, Spinner, H4 } from 'tamagui';
-import { Screen, ValueCard } from '@/shared/ui';
+import { ValueCard } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { isCan, isExtendedKey } from '@/shared/obd-core';
 import { logError } from '@/shared/state/errorLogStore';
-import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
-import { useLiveData } from '@/features/live-data';
+import { useActiveProfile } from '@/shared/state/activeProfile';
+import { useLiveData } from '../hooks/useLiveData';
+
+/** Live → **All sensors** (plan 07; was the standalone Sensor readings screen): every live Mode 01
+ *  value grouped by system, then the profile's injection DIDs on CAN cars. Rendered by
+ *  DashboardScreen while its "All sensors" segment is selected, so it mounts only then: its
+ *  `useLiveData()` registers the whole effective PID set, and the injection DIDs are read on mount.
+ *  See docs/features/live-data.md#all-sensors. */
 
 /** Mode 01 PIDs grouped into human sections. PIDs the ECU doesn't support simply never appear. */
-const GROUPS: { title: string; pids: string[] }[] = [
+export const GROUPS: { title: string; pids: string[] }[] = [
   { title: 'Engine', pids: ['010C', '010D', '0104', '0111', '010E', '011F'] },
   { title: 'Temperatures', pids: ['0105', '010F', '0146', '015C'] },
   { title: 'Air & boost', pids: ['010B', '0110', '0133'] },
@@ -28,7 +34,7 @@ interface InjectionReading {
   value: number | null;
 }
 
-export function SensorReadingsScreen() {
+export function SensorGroups() {
   const status = useSessionStore((s) => s.status);
   const session = useSessionStore((s) => s.session);
   const profile = useActiveProfile();
@@ -68,7 +74,7 @@ export function SensorReadingsScreen() {
       }
       setInjection(out);
     } catch (e) {
-      if (current()) logError({ source: 'sensor-readings', error: e, severity: 'warning' });
+      if (current()) logError({ source: 'live-data/sensors', error: e, severity: 'warning' });
     } finally {
       if (current()) setInjLoading(false);
     }
@@ -84,15 +90,7 @@ export function SensorReadingsScreen() {
     return cancelReads;
   }, [readInjection, cancelReads]);
 
-  if (status !== 'connected') {
-    return (
-      <Screen title="Sensor readings">
-        <Paragraph theme="alt2">
-          Not connected. Connect an adapter or the simulator first.
-        </Paragraph>
-      </Screen>
-    );
-  }
+  if (status !== 'connected') return null;
 
   // Mode 01 only: extended `22:<DID>` values share the live store (plan 14) but are experimental
   // manufacturer reads with their own screen — never list them among the standard sensors.
@@ -101,10 +99,10 @@ export function SensorReadingsScreen() {
     .map(([, v]) => v);
 
   return (
-    <Screen
-      title="Sensor readings"
-      subtitle={polling ? 'Live — every supported sensor, grouped' : 'Live sensors'}
-    >
+    <YStack gap="$3" testID="live-all-sensors">
+      <Paragraph theme="alt2" fontSize="$2">
+        {polling ? 'Live — every supported sensor, grouped' : 'Every supported sensor, grouped'}
+      </Paragraph>
       {GROUPS.map((g) => {
         const items = g.pids.map((pid) => values[pid]).filter((v) => v != null);
         if (items.length === 0) return null;
@@ -183,6 +181,6 @@ export function SensorReadingsScreen() {
           </Card>
         )}
       </YStack>
-    </Screen>
+    </YStack>
   );
 }

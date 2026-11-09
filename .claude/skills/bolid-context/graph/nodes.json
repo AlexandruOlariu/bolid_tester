@@ -73,7 +73,7 @@
   },
   "concept:app-settings": {
     "path": null,
-    "summary": "Runtime + developer settings: units, behavior toggles, and the raw adapter I/O log (bytes for debugging). Backed by settingsStore.",
+    "summary": "Settings in sections (plan 07): General, Connection, AI, Notifications, Data, a collapsed Developer & simulator section (adapter source, simulator, a\u2026",
     "tokens": [
       "app",
       "config",
@@ -81,9 +81,10 @@
       "io",
       "options",
       "preferences",
+      "reset",
       "settings",
-      "toggle",
-      "units"
+      "simulator",
+      "toggle"
     ],
     "type": "concept"
   },
@@ -400,14 +401,11 @@
     "summary": "Fuel economy derived from live PIDs (fuel-rate 015E preferred, else MAF+speed with per-fuel constants) as instantaneous + windowed L/100km (L/h at st\u2026",
     "tokens": [
       "consumption",
-      "conversion",
       "economy",
       "fuel",
-      "imperial",
       "l100km",
       "maf",
       "metric",
-      "mpg",
       "units"
     ],
     "type": "concept"
@@ -561,6 +559,22 @@
       "oil",
       "reminder",
       "service"
+    ],
+    "type": "concept"
+  },
+  "concept:metric-only": {
+    "path": null,
+    "summary": "The app is metric only (decision 2026-11-08, plan 07): values render as decoded (km/h, \u00b0C, km, kPa, L/100km); there is no unit setting or conversion\u2026",
+    "tokens": [
+      "celsius",
+      "conversion",
+      "km",
+      "metric",
+      "miles",
+      "mph",
+      "only",
+      "unit",
+      "units"
     ],
     "type": "concept"
   },
@@ -2128,15 +2142,6 @@
     ],
     "type": "doc"
   },
-  "doc:features/sensor-readings": {
-    "path": "docs/features/sensor-readings.md",
-    "summary": "Feature: sensor-readings",
-    "tokens": [
-      "readings",
-      "sensor"
-    ],
-    "type": "doc"
-  },
   "doc:features/sensor-tests": {
     "path": "docs/features/sensor-tests.md",
     "summary": "Feature: sensor-tests",
@@ -2971,6 +2976,7 @@
     "summary": "**Backup & restore** (plan 18, [plan](../plans/18-backup-restore.md)): every persisted store",
     "tests": [
       "src/features/backup/api/backupService.test.ts",
+      "src/features/backup/api/resetAppData.test.ts",
       "src/features/backup/api/storeCsv.test.ts",
       "src/features/backup/api/storeVersions.test.ts",
       "src/features/backup/ui/BackupScreen.test.tsx"
@@ -3139,7 +3145,8 @@
     "summary": "Stream and display live engine parameters (Mode 01 PIDs).",
     "tests": [
       "src/features/live-data/model/dashboardLayout.test.ts",
-      "src/features/live-data/ui/DashboardScreen.test.tsx"
+      "src/features/live-data/ui/DashboardScreen.test.tsx",
+      "src/features/live-data/ui/SensorGroups.test.tsx"
     ],
     "tokens": [
       "data",
@@ -3180,6 +3187,7 @@
     "path": "src/features/more",
     "summary": "The **More** tab: the hub that reaches every screen that is not a tab, plus **Check for updates**.",
     "tests": [
+      "src/features/more/model/sections.test.ts",
       "src/features/more/ui/MoreScreen.test.tsx"
     ],
     "tokens": [
@@ -3208,7 +3216,7 @@
   },
   "feature:performance-tests": {
     "path": "src/features/performance-tests",
-    "summary": "Measure vehicle performance from live OBD2 data: **0\u2013100 km/h** (and 0\u201360 mph), custom speed",
+    "summary": "Measure vehicle performance from live OBD2 data: **0\u2013100 km/h**, custom speed intervals, a",
     "tokens": [
       "performance",
       "tests"
@@ -3240,18 +3248,6 @@
     ],
     "type": "feature"
   },
-  "feature:sensor-readings": {
-    "path": "src/features/sensor-readings",
-    "summary": "Every live Mode 01 sensor the car reports, **grouped by system**, plus the profile's",
-    "tests": [
-      "src/features/sensor-readings/ui/SensorReadingsScreen.test.tsx"
-    ],
-    "tokens": [
-      "readings",
-      "sensor"
-    ],
-    "type": "feature"
-  },
   "feature:sensor-tests": {
     "path": "src/features/sensor-tests",
     "summary": "Inspect and **actively test individual sensors** \u2014 watch a single sensor live while you actuate it",
@@ -3279,7 +3275,7 @@
   },
   "feature:settings": {
     "path": "src/features/settings",
-    "summary": "Developer and runtime settings.",
+    "summary": "User preferences first, then the developer and simulator controls in their own collapsed section.",
     "tests": [
       "src/features/settings/api/replayFixtureFile.test.ts",
       "src/features/settings/model/privacyPolicy.test.ts",
@@ -3479,17 +3475,6 @@
     "summary": "Exchange file formats (plan 13): a garage car (\"profile\") or a label pack as a versioned JSON envelope that travels between phones or comes from a co\u2026",
     "tokens": [
       "types"
-    ],
-    "type": "lib"
-  },
-  "lib:units": {
-    "path": "src/shared/lib/units.ts",
-    "summary": "Display-time unit conversion.",
-    "tests": [
-      "src/shared/lib/units.test.ts"
-    ],
-    "tokens": [
-      "units"
     ],
     "type": "lib"
   },
@@ -3718,15 +3703,6 @@
     ],
     "type": "screen"
   },
-  "screen:sensor-readings": {
-    "path": "src/app/sensor-readings.tsx",
-    "summary": "Route screen 'sensor readings' (expo-router).",
-    "tokens": [
-      "readings",
-      "sensor"
-    ],
-    "type": "screen"
-  },
   "screen:sensors": {
     "path": "src/app/sensors.tsx",
     "summary": "Route screen 'sensors' (expo-router).",
@@ -3746,7 +3722,7 @@
   },
   "screen:settings": {
     "path": "src/app/settings.tsx",
-    "summary": "Route screen 'settings' (expo-router).",
+    "summary": "The route composes Settings with the backup slice's **Reset all app data** (plan 07): no feature imports the backup slice, so the app layer hands Set\u2026",
     "tokens": [
       "settings"
     ],
@@ -3928,6 +3904,14 @@
     "tokens": [
       "data",
       "live"
+    ],
+    "type": "store"
+  },
+  "store:onboardingStore": {
+    "path": "src/shared/state/onboardingStore.ts",
+    "summary": "First-run hints are dismissible and stay dismissed across launches.",
+    "tokens": [
+      "onboarding"
     ],
     "type": "store"
   },

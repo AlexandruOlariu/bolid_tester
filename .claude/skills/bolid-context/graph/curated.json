@@ -116,6 +116,9 @@
     { "id": "sensor-monitoring",
       "summary": "Watch individual sensors live (wiggle/actuation test) and read standardized Mode 06 on-board monitor test results. Standard tier (any OBD2) + experimental CAN tier.",
       "tokens": ["sensor","sensors","mode06","monitor","wiggle","actuate","reading","readings","onboard"] },
+    { "id": "metric-only",
+      "summary": "The app is metric only (decision 2026-11-08, plan 07): values render as decoded (km/h, °C, km, kPa, L/100km); there is no unit setting or conversion layer, and none may be added.",
+      "tokens": ["metric","units","unit","conversion","km","celsius","mph","miles"] },
     { "id": "service-reset",
       "summary": "Reset the service interval / oil-service reminder (SRI). It writes to a control module, so it carries the same gating/guardrails as ECU coding.",
       "tokens": ["service","reset","sri","oil","reminder","interval","write","gated"] },
@@ -138,8 +141,8 @@
       "summary": "Trip detail (plan 17): the GPS track is drawn as an SVG polyline (no map tiles/keys) coloured by speed/RPM/fuel rate; GPS distance (haversine over fixes) vs OBD distance (010D integrated, obdDistanceKmFromSamples) gives a speedo/odometer sanity verdict: |delta| < 3 % ok, < 8 % check (tyre size / speedo offset), >= 8 % mismatch; < 2 fixes or no 010D unknown. Thresholds await one real Golf trip. The simulator synthesises GPS on a 2 km loop (syntheticLoopPoint) from the live 010D speed.",
       "tokens": ["gps","track","map","polyline","odometer","speedometer","speedo","distance","verdict","overlay","synthetic","loop","trip-detail"] },
     { "id": "app-settings",
-      "summary": "Runtime + developer settings: units, behavior toggles, and the raw adapter I/O log (bytes for debugging). Backed by settingsStore.",
-      "tokens": ["settings","config","units","preferences","developer","io","options","toggle"] },
+      "summary": "Settings in sections (plan 07): General, Connection, AI, Notifications, Data, a collapsed Developer & simulator section (adapter source, simulator, adapter I/O log, show hints again, reset all app data) and About. Backed by settingsStore.",
+      "tokens": ["settings","config","preferences","developer","simulator","reset","io","options","toggle"] },
     { "id": "app-shell",
       "summary": "Expo-router app shell: the root _layout (navigation/tabs) and the More tab — a hub listing secondary screens (history, maintenance, settings, etc.).",
       "tokens": ["navigation","nav","layout","tab","shell","more","menu","router","routing","home","drawer"] },
@@ -168,8 +171,8 @@
       "summary": "Drive-cycle coach: after a DTC clear, lists incomplete readiness monitors with generic per-monitor completion patterns (obd-core driveCycle), polls 0101 every ~30s from EngineHost while enabled, and notifies as each monitor (then all) flips ready.",
       "tokens": ["readiness","coach","drivecycle","monitor","ready","itp","clear","0101","complete"] },
     { "id": "fuel-economy-units",
-      "summary": "Fuel economy derived from live PIDs (fuel-rate 015E preferred, else MAF+speed with per-fuel constants) as instantaneous + windowed L/100km (L/h at standstill), on the dashboard and in trip stats; the units setting converts display values (metric/imperial) at UI level only — obd-core stays SI.",
-      "tokens": ["fuel","economy","consumption","l100km","mpg","maf","units","imperial","metric","conversion"] }
+      "summary": "Fuel economy derived from live PIDs (fuel-rate 015E preferred, else MAF+speed with per-fuel constants) as instantaneous + windowed L/100km (L/h at standstill), on the dashboard and in trip stats; shown in L/100km as decoded (the app is metric only, plan 07).",
+      "tokens": ["fuel","economy","consumption","l100km","maf","units","metric"] }
   ],
   "links": [
     ["concept:live-value-keys", "core:obd/liveKeys", "relates"],
@@ -378,7 +381,10 @@
     ["concept:sensor-monitoring", "core:obd/mode06", "relates"],
     ["concept:sensor-monitoring", "core:obd/pids", "relates"],
     ["concept:sensor-monitoring", "feature:sensor-tests", "relates"],
-    ["concept:sensor-monitoring", "feature:sensor-readings", "relates"],
+    ["concept:sensor-monitoring", "feature:live-data", "relates"],
+    ["concept:metric-only", "feature:settings", "relates"],
+    ["concept:metric-only", "feature:live-data", "relates"],
+    ["concept:metric-only", "doc:features/settings", "relates"],
     ["concept:sensor-monitoring", "doc:features/sensor-tests", "relates"],
     ["concept:sensor-monitoring", "concept:live-data-charts", "relates"],
 

@@ -1,10 +1,32 @@
 # Feature: settings
 
-Developer and runtime settings.
+User preferences first, then the developer and simulator controls in their own collapsed section.
 
 ## UI
 
-- **SettingsScreen**:
+**SettingsScreen** (plan 07) shows, in this order:
+
+1. **General** — **Theme** (system / light / dark) and the line "Units are metric: km/h, °C, km,
+   kPa and L/100 km." The app is **metric only** — no unit conversion layer and no unit setting
+   (decision 2026-11-08); values show as obd-core decodes them. A language picker joins General
+   with plan 11.
+2. **Connection** — **Auto-reconnect**, **Poll interval** (250 / 500 / 1000 / 2000 ms; "How often
+   live values are read. A slow K-line car sets its own pace.") and **Recognise my cars by VIN**.
+3. **AI assistant (auto-diagnose)**.
+4. **Notifications** — one row, **Notification settings** ("Alerts, reminders and quiet mode"),
+   that opens `/notifications`, where the preferences live ([notifications](./notifications.md)).
+5. **Data** — backup & restore, label packs, security-access plugins.
+6. **Developer & simulator** — **collapsed on open**: the header (a button labelled
+   "Developer & simulator. Show" / "… Hide") shows **Show** and a one-line summary; pressing it
+   reveals, in one card: **Adapter source**, then (simulator only) **Simulated vehicle**,
+   **Injected DTCs** and **Simulator test controls**, then the **Adapter log** with the replay-fixture
+   export, and **Hints and app data** (**Show hints again**, **Reset all app data**). The simulator
+   banner (plan 01) stays the always-on indicator that the simulator is selected.
+7. **About** — version, build, privacy policy, documentation link.
+
+Then **Disconnect** while a session is connected. The parts in detail:
+
+- **Developer & simulator** parts:
   - **Adapter source** toggle — default **Real adapter (Bluetooth)**; **Simulator (no car)** is an
     explicit opt-in and, while it is on, an amber **simulator banner** stays visible on every screen
     (see [connection](./connection.md#simulator-banner)). The segments call
@@ -21,21 +43,13 @@ Developer and runtime settings.
     rejected); codes are uppercased, invalid ones ignored, duplicates dropped (`parseDtcList` in
     `settingsStore.ts`). The injected set is read
     when the simulator connects, so reconnect to apply a change.
-  - **Developer (simulator)** (simulator only) — two test controls for the link-robustness paths
+  - **Simulator test controls** (simulator only) — two test controls for the link-robustness paths
     (plan 12): **Simulate a link drop** (enabled while connected; calls
     `connectionService.__sim.simulateDrop()` → `MockTransport.simulateDisconnect()`, so
     auto-reconnect and the flap guard can be watched with no car) and **Fail next connect: no reply
     to ATZ** (`__sim.failNextConnect()`: the next simulator connect's `MockTransport` gets
     `dropResponses(1, { includeAt: true })`, so `ATZ` times out and the Connect screen's
     diagnostics panel opens at stage "Adapter start-up").
-  - **Auto-reconnect** On / Off — copy: "On by default; pauses after 3 drops in a minute", then the
-    backoff (2 s, 5 s, 10 s — up to 3 attempts) and that a manual disconnect / connect cancels it.
-    See [connection](./connection.md#auto-reconnect-on-by-default-with-a-flap-guard).
-  - **Recognise my cars by VIN** On / Off (plan 06) — copy: "Select a garage car when its VIN
-    connects", "On by default. When the connected car's VIN (vehicle identification number) matches
-    a car you added from a connection, that car becomes the active vehicle. Built-in profiles are
-    only suggested on the Vehicle screen." See
-    [vehicle-select](./vehicle-select.md#vin-auto-select).
   - **Adapter log** — live log of adapter I/O (sent commands ↔ raw responses) with **Clear**, a
     **Flow name** field (default `session`) and **Export as replay fixture** (plan 02). The export
     (`model/replayExport.ts` → `api/replayFixtureFile.ts`, through `expo-file-system/legacy`, which
@@ -70,6 +84,47 @@ Developer and runtime settings.
     `meta.droppedEntries: N`. The file goes into
     `src/shared/obd-core/transport/fixtures/<vehicleId>/` — see
     [simulator.md → Replay fixtures](../simulator.md#replay-fixtures).
+  - **Show hints again** — `useOnboardingStore.getState().reset()`: every dismissed hint, the
+    first-run card on the Connect tab included, shows again ("Hints are back: the first-run card
+    shows on the Connect tab again."). The card comes back even when its three steps are already
+    done this session: it auto-dismisses only on the change to complete, so it shows them ticked
+    until the user closes it.
+  - **Reset all app data** — asks twice (`Alert.alert` "Reset all app data?" listing what goes,
+    **Continue**; then "Delete all app data?" — "This cannot be undone. Make a backup first …" —
+    **Reset everything**), then tears the connection down with `connectionService.resetForRestore()`
+    (the restore teardown: a connect still in flight is invalidated, so it cannot publish a session
+    built for the old adapter source after the reset; a failing close is logged, not fatal) and runs
+    `resetAllAppData()` (`features/backup/api/resetAppData.ts`). Settings does not import the
+    backup slice: the route `src/app/settings.tsx` passes it in as the screen's `resetAppData`
+    prop (features never import each other), and without that prop the button is not shown. Every
+    persisted store goes back to its initial state
+    and its file is removed — `bolid.settings`, `bolid.garage`, `bolid.vehicle`, `bolid.loginBook`
+    (code book), `bolid.labelPacks`, `bolid.history`, `bolid.maintenance`, `bolid.trips`,
+    `bolid.scans` (scan history), `bolid.carBackups` (coding backups), `bolid.dashboard-layout`,
+    `bolid.alerts`, `bolid.notifications`, `bolid.onboarding`, `bolid.backups` (the backup list),
+    `bolid.seedKeys` (security-access plugin index) and `bolid.errors`. The AI keys leave the
+    keystore (`forgetAllApiKeys`: every provider slot and the legacy slot), the in-memory results
+    (fault codes, inspection, battery health, AI diagnosis, module scan and discovery, DPF, adapter
+    health — what those screens and the vehicle report show) and the adapter log are cleared, and the app's own files are deleted:
+    `seedkeys/` (plugin programs), `backups/` (backup files), each trip's `trip-<id>.csv`, and the
+    staging copy every export writes to the document directory before the share sheet opens
+    (coding snapshots, vehicle and fault-code reports, chart / measuring-log / sniffer CSVs,
+    adapter-health and auto-scan text, error-log, garage, profile and label-pack exports, replay
+    fixtures: every top-level `.json` / `.csv` / `.txt` / `.md` / `.html` / `.pdf` file except the
+    stores' own `bolid.<store>.json`; hidden entries such as `.expo-internal` are skipped). The
+    copies the share sheet handed to other apps live outside the app and stay. The result: a fresh install — real adapter, no garage, no
+    history, hints back. A file that cannot be deleted (or a directory that cannot be listed) is
+    named in the note and logged (`settings/reset`); the stores are reset anyway. `resetAppData.test.ts` scans the source for
+    every `persist(` store named `bolid.*` and fails when one is missing from the reset.
+- **User preferences**:
+  - **Auto-reconnect** On / Off (Connection) — copy: "On by default; pauses after 3 drops in a minute", then the
+    backoff (2 s, 5 s, 10 s — up to 3 attempts) and that a manual disconnect / connect cancels it.
+    See [connection](./connection.md#auto-reconnect-on-by-default-with-a-flap-guard).
+  - **Recognise my cars by VIN** On / Off (plan 06, Connection) — copy: "Select a garage car when its VIN
+    connects", "On by default. When the connected car's VIN (vehicle identification number) matches
+    a car you added from a connection, that car becomes the active vehicle. Built-in profiles are
+    only suggested on the Vehicle screen." See
+    [vehicle-select](./vehicle-select.md#vin-auto-select).
   - **AI assistant (auto-diagnose)** (plan 19) — **Enabled**, then a **Provider** segment
     (**Local server** · **OpenAI** · **Anthropic** · **Custom**) with the preset's one-line hint.
     Switching provider applies that preset once (`setAi({ provider })` →
@@ -83,7 +138,9 @@ Developer and runtime settings.
     (hidden for Anthropic), **Timeout**, **Test connection** — all through the `getAiClient`
     dispatcher. A Test / Detect that finishes after the provider or address changed is dropped (no
     model written into the new provider, no stale status). See [ai-diagnose → Providers](./ai-diagnose.md#providers).
-  - Units (metric default), poll interval, theme (system/light/dark).
+  - **Metric only** — no unit conversion layer: every screen shows km/h, °C, km, kPa and L/100 km
+    as decoded (the dead imperial path — a `units` field no control ever set, and its conversion
+    module — was deleted in plan 07).
   - **Data** (plan 18) — one line on keeping a copy or moving to a new phone ("Nothing goes to the
     cloud"), with **Backup & restore** and **Export data…**, both opening `/backup`
     ([backup](./backup.md): one file with every store and the trip recordings, restore with a
@@ -106,13 +163,16 @@ Developer and runtime settings.
       widths, any / this / another car, import date, **Test in simulator**, **Delete** after
       "Delete this plugin?") or "No plugins installed. Writes to modules that need security
       access are refused." See [coding → Security-access plugins](./coding.md#security-access-plugins-plan-23).
-  - **About** (plan 08) — "Bolid Tester <version>" (`APP_NAME` / `APP_VERSION` from
-    `shared/lib/appInfo.ts`, read from `app.json`; the version is also the OTA runtime version), a
+  - **About** (plan 08, plan 07) — "Bolid Tester <version>" (`APP_NAME` / `APP_VERSION` from
+    `shared/lib/appInfo.ts`, read from `app.json`; the version is also the OTA runtime version),
+    "Build <n>" when `app.json` carries `expo.extra.build` (`APP_BUILD`; none today), a
     note that OTA updates only reach the same version and are checked only from **More → Check for
     updates**, and a **Privacy policy** button that expands the policy in place ("Last updated
     <date>", then each section). The text lives in `model/privacyPolicy.ts` and is published as
     [docs/privacy-policy.md](../privacy-policy.md); `privacyPolicy.test.ts` fails when a heading or
-    paragraph differs between the two. See [release.md](../release.md).
+    paragraph differs between the two. **Documentation (GitHub)** opens `DOCS_URL` (the repo's
+    `docs/` folder) with `Linking.openURL`; a failure logs `settings/about`. See
+    [release.md](../release.md).
 
 ## hooks
 
@@ -145,7 +205,7 @@ Developer and runtime settings.
 ## model
 
 - `settingsStore` (Zustand, **persisted**): `adapterSource`, `simulatedVehicleId`, `injectedDtcs`,
-  `units`, `pollIntervalMs`, `autoReconnect`, `autoSelectByVin`, `theme`, and the `ai` config
+  `pollIntervalMs`, `autoReconnect`, `autoSelectByVin`, `theme`, and the `ai` config
   (`provider`, server URL, model, structured-output mode, timeout, `remembered` per-provider URL /
   model / mode, and the current provider's key in runtime state only). It no longer holds the
   adapter I/O log (see above).
@@ -161,7 +221,7 @@ Developer and runtime settings.
   slot; the legacy slot is deleted once its key is safe (loaded from the provider slot, or the move
   into it succeeded — a failed keystore write keeps it for the next start). Without the native module (Expo Go, web, tests) keys
   live in memory for the session.
-- Persisted as `bolid.settings` at **version 5**. Defaults: `adapterSource: 'ble'`,
+- Persisted as `bolid.settings` at **version 6**. Defaults: `adapterSource: 'ble'`,
   `simulatedVehicleId: 'golf-plus-2009-20tdi'`, `injectedDtcs: []`, `autoReconnect: true`,
   `autoSelectByVin: true`. `simulatedVehicleId` may be a registry id or a garage `user:` id.
 - **Migrations** (`migrateSettings`, pure and unit-tested; each step only fills _missing_ fields, so
@@ -178,7 +238,10 @@ Developer and runtime settings.
   - **v4 → v5** (plan 19): `ai.provider = inferProvider(ai.baseUrl)` (api.openai.com → `openai`,
     api.anthropic.com → `anthropic`, blank → `local`, anything else → `custom`); every other `ai`
     field is kept and a blob without `ai` stays without it (the defaults fill it).
-  - From v5 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults
+  - **v5 → v6** (plan 07): metric only — a stale `units` key is dropped (`withoutUnits`); every
+    other field is kept. `merge` drops it too, so a restored or hand-edited v6 file carrying it
+    never brings it back.
+  - From v6 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults
     (and infers `provider` if a blob somehow lacks a valid one).
 - **Known limitation:** v1's `partialize` always wrote `adapterSource` and `injectedDtcs`, so every
   real v1 file carries them — including installs that never chose anything and just persisted the
@@ -205,6 +268,15 @@ Developer and runtime settings.
 - With the simulator and **Injected DTCs: None**, Faults shows no codes; **Custom…** `P0135` shows
   `P0135`.
 - App is fully usable end-to-end in simulator mode.
+- Settings opens with General, Connection, AI assistant, Notifications, Data, Developer &
+  simulator (collapsed: no adapter-source, simulator or log control rendered) and About, in that
+  order; pressing **Developer & simulator** reveals them.
+- No imperial code remains: `grep -rn "UnitSystem\|imperial\|displayUnit\|convertValue" src` is
+  empty; Dashboard and Trips show km/h, °C, km and L/100 km.
+- **Show hints again** brings back the first-run card; **Reset all app data**, after two
+  confirmations, returns the app to a fresh state (real adapter, no garage, no history) and no
+  `bolid.*` store is missed.
+- **Notifications** → **Notification settings** opens `/notifications`.
 - **Data** → **Backup & restore** / **Export data…** open the backup screen.
 - **Data** → **Label packs**: importing the example pack (`docs/examples/label-pack.example.json`)
   lists it under Imported; Delete brings the bundled names back; a corrupted file shows its first

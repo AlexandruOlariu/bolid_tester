@@ -19,7 +19,7 @@ import { useTripStore } from '@/features/trip-recording/model/tripStore';
 import { useScanHistoryStore } from '@/features/module-scan/model/scanHistoryStore';
 import { useCarBackupStore } from '@/features/coding/model/carBackupStore';
 import { useDashboardLayoutStore } from '@/features/live-data/model/dashboardLayoutStore';
-import { useOnboardingStore } from '@/features/onboarding/model/onboardingStore';
+import { useOnboardingStore } from '@/shared/state/onboardingStore';
 import { useAlertsStore } from '@/features/alerts/model/alertsStore';
 import { useNotificationsStore } from '@/features/notifications/model/notificationsStore';
 import { useLoginBookStore } from '@/features/adaptations/model/loginBookStore';

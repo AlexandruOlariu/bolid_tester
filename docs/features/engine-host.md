@@ -143,13 +143,13 @@ slices import another feature (production code, tests excluded):
 - 16 read `vehicle-select` — its `model/vehicleStore` (the selected id) or, since plan 06, its
   `api/activeProfile` (`getActiveProfile` / `useActiveProfile`, the selection resolved over the
   registry and the garage): adaptations, ai-diagnose, can-sniffer, coding, dpf, extended-pids,
-  fault-codes, live-data, module-scan, onboarding, routines, sensor-readings, sensor-tests,
+  fault-codes, live-data, module-scan, onboarding, routines, sensor-tests,
   service-reset, settings, trip-recording. Since plan 06 both modules live in `src/shared/state/`
   (`vehicleStore.ts`, `activeProfile.ts`) and the vehicle-select paths only re-export them, so each
   of these is fixed by switching the import to the shared path; `maintenance` already does;
 - 8 other imports: adaptations → `module-scan` store, coding → `adaptations` service,
   connection → `onboarding` (`FirstRunCard`), history → `fault-codes` (`useDtcExport`),
-  live-charts → `onboarding` (`HintCard`), sensor-readings → `live-data` (`useLiveData`),
+  live-charts → `onboarding` (`HintCard`),
   settings → `connection` (`connectionService`). Plan 14 moved two stores to `src/shared/state/`
   so it adds no feature → feature import: the chart panel store (`chartsStore.ts`, for the Extended
   PIDs screen's "Chart this") and the live-value store (`liveDataStore.ts`, for its DID

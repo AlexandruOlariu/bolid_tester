@@ -86,7 +86,7 @@ from a vehicle profile.
   by the live `010D` speed (40 km/h when none is published). Each step is a straight line of
   speed × time from the last fix (`syntheticLoopAdvance`), so the GPS distance equals the OBD one
   even where a step cuts a corner. The trip is badged "simulated GPS" on the Trip detail screen, and
-  its GPS-vs-OBD check reads `ok` at any steady speed. Demo: Settings → Simulator, connect, open
+  its GPS-vs-OBD check reads `ok` at any steady speed. Demo: Settings → Developer & simulator → Simulator (no car), connect, open
   Live (the Golf's speed varies), Trips → **Record** for about 3 min (one 2 km lap at ~40 km/h;
   60 s draws only the first straight and a corner) → **Stop** → **Open**. See
   [trip-recording](./features/trip-recording.md#trip-detail-plan-17).
@@ -128,13 +128,14 @@ speed; non-zero to emulate K-line in the UI).
 ## Test / dev controls
 
 - `simulateDisconnect()` — an unsolicited link drop (adapter pulled, out of range); drives the
-  link-loss path, auto-reconnect and the flap guard. Settings → Developer → **Simulate a link drop**.
+  link-loss path, auto-reconnect and the flap guard. Settings → Developer & simulator → **Simulate a link
+  drop**.
 - A disconnected simulator answers nothing: `write()` rejects ("Simulator link is not connected")
   until `connect()`, like `BleTransport` without a device (plan W2), so no stray command can be
   answered after a session closed.
 - `dropResponses(n, { includeAt? })` — the next `n` non-AT commands get **no reply at all** (not
   even a prompt), so the client times out; drives the timeout, drain-until-prompt and diagnostics
-  paths. With `includeAt: true` AT commands count too — Settings → Developer → **Fail next connect:
+  paths. With `includeAt: true` AT commands count too — Settings → Developer & simulator → **Fail next connect:
   no reply to ATZ** arms exactly that (`dropResponses(1, { includeAt: true })`) for the next
   simulator connect. A bare `\r` is never dropped; calling it again replaces the budget.
 - For a **late** reply (rather than none), set `latencyMs` above the client's timeout.
@@ -163,7 +164,7 @@ that got no reply are skipped.
 
 ### Where fixtures come from
 
-- **The car:** Settings → Adapter log → **Clear**, run one flow, type its **Flow name**, **Export as
+- **The car:** Settings → Developer & simulator → Adapter log → **Clear**, run one flow, type its **Flow name**, **Export as
   replay fixture** ([settings](./features/settings.md)). The log keeps the last 300 lines
   (`ADAPTER_LOG_CAPACITY`); when it wraps, Settings says so and the export records
   `meta.droppedEntries`. The adapter log and `RecordingTransport`

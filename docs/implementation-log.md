@@ -5,6 +5,161 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 07 — Information architecture and metric only (2026-11-09)
+
+[Plan 07](./plans/07-information-architecture.md) landed: More is a grouped, searchable hub with
+the Workshop tools marked experimental; Settings puts user preferences first and the developer /
+simulator controls in a collapsed section (with **Show hints again** and **Reset all app data**);
+the dead imperial path is deleted (metric only); the Sensor readings screen is folded into the
+Live tab as **All sensors**; the dashboard starts from a per-fuel preset. The plan has no deferred
+section, so nothing waits for the car.
+
+- **More (`more/model/sections.ts`, pure).** `MoreEntry` / `MoreSection` / `MORE_SECTIONS` in five
+  sections — Diagnose (Diagnose (AI), Used-car inspection, History, Vehicle report, Sensor tests),
+  Drive (Charts, Performance, Trips, Alerts), Ownership (Maintenance log, Battery & charging, DPF /
+  regen, VIN decoder, Notifications), Workshop 🧪 with its blurb (Module scan, Adaptations,
+  Routines & output tests, Coding, Service reset, Bus sniffer — all `experimental: true`) and Tools
+  (Adapter health, Backup & restore, Error log, Check for updates as an action row) — plus
+  `entryKey`, `entryMatches` and `filterSections`. `MoreScreen.tsx`: a **Search tools…** input,
+  section headers, a yellow **experimental** chip on Workshop rows (". Experimental" appended to
+  their label), "No tools match …" for an empty result; the lucide icons map from `IconName` in
+  the UI file so the model stays node-testable.
+- **Settings.** In order: **General** (theme, "Units are metric …"), **Connection**
+  (auto-reconnect, poll interval, recognise my cars by VIN), **AI assistant**, **Notifications** (a
+  row opening `/notifications`), **Data**, **Developer & simulator** (collapsed on open: adapter
+  source, simulated vehicle, injected DTCs, simulator test controls, the adapter log with the
+  replay-fixture export, **Show hints again** → `useOnboardingStore.getState().reset()`, **Reset
+  all app data**) and **About** (version, build when `app.json` has `expo.extra.build`, privacy
+  policy, **Documentation (GitHub)** → `DOCS_URL`). The old "Developer (simulator)" block is now
+  "Simulator test controls" inside the section.
+- **Reset all app data (`backup/api/resetAppData.ts`).** Two `Alert.alert` confirmations, then
+  Settings tears the connection down with `connectionService.resetForRestore()` (it invalidates a
+  connect still in flight, so no session built for the old adapter source is published after the
+  reset, and logs a failing close instead of aborting) and `resetAllAppData()` puts **every** persisted store back to its initial
+  state and removes its file: settings, garage, vehicle, code book (`bolid.loginBook`), label
+  packs, history, maintenance, trips, scans, coding backups, dashboard layout, alerts,
+  notifications, onboarding, the backup list, the security-access plugin index and the error log
+  (last, so a problem logged while clearing survives). The AI keys leave the keystore (new
+  `forgetAllApiKeys` in `settingsStore`), the in-memory results (fault codes, inspection, battery,
+  AI diagnosis, module scan / discovery, DPF, adapter health) and the adapter log are cleared, and
+  the app's own files those stores point at are deleted (`seedkeys/`, `backups/`, each
+  `trip-<id>.csv`); a file that cannot be deleted is reported and logged (`settings/reset`) while
+  the stores are reset anyway.
+- **Metric only.** `shared/lib/units.ts` and `units.test.ts` deleted; `UnitSystem`, `units`,
+  `setUnits` and the `units` key gone from `settingsStore` (now **v6**: `migrateSettings` drops a
+  stale `units` key, and `merge` drops it from a v6 file too); `DashboardScreen` renders decoded
+  values and units directly (`FuelEconomyCard`, `GaugeItem`, the value cards); the Trips test no
+  longer sets the field. `grep -rn "UnitSystem\|imperial\|displayUnit\|convertValue" src` is empty. The
+  drive-cycle steady-cruise step no longer adds "(50 mph)", and the
+  [performance-tests](./features/performance-tests.md) spec drops its mph target, unit setting and
+  1 ft rollout (the code never had them; drag distances are given in metres) — review fixes;
+  `grep -rni "mph\|°F\|miles" src` (tests excluded) is empty.
+- **Live → All sensors.** `DashboardScreen` has a **Dashboard | All sensors** switch (tabs). The
+  sensor view is `live-data/ui/SensorGroups.tsx` (moved from `SensorReadingsScreen.tsx` with its
+  `GROUPS`, the injection-DID block and its run-id guard; error source now `live-data/sensors`). It
+  calls `useLiveData()` with no list (the whole effective set) while the dashboard view registers
+  nothing; switching back restores the dashboard's explicit registration. Deleted:
+  `src/features/sensor-readings/`, `src/app/sensor-readings.tsx`, the hidden route in
+  `_layout.tsx`, the More entry and `docs/features/sensor-readings.md` (no alias added to
+  `featureDocsSync.test.ts`).
+- **Dashboard presets.** `presetFor(fuel)` in `dashboardLayout.ts`: the RPM / speed / coolant
+  gauges, then diesel boost `010B`, oil temp `015C`, MAF `0110`, fuel rate `015E`, voltage `0142`;
+  petrol fuel trims `0106` / `0107`, timing `010E`, MAP `010B`, MAF `0110`, voltage `0142`, fuel
+  level `012F`; hybrid the petrol set with the voltage first; anything else `EMPTY_LAYOUT`. Applied
+  while a car has no saved layout; `toggleHidden(profileId, id, base)` starts from the preset so
+  the first hide keeps its order, and **Reset** returns to it.
+- **Maestro.** `.maestro/simulator-smoke.yaml` scrolls to and taps **Developer & simulator**
+  (case-insensitive, the header is upper-case on Android) before **Simulator (no car)** — the line
+  plan 10 left for this plan.
+- **Docs.** [more](./features/more.md) (sections, search, experimental chip, 25 hidden routes),
+  [settings](./features/settings.md) (order, metric only, Developer & simulator, the stores Reset
+  clears, About, v6), [live-data](./features/live-data.md) (All sensors, presets by fuel, metric
+  only, tests), [backup](./features/backup.md) (where the reset lives),
+  [phase2 map](./phase2-mobile-app.md) and the [docs index](./README.md) (33 slices),
+  [engine-host](./features/engine-host.md), [error-log](./features/error-log.md),
+  [testing](./testing.md), the root README, the roadmap (both plan 07 items ✅). Context graph:
+  new `concept:metric-only`; `concept:sensor-monitoring` now relates to `feature:live-data`; the
+  `app-settings` and `fuel-economy-units` concepts no longer mention a units setting.
+- **Tests (+30 tests net: 1554 tests / 177 suites).** `sections.test.ts` (new: five sections in order; every hidden
+  route in exactly one section except `/extended` and `/trip-detail`, and the hand-kept list equals
+  the routes parsed from `_layout.tsx`; only Workshop rows experimental; unique keys; `dpf` → only
+  DPF in Ownership; `cod` → only Coding in Workshop; keywords, case, multi-word; empty query →
+  all), `MoreScreen.test.tsx` (five sections; the chip on the six Workshop rows; search filters —
+  the plan 10 deferral), `resetAppData.test.ts` (new: the reset list equals every `persist(` store
+  named `bolid.*` in the source — none missed; a populated app comes back fresh with no store file,
+  no keystore key and the three kinds of app files deleted; the exports' staging copies deleted
+  but not the store files, hidden or directory entries (`isExportFile`); a failed delete or a
+  failed directory listing is reported and the stores still reset; no file system),
+  `test/app/SettingsRoute.test.tsx` (new: the route wires Reset all app data in), `SettingsScreen.test.tsx` (section order and **Developer &
+  simulator collapsed** — the plan 10 deferral; Notifications row; metric line; Show hints again,
+  also bringing back a first-run card whose steps are all done (rendered beside Settings);
+  Reset all app data through both confirmations back to the real adapter with no garage or
+  history, and hidden without a reset action; the documentation link; the existing tests open the section first),
+  `dashboardLayout.test.ts` (`presetFor`: diesel `010B` before `0106`, petrol includes and leads
+  with `0106`, LPG = petrol, hybrid voltage first, unknown fuel → `EMPTY_LAYOUT`, nothing hidden),
+  `DashboardScreen.test.tsx` (the All sensors segment and its registration; a petrol garage car
+  with no saved layout leads with the fuel trims), `SensorGroups.test.tsx` (the moved screen
+  tests), `settingsStore.test.ts` (v6; no `units` in state, partialize or file; v5 → v6 drops it).
+  `units.test.ts` is deleted with its module.
+- **Deviations.**
+  - The current More had three entries the plan's table predates — **Vehicle report**, **Sensor
+    tests** (both in Diagnose) and **Backup & restore** (Tools) — and the hidden routes now include
+    `/trip-detail` (reached from Trips), so the test's exception list is `/extended` and
+    `/trip-detail` (25 hidden routes, 23 in More).
+  - Search matches **word starts**, not substrings: with substrings `cod` would also find "Decode
+    the VIN" and "fault-code", which the plan's own acceptance rules out. For the same reason two
+    subtitles changed: History "Past diagnoses, fault reads and reports", Routines "Basic settings,
+    actuator tests, forced regeneration" (it said "DPF regen", which made `dpf` match two rows).
+  - Settings keeps the sections the plan did not know about: **Recognise my cars by VIN** joins
+    Connection and **Data** (backup, label packs, security plugins) sits between Notifications and
+    Developer & simulator. The adapter log moved into Developer & simulator.
+  - **Reset all app data** clears every persisted store (17, incl. the backup list, code book,
+    label packs and plugin index the plan's list predates), not only the 12 listed, and also the AI
+    keys and the app's own files; it lives in `features/backup` (the composition slice that already
+    imports every store). Settings adds no feature → feature import (review fix): the route
+    `src/app/settings.tsx` passes `resetAllAppData` in as the screen's `resetAppData` prop (no
+    prop, no button; `test/app/SettingsRoute.test.tsx` checks the wiring), and the dismissed-hints
+    store moved to `src/shared/state/onboardingStore.ts` (the onboarding slice's `index.ts`
+    re-exports it; the slice and `test/resetStores.ts` import the shared path, no re-export file
+    is left under `model/`) so **Show hints again** reads a shared store. Settings' only cross-feature import stays
+    `features/connection`, as [engine-host](./features/engine-host.md#the-composition-rule) lists.
+  - The reset also deletes the staging copies the exports leave in the document directory (review
+    fix): it lists the directory and deletes every top-level `.json` / `.csv` / `.txt` / `.md` /
+    `.html` / `.pdf` file except the stores' own `bolid.<store>.json` and hidden entries
+    (`isExportFile`) — coding snapshots, reports, CSVs, captures, fixtures, garage / profile /
+    label-pack exports — so a reset leaves what a fresh install has. Copies the share sheet handed
+    to other apps are outside the sandbox and stay; the confirmation says so.
+  - **Show hints again** brings the first-run card back even when its three steps are already
+    done this session (review fix): `FirstRunCard` used to dismiss itself whenever every step was
+    done, so after the reset it re-dismissed at once for a user who had picked a car, connected
+    and read faults. It now auto-dismisses only on the change to complete it sees while mounted
+    (a ref of the previous render's state), so a replayed card shows the steps ticked and stays
+    until the user closes it; after a restart nothing is done yet (`dtcStore` is in-memory), so
+    first use is unchanged.
+  - Hints that sent the user to "Settings → Adapter source" / "Settings → Simulator (no car)" now
+    name the collapsed section (review fix): the Bluetooth-LE-unsupported suggestion
+    (`diagnoseFailure.ts`), the Bluetooth prompt, the root README, testing.md's Maestro line and
+    the connection, simulator, AI-diagnose and vehicle-select docs say **Settings → Developer &
+    simulator → …**.
+  - Write-flow in-memory state (coding, adaptations, routines: unlock flags and in-session
+    before-write backups) is not reset; it holds no saved results and is re-read per car.
+  - Store files are cleared with `persist.clearStorage()` **after** `setState(getInitialState(),
+true)`, so memory is fresh too; the reset write that may race the removal can only leave the
+    defaults on disk.
+  - `presetFor` maps LPG to the petrol set (an LPG car is a petrol engine); the preset is an order
+    only (nothing hidden), so a supported PID the preset does not name still shows after the named
+    ones. The "All sensors" view is local state, not persisted per profile (the plan made that
+    optional).
+  - `settingsStore` goes to **v6** for the `units` drop (a v5 file is not migrated otherwise).
+  - Plan 01's "move vehicleStore into shared/state" was already done by the plan 06 review
+    (`src/shared/state/vehicleStore.ts`, the vehicle-select path re-exports it); nothing to move.
+    The files this plan touched now import the shared paths (`vehicleStore`, `activeProfile`).
+  - About shows a build line only when `app.json` has `expo.extra.build` (it has none; CI stamps
+    the native `versionCode`), read from `app.json` like the version rather than through
+    `expo-constants`, which is not a direct dependency.
+
+---
+
 ## Wave 2 follow-ups — review hardening for plans 02, 06, 15, 25 (2026-11-09)
 
 A small hardening pass (plan W2, kept outside the repo) for what independent reviewers left open

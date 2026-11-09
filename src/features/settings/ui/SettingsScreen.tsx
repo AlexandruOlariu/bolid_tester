@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Platform } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScrollView, YStack, XStack, Text, Paragraph, Button, Card, Input, Spinner } from 'tamagui';
 import { Screen } from '@/shared/ui';
@@ -22,9 +22,10 @@ import { getAiClient, AiClientError } from '@/shared/ai';
 import { logError } from '@/shared/state/errorLogStore';
 import { useLogFixtureExport } from '../hooks/useLogFixtureExport';
 import { DEFAULT_FLOW_NAME, fixtureVehicleId } from '../model/replayExport';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useVehicleStore } from '@/shared/state/vehicleStore';
 import { connectionService } from '@/features/connection';
-import { APP_NAME, APP_VERSION } from '@/shared/lib/appInfo';
+import { useOnboardingStore } from '@/shared/state/onboardingStore';
+import { APP_BUILD, APP_NAME, APP_VERSION, DOCS_URL } from '@/shared/lib/appInfo';
 import { PRIVACY_POLICY, PRIVACY_POLICY_UPDATED } from '../model/privacyPolicy';
 import { LabelPacksSection } from './LabelPacksSection';
 import { SeedKeysSection } from './SeedKeysSection';
@@ -40,6 +41,15 @@ function SectionLabel({ children }: { children: string }) {
       letterSpacing={0.8}
       textTransform="uppercase"
     >
+      {children}
+    </Text>
+  );
+}
+
+/** A heading inside a section (e.g. the parts of Developer & simulator). */
+function SubLabel({ children }: { children: string }) {
+  return (
+    <Text fontWeight="700" fontSize="$3">
       {children}
     </Text>
   );
@@ -310,8 +320,8 @@ function InjectedDtcsSection() {
 
   return (
     <YStack gap="$2">
-      <SectionLabel>Injected DTCs</SectionLabel>
-      <SegGroup>
+      <SubLabel>Injected DTCs</SubLabel>
+      <YStack>
         <YStack gap="$2">
           <XStack flexWrap="wrap" gap="$2">
             {DTC_PRESETS.map((p) => (
@@ -349,7 +359,7 @@ function InjectedDtcsSection() {
             </YStack>
           ) : null}
         </YStack>
-      </SegGroup>
+      </YStack>
     </YStack>
   );
 }
@@ -378,8 +388,8 @@ function SimulatorDeveloperSection() {
 
   return (
     <YStack gap="$2">
-      <SectionLabel>Developer (simulator)</SectionLabel>
-      <SegGroup>
+      <SubLabel>Simulator test controls</SubLabel>
+      <YStack>
         <YStack gap="$2">
           <XStack gap="$2" flexWrap="wrap">
             <Button size="$2" disabled={status !== 'connected'} onPress={drop}>
@@ -394,13 +404,14 @@ function SimulatorDeveloperSection() {
               'Test the connection hardening without a car: a dropped link, and an adapter that never answers.'}
           </Paragraph>
         </YStack>
-      </SegGroup>
+      </YStack>
     </YStack>
   );
 }
 
-/** Settings → About (plan 08): the app version (= the OTA runtime version) and the privacy policy,
- *  whose text lives in `model/privacyPolicy.ts` and is published as docs/privacy-policy.md. */
+/** Settings → About (plan 08, plan 07): the app version (= the OTA runtime version), the build when
+ *  `app.json` carries one, the privacy policy (its text lives in `model/privacyPolicy.ts` and is
+ *  published as docs/privacy-policy.md) and a link to the documentation. */
 function AboutSection() {
   const [policyOpen, setPolicyOpen] = useState(false);
 
@@ -412,6 +423,11 @@ function AboutSection() {
           <Paragraph fontWeight="700">
             {APP_NAME} {APP_VERSION}
           </Paragraph>
+          {APP_BUILD ? (
+            <Paragraph theme="alt2" fontSize="$2">
+              Build {APP_BUILD}
+            </Paragraph>
+          ) : null}
           <Paragraph theme="alt2" fontSize="$1">
             Over-the-air updates only reach installs of this same version. The app looks for one
             only when you tap More → Check for updates.
@@ -422,6 +438,17 @@ function AboutSection() {
             accessibilityLabel={policyOpen ? 'Hide the privacy policy' : 'Show the privacy policy'}
           >
             {policyOpen ? 'Hide privacy policy' : 'Privacy policy'}
+          </Button>
+          <Button
+            size="$2"
+            accessibilityLabel="Open the documentation on GitHub"
+            onPress={() =>
+              Linking.openURL(DOCS_URL).catch((e: unknown) =>
+                logError({ source: 'settings/about', error: e, severity: 'warning' }),
+              )
+            }
+          >
+            Documentation (GitHub)
           </Button>
           {policyOpen ? (
             <YStack gap="$2">
@@ -484,13 +511,142 @@ function wrappedText(dropped: number): string {
   return `the oldest ${dropped} lines were dropped, so the export starts mid-session. Clear the log and record a shorter flow.`;
 }
 
-export function SettingsScreen() {
-  const { exportFixture, busy: exportingFixture } = useLogFixtureExport();
+/** **General**: the theme (a language picker joins it with plan 11). The app is metric only. */
+function GeneralSection() {
+  const theme = useSettingsStore((st) => st.theme);
+  const setTheme = useSettingsStore((st) => st.setTheme);
+  return (
+    <YStack gap="$2">
+      <SectionLabel>General</SectionLabel>
+      <SegGroup>
+        <YStack gap="$2">
+          <Paragraph theme="alt2" fontSize="$2">
+            Theme
+          </Paragraph>
+          <XStack gap="$2">
+            {(['system', 'light', 'dark'] as const).map((t) => (
+              <Seg key={t} active={theme === t} label={t} onPress={() => setTheme(t)} />
+            ))}
+          </XStack>
+          <Paragraph theme="alt2" fontSize="$1">
+            Units are metric: km/h, °C, km, kPa and L/100 km.
+          </Paragraph>
+        </YStack>
+      </SegGroup>
+    </YStack>
+  );
+}
+
+/** **Connection**: auto-reconnect, the poll interval and VIN recognition of garage cars. */
+function ConnectionSection() {
   const s = useSettingsStore();
+  return (
+    <YStack gap="$2">
+      <SectionLabel>Connection</SectionLabel>
+      <SegGroup>
+        <YStack gap="$4">
+          <YStack gap="$2">
+            <SubLabel>Auto-reconnect</SubLabel>
+            <XStack gap="$2" alignItems="center">
+              <Paragraph flex={1}>Retry the last adapter after a dropped link</Paragraph>
+              <Seg active={s.autoReconnect} label="On" onPress={() => s.setAutoReconnect(true)} />
+              <Seg
+                active={!s.autoReconnect}
+                label="Off"
+                onPress={() => s.setAutoReconnect(false)}
+              />
+            </XStack>
+            <Paragraph theme="alt2" fontSize="$1">
+              On by default; pauses after 3 drops in a minute. When the connection drops
+              unexpectedly, reconnect to the same device with backoff (2 s, 5 s, 10 s — up to 3
+              attempts). Cancelled the moment you disconnect or connect manually.
+            </Paragraph>
+          </YStack>
+
+          <YStack gap="$2">
+            <SubLabel>Poll interval</SubLabel>
+            <XStack gap="$2" flexWrap="wrap">
+              {[250, 500, 1000, 2000].map((ms) => (
+                <Seg
+                  key={ms}
+                  active={s.pollIntervalMs === ms}
+                  label={`${ms} ms`}
+                  onPress={() => s.setPollInterval(ms)}
+                />
+              ))}
+            </XStack>
+            <Paragraph theme="alt2" fontSize="$1">
+              How often live values are read. A slow K-line car sets its own pace.
+            </Paragraph>
+          </YStack>
+
+          <YStack gap="$2">
+            <SubLabel>Recognise my cars by VIN</SubLabel>
+            <XStack gap="$2" alignItems="center">
+              <Paragraph flex={1}>Select a garage car when its VIN connects</Paragraph>
+              <Seg
+                active={s.autoSelectByVin}
+                label="On"
+                onPress={() => s.setAutoSelectByVin(true)}
+              />
+              <Seg
+                active={!s.autoSelectByVin}
+                label="Off"
+                onPress={() => s.setAutoSelectByVin(false)}
+              />
+            </XStack>
+            <Paragraph theme="alt2" fontSize="$1">
+              On by default. When the connected car's VIN (vehicle identification number) matches a
+              car you added from a connection, that car becomes the active vehicle. Built-in
+              profiles are only suggested on the Vehicle screen.
+            </Paragraph>
+          </YStack>
+        </YStack>
+      </SegGroup>
+    </YStack>
+  );
+}
+
+/** **Notifications**: the preferences live on their own screen. */
+function NotificationsSection() {
+  const router = useRouter();
+  return (
+    <YStack gap="$2">
+      <SectionLabel>Notifications</SectionLabel>
+      <XStack
+        alignItems="center"
+        gap="$3"
+        padding="$3"
+        backgroundColor="$backgroundHover"
+        borderRadius="$4"
+        borderWidth={1}
+        borderColor="$borderColor"
+        pressStyle={{ backgroundColor: '$color4' }}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel="Notification settings. Alerts, reminders and quiet mode"
+        onPress={() => router.push('/notifications')}
+      >
+        <YStack flex={1}>
+          <Paragraph fontWeight="700">Notification settings</Paragraph>
+          <Paragraph theme="alt2" fontSize="$2">
+            Alerts, reminders and quiet mode
+          </Paragraph>
+        </YStack>
+        <Paragraph theme="alt2">›</Paragraph>
+      </XStack>
+    </YStack>
+  );
+}
+
+/** The adapter I/O log with **Clear** and **Export as replay fixture** (plan 02). */
+function AdapterLogSection() {
+  const { exportFixture, busy: exportingFixture } = useLogFixtureExport();
+  const adapterSource = useSettingsStore((st) => st.adapterSource);
+  const simulatedVehicle = useSettingsStore((st) => st.simulatedVehicleId);
   const log = useAdapterLogStore((st) => st.entries);
   const logDropped = useAdapterLogStore((st) => st.dropped);
   const logOrigin = useAdapterLogStore((st) => st.origin);
-  const status = useSessionStore((st) => st.status);
   const info = useSessionStore((st) => st.info);
   const selectedProfileId = useVehicleStore((st) => st.selectedProfileId);
   const garage = useGarageStore((st) => st.vehicles);
@@ -508,8 +664,8 @@ export function SettingsScreen() {
   // log no connect stamped (traffic logged after a source switch reset it — which the service
   // never does) falls back to the current settings and session.
   const onExportFixture = async () => {
-    const simulator = logOrigin ? logOrigin.source === 'simulator' : s.adapterSource === 'mock';
-    const simulatedVehicleId = logOrigin?.simulatedVehicleId ?? s.simulatedVehicleId;
+    const simulator = logOrigin ? logOrigin.source === 'simulator' : adapterSource === 'mock';
+    const simulatedVehicleId = logOrigin?.simulatedVehicleId ?? simulatedVehicle;
     const saved = await exportFixture({
       log,
       flow: flowName,
@@ -537,206 +693,271 @@ export function SettingsScreen() {
   };
 
   return (
-    <Screen title="Settings">
-      <YStack gap="$2">
-        <SectionLabel>Adapter source</SectionLabel>
-        <SegGroup>
-          <YStack gap="$2">
-            <XStack gap="$2" flexWrap="wrap">
-              <Seg
-                active={s.adapterSource === 'ble'}
-                label="Real adapter (Bluetooth)"
-                onPress={() => void connectionService.switchAdapterSource('ble')}
-              />
-              <Seg
-                active={s.adapterSource === 'mock'}
-                label="Simulator (no car)"
-                onPress={() => void connectionService.switchAdapterSource('mock')}
-              />
-            </XStack>
-            <Paragraph theme="alt2" fontSize="$1">
-              The simulator emulates a real ECU so every screen works with no hardware. A banner
-              stays visible while it is on. Switching disconnects the current session.
+    <YStack gap="$2">
+      <XStack justifyContent="space-between" alignItems="center">
+        <SubLabel>Adapter log</SubLabel>
+        <Button size="$2" onPress={onClearLog}>
+          Clear
+        </Button>
+      </XStack>
+      <XStack gap="$2" alignItems="center">
+        <Input
+          flex={1}
+          size="$3"
+          value={flowName}
+          onChangeText={setFlowName}
+          placeholder={DEFAULT_FLOW_NAME}
+          autoCapitalize="none"
+          autoCorrect={false}
+          accessibilityLabel="Flow name"
+        />
+        <Button
+          size="$3"
+          disabled={exportingFixture || log.length === 0}
+          onPress={() => void onExportFixture()}
+        >
+          Export as replay fixture
+        </Button>
+      </XStack>
+      <Paragraph theme="alt2" fontSize="$1">
+        {exportStatus && logDropped <= exportStatus.dropped
+          ? exportStatus.text
+          : logDropped > 0
+            ? `The log is full: ${wrappedText(logDropped)}`
+            : `Name the flow you just ran (connect, live, faults, clear…). The file records every command and the reply it got (the last ${ADAPTER_LOG_CAPACITY} log lines), so the session can be replayed in tests.`}
+      </Paragraph>
+      <Card bordered padding="$2" height={220} backgroundColor="$backgroundStrong">
+        <ScrollView>
+          {log
+            .slice(-60)
+            .reverse()
+            .map((e, i) => (
+              <Text
+                key={i}
+                fontSize="$1"
+                fontFamily={monoFont}
+                color={e.dir === 'tx' ? '$blue10' : '$green10'}
+                numberOfLines={1}
+              >
+                {e.dir === 'tx' ? '» ' : '« '}
+                {e.text.replace(/\s+/g, ' ').trim()}
+              </Text>
+            ))}
+          {log.length === 0 ? (
+            <Paragraph theme="alt2" fontSize="$2">
+              No adapter I/O yet.
             </Paragraph>
+          ) : null}
+        </ScrollView>
+      </Card>
+    </YStack>
+  );
+}
+
+/** What **Reset all app data** runs: the backup slice's `resetAllAppData`, handed in by the route
+ *  (`src/app/settings.tsx`) because no feature imports the backup slice. Resolves with the problems
+ *  it hit (plain English, each also logged). */
+export type ResetAppData = () => Promise<{ problems: string[] }>;
+
+/** **Show hints again** and **Reset all app data** (plan 07), at the end of Developer & simulator.
+ *  Without a `resetAppData` action the reset button is not shown. */
+function HintsAndResetSection({ resetAppData }: { resetAppData?: ResetAppData }) {
+  const [note, setNote] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
+
+  const showHints = () => {
+    useOnboardingStore.getState().reset();
+    setNote('Hints are back: the first-run card shows on the Connect tab again.');
+  };
+
+  const runReset = async () => {
+    if (!resetAppData) return;
+    setResetting(true);
+    try {
+      // The restore teardown, not a plain disconnect: it also invalidates a connect still in flight
+      // (scan / handshake), so no session built for the old adapter source is published after the
+      // reset puts the setting back to the real adapter, and a failing close is logged, not fatal.
+      await connectionService.resetForRestore();
+      const outcome = await resetAppData();
+      setNote(
+        outcome.problems.length === 0
+          ? 'All app data was reset. The app is back to a fresh install: real adapter, no garage, no history.'
+          : `App data was reset, but: ${outcome.problems.join(' ')} See More → Error log.`,
+      );
+    } catch (e) {
+      logError({ source: 'settings/reset', error: e });
+      setNote('The reset did not finish. See More → Error log for details.');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const confirmReset = () => {
+    Alert.alert(
+      'Reset all app data?',
+      'This deletes everything the app keeps on this phone: settings, garage, history, scans, trips, maintenance log, alert rules, coding backups, backup files, label packs, security-access plugins, login codes, AI keys and the copies of exported files the app keeps. Copies you already shared or saved elsewhere are kept.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert(
+              'Delete all app data?',
+              'This cannot be undone. Make a backup first (Settings → Data) if you may want it back.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Reset everything', style: 'destructive', onPress: () => void runReset() },
+              ],
+            ),
+        },
+      ],
+    );
+  };
+
+  return (
+    <YStack gap="$2">
+      <SubLabel>Hints and app data</SubLabel>
+      <XStack gap="$2" flexWrap="wrap">
+        <Button size="$3" onPress={showHints}>
+          Show hints again
+        </Button>
+        {resetAppData ? (
+          <Button
+            size="$3"
+            theme="red"
+            disabled={resetting}
+            icon={resetting ? () => <Spinner /> : undefined}
+            onPress={confirmReset}
+          >
+            Reset all app data
+          </Button>
+        ) : null}
+      </XStack>
+      <Paragraph theme="alt2" fontSize="$1">
+        {note ??
+          'Show hints again brings back the first-run card and every dismissed tip. Reset all app data returns the app to a fresh install (it asks twice).'}
+      </Paragraph>
+    </YStack>
+  );
+}
+
+/** **Developer & simulator** (plan 07): collapsed by default. The adapter source, the simulated
+ *  car, injected codes and link tests, the adapter log with the replay-fixture export, and the
+ *  hints / reset controls. The simulator banner (plan 01) stays the always-on indicator. */
+function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
+  const [open, setOpen] = useState(false);
+  const s = useSettingsStore();
+  const garage = useGarageStore((st) => st.vehicles);
+
+  return (
+    <YStack gap="$2">
+      <XStack
+        justifyContent="space-between"
+        alignItems="center"
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={`Developer & simulator. ${open ? 'Hide' : 'Show'}`}
+        accessibilityState={{ expanded: open }}
+        onPress={() => setOpen((o) => !o)}
+      >
+        <SectionLabel>Developer & simulator</SectionLabel>
+        <Text fontWeight="700" fontSize="$3" color={ACCENT}>
+          {open ? 'Hide' : 'Show'}
+        </Text>
+      </XStack>
+      {!open ? (
+        <Paragraph theme="alt2" fontSize="$1">
+          Adapter source and simulator, adapter log and replay fixtures, show hints again, reset all
+          app data.
+        </Paragraph>
+      ) : (
+        <SegGroup>
+          <YStack gap="$4" testID="settings-developer">
+            <YStack gap="$2">
+              <SubLabel>Adapter source</SubLabel>
+              <XStack gap="$2" flexWrap="wrap">
+                <Seg
+                  active={s.adapterSource === 'ble'}
+                  label="Real adapter (Bluetooth)"
+                  onPress={() => void connectionService.switchAdapterSource('ble')}
+                />
+                <Seg
+                  active={s.adapterSource === 'mock'}
+                  label="Simulator (no car)"
+                  onPress={() => void connectionService.switchAdapterSource('mock')}
+                />
+              </XStack>
+              <Paragraph theme="alt2" fontSize="$1">
+                The simulator emulates a real ECU so every screen works with no hardware. A banner
+                stays visible while it is on. Switching disconnects the current session.
+              </Paragraph>
+            </YStack>
+
+            {s.adapterSource === 'mock' ? (
+              <>
+                <YStack gap="$2">
+                  <SubLabel>Simulated vehicle</SubLabel>
+                  <XStack flexWrap="wrap" gap="$2">
+                    {VEHICLE_PROFILES.map((p) => (
+                      <Seg
+                        key={p.id}
+                        active={s.simulatedVehicleId === p.id}
+                        label={p.id}
+                        onPress={() => s.setSimulatedVehicle(p.id)}
+                      />
+                    ))}
+                    {garage.map((v) => (
+                      <Seg
+                        key={v.id}
+                        active={s.simulatedVehicleId === v.id}
+                        label={v.name}
+                        onPress={() => s.setSimulatedVehicle(v.id)}
+                      />
+                    ))}
+                  </XStack>
+                  {garage.length > 0 ? (
+                    <Paragraph theme="alt2" fontSize="$1">
+                      A garage car is simulated from its base profile, with the VIN and supported
+                      PIDs learned from it.
+                    </Paragraph>
+                  ) : null}
+                </YStack>
+
+                <InjectedDtcsSection />
+
+                <SimulatorDeveloperSection />
+              </>
+            ) : null}
+
+            <AdapterLogSection />
+
+            <HintsAndResetSection resetAppData={resetAppData} />
           </YStack>
         </SegGroup>
-      </YStack>
+      )}
+    </YStack>
+  );
+}
 
-      {s.adapterSource === 'mock' ? (
-        <>
-          <YStack gap="$2">
-            <SectionLabel>Simulated vehicle</SectionLabel>
-            <SegGroup>
-              <XStack flexWrap="wrap" gap="$2">
-                {VEHICLE_PROFILES.map((p) => (
-                  <Seg
-                    key={p.id}
-                    active={s.simulatedVehicleId === p.id}
-                    label={p.id}
-                    onPress={() => s.setSimulatedVehicle(p.id)}
-                  />
-                ))}
-                {garage.map((v) => (
-                  <Seg
-                    key={v.id}
-                    active={s.simulatedVehicleId === v.id}
-                    label={v.name}
-                    onPress={() => s.setSimulatedVehicle(v.id)}
-                  />
-                ))}
-              </XStack>
-              {garage.length > 0 ? (
-                <Paragraph theme="alt2" fontSize="$1">
-                  A garage car is simulated from its base profile, with the VIN and supported PIDs
-                  learned from it.
-                </Paragraph>
-              ) : null}
-            </SegGroup>
-          </YStack>
+/** `resetAppData` is the **Reset all app data** action; the route passes the backup slice's
+ *  `resetAllAppData` (features never import each other). */
+export function SettingsScreen({ resetAppData }: { resetAppData?: ResetAppData } = {}) {
+  const status = useSessionStore((st) => st.status);
 
-          <InjectedDtcsSection />
+  return (
+    <Screen title="Settings">
+      <GeneralSection />
 
-          <SimulatorDeveloperSection />
-        </>
-      ) : null}
+      <ConnectionSection />
 
       <AiSection />
 
-      <YStack gap="$2">
-        <SectionLabel>Theme</SectionLabel>
-        <SegGroup>
-          <XStack gap="$2">
-            {(['system', 'light', 'dark'] as const).map((t) => (
-              <Seg key={t} active={s.theme === t} label={t} onPress={() => s.setTheme(t)} />
-            ))}
-          </XStack>
-        </SegGroup>
-      </YStack>
-
-      <YStack gap="$2">
-        <SectionLabel>Poll interval</SectionLabel>
-        <SegGroup>
-          <XStack gap="$2">
-            {[250, 500, 1000, 2000].map((ms) => (
-              <Seg
-                key={ms}
-                active={s.pollIntervalMs === ms}
-                label={`${ms} ms`}
-                onPress={() => s.setPollInterval(ms)}
-              />
-            ))}
-          </XStack>
-        </SegGroup>
-      </YStack>
-
-      <YStack gap="$2">
-        <SectionLabel>Auto-reconnect</SectionLabel>
-        <SegGroup>
-          <YStack gap="$2">
-            <XStack gap="$2" alignItems="center">
-              <Paragraph flex={1}>Retry the last adapter after a dropped link</Paragraph>
-              <Seg active={s.autoReconnect} label="On" onPress={() => s.setAutoReconnect(true)} />
-              <Seg
-                active={!s.autoReconnect}
-                label="Off"
-                onPress={() => s.setAutoReconnect(false)}
-              />
-            </XStack>
-            <Paragraph theme="alt2" fontSize="$1">
-              On by default; pauses after 3 drops in a minute. When the connection drops
-              unexpectedly, reconnect to the same device with backoff (2 s, 5 s, 10 s — up to 3
-              attempts). Cancelled the moment you disconnect or connect manually.
-            </Paragraph>
-          </YStack>
-        </SegGroup>
-      </YStack>
-
-      <YStack gap="$2">
-        <SectionLabel>Recognise my cars by VIN</SectionLabel>
-        <SegGroup>
-          <YStack gap="$2">
-            <XStack gap="$2" alignItems="center">
-              <Paragraph flex={1}>Select a garage car when its VIN connects</Paragraph>
-              <Seg
-                active={s.autoSelectByVin}
-                label="On"
-                onPress={() => s.setAutoSelectByVin(true)}
-              />
-              <Seg
-                active={!s.autoSelectByVin}
-                label="Off"
-                onPress={() => s.setAutoSelectByVin(false)}
-              />
-            </XStack>
-            <Paragraph theme="alt2" fontSize="$1">
-              On by default. When the connected car's VIN (vehicle identification number) matches a
-              car you added from a connection, that car becomes the active vehicle. Built-in
-              profiles are only suggested on the Vehicle screen.
-            </Paragraph>
-          </YStack>
-        </SegGroup>
-      </YStack>
-
-      <YStack gap="$2">
-        <XStack justifyContent="space-between" alignItems="center">
-          <SectionLabel>Adapter log</SectionLabel>
-          <Button size="$2" onPress={onClearLog}>
-            Clear
-          </Button>
-        </XStack>
-        <XStack gap="$2" alignItems="center">
-          <Input
-            flex={1}
-            size="$3"
-            value={flowName}
-            onChangeText={setFlowName}
-            placeholder={DEFAULT_FLOW_NAME}
-            autoCapitalize="none"
-            autoCorrect={false}
-            accessibilityLabel="Flow name"
-          />
-          <Button
-            size="$3"
-            disabled={exportingFixture || log.length === 0}
-            onPress={() => void onExportFixture()}
-          >
-            Export as replay fixture
-          </Button>
-        </XStack>
-        <Paragraph theme="alt2" fontSize="$1">
-          {exportStatus && logDropped <= exportStatus.dropped
-            ? exportStatus.text
-            : logDropped > 0
-              ? `The log is full: ${wrappedText(logDropped)}`
-              : `Name the flow you just ran (connect, live, faults, clear…). The file records every command and the reply it got (the last ${ADAPTER_LOG_CAPACITY} log lines), so the session can be replayed in tests.`}
-        </Paragraph>
-        <Card bordered padding="$2" height={220} backgroundColor="$backgroundStrong">
-          <ScrollView>
-            {log
-              .slice(-60)
-              .reverse()
-              .map((e, i) => (
-                <Text
-                  key={i}
-                  fontSize="$1"
-                  fontFamily={monoFont}
-                  color={e.dir === 'tx' ? '$blue10' : '$green10'}
-                  numberOfLines={1}
-                >
-                  {e.dir === 'tx' ? '» ' : '« '}
-                  {e.text.replace(/\s+/g, ' ').trim()}
-                </Text>
-              ))}
-            {log.length === 0 ? (
-              <Paragraph theme="alt2" fontSize="$2">
-                No adapter I/O yet.
-              </Paragraph>
-            ) : null}
-          </ScrollView>
-        </Card>
-      </YStack>
+      <NotificationsSection />
 
       <DataSection />
+
+      <DeveloperSection resetAppData={resetAppData} />
 
       <AboutSection />
 

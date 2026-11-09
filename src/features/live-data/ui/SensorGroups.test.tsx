@@ -4,9 +4,9 @@ import { renderWithProviders } from '@test/renderWithProviders';
 import { connectSimulator } from '@test/simulator';
 import type { LiveValue } from '@/shared/obd-core/session/DiagnosticSession';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useVehicleStore } from '@/shared/state/vehicleStore';
 import { useLiveDataStore } from '@/shared/state/liveDataStore';
-import { SensorReadingsScreen } from './SensorReadingsScreen';
+import { SensorGroups } from './SensorGroups';
 
 async function golfSession() {
   await connectSimulator();
@@ -32,7 +32,8 @@ function live(pid: string, name: string, unit: string, value: number): LiveValue
   return { pid, name, unit, value, ts: 0 };
 }
 
-describe('SensorReadingsScreen', () => {
+/** Live → All sensors (plan 07; was the Sensor readings screen). */
+describe('SensorGroups', () => {
   it('reads the injection DIDs once on mount, not again on every live-data update', async () => {
     await connectSimulator();
     useVehicleStore.setState({ selectedProfileId: 'golf-plus-2009-20tdi' });
@@ -40,7 +41,7 @@ describe('SensorReadingsScreen', () => {
     if (!session) throw new Error('no session');
     const readExtended = jest.spyOn(session, 'readExtended');
 
-    renderWithProviders(<SensorReadingsScreen />);
+    renderWithProviders(<SensorGroups />);
     expect(await screen.findByText('Injection quantity')).toBeTruthy();
     expect(readExtended).toHaveBeenCalledTimes(5);
 
@@ -59,7 +60,7 @@ describe('SensorReadingsScreen', () => {
     const readExtended = jest.spyOn(session, 'readExtended');
     const release = holdNextRead(readExtended);
 
-    renderWithProviders(<SensorReadingsScreen />);
+    renderWithProviders(<SensorGroups />);
     expect(readExtended).toHaveBeenCalledTimes(1); // first run is stuck on its first DID
     fireEvent.press(screen.getByText('Refresh'));
     expect(await screen.findByText('Injection quantity')).toBeTruthy();
@@ -73,7 +74,7 @@ describe('SensorReadingsScreen', () => {
 
   it('never lists extended 22:<DID> live values among the standard sensors', async () => {
     await golfSession();
-    renderWithProviders(<SensorReadingsScreen />);
+    renderWithProviders(<SensorGroups />);
     expect(await screen.findByText('Injection quantity')).toBeTruthy();
     await act(async () => {
       useLiveDataStore.setState({
@@ -94,7 +95,7 @@ describe('SensorReadingsScreen', () => {
     const readExtended = jest.spyOn(session, 'readExtended');
     const release = holdNextRead(readExtended);
 
-    const { unmount } = renderWithProviders(<SensorReadingsScreen />);
+    const { unmount } = renderWithProviders(<SensorGroups />);
     expect(readExtended).toHaveBeenCalledTimes(1);
     unmount();
     await act(async () => release(null));

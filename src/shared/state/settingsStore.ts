@@ -23,6 +23,7 @@ import {
 import {
   type AiProviderId,
   type AiProviderMemory,
+  AI_PROVIDER_IDS,
   applyProviderPreset,
   inferProvider,
   isAiProviderId,
@@ -30,9 +31,6 @@ import {
 
 export type AdapterSource = 'mock' | 'ble';
 export type ThemePref = 'system' | 'light' | 'dark';
-/** Display unit system. obd-core always decodes to metric/SI; this only affects rendering (see
- *  shared/lib/units.ts). */
-export type UnitSystem = 'metric' | 'imperial';
 
 /** Structured-output mode for the AI request (see obd-core `buildChatRequestBody`). */
 export type AiJsonMode = 'schema' | 'object' | 'off';
@@ -62,7 +60,6 @@ export interface SettingsState {
   adapterSource: AdapterSource;
   simulatedVehicleId: string;
   injectedDtcs: string[];
-  units: UnitSystem;
   pollIntervalMs: number;
   /** Automatically retry the last device with backoff after an unexpected link drop. Default on
    *  (plan 12); connectionService's flap guard pauses it after 3 drops in a minute. */
@@ -74,7 +71,6 @@ export interface SettingsState {
   setAdapterSource: (s: AdapterSource) => void;
   setSimulatedVehicle: (id: string) => void;
   setInjectedDtcs: (codes: string[]) => void;
-  setUnits: (u: UnitSystem) => void;
   setPollInterval: (ms: number) => void;
   setAutoReconnect: (v: boolean) => void;
   setAutoSelectByVin: (v: boolean) => void;
@@ -111,8 +107,8 @@ export function parseDtcList(text: string): string[] {
 
 /** Persisted settings schema version. v2 = production defaults (real adapter, no injected DTC);
  *  v3 = auto-reconnect on by default (plan 12); v4 = VIN auto-select of garage cars (plan 06);
- *  v5 = AI provider presets (plan 19). */
-export const SETTINGS_VERSION = 5;
+ *  v5 = AI provider presets (plan 19); v6 = metric only, the dead `units` field dropped (plan 07). */
+export const SETTINGS_VERSION = 6;
 
 /** Step a persisted blob up to `SETTINGS_VERSION`. Each step only fills *missing* fields with the new
  *  default — an explicit stored choice always survives (a tester who chose the simulator, or turned
@@ -121,7 +117,8 @@ export const SETTINGS_VERSION = 5;
  *   - v2 → v3: `autoReconnect: true`.
  *   - v3 → v4: `autoSelectByVin: true`.
  *   - v4 → v5: `ai.provider` inferred from the stored server URL (`inferProvider`: api.openai.com →
- *     openai, api.anthropic.com → anthropic, blank → local, anything else → custom). */
+ *     openai, api.anthropic.com → anthropic, blank → local, anything else → custom).
+ *   - v5 → v6: the app is metric only (plan 07): a stale `units` key is dropped. */
 export function migrateSettings(persisted: unknown, fromVersion: number): Partial<SettingsState> {
   let p = { ...((persisted ?? {}) as Partial<SettingsState>) };
   if (fromVersion < 2) {
@@ -143,7 +140,15 @@ export function migrateSettings(persisted: unknown, fromVersion: number): Partia
       } as AiSettings,
     };
   }
+  if (fromVersion < 6) p = withoutUnits(p);
   return p;
+}
+
+/** A copy of a persisted blob without the pre-plan-07 `units` key (metric only, nothing to keep). */
+function withoutUnits<T extends object>(blob: T): T {
+  if (!('units' in blob)) return blob;
+  const { units: _units, ...rest } = blob as T & { units?: unknown };
+  return rest as T;
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -154,7 +159,6 @@ export const useSettingsStore = create<SettingsState>()(
       adapterSource: 'ble',
       simulatedVehicleId: 'golf-plus-2009-20tdi',
       injectedDtcs: [],
-      units: 'metric',
       pollIntervalMs: 1000,
       // On by default (plan 12): a drop on the Live tab reconnects on its own; the flap guard in
       // connectionService pauses it after 3 drops in a minute.
@@ -166,7 +170,6 @@ export const useSettingsStore = create<SettingsState>()(
       setAdapterSource: (adapterSource) => set({ adapterSource }),
       setSimulatedVehicle: (simulatedVehicleId) => set({ simulatedVehicleId }),
       setInjectedDtcs: (injectedDtcs) => set({ injectedDtcs }),
-      setUnits: (units) => set({ units }),
       setPollInterval: (pollIntervalMs) => set({ pollIntervalMs }),
       setAutoReconnect: (autoReconnect) => set({ autoReconnect }),
       setAutoSelectByVin: (autoSelectByVin) => set({ autoSelectByVin }),
@@ -202,7 +205,6 @@ export const useSettingsStore = create<SettingsState>()(
         adapterSource: s.adapterSource,
         simulatedVehicleId: s.simulatedVehicleId,
         injectedDtcs: s.injectedDtcs,
-        units: s.units,
         pollIntervalMs: s.pollIntervalMs,
         autoReconnect: s.autoReconnect,
         autoSelectByVin: s.autoSelectByVin,
@@ -213,7 +215,8 @@ export const useSettingsStore = create<SettingsState>()(
       // still carry a plaintext apiKey here; it lands in runtime state, and `hydrateApiKey()` (below)
       // then migrates it into the keystore and rewrites the file without it.
       merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<SettingsState>;
+        // `withoutUnits` again: a restored or hand-edited v6 file may still carry the dead key.
+        const p = withoutUnits((persisted ?? {}) as Partial<SettingsState>);
         const ai = { ...current.ai, ...(p.ai ?? {}) };
         if (!isAiProviderId(ai.provider)) ai.provider = inferProvider(ai.baseUrl);
         return { ...current, ...p, ai };
@@ -231,6 +234,17 @@ export const useSettingsStore = create<SettingsState>()(
 /** Keys entered this session, per provider. Keeps a provider switch working when the keystore is
  *  unavailable (Expo Go, web, tests), where keys live in memory only (documented degradation). */
 const sessionKeys = new Map<AiProviderId, string>();
+
+/** Forget every AI key (Settings → Reset all app data, plan 07): this session's keys in memory, each
+ *  provider's keystore slot and the pre-plan-19 single slot. Best-effort: without the keystore
+ *  (tests, web) only the memory is cleared. The runtime `ai.apiKey` is the caller's to reset. */
+export async function forgetAllApiKeys(): Promise<void> {
+  sessionKeys.clear();
+  await Promise.all([
+    ...AI_PROVIDER_IDS.map((p) => secureSetApiKey(p, '')),
+    secureDeleteLegacyApiKey(),
+  ]);
+}
 
 /** Load `provider`'s key from its keystore slot into runtime state, unless the user switched away
  *  again or typed a key meanwhile (the runtime key is no longer `shownKey`, the one set on the

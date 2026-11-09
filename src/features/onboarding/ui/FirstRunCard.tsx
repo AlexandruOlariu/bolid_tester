@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { Button, Card, Paragraph, Text, XStack, YStack } from 'tamagui';
 import { CheckCircle2, ChevronRight, Circle, X } from 'lucide-react-native';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { useDtcStore } from '@/shared/state/dtcStore';
-import { useOnboardingStore } from '../model/onboardingStore';
+import { useOnboardingStore } from '@/shared/state/onboardingStore';
 import {
   FIRST_RUN_GENERIC_OK_ID,
   FIRST_RUN_HINT_ID,
@@ -18,8 +18,10 @@ const DONE = '#2bb673';
 const TODO = '#8B949E';
 
 /** Three-step first-run guide on the Connect tab: pick car → connect → read faults. Dismissible like a
- *  `HintCard` (id `first-run`) and dismisses itself the first time every step is done, so it never
- *  returns after a restart. Step state comes from the vehicle, session and DTC stores. */
+ *  `HintCard` (id `first-run`) and dismisses itself when it sees the last open step get done, so it
+ *  never returns after a restart. Step state comes from the vehicle, session and DTC stores.
+ *  Only that transition dismisses it: after Settings → **Show hints again** the card comes back even
+ *  when every step is already done this session (all ticked), and stays until the user closes it. */
 export function FirstRunCard() {
   const router = useRouter();
   const dismissed = useOnboardingStore((s) => s.dismissed);
@@ -36,12 +38,16 @@ export function FirstRunCard() {
     dtcLastReadAt,
   };
   const complete = firstRunComplete(input);
+  // Whether every step was already done on the previous render: auto-dismiss on the change to
+  // complete only, not merely because the steps are done (see the doc comment).
+  const wasComplete = useRef(complete);
 
   useEffect(() => {
-    if (complete && !hidden) dismiss(FIRST_RUN_HINT_ID);
+    if (complete && !wasComplete.current && !hidden) dismiss(FIRST_RUN_HINT_ID);
+    wasComplete.current = complete;
   }, [complete, hidden, dismiss]);
 
-  if (hidden || complete) return null;
+  if (hidden) return null;
   const steps = firstRunSteps(input);
 
   return (

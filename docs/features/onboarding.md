@@ -15,12 +15,16 @@ No screen of its own — its components are embedded in other features' screens.
   2. **Connect the adapter** → `/` (Connect);
   3. **Read fault codes** → `/faults`.
 
-  It has its own dismiss button and dismisses itself the first time every step is done.
+  It has its own dismiss button and dismisses itself when it sees the last open step get done.
+  Only that change dismisses it: after Settings → **Show hints again** it returns even when every
+  step is already done this session (all three ticked) and stays until the user closes it.
 
 ## model
 
-- **`onboardingStore`** (Zustand, persisted as `bolid.onboarding`, version 1): the **set of dismissed
-  hint ids**, not per-hint booleans, so a new hint needs no migration (an unknown id is simply "not
+- **`onboardingStore`** (Zustand, persisted as `bolid.onboarding`, version 1; lives in
+  `src/shared/state/onboardingStore.ts` since the plan 07 review so Settings' **Show hints again**
+  reads it without a feature → feature import; the slice's `index.ts` re-exports it): the **set
+  of dismissed hint ids**, not per-hint booleans, so a new hint needs no migration (an unknown id is simply "not
   yet dismissed"). `dismiss(id)` is idempotent; `reset()` clears all. Known ids:
   - `first-run` — the whole first-run card (manual dismiss or auto-dismiss on completion);
   - `first-run-generic-ok` — the user accepted the Auto / Generic profile, so step 1 counts as done;
@@ -38,12 +42,15 @@ No screen of its own — its components are embedded in other features' screens.
   `dtcStore.lastReadAt !== null` (stamped by every successful fault read from a live session —
   `dtcService.readAll()` resolves `null` with no session and the hook then calls `clearResults()`,
   which does not stamp; in-memory, so it reflects this session).
-- Once complete, the card dismisses `first-run` and stays hidden after a restart; until then a user
-  can dismiss it manually at any point.
+- When the last open step gets done (the card renders with incomplete steps, then complete), the
+  card dismisses `first-run` and stays hidden after a restart; until then a user can dismiss it
+  manually at any point. It is the transition that dismisses, not the done steps: once `reset()`
+  clears `first-run`, the card renders again with whatever steps are done (possibly all three).
 
 ## Acceptance
 
 - A fresh install shows the first-run card on the Connect tab with no step done.
 - Picking a profile (or tapping **Use Auto / Generic**), connecting, and reading faults ticks each
   step; the third tick auto-dismisses the card, and it does not return after a restart.
-- A dismissed hint never reappears unless `reset()` is called.
+- A dismissed hint never reappears unless `reset()` is called; then the first-run card shows again
+  even if every step is already done this session.

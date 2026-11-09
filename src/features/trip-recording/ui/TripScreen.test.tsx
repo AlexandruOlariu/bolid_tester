@@ -5,7 +5,6 @@ import React from 'react';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { mockPush } from '@test/mocks/router';
-import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useTripStore, type TripSummary } from '../model/tripStore';
 import { TripScreen } from './TripScreen';
 
@@ -66,9 +65,7 @@ describe('TripScreen rows', () => {
     expect(screen.queryByText('Close')).toBeNull();
   });
 
-  it('shows the distance in km, whatever the legacy units setting says', () => {
-    // The dead imperial setting no longer reaches Trips (plan 07 deletes the field; drop this then).
-    useSettingsStore.setState({ units: 'imperial' });
+  it('shows the distance in km (the app is metric only, plan 07)', () => {
     useTripStore.setState({
       trips: [{ ...PUNTO, stats: { ...PUNTO.stats, distanceKm: 12.3456 } }],
     });

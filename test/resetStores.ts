@@ -22,7 +22,7 @@ import { clearAdapterLog } from '@/shared/state/adapterLog';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { useLiveDataStore } from '@/shared/state/liveDataStore';
 import { useDashboardLayoutStore } from '@/features/live-data/model/dashboardLayoutStore';
-import { useOnboardingStore } from '@/features/onboarding/model/onboardingStore';
+import { useOnboardingStore } from '@/shared/state/onboardingStore';
 import { useCoachStore } from '@/features/fault-codes/model/coachStore';
 import { useLinkStore } from '@/features/connection/model/linkStore';
 import { useScanStore } from '@/features/connection/model/scanStore';

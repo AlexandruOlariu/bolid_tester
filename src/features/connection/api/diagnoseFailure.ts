@@ -57,7 +57,7 @@ function bluetoothDiagnosis(state: Exclude<BtRadioState, 'ready' | 'checking'>):
         'This device doesn’t support Bluetooth Low Energy, so a wireless OBD2 adapter can’t be used.',
       suggestions: [
         'Use a phone or tablet with Bluetooth Low Energy.',
-        'Explore the app with the built-in simulator (Settings → Adapter source).',
+        'Explore the app with the built-in simulator (Settings → Developer & simulator → Adapter source).',
       ],
     };
   }

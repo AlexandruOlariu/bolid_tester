@@ -5,6 +5,8 @@ import {
   visibleItems,
   moveInOrder,
   toggleInSet,
+  presetFor,
+  EMPTY_LAYOUT,
   type DashboardItem,
   type ProfileLayout,
 } from './dashboardLayout';
@@ -88,5 +90,58 @@ describe('toggleInSet', () => {
   it('adds when absent and removes when present', () => {
     expect(toggleInSet([], 'x')).toEqual(['x']);
     expect(toggleInSet(['x', 'y'], 'x')).toEqual(['y']);
+  });
+});
+
+describe('presetFor (plan 07)', () => {
+  /** What a car supporting every preset PID (plus one the presets never name) would show. */
+  const supported: DashboardItem[] = [
+    ...['010C', '010D', '0105'].map((pid) => ({
+      id: itemId('gauge', pid),
+      pid,
+      kind: 'gauge' as const,
+    })),
+    ...['0104', '0106', '0107', '010B', '010E', '0110', '012F', '0142', '015C', '015E'].map(
+      (pid) => ({ id: itemId('card', pid), pid, kind: 'card' as const }),
+    ),
+  ];
+  const cardOrder = (layout: ProfileLayout) =>
+    visibleItems(supported, layout)
+      .filter((i) => i.kind === 'card')
+      .map((i) => i.pid);
+
+  it('diesel: the three gauges, then boost, oil temp, MAF, fuel rate, voltage — 010B before 0106', () => {
+    const layout = presetFor('diesel');
+    expect(layout.order.slice(0, 3)).toEqual(['gauge:010C', 'gauge:010D', 'gauge:0105']);
+    expect(layout.hidden).toEqual([]);
+    const cards = cardOrder(layout);
+    expect(cards.slice(0, 5)).toEqual(['010B', '015C', '0110', '015E', '0142']);
+    expect(cards.indexOf('010B')).toBeLessThan(cards.indexOf('0106'));
+  });
+
+  it('petrol leads with the fuel trims, timing, MAP / MAF, voltage and fuel level', () => {
+    const cards = cardOrder(presetFor('petrol'));
+    expect(presetFor('petrol').order).toContain('card:0106');
+    expect(cards.slice(0, 7)).toEqual(['0106', '0107', '010E', '010B', '0110', '0142', '012F']);
+    expect(cards.indexOf('0106')).toBeLessThan(cards.indexOf('010B'));
+    expect(presetFor('lpg')).toEqual(presetFor('petrol'));
+  });
+
+  it('hybrid is the petrol set with the voltage first', () => {
+    expect(cardOrder(presetFor('hybrid')).slice(0, 3)).toEqual(['0142', '0106', '0107']);
+    expect(presetFor('hybrid').order.filter((id) => id === 'card:0142')).toHaveLength(1);
+  });
+
+  it('an unknown fuel keeps the default order (EMPTY_LAYOUT)', () => {
+    expect(presetFor('other')).toBe(EMPTY_LAYOUT);
+    expect(presetFor(undefined)).toBe(EMPTY_LAYOUT);
+    expect(visibleItems(supported, presetFor('other'))).toEqual(supported);
+  });
+
+  it('keeps every supported item visible: unnamed PIDs follow, missing ones are skipped', () => {
+    const fewer = supported.filter((i) => i.pid !== '015C');
+    const shown = visibleItems(fewer, presetFor('diesel'));
+    expect(shown).toHaveLength(fewer.length);
+    expect(shown.map((i) => i.pid)).toContain('0104');
   });
 });

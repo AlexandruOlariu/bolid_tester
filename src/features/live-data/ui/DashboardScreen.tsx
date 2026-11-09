@@ -3,10 +3,8 @@ import { YStack, XStack, Paragraph, Button, Text, Card } from 'tamagui';
 import { ArrowUp, ArrowDown, Eye, EyeOff, Sliders, Check, RotateCcw } from 'lucide-react-native';
 import { Screen, Gauge, ValueCard } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { useSettingsStore } from '@/shared/state/settingsStore';
 import { livePidFilter } from '@/shared/vehicles';
-import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
-import { convert, displayUnit, type UnitSystem } from '@/shared/lib/units';
+import { useActiveProfile } from '@/shared/state/activeProfile';
 import {
   fuelEconomyFromValues,
   FUEL_ECONOMY_PIDS,
@@ -19,10 +17,15 @@ import {
   orderItems,
   visibleItems,
   isHidden,
+  presetFor,
   type DashboardItem,
 } from '../model/dashboardLayout';
+import { SensorGroups } from './SensorGroups';
 
-/** Built-in arc gauges (canonical/metric bounds; converted at display time). */
+/** The two views of the Live tab (plan 07): the customisable dashboard, or every sensor grouped. */
+type LiveView = 'dashboard' | 'sensors';
+
+/** Built-in arc gauges. The app is metric only: values and bounds are shown as decoded. */
 const GAUGES: { pid: string; label: string; min: number; max: number; unit: string }[] = [
   { pid: '010C', label: 'RPM', min: 0, max: 6000, unit: 'rpm' },
   { pid: '010D', label: 'Speed', min: 0, max: 220, unit: 'km/h' },
@@ -31,22 +34,15 @@ const GAUGES: { pid: string; label: string; min: number; max: number; unit: stri
 const GAUGE_PIDS = new Set(GAUGES.map((g) => g.pid));
 const GAUGE_BY_PID = new Map(GAUGES.map((g) => [g.pid, g]));
 
-/** Round a converted number for display (mirrors ValueCard/Gauge expectations). */
+/** Round a number for display to one decimal (mirrors ValueCard/Gauge expectations). */
 function fmt(n: number | null): number | null {
   if (n === null) return null;
   return Math.round(n * 10) / 10;
 }
 
 /** The prominent fuel-economy card, shown only when the live snapshot carries the needed PIDs. */
-function FuelEconomyCard({ result, units }: { result: FuelEconomyResult; units: UnitSystem }) {
-  const econ = result.litresPer100km;
-  const primary =
-    econ !== null
-      ? (() => {
-          const m = convert(econ, 'L/100km', units);
-          return { value: fmt(m.value), unit: m.unit };
-        })()
-      : null;
+function FuelEconomyCard({ result }: { result: FuelEconomyResult }) {
+  const econ = fmt(result.litresPer100km);
   const flow = fmt(result.litresPerHour);
   return (
     <Card elevate bordered padding="$3" backgroundColor="$backgroundHover">
@@ -55,13 +51,13 @@ function FuelEconomyCard({ result, units }: { result: FuelEconomyResult; units: 
           Fuel economy {result.source === 'fuel-rate' ? '(fuel-rate)' : '(from MAF)'}
         </Paragraph>
         <XStack alignItems="baseline" gap="$2" flexWrap="wrap">
-          {primary && primary.value !== null ? (
+          {econ !== null ? (
             <>
               <Text fontSize="$9" fontWeight="800">
-                {primary.value}
+                {econ}
               </Text>
               <Text fontSize="$4" theme="alt2">
-                {primary.unit}
+                L/100km
               </Text>
             </>
           ) : (
@@ -80,44 +76,37 @@ function FuelEconomyCard({ result, units }: { result: FuelEconomyResult; units: 
   );
 }
 
-/** One gauge with unit conversion applied. */
-function GaugeItem({
-  pid,
-  units,
-  value,
-}: {
-  pid: string;
-  units: UnitSystem;
-  value: number | null;
-}) {
+/** One built-in gauge, in its own (metric) unit. */
+function GaugeItem({ pid, value }: { pid: string; value: number | null }) {
   const g = GAUGE_BY_PID.get(pid)!;
-  const val = convert(value, g.unit, units);
-  return (
-    <Gauge
-      label={g.label}
-      value={fmt(val.value)}
-      min={fmt(convert(g.min, g.unit, units).value) ?? g.min}
-      max={fmt(convert(g.max, g.unit, units).value) ?? g.max}
-      unit={displayUnit(g.unit, units)}
-    />
-  );
+  return <Gauge label={g.label} value={fmt(value)} min={g.min} max={g.max} unit={g.unit} />;
 }
 
-/** One value card with unit conversion applied. */
-function CardItem({
-  units,
-  name,
-  value,
-  unit,
-}: {
-  pid: string;
-  units: UnitSystem;
-  name: string;
-  value: number | null;
-  unit: string;
-}) {
-  const m = convert(value, unit, units);
-  return <ValueCard name={name} value={fmt(m.value)} unit={m.unit} />;
+/** The Dashboard | All sensors switch under the title. */
+function ViewSwitch({ view, onChange }: { view: LiveView; onChange: (v: LiveView) => void }) {
+  const options: { id: LiveView; label: string }[] = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'sensors', label: 'All sensors' },
+  ];
+  return (
+    <XStack gap="$2" accessibilityRole="tablist">
+      {options.map((o) => (
+        <Button
+          key={o.id}
+          flex={1}
+          size="$3"
+          theme={view === o.id ? 'green' : 'gray'}
+          accessible
+          role="tab"
+          accessibilityLabel={o.label}
+          accessibilityState={{ selected: view === o.id }}
+          onPress={() => onChange(o.id)}
+        >
+          {o.label}
+        </Button>
+      ))}
+    </XStack>
+  );
 }
 
 export function DashboardScreen() {
@@ -125,9 +114,12 @@ export function DashboardScreen() {
   const session = useSessionStore((s) => s.session);
   const profile = useActiveProfile();
   const selectedId = profile.id;
-  const units = useSettingsStore((s) => s.units);
+  const [view, setView] = useState<LiveView>('dashboard');
 
-  const layout = useDashboardLayoutStore((s) => s.byProfile[selectedId]);
+  // A car with no saved Customize layout starts from its fuel preset (plan 07).
+  const saved = useDashboardLayoutStore((s) => s.byProfile[selectedId]);
+  const preset = useMemo(() => presetFor(profile.fuel), [profile.fuel]);
+  const layout = saved ?? preset;
   const move = useDashboardLayoutStore((s) => s.move);
   const toggleHidden = useDashboardLayoutStore((s) => s.toggleHidden);
   const reset = useDashboardLayoutStore((s) => s.reset);
@@ -164,7 +156,8 @@ export function DashboardScreen() {
     return [...set];
   }, [visible, effective]);
 
-  const { values } = useLiveData(registerPids);
+  // The All sensors view registers the whole effective set itself (SensorGroups → useLiveData()).
+  const { values } = useLiveData(view === 'dashboard' ? registerPids : []);
 
   const numeric = useMemo(() => {
     const out: Record<string, number | null> = {};
@@ -186,8 +179,24 @@ export function DashboardScreen() {
 
   const orderedIds = ordered.map((i) => i.id);
 
+  if (view === 'sensors') {
+    return (
+      <Screen title="Live data" subtitle="Every sensor this ECU reports, grouped by system">
+        <ViewSwitch view={view} onChange={setView} />
+        <SensorGroups />
+      </Screen>
+    );
+  }
+
   return (
     <Screen title="Live data" subtitle="Streaming the parameters this ECU supports">
+      <ViewSwitch
+        view={view}
+        onChange={(v) => {
+          setEditing(false);
+          setView(v);
+        }}
+      />
       <XStack justifyContent="flex-end" gap="$2">
         {editing ? (
           <Button
@@ -209,12 +218,13 @@ export function DashboardScreen() {
         </Button>
       </XStack>
 
-      {fuel && !editing ? <FuelEconomyCard result={fuel} units={units} /> : null}
+      {fuel && !editing ? <FuelEconomyCard result={fuel} /> : null}
 
       {editing ? (
         <YStack gap="$2">
           <Paragraph theme="alt2" fontSize="$2">
-            Reorder with the arrows and toggle visibility. Saved per vehicle profile.
+            Reorder with the arrows and toggle visibility. Saved per vehicle profile; Reset goes
+            back to the default for this car's fuel type.
           </Paragraph>
           {ordered.map((item, idx) => {
             const hidden = isHidden(item.id, layout);
@@ -258,7 +268,7 @@ export function DashboardScreen() {
                   circular
                   theme={hidden ? 'gray' : 'green'}
                   icon={hidden ? <EyeOff size={16} /> : <Eye size={16} />}
-                  onPress={() => toggleHidden(selectedId, item.id)}
+                  onPress={() => toggleHidden(selectedId, item.id, layout)}
                 />
               </XStack>
             );
@@ -270,7 +280,7 @@ export function DashboardScreen() {
             {visible
               .filter((i) => i.kind === 'gauge')
               .map((i) => (
-                <GaugeItem key={i.id} pid={i.pid} units={units} value={numeric[i.pid] ?? null} />
+                <GaugeItem key={i.id} pid={i.pid} value={numeric[i.pid] ?? null} />
               ))}
           </XStack>
 
@@ -279,12 +289,10 @@ export function DashboardScreen() {
               {visible
                 .filter((i) => i.kind === 'card')
                 .map((i) => (
-                  <CardItem
+                  <ValueCard
                     key={i.id}
-                    pid={i.pid}
-                    units={units}
                     name={values[i.pid]?.name ?? i.pid}
-                    value={numeric[i.pid] ?? null}
+                    value={fmt(numeric[i.pid] ?? null)}
                     unit={values[i.pid]?.unit ?? ''}
                   />
                 ))}

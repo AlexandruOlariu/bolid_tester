@@ -5,7 +5,7 @@ import { renderWithProviders } from '@test/renderWithProviders';
 import { fileSystemMock, memoryFiles } from '@test/mocks/fileSystem';
 import { useHistoryStore } from '@/shared/state/historyStore';
 import { useTripStore, type TripSummary } from '@/features/trip-recording/model/tripStore';
-import { useOnboardingStore } from '@/features/onboarding/model/onboardingStore';
+import { useOnboardingStore } from '@/shared/state/onboardingStore';
 import { useBackupStore } from '../model/backupStore';
 import { connectSimulator } from '@test/simulator';
 import { resetStores } from '@test/resetStores';

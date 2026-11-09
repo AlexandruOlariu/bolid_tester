@@ -17,8 +17,18 @@ name: Simulator smoke — connect, read faults, clear
     visible: 'Scan for adapters'
     timeout: 30000
 
-# Settings → simulator with one injected fault.
+# Settings → Developer & simulator (collapsed by default, plan 07) → simulator with one injected fault.
 - tapOn: 'Settings'
+- scrollUntilVisible:
+    element:
+      text: '(?i)developer & simulator.*'
+    direction: DOWN
+# The header reads upper-case on Android and is labelled "Developer & simulator. Show".
+- tapOn: '(?i)developer & simulator.*'
+- scrollUntilVisible:
+    element:
+      text: 'Simulator \(no car\)'
+    direction: DOWN
 - tapOn: 'Simulator \(no car\)'
 - scrollUntilVisible:
     element:

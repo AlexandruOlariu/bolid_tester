@@ -1,36 +1,32 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { mockPush } from '@test/mocks/router';
 import { MoreScreen } from './MoreScreen';
 
-const ENTRY_TITLES = [
-  'Diagnose (AI)',
-  'History',
-  'Vehicle report',
-  'Used-car inspection',
-  'DPF / regen',
-  'Battery & charging',
-  'Adapter health',
-  'VIN decoder',
-  'Maintenance log',
-  'Charts',
-  'Performance',
-  'Trips',
-  'Alerts',
-  'Sensor readings',
-  'Sensor tests',
-  'Module scan',
-  'Service reset',
-  'Coding',
-  'Adaptations',
-  'Routines & output tests',
-  'Notifications',
-  'Bus sniffer',
-  'Backup & restore',
-  'Error log',
-];
+/** Every row, by section (plan 07). "Check for updates" is the last Tools row. */
+const SECTIONS: Record<string, string[]> = {
+  diagnose: ['Diagnose (AI)', 'Used-car inspection', 'History', 'Vehicle report', 'Sensor tests'],
+  drive: ['Charts', 'Performance', 'Trips', 'Alerts'],
+  ownership: [
+    'Maintenance log',
+    'Battery & charging',
+    'DPF / regen',
+    'VIN decoder',
+    'Notifications',
+  ],
+  workshop: [
+    'Module scan',
+    'Adaptations',
+    'Routines & output tests',
+    'Coding',
+    'Service reset',
+    'Bus sniffer',
+  ],
+  tools: ['Adapter health', 'Backup & restore', 'Error log', 'Check for updates'],
+};
+const ALL_TITLES = Object.values(SECTIONS).flat();
 
 /** A button whose accessible name starts with `title.` (rows are labelled "Title. Subtitle"). */
 function entryName(title: string): RegExp {
@@ -38,15 +34,47 @@ function entryName(title: string): RegExp {
 }
 
 describe('MoreScreen', () => {
-  it('renders every entry as a labelled button', () => {
+  it('renders the five sections with every entry as a labelled button', () => {
     renderWithProviders(<MoreScreen />);
 
     expect(screen.getByText('More')).toBeTruthy();
-    for (const title of ENTRY_TITLES) {
-      expect(screen.getByRole('button', { name: entryName(title) })).toBeTruthy();
+    for (const [id, titles] of Object.entries(SECTIONS)) {
+      const section = within(screen.getByTestId(`more-section-${id}`));
+      for (const title of titles) {
+        expect(section.getByRole('button', { name: entryName(title) })).toBeTruthy();
+      }
     }
-    // …plus "Check for updates".
-    expect(screen.getAllByRole('button')).toHaveLength(ENTRY_TITLES.length + 1);
+    expect(screen.getAllByRole('button')).toHaveLength(ALL_TITLES.length);
+    expect(screen.queryByText('Sensor readings')).toBeNull(); // folded into Live (plan 07)
+  });
+
+  it('marks only the Workshop rows experimental and shows the Workshop blurb', () => {
+    renderWithProviders(<MoreScreen />);
+
+    expect(screen.getAllByText('experimental')).toHaveLength(SECTIONS.workshop.length);
+    expect(screen.getByRole('button', { name: /^Coding\. .*\. Experimental$/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Trips. Record & export live data' })).toBeTruthy();
+    expect(screen.getByText(/CAN cars only; addresses are confirmed per car/)).toBeTruthy();
+  });
+
+  it('search filters the rows: "cod" leaves only Coding, in Workshop', () => {
+    renderWithProviders(<MoreScreen />);
+
+    fireEvent.changeText(screen.getByLabelText('Search tools'), 'cod');
+
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    const workshop = within(screen.getByTestId('more-section-workshop'));
+    expect(workshop.getByRole('button', { name: entryName('Coding') })).toBeTruthy();
+    expect(workshop.getByText('experimental')).toBeTruthy();
+    expect(screen.queryByTestId('more-section-ownership')).toBeNull();
+    expect(screen.queryByText('VIN decoder')).toBeNull();
+
+    // A query that matches nothing says so; clearing it brings every row back.
+    fireEvent.changeText(screen.getByLabelText('Search tools'), 'zzz');
+    expect(screen.getByText('No tools match “zzz”.')).toBeTruthy();
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    fireEvent.changeText(screen.getByLabelText('Search tools'), '');
+    expect(screen.getAllByRole('button')).toHaveLength(ALL_TITLES.length);
   });
 
   it('tapping Error log opens /error-log', () => {
@@ -78,6 +106,7 @@ describe('MoreScreen', () => {
     await waitFor(() =>
       expect(alert).toHaveBeenCalledWith('Updates unavailable', expect.any(String)),
     );
+    expect(mockPush).not.toHaveBeenCalled();
     alert.mockRestore();
   });
 });

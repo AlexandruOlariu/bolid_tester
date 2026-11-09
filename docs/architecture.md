@@ -120,7 +120,8 @@ report slice (the Faults screen's report snapshot, `dtcCheckFromRead`, is in `sr
 store, so `api/registry.ts` imports them all. That registry (`PERSISTED_STORES`) is **the one list
 to update when a store gains `persist`** — `storeVersions.test.ts` fails when a `bolid.*` store is
 missing from it. The bundle format, validation, redaction and restore plan are pure, in
-`src/shared/lib/backup.ts`. No feature imports the backup slice.
+`src/shared/lib/backup.ts`. No feature imports the backup slice: Settings' **Reset all app data**
+(plan 07, `resetAllAppData`) is handed in by the route `src/app/settings.tsx` as a prop.
 
 **Specs.** Every slice has a spec in `docs/features/<slug>.md` (see [docs/README](./README.md));
 `src/shared/lib/featureDocsSync.test.ts` enforces it.
