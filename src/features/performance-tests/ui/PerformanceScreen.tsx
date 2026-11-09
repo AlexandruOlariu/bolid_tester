@@ -3,8 +3,11 @@ import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
 import { Screen, HIT_SLOP } from '@/shared/ui';
 import { usePerformanceStore } from '../model/performanceStore';
 import { usePerformanceTest } from '../hooks/usePerformanceTest';
+import { useTranslation } from '@/shared/i18n';
+import { formatFixed } from '@/shared/lib/format';
 
 export function PerformanceScreen() {
+  const { t } = useTranslation('performanceTests');
   const { stop } = usePerformanceTest();
   const state = usePerformanceStore((s) => s.state);
   const type = usePerformanceStore((s) => s.type);
@@ -13,47 +16,59 @@ export function PerformanceScreen() {
   const history = usePerformanceStore((s) => s.history);
 
   return (
-    <Screen title="Performance" subtitle="Closed-course use only — keep your eyes on the road">
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <XStack gap="$2">
-        {(['accel', 'drag', 'brake'] as const).map((t) => (
+        {(['accel', 'drag', 'brake'] as const).map((kind) => (
           <Button
-            key={t}
+            key={kind}
             size="$3"
             hitSlop={HIT_SLOP}
-            theme={type === t ? 'green' : undefined}
-            onPress={() => setType(t)}
+            theme={type === kind ? 'green' : undefined}
+            onPress={() => setType(kind)}
           >
-            {t === 'accel' ? '0–100' : t === 'drag' ? '¼ mile' : 'Braking'}
+            {t(`type.${kind}`)}
           </Button>
         ))}
       </XStack>
 
       <XStack gap="$2" alignItems="center">
-        <Paragraph flex={1}>State: {state}</Paragraph>
+        <Paragraph flex={1}>
+          {t('state', { state: t(`stateName.${state}`, { defaultValue: state }) })}
+        </Paragraph>
         {state === 'idle' || state === 'done' ? (
           <Button theme="green" onPress={() => setState('armed')}>
-            Arm
+            {t('arm')}
           </Button>
         ) : (
           <Button theme="red" onPress={stop}>
-            Stop
+            {t('stop')}
           </Button>
         )}
       </XStack>
-      {state === 'armed' ? (
-        <Paragraph theme="alt2">Armed — launch detected on first movement.</Paragraph>
-      ) : null}
+      {state === 'armed' ? <Paragraph theme="alt2">{t('armed')}</Paragraph> : null}
 
       <YStack gap="$2">
-        <H4>Runs</H4>
+        <H4>{t('runs')}</H4>
         {history.map((r) => (
           <Paragraph key={r.id}>
             {r.type === 'accel' && r.accel
-              ? `0–${r.accel.targetKmh}: ${r.accel.timeMs ? (r.accel.timeMs / 1000).toFixed(2) + ' s' : '—'} (${r.accel.sampleRateHz.toFixed(0)} Hz)`
+              ? t('run.accel', {
+                  target: r.accel.targetKmh,
+                  time: r.accel.timeMs ? `${formatFixed(r.accel.timeMs / 1000, 2)} s` : '—',
+                  rate: formatFixed(r.accel.sampleRateHz, 0),
+                })
               : r.type === 'drag' && r.drag
-                ? `¼ mile: ${r.drag.quarterMile ? (r.drag.quarterMile.timeMs / 1000).toFixed(2) + ' s @ ' + r.drag.quarterMile.trapKmh.toFixed(0) + ' km/h' : '—'}`
+                ? t('run.drag', {
+                    result: r.drag.quarterMile
+                      ? `${formatFixed(r.drag.quarterMile.timeMs / 1000, 2)} s @ ${formatFixed(r.drag.quarterMile.trapKmh, 0)} km/h`
+                      : '—',
+                  })
                 : r.type === 'brake' && r.brake
-                  ? `Brake: ${r.brake.timeMs ? (r.brake.timeMs / 1000).toFixed(2) + ' s, ' + (r.brake.distanceM ?? 0).toFixed(1) + ' m' : '—'}`
+                  ? t('run.brake', {
+                      result: r.brake.timeMs
+                        ? `${formatFixed(r.brake.timeMs / 1000, 2)} s, ${formatFixed(r.brake.distanceM ?? 0, 1)} m`
+                        : '—',
+                    })
                   : '—'}
           </Paragraph>
         ))}

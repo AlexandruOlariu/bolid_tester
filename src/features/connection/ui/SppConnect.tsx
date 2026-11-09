@@ -7,6 +7,7 @@ import type { ConnectTarget } from '../api/connectionService';
 import { usePairedAdapters } from '../hooks/usePairedAdapters';
 import { DeviceRow } from './DeviceRow';
 import { Panel } from '../styles/connection.styles';
+import { Trans, useTranslation } from '@/shared/i18n';
 
 /** Android's system Bluetooth settings screen (where an SPP adapter is paired). */
 export const BLUETOOTH_SETTINGS_INTENT = 'android.settings.BLUETOOTH_SETTINGS';
@@ -32,6 +33,7 @@ export function SppConnect({
   busy: boolean;
   onConnect: (target: ConnectTarget) => void;
 }) {
+  const { t } = useTranslation('connection');
   const { devices, loading, loaded, error, refresh } = usePairedAdapters(true);
   const empty = loaded && !loading && !error && devices.length === 0;
 
@@ -40,11 +42,10 @@ export function SppConnect({
       <Panel>
         <YStack gap="$2">
           <Text fontWeight="700" fontSize="$3">
-            Paired adapters
+            {t('spp.title')}
           </Text>
           <Paragraph theme="alt2" fontSize="$2">
-            Classic Bluetooth (“3.0”) adapters connect as a paired device — pick yours below. The
-            bus sniffer is not available over classic Bluetooth.
+            {t('spp.help')}
           </Paragraph>
         </YStack>
       </Panel>
@@ -71,11 +72,10 @@ export function SppConnect({
       {empty ? (
         <Panel testID="connect-spp-empty">
           <Paragraph fontSize="$3">
-            Pair the adapter first: Android Settings → Bluetooth → pair{' '}
-            <Text fontWeight="700" color="$color">
-              OBDII
-            </Text>{' '}
-            (PIN 1234 or 0000), then come back.
+            <Trans
+              i18nKey="connection:spp.pairFirst"
+              components={{ b: <Text fontWeight="700" color="$color" /> }}
+            />
           </Paragraph>
         </Panel>
       ) : null}
@@ -87,7 +87,7 @@ export function SppConnect({
           size="$4"
           onPress={() => void openBluetoothSettings()}
         >
-          Open Bluetooth settings
+          {t('spp.openSettings')}
         </Button>
         <Button
           flex={1}
@@ -96,12 +96,12 @@ export function SppConnect({
           icon={loading ? () => <Spinner /> : undefined}
           onPress={() => void refresh()}
         >
-          Refresh
+          {t('spp.refresh')}
         </Button>
       </XStack>
 
       <Button size="$4" disabled={busy} onPress={() => void switchAdapterSource('ble')}>
-        Use a Bluetooth LE adapter
+        {t('spp.useBle')}
       </Button>
     </YStack>
   );

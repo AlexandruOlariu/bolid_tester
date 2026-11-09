@@ -37,15 +37,18 @@ import {
   rightColumnWidth,
 } from '../model/twoPaneGrid';
 import { SensorGroups } from './SensorGroups';
+import { useTranslation } from '@/shared/i18n';
+import { formatNumber } from '@/shared/lib/format';
 
 /** The two views of the Live tab (plan 07): the customisable dashboard, or every sensor grouped. */
 type LiveView = 'dashboard' | 'sensors';
 
-/** Built-in arc gauges. The app is metric only: values and bounds are shown as decoded. */
-const GAUGES: { pid: string; label: string; min: number; max: number; unit: string }[] = [
-  { pid: '010C', label: 'RPM', min: 0, max: 6000, unit: 'rpm' },
-  { pid: '010D', label: 'Speed', min: 0, max: 220, unit: 'km/h' },
-  { pid: '0105', label: 'Coolant', min: -40, max: 130, unit: '°C' },
+/** Built-in arc gauges. The app is metric only: values and bounds are shown as decoded. Labels are
+ *  `liveData:gauge.<id>` (plan 11); unit symbols are never translated. */
+const GAUGES: { pid: string; id: string; min: number; max: number; unit: string }[] = [
+  { pid: '010C', id: 'rpm', min: 0, max: 6000, unit: 'rpm' },
+  { pid: '010D', id: 'speed', min: 0, max: 220, unit: 'km/h' },
+  { pid: '0105', id: 'coolant', min: -40, max: 130, unit: '°C' },
 ];
 const GAUGE_PIDS = new Set(GAUGES.map((g) => g.pid));
 const GAUGE_BY_PID = new Map(GAUGES.map((g) => [g.pid, g]));
@@ -58,19 +61,20 @@ function fmt(n: number | null): number | null {
 
 /** The prominent fuel-economy card, shown only when the live snapshot carries the needed PIDs. */
 function FuelEconomyCard({ result }: { result: FuelEconomyResult }) {
+  const { t } = useTranslation('liveData');
   const econ = fmt(result.litresPer100km);
   const flow = fmt(result.litresPerHour);
   return (
-    <Card elevate bordered padding="$3" backgroundColor="$backgroundHover">
+    <Card elevate bordered padding="$3" backgroundColor="$backgroundHover" testID="fuel-economy">
       <YStack gap="$1">
         <Paragraph theme="alt2" fontSize="$2" numberOfLines={1}>
-          Fuel economy {result.source === 'fuel-rate' ? '(fuel-rate)' : '(from MAF)'}
+          {result.source === 'fuel-rate' ? t('fuel.titleRate') : t('fuel.titleMaf')}
         </Paragraph>
         <XStack alignItems="baseline" gap="$2" flexWrap="wrap">
           {econ !== null ? (
             <>
               <Text fontSize="$9" fontWeight="800" maxFontSizeMultiplier={1.3}>
-                {econ}
+                {formatNumber(econ, 1)}
               </Text>
               <Text fontSize="$4" theme="alt2">
                 L/100km
@@ -78,12 +82,12 @@ function FuelEconomyCard({ result }: { result: FuelEconomyResult }) {
             </>
           ) : (
             <Text fontSize="$6" fontWeight="800" theme="alt2">
-              standstill
+              {t('fuel.standstill')}
             </Text>
           )}
           {flow !== null ? (
             <Text fontSize="$3" theme="alt2">
-              · {flow} L/h
+              · {formatNumber(flow, 1)} L/h
             </Text>
           ) : null}
         </XStack>
@@ -94,9 +98,17 @@ function FuelEconomyCard({ result }: { result: FuelEconomyResult }) {
 
 /** One built-in gauge, in its own (metric) unit. */
 function GaugeItem({ pid, value, size }: { pid: string; value: number | null; size?: number }) {
+  const { t } = useTranslation('liveData');
   const g = GAUGE_BY_PID.get(pid)!;
   return (
-    <Gauge label={g.label} value={fmt(value)} min={g.min} max={g.max} unit={g.unit} size={size} />
+    <Gauge
+      label={t(`gauge.${g.id}`)}
+      value={fmt(value)}
+      min={g.min}
+      max={g.max}
+      unit={g.unit}
+      size={size}
+    />
   );
 }
 
@@ -105,9 +117,10 @@ const ROOMY_PADDING = 24;
 
 /** The Dashboard | All sensors switch under the title. */
 function ViewSwitch({ view, onChange }: { view: LiveView; onChange: (v: LiveView) => void }) {
+  const { t } = useTranslation('liveData');
   const options: { id: LiveView; label: string }[] = [
-    { id: 'dashboard', label: 'Dashboard' },
-    { id: 'sensors', label: 'All sensors' },
+    { id: 'dashboard', label: t('view.dashboard') },
+    { id: 'sensors', label: t('view.sensors') },
   ];
   return (
     <XStack gap="$2" accessibilityRole="tablist">
@@ -133,6 +146,7 @@ function ViewSwitch({ view, onChange }: { view: LiveView; onChange: (v: LiveView
 }
 
 export function DashboardScreen() {
+  const { t } = useTranslation('liveData');
   const status = useSessionStore((s) => s.status);
   const session = useSessionStore((s) => s.session);
   const profile = useActiveProfile();
@@ -201,10 +215,8 @@ export function DashboardScreen() {
 
   if (status !== 'connected') {
     return (
-      <Screen title="Live data">
-        <Paragraph theme="alt2">
-          Not connected. Connect an adapter or the simulator first.
-        </Paragraph>
+      <Screen title={t('title')}>
+        <Paragraph theme="alt2">{t('notConnected')}</Paragraph>
       </Screen>
     );
   }
@@ -213,7 +225,7 @@ export function DashboardScreen() {
 
   if (view === 'sensors') {
     return (
-      <Screen title="Live data" subtitle="Every sensor this ECU reports, grouped by system">
+      <Screen title={t('title')} subtitle={t('subtitleSensors')}>
         <ViewSwitch view={view} onChange={setView} />
         <SensorGroups />
       </Screen>
@@ -256,21 +268,20 @@ export function DashboardScreen() {
         ))}
       </XStack>
       {cardItems.every((i) => values[i.pid] === undefined) ? (
-        <Paragraph theme="alt2">Reading…</Paragraph>
+        <Paragraph theme="alt2">{t('reading')}</Paragraph>
       ) : null}
     </YStack>
   );
   const editList = (
     <YStack gap="$2">
       <Paragraph theme="alt2" fontSize="$2">
-        Reorder with the arrows and toggle visibility. Saved per vehicle profile; Reset goes back to
-        the default for this car's fuel type.
+        {t('edit.help')}
       </Paragraph>
       {ordered.map((item, idx) => {
         const hidden = isHidden(item.id, layout);
         const label =
           item.kind === 'gauge'
-            ? (GAUGE_BY_PID.get(item.pid)?.label ?? item.pid)
+            ? t(`gauge.${GAUGE_BY_PID.get(item.pid)?.id ?? 'rpm'}`, { defaultValue: item.pid })
             : (values[item.pid]?.name ?? item.pid);
         return (
           <XStack
@@ -286,7 +297,7 @@ export function DashboardScreen() {
             <Text flex={1} numberOfLines={1}>
               {label}{' '}
               <Text theme="alt2" fontSize="$1">
-                {item.kind === 'gauge' ? 'gauge' : item.pid}
+                {item.kind === 'gauge' ? t('edit.gauge') : item.pid}
               </Text>
             </Text>
             {/* Icon-only buttons: each names its action (plan 20), 36 dp + 8 dp slop. */}
@@ -296,7 +307,7 @@ export function DashboardScreen() {
               hitSlop={HIT_SLOP}
               disabled={idx === 0}
               icon={<ArrowUp size={16} />}
-              accessibilityLabel={`Move ${label} up`}
+              accessibilityLabel={t('edit.moveUp', { label })}
               accessibilityState={{ disabled: idx === 0 }}
               onPress={() => move(selectedId, orderedIds, item.id, -1)}
             />
@@ -306,7 +317,7 @@ export function DashboardScreen() {
               hitSlop={HIT_SLOP}
               disabled={idx === ordered.length - 1}
               icon={<ArrowDown size={16} />}
-              accessibilityLabel={`Move ${label} down`}
+              accessibilityLabel={t('edit.moveDown', { label })}
               accessibilityState={{ disabled: idx === ordered.length - 1 }}
               onPress={() => move(selectedId, orderedIds, item.id, 1)}
             />
@@ -316,7 +327,7 @@ export function DashboardScreen() {
               hitSlop={HIT_SLOP}
               theme={hidden ? 'gray' : 'green'}
               icon={hidden ? <EyeOff size={16} /> : <Eye size={16} />}
-              accessibilityLabel={hidden ? `Show ${label}` : `Hide ${label}`}
+              accessibilityLabel={hidden ? t('edit.show', { label }) : t('edit.hide', { label })}
               onPress={() => toggleHidden(selectedId, item.id, layout)}
             />
           </XStack>
@@ -326,7 +337,7 @@ export function DashboardScreen() {
   );
 
   return (
-    <Screen title="Live data" subtitle="Streaming the parameters this ECU supports" wide={twoPane}>
+    <Screen title={t('title')} subtitle={t('subtitle')} wide={twoPane}>
       <ViewSwitch
         view={view}
         onChange={(v) => {
@@ -343,7 +354,7 @@ export function DashboardScreen() {
             icon={<RotateCcw size={16} />}
             onPress={() => reset(selectedId)}
           >
-            Reset
+            {t('edit.reset')}
           </Button>
         ) : null}
         <Button
@@ -353,7 +364,7 @@ export function DashboardScreen() {
           icon={editing ? <Check size={16} /> : <Sliders size={16} />}
           onPress={() => setEditing((e) => !e)}
         >
-          {editing ? 'Done' : 'Customize'}
+          {editing ? t('common:actions.done') : t('edit.customize')}
         </Button>
       </XStack>
 

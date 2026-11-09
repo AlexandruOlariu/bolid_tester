@@ -1,0 +1,12 @@
+{
+  "title": "Used-car inspection",
+  "notConnected": "Connect to the car (or the simulator) to run an inspection.",
+  "subtitle": "Screens the engine/emissions ECU — not a mechanical check.",
+  "running": "Running…",
+  "run": "Run inspection",
+  "verdict": {
+    "pass": "PASS",
+    "caution": "CAUTION",
+    "fail": "FAIL"
+  }
+}

@@ -8,6 +8,7 @@ import { useCodingStore } from '../model/codingStore';
 import { useCoding } from '../hooks/useCoding';
 import { CodingTweaks } from './CodingTweaks';
 import { CodingBackup } from './CodingBackup';
+import { useTranslation } from '@/shared/i18n';
 
 const hex2 = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
 const lowestBit = (mask: number) => mask & -mask;
@@ -48,6 +49,7 @@ function ByteCard({
   onToggleBit: (byte: number, bit: number) => void;
   onSetField: (byte: number, mask: number, value: number) => void;
 }) {
+  const { t } = useTranslation('coding');
   return (
     <YStack
       gap="$2"
@@ -59,7 +61,7 @@ function ByteCard({
     >
       <XStack alignItems="center" gap="$2">
         <Paragraph fontFamily="$mono" theme="alt2" size="$2">
-          Byte {byteView.index}
+          {t('byte', { n: byteView.index })}
         </Paragraph>
         <Paragraph fontFamily="$mono">0x{byteView.hex}</Paragraph>
       </XStack>
@@ -70,13 +72,14 @@ function ByteCard({
             <Paragraph flex={1} size="$2">
               {f.name}
               <Paragraph theme="alt2" size="$1">
-                {'  '}bit {f.bit}
+                {'  '}
+                {t('bit', { n: f.bit })}
               </Paragraph>
             </Paragraph>
             <AccessibleSwitch
               checked={f.value === 1}
               onCheckedChange={() => onToggleBit(byteView.index, f.bit!)}
-              accessibilityLabel={`${f.name} (bit ${f.bit})`}
+              accessibilityLabel={`${f.name} (${t('bit', { n: f.bit })})`}
             />
           </XStack>
         ) : f.mask !== undefined ? (
@@ -92,7 +95,7 @@ function ByteCard({
                 size="$3"
                 hitSlop={HIT_SLOP}
                 circular
-                accessibilityLabel={`Decrease ${f.name}`}
+                accessibilityLabel={t('decrease', { name: f.name })}
                 disabled={f.value <= 0}
                 onPress={() =>
                   onSetField(byteView.index, f.mask!, Math.max(0, f.value - lowestBit(f.mask!)))
@@ -112,7 +115,7 @@ function ByteCard({
                 size="$3"
                 hitSlop={HIT_SLOP}
                 circular
-                accessibilityLabel={`Increase ${f.name}`}
+                accessibilityLabel={t('increase', { name: f.name })}
                 disabled={f.value >= f.mask}
                 onPress={() =>
                   onSetField(
@@ -142,7 +145,7 @@ function ByteCard({
             theme={b.value ? 'green' : undefined}
             role="switch"
             accessibilityRole="switch"
-            accessibilityLabel={`Byte ${byteView.index} bit ${b.bit}`}
+            accessibilityLabel={t('bitA11y', { byte: byteView.index, bit: b.bit })}
             accessibilityState={{ checked: b.value === 1 }}
             onPress={() => onToggleBit(byteView.index, b.bit)}
           >
@@ -155,6 +158,7 @@ function ByteCard({
 }
 
 function ModuleEditor({ mod }: { mod: CodingModule }) {
+  const { t } = useTranslation('coding');
   const { read, write, toggleBit, setField, fieldsFor, currentFor, partNumberFor } = useCoding();
   const unlocked = useCodingStore((s) => s.unlocked);
   const current = currentFor(mod);
@@ -185,7 +189,7 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
           hitSlop={HIT_SLOP}
           onPress={async () => setOriginal((await read(mod)) ?? current)}
         >
-          Read + backup
+          {t('readBackup')}
         </Button>
       </XStack>
       <UnlockBadge status={unlock} testID={`unlock-coding-${mod.reqHeader}`} />
@@ -193,7 +197,7 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
       {original ? (
         <YStack gap="$1">
           <Paragraph theme="alt2" size="$2">
-            Before → After
+            {t('beforeAfter')}
           </Paragraph>
           <XStack gap="$2" alignItems="center">
             <CodingPreview view={buildCodingView(original, fields)} />
@@ -203,7 +207,7 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
         </YStack>
       ) : (
         <Paragraph theme="alt2" size="$2">
-          Read the module first — writes always start from a fresh backup.
+          {t('readFirst')}
         </Paragraph>
       )}
 
@@ -222,18 +226,11 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
           disabled={!unlocked || !original || !dirty}
           onPress={() => setConfirming(true)}
         >
-          {!unlocked
-            ? 'Unlock to write'
-            : !dirty
-              ? 'No changes to write'
-              : 'Write coding (experimental)'}
+          {!unlocked ? t('unlockToWrite') : !dirty ? t('noChanges') : t('write')}
         </Button>
       ) : (
         <YStack gap="$2" backgroundColor="$color1" padding="$2" borderRadius="$3">
-          <Paragraph size="$2">
-            Write the new coding to {mod.module}? The old value is backed up and re-verified after
-            writing.
-          </Paragraph>
+          <Paragraph size="$2">{t('confirmText', { module: mod.module })}</Paragraph>
           <XStack gap="$2">
             <Button
               flex={1}
@@ -246,10 +243,10 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
                 if (ok) setOriginal(current);
               }}
             >
-              Confirm write
+              {t('confirmWrite')}
             </Button>
             <Button flex={1} size="$3" hitSlop={HIT_SLOP} onPress={() => setConfirming(false)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
           </XStack>
         </YStack>
@@ -259,6 +256,7 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
 }
 
 export function CodingScreen() {
+  const { t } = useTranslation('coding');
   const { available, modules } = useCoding();
   const unlocked = useCodingStore((s) => s.unlocked);
   const setUnlocked = useCodingStore((s) => s.setUnlocked);
@@ -266,26 +264,20 @@ export function CodingScreen() {
 
   if (!available) {
     return (
-      <Screen title="Coding">
-        <Paragraph theme="alt2">
-          Coding is unavailable for this car / protocol. It is experimental, CAN-only, and
-          profile-gated.
-        </Paragraph>
+      <Screen title={t('title')}>
+        <Paragraph theme="alt2">{t('unavailable')}</Paragraph>
       </Screen>
     );
   }
 
   return (
-    <Screen
-      title="Coding"
-      subtitle="⚠ Experimental — writes can disable functions. Your car, your risk."
-    >
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <XStack justifyContent="space-between" alignItems="center">
-        <Paragraph flex={1}>Unlock writing</Paragraph>
+        <Paragraph flex={1}>{t('unlock')}</Paragraph>
         <AccessibleSwitch
           checked={unlocked}
           onCheckedChange={setUnlocked}
-          accessibilityLabel="Unlock writing"
+          accessibilityLabel={t('unlock')}
         />
       </XStack>
       {lastResult ? <Paragraph theme="alt2">{lastResult}</Paragraph> : null}

@@ -93,6 +93,7 @@
           "url": "https://de.sentry.io/"
         }
       ],
+      "expo-localization",
       "./plugins/withReleaseSigning"
     ],
     "experiments": {

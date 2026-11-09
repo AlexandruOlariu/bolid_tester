@@ -13,14 +13,10 @@ import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { logError } from '@/shared/state/errorLogStore';
 import { BACKUP_BUSY_MESSAGE } from '../model/backupWorkStore';
 import { HIT_SLOP } from '@/shared/ui';
+import { translate, useTranslation } from '@/shared/i18n';
 
-const SKIP_LABEL: Record<RestoreSkip, string> = {
-  equal: 'equal',
-  'no-channel': 'not in profile',
-  'no-snapshot-raw': 'not in backup',
-  'out-of-bounds': 'out of bounds',
-  locked: 'locked',
-};
+/** The skip chip: `coding:restore.skip.<reason>` (plan 11). */
+const skipLabel = (skip: RestoreSkip) => translate(`coding:restore.skip.${skip}`);
 
 const fmt = (v: number | null, unit?: string) =>
   v === null ? '—' : `${v}${unit ? ' ' + unit : ''}`;
@@ -41,8 +37,9 @@ function PlanRow({
   busy: boolean;
   onRestore: (item: RestorePlanItem) => Promise<void>;
 }) {
+  const { t } = useTranslation('coding');
   const [confirming, setConfirming] = useState(false);
-  const chip = item.action === 'restore' ? 'restore' : SKIP_LABEL[item.skip ?? 'equal'];
+  const chip = item.action === 'restore' ? t('restore.chip') : skipLabel(item.skip ?? 'equal');
   return (
     <YStack
       testID={`restore-row-${item.did}`}
@@ -69,7 +66,7 @@ function PlanRow({
         {fmt(item.snapshotValue, item.unit)} → {fmt(item.currentValue, item.unit)}
       </Paragraph>
       <Paragraph size="$1" theme="alt2">
-        backup → car now
+        {t('restore.direction')}
       </Paragraph>
       {item.action === 'skip' && item.skip !== 'equal' && item.reason ? (
         <Paragraph size="$2" theme="alt2">
@@ -85,13 +82,16 @@ function PlanRow({
             // Fail closed even if a disabled button still delivers a press.
             onPress={() => canWrite && !busy && setConfirming(true)}
           >
-            Restore
+            {t('restore.restore')}
           </Button>
         ) : (
           <YStack gap="$2" backgroundColor="$color3" padding="$2" borderRadius="$3">
             <Paragraph size="$2">
-              Write {fmt(item.snapshotValue, item.unit)} to {item.name} (DID {item.did})? A backup
-              of the current value is taken first.
+              {t('restore.confirmOne', {
+                value: fmt(item.snapshotValue, item.unit),
+                name: item.name,
+                did: item.did,
+              })}
             </Paragraph>
             <XStack gap="$2">
               <Button
@@ -109,7 +109,7 @@ function PlanRow({
                   }
                 }}
               >
-                {busy ? 'Writing…' : 'Confirm restore'}
+                {busy ? t('tweak.writing') : t('backup.confirm')}
               </Button>
               <Button
                 flex={1}
@@ -118,7 +118,7 @@ function PlanRow({
                 disabled={busy}
                 onPress={() => setConfirming(false)}
               >
-                Cancel
+                {t('common:actions.cancel')}
               </Button>
             </XStack>
           </YStack>
@@ -140,6 +140,7 @@ export function AdaptationRestorePanel({
   m: CarBackupModule;
   blocked?: string | null;
 }) {
+  const { t } = useTranslation('coding');
   const profile = useActiveProfile();
   const { busy, unlocked, available, readCurrent, plan, restoreOne, restoreAll } =
     useAdaptationRestore();
@@ -152,7 +153,7 @@ export function AdaptationRestorePanel({
    *  letting it escape the press handler unseen. */
   const fail = (where: string, e: unknown) => {
     logError({ source: `coding/adaptation-restore/${where}`, error: e, severity: 'warning' });
-    setMessage(`Failed: ${e instanceof Error ? e.message : String(e)}`);
+    setMessage(t('failed', { error: e instanceof Error ? e.message : String(e) }));
   };
 
   /** Fresh read + plan. Returns false when nothing was read (busy elsewhere, link gone, threw). */
@@ -160,7 +161,7 @@ export function AdaptationRestorePanel({
     try {
       const current = await readCurrent(m);
       if (!current) {
-        setMessage(available ? BACKUP_BUSY_MESSAGE : 'Not connected over CAN.');
+        setMessage(available ? t(BACKUP_BUSY_MESSAGE) : t('restore.notCan'));
         return false;
       }
       const items = plan(m, current);
@@ -195,7 +196,7 @@ export function AdaptationRestorePanel({
     setMessage(null);
     try {
       const res = await restoreAll(items, (done, total) =>
-        setProgress(`Restored ${done} of ${total}…`),
+        setProgress(t('restore.progress', { done, total })),
       );
       if (res.failed) {
         const failedAt = items.findIndex((i) => i.did === res.failed!.did);
@@ -204,10 +205,14 @@ export function AdaptationRestorePanel({
           .filter((i) => i.action === 'restore')
           .map((i) => `${i.name} (${i.did})`);
         setMessage(
-          `Stopped at ${res.failed.did}: ${res.failed.message} Not restored: ${remaining.join(', ')}.`,
+          t('restore.stopped', {
+            did: res.failed.did,
+            message: res.failed.message,
+            remaining: remaining.join(', '),
+          }),
         );
       } else {
-        setMessage(`Restored ${res.done} channel${res.done === 1 ? '' : 's'}.`);
+        setMessage(t('restore.restoredMany', { count: res.done }));
       }
     } catch (e) {
       fail('write', e);
@@ -231,11 +236,15 @@ export function AdaptationRestorePanel({
         // Fail closed even if a disabled button still delivers a press.
         onPress={() => (available && !busy ? compare() : undefined)}
       >
-        {busy && !progress ? 'Busy…' : compared ? 'Compare again' : 'Compare with car'}
+        {busy && !progress
+          ? t('restore.busy')
+          : compared
+            ? t('restore.compareAgain')
+            : t('restore.compare')}
       </Button>
       {!available ? (
         <Paragraph theme="alt2" size="$2">
-          Connect to the car over CAN to compare and restore adaptation values.
+          {t('restore.connectCan')}
         </Paragraph>
       ) : null}
       {compared ? (
@@ -246,8 +255,7 @@ export function AdaptationRestorePanel({
           ))}
           {!unlocked ? (
             <Paragraph theme="alt2" size="$2">
-              Locked — unlock adaptations on the Adaptations screen to restore channels. Each write
-              backs up the current value and re-reads it to verify.
+              {t('restore.lockedHelp')}
             </Paragraph>
           ) : null}
           {summary && summary.restore > 0 ? (
@@ -259,18 +267,21 @@ export function AdaptationRestorePanel({
                 disabled={!canWrite || busy}
                 onPress={() => canWrite && !busy && setConfirmAll(true)}
               >
-                {`Restore all (${summary.restore})`}
+                {t('restore.all', { count: summary.restore })}
               </Button>
             ) : (
               <YStack gap="$2" backgroundColor="$color3" padding="$2" borderRadius="$3">
                 <Paragraph size="$2">
-                  Restore these {toRestore.length} channels on {m.name}? Each one is backed up,
-                  written and re-verified in turn; the first failure stops the rest.
+                  {t('restore.confirmAll', { count: toRestore.length, name: m.name })}
                 </Paragraph>
                 {toRestore.map((i) => (
                   <Paragraph key={i.did} size="$2" fontFamily="$mono">
-                    {i.name} ({i.did}): set to {fmt(i.snapshotValue, i.unit)} (now{' '}
-                    {fmt(i.currentValue, i.unit)})
+                    {t('restore.planLine', {
+                      name: i.name,
+                      did: i.did,
+                      value: fmt(i.snapshotValue, i.unit),
+                      now: fmt(i.currentValue, i.unit),
+                    })}
                   </Paragraph>
                 ))}
                 {progress ? <Paragraph size="$2">{progress}</Paragraph> : null}
@@ -283,7 +294,7 @@ export function AdaptationRestorePanel({
                     disabled={!canWrite || busy}
                     onPress={() => (canWrite && !busy ? all(compared.items) : undefined)}
                   >
-                    {busy ? 'Writing…' : 'Confirm restore all'}
+                    {busy ? t('tweak.writing') : t('restore.confirmAllButton')}
                   </Button>
                   <Button
                     flex={1}
@@ -292,7 +303,7 @@ export function AdaptationRestorePanel({
                     disabled={busy}
                     onPress={() => setConfirmAll(false)}
                   >
-                    Cancel
+                    {t('common:actions.cancel')}
                   </Button>
                 </XStack>
               </YStack>

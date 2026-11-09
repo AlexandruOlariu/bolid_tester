@@ -1,0 +1,75 @@
+{
+  "title": "Trips",
+  "subtitle": "Record live data and export it",
+  "recording_one": "Recording… {{count}} sample",
+  "recording_other": "Recording… {{count}} samples",
+  "notRecording": "Not recording",
+  "stop": "Stop",
+  "record": "Record",
+  "shareCsv": "Share CSV",
+  "exportDialog": "Export trip",
+  "notify": {
+    "title": "Trip recorded",
+    "body_one": "{{seconds}} s, {{count}} sample",
+    "body_other": "{{seconds}} s, {{count}} samples"
+  },
+  "list": {
+    "title": "Saved trips",
+    "empty": "No trips yet.",
+    "filterA11y": "Show trips for",
+    "allCars": "All cars ({{count}})",
+    "unknownCar": "Unknown car",
+    "removedCar": "Removed car",
+    "samples_one": "{{count}} sample",
+    "samples_other": "{{count}} samples",
+    "markers_one": "{{count}} marker",
+    "markers_other": "{{count}} markers",
+    "open": "Open",
+    "delete": "Delete"
+  },
+  "detail": {
+    "title": "Trip",
+    "saved": "Saved trip",
+    "notFound": "This trip was not found — it may have been deleted.",
+    "back": "Back to trips",
+    "duration": "Duration",
+    "samples": "Samples",
+    "obdDistance": "OBD distance",
+    "gpsDistance": "GPS distance",
+    "loading": "Loading the trip…",
+    "noSamples": "No samples on file for this trip.",
+    "gpsVsObd": "GPS vs OBD",
+    "noSpeedReading": "— (no speed reading)",
+    "avgSpeed": "Average speed OBD {{obd}} vs GPS {{gps}}",
+    "verdict": {
+      "ok": "Distances agree",
+      "check": "Worth a check",
+      "mismatch": "Mismatch",
+      "unknown": "Not enough data"
+    },
+    "gpsTrack": "GPS track",
+    "simulatedGps": "simulated GPS",
+    "oneFix": "Only one GPS fix — not enough to draw a track.",
+    "noTrack": "No GPS track for this trip.",
+    "speedOverTime": "Speed over time",
+    "allTrips": "All trips"
+  },
+  "map": {
+    "speed": "Speed",
+    "rpm": "RPM",
+    "fuel": "Fuel",
+    "fuelA11y": "Fuel rate",
+    "none": "None",
+    "noneA11y": "No colouring",
+    "colourBy": "Colour the track by",
+    "a11y_one": "GPS track map, {{count}} fix. Tap the track for details.",
+    "a11y_other": "GPS track map, {{count}} fixes. Tap the track for details.",
+    "north": "North is up",
+    "tapHint": "Tap the track to see the speed, RPM and fuel rate at that point."
+  },
+  "speed": {
+    "notEnough": "Not enough speed readings to draw the speed over time.",
+    "a11y_one": "Speed over time, {{count}} point, up to {{top}} km/h",
+    "a11y_other": "Speed over time, {{count}} points, up to {{top}} km/h"
+  }
+}

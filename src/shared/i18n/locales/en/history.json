@@ -1,0 +1,65 @@
+{
+  "title": "History",
+  "subtitle": "Everything that happened to this car",
+  "car": "Car",
+  "carFilterA11y": "Show history for",
+  "kindsA11y": "Show kinds of events",
+  "all": "All",
+  "kind": {
+    "ai": "AI",
+    "dtc": "Faults",
+    "scan": "Scans",
+    "trip": "Trips",
+    "maintenance": "Service",
+    "backup": "Backups",
+    "report": "Reports"
+  },
+  "filterPlaceholder": "Filter (e.g. P0299, oil, trip)",
+  "filterA11y": "Filter the timeline",
+  "exportA11y": "Export the listed fault-code checks",
+  "export": "Export",
+  "clearA11y": "Clear the diagnosis, fault-code and report history",
+  "clear": {
+    "title": "Clear history?",
+    "body": "This permanently deletes the saved AI diagnoses, fault-code checks and report records for every car. Module scans, trips, service entries and coding backups are kept — delete those on their own screens.",
+    "confirm": "Clear"
+  },
+  "reshare": {
+    "missingTitle": "File no longer on device",
+    "missingBody": "{{file}} was deleted. Make a new one from Vehicle report.",
+    "unavailable": "Sharing unavailable"
+  },
+  "empty": {
+    "none": "Nothing yet. Diagnoses, fault-code reads, module scans, trips, service entries, coding backups and reports appear here, newest first, grouped by car.",
+    "query": "Nothing matches “{{query}}”.",
+    "kinds": "No {{names}} yet.",
+    "kindsCar": "No {{names}} for this car.",
+    "car": "Nothing for this car yet."
+  },
+  "overall": {
+    "ok": "healthy",
+    "attention": "needs attention",
+    "urgent": "urgent"
+  },
+  "item": {
+    "ai": "AI diagnosis · {{overall}}",
+    "milOn": "MIL on",
+    "milOff": "MIL off",
+    "dtc": "Fault-code check",
+    "dtcCounts": "{{stored}} stored · {{pending}} pending",
+    "report": "Report ({{format}})",
+    "identityOnly": "Identity only",
+    "scan_one": "Auto-scan · {{count}} fault",
+    "scan_other": "Auto-scan · {{count}} faults",
+    "scanAnswered": "{{answered}}/{{total}} modules answered",
+    "trip": "Trip",
+    "tripKm": "Trip · {{km}} km",
+    "samples_one": "{{count}} sample",
+    "samples_other": "{{count}} samples",
+    "service": "Service",
+    "serviceNamed": "Service: {{name}}",
+    "backup": "Coding backup",
+    "modules_one": "{{count}} module",
+    "modules_other": "{{count}} modules"
+  }
+}

@@ -8,6 +8,8 @@ import { describeDtc, followUpSuggestions } from '@/shared/obd-core';
 import type { AiChatMessage, AiReport, AiAction, DtcMake } from '@/shared/obd-core';
 import { ACTION_ICON, OverallBanner, FindingCard } from './AiReportView';
 import { useAiDiagnose } from '../hooks/useAiDiagnose';
+import { useTranslation } from '@/shared/i18n';
+import { formatTime } from '@/shared/lib/format';
 
 function Bubble({ message }: { message: AiChatMessage }) {
   const mine = message.role === 'user';
@@ -47,6 +49,7 @@ function FollowUpCard({
   onAsk: (question: string) => void;
   onClear: () => void;
 }) {
+  const { t } = useTranslation('aiDiagnose');
   const [draft, setDraft] = useState('');
   const palette = usePalette();
   const disabled = report.source === 'local';
@@ -59,23 +62,22 @@ function FollowUpCard({
     <Card bordered padding="$3" gap="$2">
       <XStack alignItems="center" gap="$2">
         <MessageCircle size={18} color={palette.muted} />
-        <SectionTitle flex={1}>Ask about this report</SectionTitle>
+        <SectionTitle flex={1}>{t('followUp.title')}</SectionTitle>
         {conversation.length > 0 ? (
           <Button
             size="$3"
             hitSlop={HIT_SLOP}
             chromeless
             onPress={onClear}
-            accessibilityLabel="Clear the conversation"
+            accessibilityLabel={t('followUp.clearA11y')}
           >
-            Clear
+            {t('followUp.clear')}
           </Button>
         ) : null}
       </XStack>
       {disabled ? (
         <Paragraph theme="alt2" fontSize="$2">
-          Follow-up questions need an AI provider. This report came from the on-device rules; set up
-          a provider in Settings → AI assistant and re-run the diagnosis.
+          {t('followUp.needsProvider')}
         </Paragraph>
       ) : (
         <>
@@ -100,7 +102,7 @@ function FollowUpCard({
             <XStack alignItems="center" gap="$2">
               <Spinner />
               <Paragraph theme="alt2" fontSize="$2">
-                Asking the AI…
+                {t('followUp.asking')}
               </Paragraph>
             </XStack>
           ) : null}
@@ -114,18 +116,18 @@ function FollowUpCard({
               flex={1}
               value={draft}
               onChangeText={setDraft}
-              placeholder="Ask a question about this report"
+              placeholder={t('followUp.placeholder')}
               editable={!asking}
               onSubmitEditing={() => send(draft)}
               returnKeyType="send"
-              accessibilityLabel="Follow-up question"
+              accessibilityLabel={t('followUp.inputA11y')}
             />
             <Button
               theme="green"
               disabled={asking || !draft.trim()}
               onPress={() => send(draft)}
               icon={<Send size={16} />}
-              accessibilityLabel="Send the question"
+              accessibilityLabel={t('followUp.sendA11y')}
             />
           </XStack>
         </>
@@ -143,23 +145,24 @@ function ActionsView({
   onClear: () => void;
   onRecheck: () => void;
 }) {
+  const { t } = useTranslation('aiDiagnose');
   const palette = usePalette();
   if (actions.length === 0) return null;
   return (
     <YStack gap="$2">
-      <SectionTitle>Recommended actions</SectionTitle>
+      <SectionTitle>{t('actions')}</SectionTitle>
       {actions.map((a, i) => {
         const Icon = ACTION_ICON[a.type] ?? Activity;
         if (a.type === 'clear_dtcs')
           return (
             <Button key={`a-${i}`} theme="red" onPress={onClear} icon={<Eraser size={18} />}>
-              {a.label || 'Clear fault codes'}
+              {a.label || t('clearCodes')}
             </Button>
           );
         if (a.type === 'recheck')
           return (
             <Button key={`a-${i}`} onPress={onRecheck} icon={() => <RefreshCw size={18} />}>
-              {a.label || 'Re-run diagnosis'}
+              {a.label || t('rerun')}
             </Button>
           );
         return (
@@ -199,6 +202,7 @@ function ReportView({
   onRecheck: () => void;
   followUp: React.ReactNode;
 }) {
+  const { t } = useTranslation('aiDiagnose');
   return (
     <YStack gap="$3">
       <OverallBanner report={report} />
@@ -211,13 +215,13 @@ function ReportView({
 
       {report.findings.length > 0 ? (
         <YStack gap="$2">
-          <SectionTitle>Findings ({report.findings.length})</SectionTitle>
+          <SectionTitle>{t('findings', { count: report.findings.length })}</SectionTitle>
           {report.findings.map((f, i) => (
             <FindingCard key={`f-${i}`} finding={f} profileId={profileId} />
           ))}
         </YStack>
       ) : (
-        <Paragraph theme="alt2">No specific issues were flagged.</Paragraph>
+        <Paragraph theme="alt2">{t('noIssues')}</Paragraph>
       )}
 
       <ActionsView actions={report.actions} onClear={onClear} onRecheck={onRecheck} />
@@ -226,7 +230,7 @@ function ReportView({
 
       <Paragraph theme="alt2" fontSize="$1" marginTop="$2">
         {report.disclaimer}
-        {ranAt ? ` · ${new Date(ranAt).toLocaleTimeString()}` : ''}
+        {ranAt ? ` · ${formatTime(ranAt, true)}` : ''}
       </Paragraph>
     </YStack>
   );
@@ -234,20 +238,22 @@ function ReportView({
 
 /** Shown when the run is focused on one fault code (fault-codes detail sheet → "Explain with AI"). */
 function FocusCard({ code, make }: { code: string; make?: DtcMake }) {
+  const { t } = useTranslation('aiDiagnose');
   return (
     <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="$statusInfo" gap="$1">
-      <Text fontWeight="800">Focused on fault code {code}</Text>
+      <Text fontWeight="800">{t('focus.title', { code })}</Text>
       <Paragraph theme="alt2" fontSize="$2">
         {describeDtc(code, make)}
       </Paragraph>
       <Paragraph theme="alt2" fontSize="$1">
-        The report explains this code first: what it means, likely causes and what to check.
+        {t('focus.help')}
       </Paragraph>
     </Card>
   );
 }
 
 export function AiDiagnoseScreen() {
+  const { t } = useTranslation('aiDiagnose');
   const status = useSessionStore((s) => s.status);
   const {
     phase,
@@ -300,23 +306,16 @@ export function AiDiagnoseScreen() {
   const recheck = () => void run({ focusCode: focusCode ?? undefined });
 
   const confirmClear = () =>
-    appAlert(
-      'Clear fault codes?',
-      'This erases stored/pending codes and resets readiness monitors. Codes will return if the fault persists.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Clear', style: 'destructive', onPress: () => void clearCodes() },
-      ],
-    );
+    appAlert(t('clear.title'), t('clear.body'), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      { text: t('clear.confirm'), style: 'destructive', onPress: () => void clearCodes() },
+    ]);
 
   return (
-    <Screen title="Diagnose (AI)" subtitle="One-tap health check of your car">
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       {status !== 'connected' ? (
         <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="$statusWarn">
-          <Paragraph fontSize="$3">
-            Not connected. Pair your adapter on the Connect tab (or switch to the Simulator in
-            Settings) to run a diagnosis.
-          </Paragraph>
+          <Paragraph fontSize="$3">{t('notConnected')}</Paragraph>
         </Card>
       ) : null}
 
@@ -329,13 +328,13 @@ export function AiDiagnoseScreen() {
         disabled={busy || status !== 'connected'}
         icon={busy ? () => <Spinner /> : <Stethoscope size={20} />}
       >
-        {shownFocus ? 'Run full diagnosis' : report ? 'Re-run diagnosis' : 'Run diagnosis'}
+        {shownFocus ? t('runFull') : report ? t('rerun') : t('run')}
       </Button>
 
       {busy ? (
         <XStack alignItems="center" gap="$3" paddingVertical="$2">
           <Spinner />
-          <Paragraph theme="alt2">{progress ?? 'Working…'}</Paragraph>
+          <Paragraph theme="alt2">{progress ?? t('working')}</Paragraph>
         </XStack>
       ) : null}
 
@@ -369,8 +368,7 @@ export function AiDiagnoseScreen() {
 
       {!report && !busy && status === 'connected' && phase === 'idle' ? (
         <Paragraph theme="alt2" fontSize="$3">
-          Tap “Run diagnosis” to read your car’s fault codes, readiness and live data and get a
-          plain-language health report.
+          {t('intro')}
         </Paragraph>
       ) : null}
     </Screen>

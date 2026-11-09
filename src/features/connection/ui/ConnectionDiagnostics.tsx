@@ -18,6 +18,7 @@ import {
 } from '../api/diagnoseFailure';
 import { useLinkStore } from '@/shared/state/linkStore';
 import { Panel } from '../styles/connection.styles';
+import { useTranslation } from '@/shared/i18n';
 
 const LOG_TAIL = 20;
 
@@ -35,6 +36,7 @@ function radioState(bt: BluetoothState): BtRadioState {
  *  Bluetooth serial port) and the device, with **Copy details** (OS share sheet) and **Open error
  *  log**. The rules live in the pure `diagnoseFailure`. */
 export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
+  const { t, i18n } = useTranslation('connection');
   const palette = usePalette();
   const router = useRouter();
   const status = useSessionStore((s) => s.status);
@@ -60,7 +62,9 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
   const btState = radioState(bt);
   const diagnosis = useMemo(
     () => diagnoseFailure({ error, btState, adapterSource, logTail, deviceName }),
-    [error, btState, adapterSource, logTail, deviceName],
+    // i18n.language: the diagnosis text follows a language switch (plan 11).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [error, btState, adapterSource, logTail, deviceName, i18n.language],
   );
 
   if (status !== 'error') return null;
@@ -77,7 +81,7 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
       adapterSource,
     });
     try {
-      await Share.share({ message, title: 'Connection diagnostics' });
+      await Share.share({ message, title: t('diag.shareTitle') });
     } catch (e) {
       logError({ source: 'connection/diagnostics-share', error: e, severity: 'warning' });
     }
@@ -86,7 +90,7 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
   const Chevron = open ? ChevronDown : ChevronRight;
 
   return (
-    <Panel borderColor={palette.statusError} accessibilityLabel="Connection diagnostics">
+    <Panel borderColor={palette.statusError} accessibilityLabel={t('diag.shareTitle')}>
       <XStack gap="$3" alignItems="flex-start">
         <Stethoscope size={22} color={palette.statusError} />
         <YStack flex={1} gap="$2">
@@ -96,7 +100,9 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
               paddingVertical="$1"
               backgroundColor="$red3"
               borderRadius="$10"
-              accessibilityLabel={`Failed at: ${stageLabel(diagnosis.stage, adapterSource)}`}
+              accessibilityLabel={t('diag.failedAt', {
+                stage: stageLabel(diagnosis.stage, adapterSource),
+              })}
             >
               <Text fontSize="$1" fontWeight="700" color="$red11">
                 {stageLabel(diagnosis.stage, adapterSource)}
@@ -109,7 +115,7 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
           <Paragraph fontSize="$3">{diagnosis.explanation}</Paragraph>
           <YStack gap="$1">
             <Text fontWeight="700" fontSize="$3">
-              What to try
+              {t('diag.whatToTry')}
             </Text>
             {diagnosis.suggestions.map((s, i) => (
               <Paragraph key={i} fontSize="$3">
@@ -126,44 +132,50 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
             alignSelf="flex-start"
             icon={<Chevron size={16} />}
             onPress={() => setOpen((v) => !v)}
-            accessibilityLabel={open ? 'Hide connection details' : 'Show connection details'}
+            accessibilityLabel={open ? t('diag.hideDetails') : t('diag.showDetails')}
           >
-            Details
+            {t('diag.details')}
           </Button>
 
           {open ? (
             <YStack gap="$2">
               <YStack gap="$1">
                 <Text fontSize="$2" color="$placeholderColor">
-                  Device: {deviceName ?? 'unknown'}
+                  {t('diag.device', { name: deviceName ?? t('diag.unknown') })}
                   {deviceId ? ` (${deviceId})` : ''}
                 </Text>
                 {reached ? (
                   <Text fontSize="$2" color="$placeholderColor">
-                    Got as far as: {stageLabel(reached, adapterSource)}
+                    {t('diag.reached', { stage: stageLabel(reached, adapterSource) })}
                   </Text>
                 ) : null}
                 {link ? (
                   <Text fontSize="$2" color="$placeholderColor">
-                    Link: MTU {link.mtu} ({link.payload} bytes per write) · service {link.service} ·{' '}
-                    {link.writeWithoutResponse ? 'write without response' : 'write with response'}
+                    {t('diag.bleLink', {
+                      mtu: link.mtu,
+                      payload: link.payload,
+                      service: link.service,
+                      mode: link.writeWithoutResponse
+                        ? t('diag.writeNoResponse')
+                        : t('diag.writeWithResponse'),
+                    })}
                   </Text>
                 ) : null}
                 {kind === 'wifi' ? (
                   <Text fontSize="$2" color="$placeholderColor">
-                    Link: Wi-Fi (TCP socket){deviceId ? ` to ${deviceId}` : ''}
+                    {deviceId ? t('diag.wifiLinkTo', { target: deviceId }) : t('diag.wifiLink')}
                   </Text>
                 ) : null}
                 {kind === 'spp' ? (
                   <Text fontSize="$2" color="$placeholderColor">
-                    Link: Classic Bluetooth (serial port){deviceId ? ` to ${deviceId}` : ''}
+                    {deviceId ? t('diag.sppLinkTo', { target: deviceId }) : t('diag.sppLink')}
                   </Text>
                 ) : null}
               </YStack>
               <Card bordered padding="$2" backgroundColor="$backgroundStrong">
                 {logTail.length === 0 ? (
                   <Paragraph theme="alt2" fontSize="$2">
-                    No adapter traffic in this attempt.
+                    {t('diag.noTraffic')}
                   </Paragraph>
                 ) : (
                   logTail.map((e, i) => (
@@ -181,10 +193,10 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
               </Card>
               <XStack gap="$2" flexWrap="wrap">
                 <Button size="$3" hitSlop={HIT_SLOP} onPress={() => void copy()}>
-                  Copy details
+                  {t('diag.copy')}
                 </Button>
                 <Button size="$3" hitSlop={HIT_SLOP} onPress={() => router.push('/error-log')}>
-                  Open error log
+                  {t('diag.openErrorLog')}
                 </Button>
               </XStack>
             </YStack>

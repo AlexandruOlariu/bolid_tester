@@ -1,0 +1,50 @@
+{
+  "title": "Raport vehicul",
+  "subtitle": "Tot despre această mașină într-un singur document de partajat",
+  "sections": "Secțiuni",
+  "section": {
+    "faults": {
+      "title": "Coduri de eroare și readiness",
+      "hint": "Readiness, coduri memorate / în așteptare / permanente cu numere VAG, freeze frame"
+    },
+    "scan": {
+      "title": "Scanare module",
+      "hint": "Cea mai nouă scanare de module salvată pentru această mașină"
+    },
+    "inspection": {
+      "title": "Verificare mașină second-hand",
+      "hint": "Verdictul înainte de cumpărare și fiecare verificare"
+    },
+    "battery": {
+      "title": "Baterie și încărcare",
+      "hint": "Tensiunea în repaus, la pornire și la încărcare"
+    },
+    "ai": {
+      "title": "Diagnoză AI",
+      "hint": "Starea generală, rezumatul și constatările"
+    },
+    "maintenance": {
+      "title": "Întreținere scadentă",
+      "hint": "Ce este scadent, din jurnalul tău"
+    }
+  },
+  "notRun": "Nerulat încă",
+  "runNowA11y": "Rulează acum: {{title}}",
+  "runNow": "Rulează acum",
+  "severity": {
+    "ok": "OK",
+    "attention": "Atenție",
+    "urgent": "Urgent"
+  },
+  "notAvailable": "indisponibil",
+  "connected": "Conectat — identificarea provine din sesiunea live.",
+  "notConnected": "Neconectat — identificarea și rezultatele provin din ultima conexiune.",
+  "shareUnavailable": "Partajare indisponibilă",
+  "notSaved": "Raportul nu a putut fi salvat pe acest dispozitiv.",
+  "pdfUnavailable": "PDF indisponibil",
+  "sharedHtml": "Raportul a fost partajat în schimb ca pagină HTML.",
+  "sharePdf": "Partajează PDF",
+  "shareHtml": "Partajează HTML",
+  "shareMarkdown": "Partajează Markdown",
+  "saved": "Salvat {{file}} — apare în Istoric."
+}

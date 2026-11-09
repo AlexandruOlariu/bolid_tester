@@ -1,0 +1,48 @@
+{
+  "title": "Live data",
+  "subtitle": "Streaming the parameters this ECU supports",
+  "subtitleSensors": "Every sensor this ECU reports, grouped by system",
+  "notConnected": "Not connected. Connect an adapter or the simulator first.",
+  "reading": "Reading…",
+  "view": {
+    "dashboard": "Dashboard",
+    "sensors": "All sensors"
+  },
+  "gauge": {
+    "rpm": "RPM",
+    "speed": "Speed",
+    "coolant": "Coolant"
+  },
+  "fuel": {
+    "titleRate": "Fuel economy (fuel-rate)",
+    "titleMaf": "Fuel economy (from MAF)",
+    "standstill": "standstill"
+  },
+  "edit": {
+    "help": "Reorder with the arrows and toggle visibility. Saved per vehicle profile; Reset goes back to the default for this car's fuel type.",
+    "gauge": "gauge",
+    "moveUp": "Move {{label}} up",
+    "moveDown": "Move {{label}} down",
+    "show": "Show {{label}}",
+    "hide": "Hide {{label}}",
+    "reset": "Reset",
+    "customize": "Customize"
+  },
+  "group": {
+    "engine": "Engine",
+    "temperatures": "Temperatures",
+    "air": "Air & boost",
+    "fuel": "Fuel & injection",
+    "electrical": "Electrical",
+    "distance": "Distance",
+    "other": "Other",
+    "injection": "Injection"
+  },
+  "sensors": {
+    "live": "Live — every supported sensor, grouped",
+    "idle": "Every supported sensor, grouped",
+    "refresh": "Refresh",
+    "noInjectorTitle": "Per-injector data isn’t available here",
+    "noInjectorBody": "Injection quantity, balance and per-cylinder corrections live in manufacturer measuring blocks (VAG groups), which a generic ELM327 cannot read over standard OBD-II on this car — especially on a K-line ECU. The fuel-system parameters in “Fuel & injection” above (rail pressure, fuel rate, fuel trims) are what is available generically; full injector data needs VCDS-style / enhanced tooling."
+  }
+}

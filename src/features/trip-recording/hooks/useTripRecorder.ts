@@ -26,6 +26,7 @@ import { NOT_ON_WEB_YET, showToast } from '@/shared/state/toastStore';
 import { notify } from '@/shared/notify';
 import { useTripStore } from '../model/tripStore';
 import { isSyntheticTrack, stopTrackCapture } from '../api/trackRecorder';
+import { translate } from '@/shared/i18n';
 
 /** Per-trip CSV filename stem (documentDirectory-relative). */
 function tripCsvName(id: string): string {
@@ -86,8 +87,11 @@ export async function stopRecording(): Promise<Trip> {
   void notify({
     category: 'trip',
     severity: 'info',
-    title: 'Trip recorded',
-    body: `${(stats.durationMs / 1000).toFixed(0)} s, ${stats.sampleCount} samples`,
+    title: translate('tripRecording:notify.title'),
+    body: translate('tripRecording:notify.body', {
+      seconds: (stats.durationMs / 1000).toFixed(0),
+      count: stats.sampleCount,
+    }),
   });
   return trip;
 }
@@ -163,7 +167,10 @@ export async function shareTrip(header: TripHeader): Promise<string | null> {
     const info = await FileSystem.getInfoAsync(uri);
     if (!info.exists) return null;
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(uri, { mimeType: 'text/csv', dialogTitle: 'Export trip' });
+      await Sharing.shareAsync(uri, {
+        mimeType: 'text/csv',
+        dialogTitle: translate('tripRecording:exportDialog'),
+      });
     }
     return uri;
   } catch (e) {

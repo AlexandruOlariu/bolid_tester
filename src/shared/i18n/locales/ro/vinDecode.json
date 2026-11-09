@@ -1,0 +1,21 @@
+{
+  "title": "Decodor VIN",
+  "subtitle": "Offline: WMI / țară / an / cifră de control.",
+  "check": {
+    "valid": "validă",
+    "invalid": "invalidă (≠ {{expected}})",
+    "na": "n/a (VIN non-SUA)"
+  },
+  "labelFromCar": "VIN (de la mașină — sau introdu altul)",
+  "labelType": "VIN (introdu un VIN de 17 caractere)",
+  "placeholder": "de ex. WVWZZZ1KZ9W903398",
+  "inputA11y": "Numărul de identificare al vehiculului (VIN)",
+  "manufacturer": "Producător",
+  "country": "Țară",
+  "modelYear": "Anul modelului",
+  "unknown": "necunoscut",
+  "plantSerial": "Fabrică / serie",
+  "checkDigit": "Cifră de control",
+  "invalid": "Nu este un VIN valid de 17 caractere (literele I, O și Q nu se folosesc niciodată).",
+  "none": "Niciun VIN încă — conectează-te la o mașină sau introdu un VIN mai sus."
+}

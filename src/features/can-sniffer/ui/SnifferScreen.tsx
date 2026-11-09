@@ -4,10 +4,12 @@ import { Screen, HIT_SLOP } from '@/shared/ui';
 import { MONITOR_UNAVAILABLE_MESSAGE } from '@/shared/obd-core';
 import { useSnifferStore } from '../model/snifferStore';
 import { useSniffer } from '../hooks/useSniffer';
+import { useTranslation } from '@/shared/i18n';
 
 const hex = (b: number[]) => b.map((x) => x.toString(16).padStart(2, '0').toUpperCase()).join(' ');
 
 export function SnifferScreen() {
+  const { t } = useTranslation('canSniffer');
   const { available, canMonitor, start, stop, exportCsv, exportRaw, exporting } = useSniffer();
   const running = useSnifferStore((s) => s.running);
   const stats = useSnifferStore((s) => s.stats);
@@ -22,8 +24,8 @@ export function SnifferScreen() {
   // only an empty screen collapses to "Not connected.".
   if (!available && (running || capturedLines === 0)) {
     return (
-      <Screen title="Bus sniffer">
-        <Paragraph theme="alt2">Not connected.</Paragraph>
+      <Screen title={t('title')}>
+        <Paragraph theme="alt2">{t('notConnected')}</Paragraph>
       </Screen>
     );
   }
@@ -32,22 +34,18 @@ export function SnifferScreen() {
 
   return (
     // `wide` (plan 21): the frame table uses the full tablet width.
-    <Screen
-      title="Bus sniffer"
-      subtitle="Raw adapter monitor (ATMA) — live polling pauses while sniffing"
-      wide
-    >
+    <Screen title={t('title')} subtitle={t('subtitle')} wide>
       <YStack gap="$1">
         <Paragraph theme="alt2" size="$2">
-          Note (saved in the capture file)
+          {t('note')}
         </Paragraph>
         <Input
           size="$3"
           value={note}
           onChangeText={setNote}
           editable={!running}
-          placeholder="What is happening? e.g. VCDS Group 121 basic settings, engine idle"
-          accessibilityLabel="Capture note"
+          placeholder={t('notePlaceholder')}
+          accessibilityLabel={t('noteA11y')}
         />
       </YStack>
       {available && !canMonitor ? (
@@ -58,24 +56,24 @@ export function SnifferScreen() {
           padding="$3"
           testID="sniffer-unavailable"
         >
-          <Paragraph fontWeight="700">{MONITOR_UNAVAILABLE_MESSAGE}.</Paragraph>
+          <Paragraph fontWeight="700">
+            {t('unavailableTitle', { defaultValue: `${MONITOR_UNAVAILABLE_MESSAGE}.` })}
+          </Paragraph>
           <Paragraph theme="alt2" size="$2">
-            Classic Bluetooth adapters hand over each reply only when the adapter’s “&gt;” prompt
-            arrives, and the bus monitor streams without one. Use a Bluetooth LE or Wi-Fi adapter to
-            sniff the bus; every other screen works over this adapter.
+            {t('unavailableBody')}
           </Paragraph>
         </YStack>
       ) : available ? (
         <Button theme={running ? 'red' : 'green'} onPress={() => (running ? stop() : start())}>
-          {running ? `Stop (${totalFrames} frames)` : 'Start monitoring'}
+          {running ? t('stop', { count: totalFrames }) : t('start')}
         </Button>
       ) : (
-        <Paragraph theme="alt2">Not connected — reconnect to start a new run.</Paragraph>
+        <Paragraph theme="alt2">{t('reconnect')}</Paragraph>
       )}
       {running || capturedLines > 0 ? (
         <Paragraph theme="alt2" size="$2">
-          {`captured ${capturedLines} · dropped ${dropped}`}
-          {dropped > 0 ? ' (the oldest lines were discarded to keep memory bounded)' : ''}
+          {t('counts', { captured: capturedLines, dropped })}
+          {dropped > 0 ? ` ${t('droppedNote')}` : ''}
         </Paragraph>
       ) : null}
       {running || capturedLines > 0 ? (
@@ -89,7 +87,7 @@ export function SnifferScreen() {
               opacity={canShare ? 1 : 0.5}
               onPress={() => void exportCsv()}
             >
-              Share CSV
+              {t('shareCsv')}
             </Button>
             <Button
               flex={1}
@@ -99,17 +97,15 @@ export function SnifferScreen() {
               opacity={canShare ? 1 : 0.5}
               onPress={() => void exportRaw()}
             >
-              Share raw
+              {t('shareRaw')}
             </Button>
           </XStack>
           <Paragraph theme="alt2" size="$2">
-            {running
-              ? 'Stop the monitor to share the capture.'
-              : 'CSV has one row per frame (time since start, CAN id, byte count, bytes); raw is every adapter line exactly as printed. The file carries the car, adapter and note as they were at Start.'}
+            {running ? t('stopToShare') : t('shareHelp')}
           </Paragraph>
           {lastExportUri && !running ? (
             <Paragraph theme="alt2" size="$1" fontFamily="$mono">
-              Saved: {lastExportUri.split('/').pop()}
+              {t('saved', { file: lastExportUri.split('/').pop() })}
             </Paragraph>
           ) : null}
         </YStack>
@@ -121,7 +117,7 @@ export function SnifferScreen() {
               ID
             </Paragraph>
             <Paragraph width={60} theme="alt2" size="$2">
-              count
+              {t('count')}
             </Paragraph>
             <Paragraph width={60} theme="alt2" size="$2">
               /s
@@ -144,9 +140,7 @@ export function SnifferScreen() {
         </YStack>
       ) : (
         <Paragraph theme="alt2" size="$2">
-          Streams every frame the adapter hears (headers on). On K-line cars you will mostly see the
-          periodic keep-alives; on CAN this is the live bus grouped by arbitration id. Every line is
-          kept (up to 20 000) so the run can be shared after Stop.
+          {t('help')}
         </Paragraph>
       )}
     </Screen>

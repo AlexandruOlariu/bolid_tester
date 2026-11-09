@@ -9,6 +9,7 @@ import { VEHICLE_PROFILES } from '@/shared/vehicles';
 import { useGarageStore } from '@/shared/state/garageStore';
 import { useVehicleStore } from '../model/vehicleStore';
 import { VehicleSelectScreen, GARAGE_COPY } from './VehicleSelectScreen';
+import { translate } from '@/shared/i18n';
 import { EditorBody } from './VehicleEditorSheet';
 import * as garageExportFile from '../api/garageExportFile';
 import * as exchangeApi from '../api/exchange';
@@ -56,7 +57,7 @@ describe('VehicleSelectScreen', () => {
     renderWithProviders(<VehicleSelectScreen />);
     expect(screen.getByText('My garage')).toBeTruthy();
     expect(screen.getByText('Built-in profiles')).toBeTruthy();
-    expect(screen.getByText(GARAGE_COPY)).toBeTruthy();
+    expect(screen.getByText(translate(GARAGE_COPY))).toBeTruthy();
     expect(screen.getByText('No cars in your garage yet.')).toBeTruthy();
     expect(screen.getByText(/Connect to a car first/)).toBeTruthy();
 

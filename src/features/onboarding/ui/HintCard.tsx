@@ -3,6 +3,7 @@ import { Card, XStack, YStack, Text, Paragraph } from 'tamagui';
 import { Lightbulb, X } from 'lucide-react-native';
 import { useOnboardingStore } from '@/shared/state/onboardingStore';
 import { HIT_SLOP, usePalette } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
 
 interface HintCardProps {
   /** Stable id for this hint; once dismissed it stays hidden across launches. */
@@ -13,6 +14,7 @@ interface HintCardProps {
 
 /** A dismissible first-run hint. Renders nothing once its `id` has been dismissed. */
 export function HintCard({ id, title, children }: HintCardProps) {
+  const { t } = useTranslation('onboarding');
   const dismissed = useOnboardingStore((s) => s.dismissed);
   const dismiss = useOnboardingStore((s) => s.dismiss);
   const palette = usePalette();
@@ -36,7 +38,7 @@ export function HintCard({ id, title, children }: HintCardProps) {
           pressStyle={{ opacity: 0.6 }}
           accessible
           accessibilityRole="button"
-          accessibilityLabel={`Dismiss hint: ${title}`}
+          accessibilityLabel={t('hint.dismissA11y', { title })}
           onPress={() => dismiss(id)}
         >
           <X size={18} color={palette.muted} />

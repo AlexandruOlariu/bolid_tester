@@ -13,7 +13,7 @@ import {
   type UserVehicle,
 } from '@/shared/vehicles';
 import {
-  FUELS,
+  FUEL_VALUES,
   draftFromVehicle,
   draftToVehicle,
   emptyDraft,
@@ -21,6 +21,7 @@ import {
   type VehicleDraft,
 } from '../model/vehicleDraft';
 import { useGarageExport } from '../hooks/useGarageExport';
+import { useTranslation } from '@/shared/i18n';
 
 /** Add or edit a garage car (plan 06): name, year, fuel, the built-in profile it inherits from and
  *  notes; for an existing car also its **login codes** (plan 22 code book: remembered on the
@@ -75,6 +76,7 @@ export function EditorBody({
   onClose: () => void;
   onSaved?: (v: UserVehicle) => void;
 }) {
+  const { t } = useTranslation('vehicleSelect');
   const [draft, setDraft] = useState<VehicleDraft>(() =>
     vehicle ? draftFromVehicle(vehicle) : emptyDraft(),
   );
@@ -115,52 +117,50 @@ export function EditorBody({
   return (
     <YStack gap="$3" paddingBottom="$6">
       <Text fontWeight="800" fontSize="$6">
-        {vehicle ? 'Edit car' : 'Add a car'}
+        {vehicle ? t('editor.editTitle') : t('editor.addTitle')}
       </Text>
 
       <YStack gap="$1">
-        <Paragraph fontWeight="700">Name</Paragraph>
+        <Paragraph fontWeight="700">{t('editor.name')}</Paragraph>
         <Input
           value={draft.name}
           onChangeText={(name) => set({ name })}
-          placeholder="e.g. Dacia Logan 2015"
+          placeholder={t('editor.namePlaceholder')}
           maxLength={VEHICLE_NAME_MAX}
-          accessibilityLabel="Car name"
+          accessibilityLabel={t('editor.nameA11y')}
         />
         {err('name')}
       </YStack>
 
       <YStack gap="$1">
-        <Paragraph fontWeight="700">Year</Paragraph>
+        <Paragraph fontWeight="700">{t('editor.year')}</Paragraph>
         <Input
           value={draft.year}
           onChangeText={(year) => set({ year: year.replace(/\D/g, '').slice(0, 4) })}
           keyboardType="numeric"
-          placeholder="e.g. 2015"
-          accessibilityLabel="Model year"
+          placeholder={t('editor.yearPlaceholder')}
+          accessibilityLabel={t('editor.yearA11y')}
         />
         {err('year')}
       </YStack>
 
       <YStack gap="$1">
-        <Paragraph fontWeight="700">Fuel</Paragraph>
+        <Paragraph fontWeight="700">{t('editor.fuel')}</Paragraph>
         <SegmentedControl
-          label="Fuel"
-          options={FUELS}
+          label={t('editor.fuel')}
+          options={FUEL_VALUES.map((value) => ({ value, label: t(`common:fuel.${value}`) }))}
           value={draft.fuel}
           onChange={(fuel) => set({ fuel })}
         />
       </YStack>
 
       <YStack gap="$1">
-        <Paragraph fontWeight="700">Base profile</Paragraph>
+        <Paragraph fontWeight="700">{t('editor.baseProfile')}</Paragraph>
         <Paragraph theme="alt2" fontSize="$2">
-          Everything the app does not learn from the car comes from this built-in profile. Auto /
-          Generic works for any OBD2 car; a specific profile also brings its experimental,
-          car-specific readings and tools — pick one only for that exact car.
+          {t('editor.baseProfileHelp')}
         </Paragraph>
         <SegmentedControl
-          label="Base profile"
+          label={t('editor.baseProfile')}
           vertical
           options={VEHICLE_PROFILES.map((p) => ({ value: p.id, label: p.name }))}
           value={draft.baseProfileId}
@@ -170,27 +170,26 @@ export function EditorBody({
       </YStack>
 
       <YStack gap="$1">
-        <Paragraph fontWeight="700">Notes</Paragraph>
+        <Paragraph fontWeight="700">{t('editor.notes')}</Paragraph>
         <TextArea
           value={draft.notes}
           onChangeText={(notes) => set({ notes })}
-          placeholder="Engine code, quirks, anything you want to remember"
+          placeholder={t('editor.notesPlaceholder')}
           maxLength={VEHICLE_NOTES_MAX}
-          accessibilityLabel="Notes"
+          accessibilityLabel={t('editor.notes')}
         />
         {err('notes')}
       </YStack>
 
       {vehicle ? (
         <YStack gap="$2">
-          <Paragraph fontWeight="700">Login codes</Paragraph>
+          <Paragraph fontWeight="700">{t('editor.loginCodes')}</Paragraph>
           <Paragraph theme="alt2" fontSize="$2">
-            Module login codes you chose to remember for this car on the Adaptations screen. The app
-            ships none.
+            {t('editor.loginCodesHelp')}
           </Paragraph>
           {loginCodes.length === 0 ? (
             <Paragraph theme="alt2" fontSize="$2">
-              No login codes saved for this car.
+              {t('editor.noLoginCodes')}
             </Paragraph>
           ) : (
             loginCodes.map((e) => (
@@ -204,29 +203,35 @@ export function EditorBody({
               >
                 <YStack flex={1}>
                   <Paragraph fontWeight="700">
-                    Module {e.address}
+                    {t('editor.module', { address: e.address })}
                     {e.purpose ? ` · ${e.purpose}` : ''}
                   </Paragraph>
                   <Paragraph theme="alt2" fontSize="$2">
-                    Code {revealed === e.address ? formatLoginCode(e.code) : MASKED_LOGIN_CODE}
+                    {t('editor.code', {
+                      code: revealed === e.address ? formatLoginCode(e.code) : MASKED_LOGIN_CODE,
+                    })}
                   </Paragraph>
                 </YStack>
                 <Button
                   size="$3"
                   hitSlop={HIT_SLOP}
                   onPress={() => setRevealed((r) => (r === e.address ? null : e.address))}
-                  accessibilityLabel={`${revealed === e.address ? 'Hide' : 'Show'} login code for module ${e.address}`}
+                  accessibilityLabel={
+                    revealed === e.address
+                      ? t('editor.hideCodeA11y', { address: e.address })
+                      : t('editor.showCodeA11y', { address: e.address })
+                  }
                 >
-                  {revealed === e.address ? 'Hide' : 'Show'}
+                  {revealed === e.address ? t('editor.hide') : t('editor.show')}
                 </Button>
                 <Button
                   size="$3"
                   hitSlop={HIT_SLOP}
                   theme="red"
                   onPress={() => setLoginCodes((l) => removeLoginCode(l, e.address))}
-                  accessibilityLabel={`Delete login code for module ${e.address}`}
+                  accessibilityLabel={t('editor.deleteCodeA11y', { address: e.address })}
                 >
-                  Delete
+                  {t('card.delete')}
                 </Button>
               </XStack>
             ))
@@ -236,10 +241,10 @@ export function EditorBody({
 
       <XStack gap="$3">
         <Button flex={1} onPress={onClose}>
-          Cancel
+          {t('common:actions.cancel')}
         </Button>
         <Button flex={1} theme="green" onPress={save}>
-          Save
+          {t('editor.save')}
         </Button>
       </XStack>
 
@@ -250,11 +255,10 @@ export function EditorBody({
         onPress={() => void exportGarage()}
         disabled={busy}
       >
-        Share garage as JSON
+        {t('editor.shareGarage')}
       </Button>
       <Paragraph theme="alt2" fontSize="$1">
-        Shares every car in your garage as a JSON file. Importing a garage file comes in a later
-        version.
+        {t('editor.shareGarageHelp')}
       </Paragraph>
     </YStack>
   );

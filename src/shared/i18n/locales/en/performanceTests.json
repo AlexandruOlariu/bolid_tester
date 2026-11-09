@@ -1,0 +1,25 @@
+{
+  "title": "Performance",
+  "subtitle": "Closed-course use only — keep your eyes on the road",
+  "type": {
+    "accel": "0–100",
+    "drag": "¼ mile",
+    "brake": "Braking"
+  },
+  "state": "State: {{state}}",
+  "stateName": {
+    "idle": "idle",
+    "armed": "armed",
+    "running": "running",
+    "done": "done"
+  },
+  "arm": "Arm",
+  "stop": "Stop",
+  "armed": "Armed — launch detected on first movement.",
+  "runs": "Runs",
+  "run": {
+    "accel": "0–{{target}}: {{time}} ({{rate}} Hz)",
+    "drag": "¼ mile: {{result}}",
+    "brake": "Brake: {{result}}"
+  }
+}

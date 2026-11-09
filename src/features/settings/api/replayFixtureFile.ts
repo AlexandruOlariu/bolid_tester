@@ -5,6 +5,7 @@
 import { logError } from '@/shared/state/errorLogStore';
 import { saveTextFile } from '@/shared/lib/saveFile';
 import { buildReplayExport, ReplayExportInput } from '../model/replayExport';
+import { translate } from '@/shared/i18n';
 
 const SOURCE = 'settings/replay-export';
 
@@ -17,7 +18,7 @@ export async function saveReplayFixture(input: ReplayExportInput): Promise<strin
       fileName,
       JSON.stringify(fixture, null, 2),
       'application/json',
-      { dialogTitle: 'Share replay fixture' },
+      { dialogTitle: translate('common:share.replayFixture') },
     );
     if (!saved) {
       logError({

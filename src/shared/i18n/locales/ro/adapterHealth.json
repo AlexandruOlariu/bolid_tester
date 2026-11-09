@@ -1,0 +1,31 @@
+{
+  "title": "Starea adaptorului",
+  "notConnected": "Conectează-te la o mașină (sau la simulator) pentru a testa adaptorul. Se cronometrează o serie de comenzi și se evaluează ELM327-ul tău.",
+  "subtitle": "Firmware, tensiune, protocol și latență — e clona mea de aruncat?",
+  "running": "Se rulează…",
+  "runAgain": "Rulează din nou",
+  "run": "Rulează verificarea (~5 s)",
+  "grade": {
+    "good": "BUN",
+    "ok": "ACCEPTABIL",
+    "poor": "SLAB"
+  },
+  "clone": "posibilă clonă",
+  "community": "Comunitate: {{summary}}",
+  "noCommunity": "Încă niciun raport din comunitate pentru acest adaptor — partajează JSON-ul pentru a adăuga unul.",
+  "firmware": "Firmware",
+  "voltage": "Tensiune",
+  "protocol": "Protocol",
+  "minLatency": "Latență minimă",
+  "medianLatency": "Latență mediană",
+  "maxLatency": "Latență maximă",
+  "answered": "{{done}}/{{total}} comenzi 0100 cu răspuns",
+  "shareText": "Partajează ca text",
+  "shareJson": "Partajează JSON (pentru matricea de compatibilitate)",
+  "phase": {
+    "firmware": "Se citește firmware-ul (ATI)…",
+    "voltage": "Se citește tensiunea (ATRV)…",
+    "protocol": "Se detectează protocolul (ATDPN)…",
+    "timing": "Se cronometrează 0100 ({{n}}/{{total}})…"
+  }
+}

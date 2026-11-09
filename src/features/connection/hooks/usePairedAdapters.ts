@@ -7,11 +7,10 @@ import {
 import type { BondedAdapter } from '@/shared/transports/spp/SppTransport';
 import { logError } from '@/shared/state/errorLogStore';
 import { listPairedAdapters } from '../api/connectionService';
+import { translate } from '@/shared/i18n';
 
 /** Only Android 12+ asks (BLUETOOTH_CONNECT, shown as "Nearby devices"), so the name is right. */
-const PERMISSION_DENIED_MSG =
-  'Bluetooth permission denied. Allow “Nearby devices” for Bolid Tester in system settings, then ' +
-  'refresh the list.';
+const PERMISSION_DENIED_MSG = () => translate('connection:spp.permissionDenied');
 
 export interface PairedAdaptersState {
   /** Paired devices, likely OBD2 adapters first. */
@@ -63,7 +62,7 @@ export function usePairedAdapters(enabled: boolean): PairedAdaptersState {
       const allowed = prompt
         ? await requestClassicBluetoothPermissions()
         : await checkClassicBluetoothPermissions();
-      if (!allowed) problem = PERMISSION_DENIED_MSG;
+      if (!allowed) problem = PERMISSION_DENIED_MSG();
       else next = await listPairedAdapters();
     } catch (e) {
       problem = e instanceof Error ? e.message : String(e);

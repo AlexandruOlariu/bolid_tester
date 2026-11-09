@@ -13,6 +13,7 @@ import { useExtendedPids } from '../hooks/useExtendedPids';
 import { useMeasuringLog, type MeasuringLog } from '../hooks/useMeasuringLog';
 import { useEnginePartNumber } from '../hooks/useEnginePartNumber';
 import { resolveMeasuringGroups, type ResolvedGroup } from '../model/measuringGroups';
+import { useTranslation } from '@/shared/i18n';
 
 /** One VCDS-style measuring group: number, name, up to four live tiles, Log / Chart actions. */
 function GroupCard({
@@ -28,16 +29,17 @@ function GroupCard({
   onLog: (defs: ExtendedPid[]) => void;
   onChart: (defs: ExtendedPid[]) => void;
 }) {
+  const { t } = useTranslation('extendedPids');
   const readable = group.defs.length > 0;
   return (
     <Card bordered padding="$3" gap="$2" testID={`group-${group.no}`}>
       <XStack justifyContent="space-between" alignItems="center" gap="$2">
         <Text fontWeight="800" flexShrink={1}>
-          Group {group.no} · {group.name}
+          {t('group.title', { no: group.no, name: group.name })}
         </Text>
         <Stack backgroundColor="$statusWarn" borderRadius="$10" paddingHorizontal="$2">
           <Text fontSize="$1" color="$onFill" fontWeight="700">
-            ILLUSTRATIVE
+            {t('group.illustrative')}
           </Text>
         </Stack>
       </XStack>
@@ -57,7 +59,7 @@ function GroupCard({
             />
           ) : (
             <Paragraph key={e.did} theme="alt2" fontSize="$2" flexBasis="100%">
-              No definition for {e.did} in this profile.
+              {t('group.noDefinition', { did: e.did })}
             </Paragraph>
           ),
         )}
@@ -71,7 +73,7 @@ function GroupCard({
           disabled={!readable || log.recording}
           onPress={() => onLog(group.defs)}
         >
-          Log group
+          {t('group.log')}
         </Button>
         <Button
           size="$3"
@@ -81,7 +83,7 @@ function GroupCard({
           disabled={!readable}
           onPress={() => onChart(group.defs)}
         >
-          Chart group
+          {t('group.chart')}
         </Button>
       </XStack>
     </Card>
@@ -89,6 +91,7 @@ function GroupCard({
 }
 
 export function ExtendedPidsScreen() {
+  const { t } = useTranslation('extendedPids');
   const { supported, pids, readings, live, loading, refresh } = useExtendedPids();
   const session = useSessionStore((s) => s.session);
   const log = useMeasuringLog();
@@ -160,30 +163,20 @@ export function ExtendedPidsScreen() {
 
   if (!supported) {
     return (
-      <Screen
-        title="Extended PIDs"
-        subtitle="Experimental manufacturer (Mode 22) reads — values must be confirmed on the real car"
-      >
-        <Paragraph theme="alt2">
-          Not available for this vehicle/connection. Manufacturer Mode 22 reads require a CAN car
-          with a profile that declares extended PIDs (e.g. the Golf Plus).
-        </Paragraph>
+      <Screen title={t('title')} subtitle={t('subtitle')}>
+        <Paragraph theme="alt2">{t('unavailable')}</Paragraph>
       </Screen>
     );
   }
 
   return (
-    <Screen
-      title="Extended PIDs"
-      subtitle="Experimental manufacturer (Mode 22) reads — values must be confirmed on the real car"
-    >
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <YStack gap="$3">
         {groups.length > 0 ? (
           <YStack gap="$2">
-            <H4>Measuring groups</H4>
+            <H4>{t('groups')}</H4>
             <Paragraph theme="alt2" fontSize="$2">
-              VCDS-style groups from the label pack for engine part number {partNumber}. The
-              groupings are illustrative until confirmed on the real car.
+              {t('groupsHelp', { part: partNumber })}
             </Paragraph>
             {groups.map((g) => (
               <GroupCard
@@ -199,30 +192,27 @@ export function ExtendedPidsScreen() {
         ) : null}
 
         <Paragraph theme="alt2" fontSize="$2">
-          Values update live while this screen is open. "Read extended PIDs" also shows the raw
-          reply of every DID.
+          {t('liveHelp')}
         </Paragraph>
         <Button onPress={refresh} icon={loading ? () => <Spinner /> : undefined} theme="blue">
-          Read extended PIDs
+          {t('read')}
         </Button>
 
         {/* Measuring-block logging: record the selected DIDs over time, then export/share a CSV. */}
         <Card bordered padding="$3" gap="$2" backgroundColor="$color2">
           <XStack justifyContent="space-between" alignItems="center">
-            <Text fontWeight="800">Measuring-block log</Text>
+            <Text fontWeight="800">{t('log.title')}</Text>
             {log.recording ? (
               <XStack gap="$2" alignItems="center">
                 <Spinner size="small" />
                 <Text fontSize="$2" color="$statusError" fontWeight="700">
-                  REC · {log.sampleCount} sweeps
+                  {t('log.rec', { count: log.sampleCount })}
                 </Text>
               </XStack>
             ) : null}
           </XStack>
           <Paragraph theme="alt2" fontSize="$2">
-            {log.recording
-              ? 'Recording the selected DIDs once per second. Stop to save and share a CSV.'
-              : `Select DIDs below, then start a log. ${selected.size} selected.`}
+            {log.recording ? t('log.recording') : t('log.select', { count: selected.size })}
           </Paragraph>
           <Button
             theme={log.recording ? 'red' : 'green'}
@@ -230,7 +220,7 @@ export function ExtendedPidsScreen() {
             icon={log.busy ? () => <Spinner /> : undefined}
             onPress={onStartStop}
           >
-            {log.recording ? 'Stop & share CSV' : 'Start log'}
+            {log.recording ? t('log.stop') : t('log.start')}
           </Button>
         </Card>
 
@@ -256,7 +246,7 @@ export function ExtendedPidsScreen() {
                     checked={selected.has(p.did)}
                     disabled={log.recording}
                     onCheckedChange={() => toggle(p.did)}
-                    accessibilityLabel={`Log ${p.name}`}
+                    accessibilityLabel={t('logA11y', { name: p.name })}
                   />
                   <Text fontWeight="800" flexShrink={1}>
                     {p.name}
@@ -265,15 +255,15 @@ export function ExtendedPidsScreen() {
                 <VerificationBadge item={p} testID={`verify-${p.did}`} />
               </XStack>
               <Text fontSize="$7" fontWeight="900">
-                {value != null ? `${value} ${p.unit}` : 'no data'}
+                {value != null ? `${value} ${p.unit}` : t('noData')}
               </Text>
               <XStack justifyContent="space-between" alignItems="center" gap="$2">
                 <Paragraph theme="alt2" fontSize="$2" flexShrink={1}>
-                  DID 22{p.did} · raw {r?.raw ? toHex(r.raw, ' ') : '—'}
-                  {highlighted ? ' · from guide' : ''}
+                  DID 22{p.did} · {t('raw', { raw: r?.raw ? toHex(r.raw, ' ') : '—' })}
+                  {highlighted ? ` · ${t('fromGuide')}` : ''}
                 </Paragraph>
                 <Button size="$3" hitSlop={HIT_SLOP} theme="alt2" onPress={() => chart([p])}>
-                  Chart this
+                  {t('chartThis')}
                 </Button>
               </XStack>
             </Card>

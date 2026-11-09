@@ -1,0 +1,140 @@
+{
+  "title": "Mai multe",
+  "subtitle": "Diagnoză, întreținere și unelte de atelier",
+  "searchPlaceholder": "Caută unelte…",
+  "searchA11y": "Caută unelte",
+  "noMatch": "Nicio unealtă nu se potrivește cu „{{query}}”.",
+  "experimental": "experimental",
+  "experimentalA11y": "Experimental",
+  "checking": "Se verifică…",
+  "updates": {
+    "availableTitle": "Actualizare disponibilă",
+    "availableBody": "Descarci și repornești acum?",
+    "later": "Mai târziu",
+    "update": "Actualizează",
+    "upToDateTitle": "La zi",
+    "upToDateBody": "Ai deja cea mai nouă versiune.",
+    "unavailableTitle": "Actualizări indisponibile",
+    "unavailableBody": "Actualizările over-the-air nu sunt activate în această versiune."
+  },
+  "section": {
+    "diagnose": {
+      "title": "Diagnoză"
+    },
+    "drive": {
+      "title": "Condus"
+    },
+    "ownership": {
+      "title": "Întreținere"
+    },
+    "workshop": {
+      "title": "Atelier",
+      "blurb": "Comunică cu module de control dincolo de motor. Doar mașini CAN; adresele se confirmă pe fiecare mașină."
+    },
+    "tools": {
+      "title": "Unelte"
+    }
+  },
+  "entry": {
+    "ai-diagnose": {
+      "title": "Diagnoză (AI)",
+      "subtitle": "Verificare AI a stării dintr-o atingere"
+    },
+    "inspection": {
+      "title": "Verificare mașină second-hand",
+      "subtitle": "Verificare înainte de cumpărare"
+    },
+    "history": {
+      "title": "Istoric",
+      "subtitle": "Cronologia diagnozelor, scanărilor, călătoriilor, reviziilor și rapoartelor"
+    },
+    "report": {
+      "title": "Raport vehicul",
+      "subtitle": "Toată mașina într-un PDF de partajat"
+    },
+    "sensors": {
+      "title": "Teste senzori",
+      "subtitle": "Monitoare Mode 06 + senzori de module"
+    },
+    "charts": {
+      "title": "Grafice",
+      "subtitle": "Parametri live în timp"
+    },
+    "performance": {
+      "title": "Performanță",
+      "subtitle": "0–100, ¼ de milă, frânare"
+    },
+    "trips": {
+      "title": "Călătorii",
+      "subtitle": "Înregistrează și exportă date live"
+    },
+    "alerts": {
+      "title": "Alerte",
+      "subtitle": "Avertizări la praguri"
+    },
+    "maintenance": {
+      "title": "Jurnal de întreținere",
+      "subtitle": "Istoric service și lucrări scadente"
+    },
+    "battery": {
+      "title": "Baterie și încărcare",
+      "subtitle": "Tensiune, pornire, alternator"
+    },
+    "dpf": {
+      "title": "DPF / regenerare",
+      "subtitle": "Funingine diesel și regenerare"
+    },
+    "vin-decode": {
+      "title": "Decodor VIN",
+      "subtitle": "Decodează VIN-ul offline"
+    },
+    "notifications": {
+      "title": "Notificări",
+      "subtitle": "Alerte și mementouri"
+    },
+    "module-scan": {
+      "title": "Scanare module",
+      "subtitle": "Scanare automată în stil VCDS: toate modulele"
+    },
+    "adaptations": {
+      "title": "Adaptări",
+      "subtitle": "Citire/scriere canale cu backup"
+    },
+    "routines": {
+      "title": "Rutine și teste de actuatori",
+      "subtitle": "Setări de bază, teste de actuatori, regenerare forțată"
+    },
+    "coding": {
+      "title": "Codare",
+      "subtitle": "Codare experimentală a modulelor"
+    },
+    "service-reset": {
+      "title": "Resetare interval service",
+      "subtitle": "Resetează intervalul de service"
+    },
+    "sniffer": {
+      "title": "Monitor magistrală (sniffer)",
+      "subtitle": "Monitor brut CAN/K-line (ATMA); salvează și partajează capturi"
+    },
+    "adapter-health": {
+      "title": "Starea adaptorului",
+      "subtitle": "Evaluează-ți ELM327: firmware, latență"
+    },
+    "backup": {
+      "title": "Backup și restaurare",
+      "subtitle": "Toate datele într-un fișier; restaurează-le pe orice telefon"
+    },
+    "error-log": {
+      "title": "Jurnal de erori",
+      "subtitle": "Erori salvate de exportat și rezolvat mai târziu"
+    },
+    "feedback": {
+      "title": "Raportează o problemă",
+      "subtitle": "Trimite dezvoltatorului un pachet de jurnale anonimizat"
+    },
+    "check-updates": {
+      "title": "Caută actualizări",
+      "subtitle": "Actualizări over-the-air ale aplicației"
+    }
+  }
+}

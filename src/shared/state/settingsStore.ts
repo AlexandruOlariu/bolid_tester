@@ -33,6 +33,7 @@ import {
   isValidEndpoint,
   type TcpEndpoint,
 } from '@/shared/transports/tcp/endpoint';
+import { isLanguagePref, type LanguagePref } from '@/shared/lib/i18nResolve';
 
 /** Where the app gets its adapter: the simulator, a Bluetooth LE ELM327, a Wi-Fi ELM327 over TCP
  *  (plan 26), or a Classic Bluetooth (SPP) ELM327 — Android only (plan 27). */
@@ -48,16 +49,13 @@ export function isAdapterSourceSupported(source: AdapterSource, os: string): boo
   return true;
 }
 
-/** The one-time notice shown when a stored Classic Bluetooth source was replaced on iOS. */
-export const SPP_FALLBACK_NOTICE =
-  'Classic Bluetooth adapters work only on Android, so the app switched to Bluetooth LE. ' +
-  'Use a Bluetooth LE or Wi-Fi OBD2 adapter on this device.';
+/** The one-time notice shown when a stored Classic Bluetooth source was replaced on iOS. An i18n
+ *  key (namespace `connection`, plan 11): the Connect screen translates it when it shows it. */
+export const SPP_FALLBACK_NOTICE = 'connection:notice.sppFallback';
 
 /** The one-time notice shown when a stored Wi-Fi or Classic Bluetooth source was replaced in the
- *  browser (a backup restored from a phone, plan 28). */
-export const WEB_SOURCE_FALLBACK_NOTICE =
-  'A browser cannot reach Wi-Fi or classic Bluetooth adapters, so the app switched to Bluetooth LE. ' +
-  'Use a Bluetooth LE OBD2 adapter in Chrome or Edge, or the simulator.';
+ *  browser (a backup restored from a phone, plan 28). An i18n key, like `SPP_FALLBACK_NOTICE`. */
+export const WEB_SOURCE_FALLBACK_NOTICE = 'connection:notice.webSourceFallback';
 
 /** `Platform.OS`, once the app told the store (`setSettingsPlatform`); null = unknown (tests, or
  *  before startup), in which case no source is replaced. Kept out of the store module's imports so
@@ -107,6 +105,8 @@ export interface SettingsState {
   /** On connect, select the garage car whose learned VIN matches the car's VIN. Default on (plan 06). */
   autoSelectByVin: boolean;
   theme: ThemePref;
+  /** UI language (plan 11): follow the device (`'system'`, the default) or a fixed language. */
+  language: LanguagePref;
   ai: AiSettings;
   /** The Wi-Fi adapter's TCP address (plan 26), used when `adapterSource` is `'wifi'`. */
   wifi: TcpEndpoint;
@@ -114,7 +114,8 @@ export interface SettingsState {
    *  (Settings → Privacy, after a confirmation). See `src/shared/telemetry/crashReporting.ts`. */
   crashReports: boolean;
   /** Runtime only (never persisted): set when hydration replaced an adapter source this platform
-   *  cannot use (a stored `'spp'` on iOS, plan 27). The Connect screen shows it once. */
+   *  cannot use (a stored `'spp'` on iOS, plan 27). The Connect screen shows it once. Holds an i18n
+   *  key (`SPP_FALLBACK_NOTICE` / `WEB_SOURCE_FALLBACK_NOTICE`). */
   adapterSourceNotice: string | null;
   dismissAdapterSourceNotice: () => void;
   setAdapterSource: (s: AdapterSource) => void;
@@ -124,6 +125,7 @@ export interface SettingsState {
   setAutoReconnect: (v: boolean) => void;
   setAutoSelectByVin: (v: boolean) => void;
   setTheme: (t: ThemePref) => void;
+  setLanguage: (l: LanguagePref) => void;
   setAi: (patch: Partial<AiSettings>) => void;
   /** Change the Wi-Fi endpoint; an invalid result (bad host, port out of 1–65535) is ignored. */
   setWifi: (patch: Partial<TcpEndpoint>) => void;
@@ -160,8 +162,9 @@ export function parseDtcList(text: string): string[] {
 /** Persisted settings schema version. v2 = production defaults (real adapter, no injected DTC);
  *  v3 = auto-reconnect on by default (plan 12); v4 = VIN auto-select of garage cars (plan 06);
  *  v5 = AI provider presets (plan 19); v6 = metric only, the dead `units` field dropped (plan 07);
- *  v7 = the Wi-Fi adapter endpoint (plan 26); v8 = opt-in crash reports (plan 31). */
-export const SETTINGS_VERSION = 8;
+ *  v7 = the Wi-Fi adapter endpoint (plan 26); v8 = opt-in crash reports (plan 31);
+ *  v9 = UI language (plan 11). */
+export const SETTINGS_VERSION = 9;
 
 /** Step a persisted blob up to `SETTINGS_VERSION`. Each step only fills *missing* fields with the new
  *  default — an explicit stored choice always survives (a tester who chose the simulator, or turned
@@ -173,7 +176,8 @@ export const SETTINGS_VERSION = 8;
  *     openai, api.anthropic.com → anthropic, blank → local, anything else → custom).
  *   - v5 → v6: the app is metric only (plan 07): a stale `units` key is dropped.
  *   - v6 → v7: `wifi` (the Wi-Fi adapter endpoint, plan 26) defaults to `192.168.0.10:35000`.
- *   - v7 → v8: `crashReports` (plan 31) defaults to off — an upgrade never opts anyone in. */
+ *   - v7 → v8: `crashReports` (plan 31) defaults to off — an upgrade never opts anyone in.
+ *   - v8 → v9: `language` (plan 11) defaults to `'system'` (follow the device). */
 export function migrateSettings(persisted: unknown, fromVersion: number): Partial<SettingsState> {
   let p = { ...((persisted ?? {}) as Partial<SettingsState>) };
   if (fromVersion < 2) {
@@ -198,6 +202,7 @@ export function migrateSettings(persisted: unknown, fromVersion: number): Partia
   if (fromVersion < 6) p = withoutUnits(p);
   if (fromVersion < 7) p = { ...p, wifi: p.wifi ?? { ...DEFAULT_WIFI_ENDPOINT } };
   if (fromVersion < 8) p = { ...p, crashReports: p.crashReports === true };
+  if (fromVersion < 9) p = { ...p, language: isLanguagePref(p.language) ? p.language : 'system' };
   return p;
 }
 
@@ -223,6 +228,8 @@ export const useSettingsStore = create<SettingsState>()(
       // On by default (plan 06): reconnecting a car you added to the garage selects it again.
       autoSelectByVin: true,
       theme: 'dark',
+      // Follow the device language by default (plan 11).
+      language: 'system',
       ai: DEFAULT_AI_SETTINGS,
       wifi: { ...DEFAULT_WIFI_ENDPOINT },
       // Off by default (plan 31): nothing is sent until the user opts in.
@@ -236,6 +243,7 @@ export const useSettingsStore = create<SettingsState>()(
       setAutoReconnect: (autoReconnect) => set({ autoReconnect }),
       setAutoSelectByVin: (autoSelectByVin) => set({ autoSelectByVin }),
       setTheme: (theme) => set({ theme }),
+      setLanguage: (language) => set({ language: isLanguagePref(language) ? language : 'system' }),
       setCrashReports: (crashReports) => set({ crashReports }),
       setWifi: (patch) => {
         const next = { ...useSettingsStore.getState().wifi, ...patch };
@@ -276,6 +284,7 @@ export const useSettingsStore = create<SettingsState>()(
         autoReconnect: s.autoReconnect,
         autoSelectByVin: s.autoSelectByVin,
         theme: s.theme,
+        language: s.language,
         ai: redactApiKey(s.ai),
         wifi: s.wifi,
         crashReports: s.crashReports,
@@ -292,7 +301,9 @@ export const useSettingsStore = create<SettingsState>()(
         const wifi = isValidEndpoint(p.wifi) ? p.wifi : current.wifi;
         // Only an explicit `true` opts in (plan 31): a malformed value reads as off.
         const crashReports = p.crashReports === true;
-        const merged = { ...current, ...p, ai, wifi, crashReports };
+        // A restored or hand-edited file with an unknown language keeps the current choice.
+        const language = isLanguagePref(p.language) ? p.language : current.language;
+        const merged = { ...current, ...p, ai, wifi, crashReports, language };
         // Classic Bluetooth on iOS (a backup restored from an Android phone): fall back to BLE,
         // and have onRehydrateStorage write that back to the file.
         const fallback = platformFallback(merged.adapterSource);

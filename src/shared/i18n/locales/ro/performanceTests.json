@@ -1,0 +1,25 @@
+{
+  "title": "Performanță",
+  "subtitle": "Doar pe circuit închis — fii atent la drum",
+  "type": {
+    "accel": "0–100",
+    "drag": "¼ de milă",
+    "brake": "Frânare"
+  },
+  "state": "Stare: {{state}}",
+  "stateName": {
+    "idle": "inactiv",
+    "armed": "pregătit",
+    "running": "în desfășurare",
+    "done": "gata"
+  },
+  "arm": "Pregătește",
+  "stop": "Oprește",
+  "armed": "Pregătit — plecarea este detectată la prima mișcare.",
+  "runs": "Măsurători",
+  "run": {
+    "accel": "0–{{target}}: {{time}} ({{rate}} Hz)",
+    "drag": "¼ de milă: {{result}}",
+    "brake": "Frânare: {{result}}"
+  }
+}

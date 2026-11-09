@@ -1,6 +1,8 @@
 import React from 'react';
 import { useWindowDimensions } from 'react-native';
 import { Card, YStack, XStack, Text, Paragraph } from 'tamagui';
+import { useTranslation } from '@/shared/i18n';
+import { formatNumber } from '@/shared/lib/format';
 
 /** Above this OS font scale a value card takes the whole row (plan 20): two 150 dp tiles side by
  *  side cannot hold a 2× number and its unit. */
@@ -23,14 +25,16 @@ interface ValueCardProps {
 /** Compact live-parameter tile. */
 export function ValueCard({ name, value, unit, stale, width, fullWidth }: ValueCardProps) {
   const { fontScale } = useWindowDimensions();
+  // Subscribes to language changes, so the decimal separator follows the language (plan 11).
+  const { t } = useTranslation();
   const oneColumn = fullWidth ?? fontScale > LARGE_TEXT_FONT_SCALE;
   const display =
     value === null || value === undefined
       ? '—'
       : typeof value === 'number'
-        ? formatNumber(value)
+        ? formatValue(value)
         : value;
-  const a11yLabel = `${name}: ${display}${unit ? ` ${unit}` : ''}${stale ? ' (stale)' : ''}`;
+  const a11yLabel = `${name}: ${display}${unit ? ` ${unit}` : ''}${stale ? ` ${t('valueCard.stale')}` : ''}`;
   return (
     <Card
       elevate
@@ -66,7 +70,10 @@ export function ValueCard({ name, value, unit, stale, width, fullWidth }: ValueC
   );
 }
 
-function formatNumber(n: number): string {
-  if (Number.isInteger(n)) return String(n);
-  return n.toFixed(Math.abs(n) < 10 ? 1 : 0);
+/** Integers as they are; one decimal under 10, none above — in the current locale (`12,5` in
+ *  Romanian, plan 11). */
+function formatValue(n: number): string {
+  if (Number.isInteger(n)) return formatNumber(n, 0);
+  const digits = Math.abs(n) < 10 ? 1 : 0;
+  return formatNumber(n, digits, { minFractionDigits: digits });
 }

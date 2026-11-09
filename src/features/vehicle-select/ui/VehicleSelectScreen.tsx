@@ -18,14 +18,14 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { useGarageStore } from '@/shared/state/garageStore';
 import { PROTOCOL_LABELS } from '@/shared/obd-core/obd/protocols';
 import { useVehicleStore } from '../model/vehicleStore';
-import { FUELS } from '../model/vehicleDraft';
 import { deleteGarageVehicle, learnFromConnectedCar } from '../api/learnVehicle';
 import { EXCHANGE_SOURCE, shareProfileSeedFile, shareVehicleFile } from '../api/exchange';
 import { isWebRuntime } from '@/shared/lib/webRuntime';
 import { VehicleEditorSheet } from './VehicleEditorSheet';
+import { Trans, useTranslation, type TFunction } from '@/shared/i18n';
 
-export const GARAGE_COPY =
-  'Cars you add here are remembered on this phone. Built-in profiles are curated and documented.';
+/** The garage explainer (an i18n key, plan 11). */
+export const GARAGE_COPY = 'vehicleSelect:garage.copy';
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
@@ -44,12 +44,12 @@ function Chip({ children }: { children: React.ReactNode }) {
 }
 
 /** The buttons inside a garage card, also offered as the card's screen-reader actions (plan 20). */
-const GARAGE_CARD_ACTIONS = [
-  { name: 'edit', label: 'Edit' },
-  { name: 'export', label: 'Export' },
-  { name: 'delete', label: 'Delete' },
+const garageCardActions = (t: TFunction) => [
+  { name: 'edit', label: t('card.edit') },
+  { name: 'export', label: t('card.export') },
+  { name: 'delete', label: t('card.delete') },
 ];
-const PROFILE_CARD_ACTIONS = [{ name: 'share', label: 'Share as starting profile' }];
+const profileCardActions = (t: TFunction) => [{ name: 'share', label: t('profiles.share') }];
 
 /** Press feedback for a selectable card: a slight shrink, left out under Reduce motion (plan 20). */
 function cardPressStyle(reduceMotion: boolean) {
@@ -69,21 +69,22 @@ function GarageCard({
   onEdit: () => void;
   onExport: () => void;
 }) {
+  const { t } = useTranslation('vehicleSelect');
   const suffix = vinSuffix(v.learned?.vin);
-  const fuel = FUELS.find((f) => f.value === v.fuel)?.label ?? v.fuel;
+  const fuel = t(`common:fuel.${v.fuel}`, { defaultValue: v.fuel });
   const base = getVehicleProfile(v.baseProfileId);
   const palette = usePalette();
   const reduceMotion = useReducedMotion();
-  const protocol = v.learned ? PROTOCOL_LABELS[v.learned.protocol] : 'added by hand';
+  const protocol = v.learned ? PROTOCOL_LABELS[v.learned.protocol] : t('card.byHand');
   const confirmDelete = () =>
-    appAlert(
-      'Delete this car?',
-      `${v.name} is removed from your garage. Its history, scans and trips stay on this phone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => deleteGarageVehicle(v.id) },
-      ],
-    );
+    appAlert(t('card.deleteTitle'), t('card.deleteBody', { name: v.name }), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      {
+        text: t('card.delete'),
+        style: 'destructive',
+        onPress: () => deleteGarageVehicle(v.id),
+      },
+    ]);
   return (
     <Card
       bordered
@@ -98,10 +99,10 @@ function GarageCard({
       // also offered as its actions, since VoiceOver does not reach controls inside an element.
       accessible
       accessibilityRole="button"
-      accessibilityLabel={`${v.name}. ${protocol}. ${active ? 'Selected' : 'Not selected'}`}
-      accessibilityHint="Selects this car."
+      accessibilityLabel={`${v.name}. ${protocol}. ${active ? t('card.selected') : t('card.notSelected')}`}
+      accessibilityHint={t('card.selectHint')}
       accessibilityState={{ selected: active }}
-      accessibilityActions={GARAGE_CARD_ACTIONS}
+      accessibilityActions={garageCardActions(t)}
       onAccessibilityAction={(e) => {
         const action = e.nativeEvent.actionName;
         if (action === 'edit' || action === 'longpress') onEdit();
@@ -125,12 +126,14 @@ function GarageCard({
           {v.learned ? (
             <Chip>{PROTOCOL_LABELS[v.learned.protocol]}</Chip>
           ) : (
-            <Chip>added by hand</Chip>
+            <Chip>{t('card.byHand')}</Chip>
           )}
-          {v.learned ? <Chip>{v.learned.supportedPids.length} PIDs</Chip> : null}
+          {v.learned ? (
+            <Chip>{t('card.pids', { count: v.learned.supportedPids.length })}</Chip>
+          ) : null}
         </XStack>
         <Paragraph theme="alt2" fontSize="$2">
-          Based on {base.name}
+          {t('card.basedOn', { name: base.name })}
           {v.learned?.vin ? ` · VIN ${v.learned.vin}` : ''}
         </Paragraph>
         {v.notes ? (
@@ -143,26 +146,26 @@ function GarageCard({
             size="$3"
             hitSlop={HIT_SLOP}
             onPress={onEdit}
-            accessibilityLabel={`Edit ${v.name}`}
+            accessibilityLabel={t('card.editA11y', { name: v.name })}
           >
-            Edit
+            {t('card.edit')}
           </Button>
           <Button
             size="$3"
             hitSlop={HIT_SLOP}
             onPress={onExport}
-            accessibilityLabel={`Export ${v.name}`}
+            accessibilityLabel={t('card.exportA11y', { name: v.name })}
           >
-            Export
+            {t('card.export')}
           </Button>
           <Button
             size="$3"
             hitSlop={HIT_SLOP}
             theme="red"
             onPress={confirmDelete}
-            accessibilityLabel={`Delete ${v.name}`}
+            accessibilityLabel={t('card.deleteA11y', { name: v.name })}
           >
-            Delete
+            {t('card.delete')}
           </Button>
         </XStack>
       </YStack>
@@ -171,6 +174,7 @@ function GarageCard({
 }
 
 export function VehicleSelectScreen() {
+  const { t } = useTranslation('vehicleSelect');
   const router = useRouter();
   const palette = usePalette();
   const reduceMotion = useReducedMotion();
@@ -206,16 +210,14 @@ export function VehicleSelectScreen() {
   const exported = (uri: string | null) => {
     if (!uri && isWebRuntime()) return; // the "not available on web yet" toast already said why
     setExportNote(
-      uri
-        ? `Saved ${uri.slice(uri.lastIndexOf('/') + 1)}.`
-        : 'Could not export the profile. See More → Error log for details.',
+      uri ? t('export.saved', { file: uri.slice(uri.lastIndexOf('/') + 1) }) : t('export.failed'),
     );
   };
   const exportCar = async (v: UserVehicle) => exported(await shareVehicleFile(v));
   const exportSeed = async (p: VehicleProfile) => exported(await shareProfileSeedFile(p));
 
   return (
-    <Screen title="Vehicle" subtitle="Pick a car, or use Auto / Generic for any OBD2 car">
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <YStack gap="$3">
         {garageDifferent ? (
           <Card
@@ -225,12 +227,15 @@ export function VehicleSelectScreen() {
             pressStyle={{ opacity: 0.85 }}
             accessible
             accessibilityRole="button"
-            accessibilityLabel={`The connected car is ${garageMatch.name} from your garage. Switch to it.`}
+            accessibilityLabel={t('match.garageA11y', { name: garageMatch.name })}
             onPress={() => pick(garageMatch.id)}
           >
             <Paragraph size="$2">
-              The connected car is <Text fontWeight="800">{garageMatch.name}</Text> from your garage
-              — tap to switch to it.
+              <Trans
+                i18nKey="vehicleSelect:match.garage"
+                values={{ name: garageMatch.name }}
+                components={{ b: <Text fontWeight="800" /> }}
+              />
             </Paragraph>
           </Card>
         ) : null}
@@ -242,21 +247,23 @@ export function VehicleSelectScreen() {
             pressStyle={{ opacity: 0.85 }}
             accessible
             accessibilityRole="button"
-            accessibilityLabel={`The connected car's VIN matches ${suggestion.profile.name}. Switch to that profile.`}
+            accessibilityLabel={t('match.profileA11y', { name: suggestion.profile.name })}
             onPress={() => pick(suggestion.profile.id)}
           >
             <Paragraph size="$2">
-              The connected car's VIN ({vin}) matches{' '}
-              <Text fontWeight="800">{suggestion.profile.name}</Text> — tap to switch to that
-              profile.
+              <Trans
+                i18nKey="vehicleSelect:match.profile"
+                values={{ vin, name: suggestion.profile.name }}
+                components={{ b: <Text fontWeight="800" /> }}
+              />
             </Paragraph>
           </Card>
         ) : null}
 
         <YStack gap="$2">
-          <H4>My garage</H4>
+          <H4>{t('garage.title')}</H4>
           <Paragraph theme="alt2" fontSize="$2">
-            {GARAGE_COPY}
+            {t(GARAGE_COPY)}
           </Paragraph>
           <XStack gap="$2">
             <Button
@@ -266,18 +273,18 @@ export function VehicleSelectScreen() {
               opacity={connected ? 1 : 0.5}
               onPress={addFromCar}
             >
-              {relearn ? 'Re-learn from connected car' : 'Add from connected car'}
+              {relearn ? t('garage.relearn') : t('garage.addFromCar')}
             </Button>
             <Button flex={1} onPress={() => setEditor({ vehicle: null })}>
-              Add manually
+              {t('garage.addManually')}
             </Button>
           </XStack>
           <Button
             disabled={importer.busy}
             onPress={() => void importer.startImport()}
-            accessibilityLabel="Import a car profile from a file"
+            accessibilityLabel={t('garage.importA11y')}
           >
-            Import profile
+            {t('garage.import')}
           </Button>
           {importer.note ? (
             <Paragraph theme="alt2" fontSize="$1">
@@ -291,19 +298,17 @@ export function VehicleSelectScreen() {
           ) : null}
           {relearn ? (
             <Paragraph theme="alt2" fontSize="$1">
-              The connected car is already in your garage as {relearn.name} — re-learning refreshes
-              its protocol and supported readings and keeps its name and notes.
+              {t('garage.relearnNote', { name: relearn.name })}
             </Paragraph>
           ) : null}
           {!connected ? (
             <Paragraph theme="alt2" fontSize="$1">
-              Connect to a car first to add it from the connection — the app reads its VIN, protocol
-              and supported readings.
+              {t('garage.connectFirst')}
             </Paragraph>
           ) : null}
           {garage.length === 0 ? (
             <Paragraph theme="alt2" fontSize="$2">
-              No cars in your garage yet.
+              {t('garage.empty')}
             </Paragraph>
           ) : null}
           {/* Two columns on a tablet / landscape phone (plan 21). */}
@@ -321,7 +326,7 @@ export function VehicleSelectScreen() {
           </CardGrid>
         </YStack>
 
-        <H4>Built-in profiles</H4>
+        <H4>{t('profiles.title')}</H4>
         <CardGrid testID="profiles-grid" gap={12}>
           {VEHICLE_PROFILES.map((p) => {
             const active = p.id === selectedProfileId;
@@ -338,9 +343,9 @@ export function VehicleSelectScreen() {
                 pressStyle={cardPressStyle(reduceMotion)}
                 accessible
                 accessibilityRole="button"
-                accessibilityLabel={`${p.name}. ${PROTOCOL_LABELS[p.expectedProtocol]}. ${active ? 'Selected' : 'Not selected'}`}
+                accessibilityLabel={`${p.name}. ${PROTOCOL_LABELS[p.expectedProtocol]}. ${active ? t('card.selected') : t('card.notSelected')}`}
                 accessibilityState={{ selected: active }}
-                accessibilityActions={p.id === 'generic' ? undefined : PROFILE_CARD_ACTIONS}
+                accessibilityActions={p.id === 'generic' ? undefined : profileCardActions(t)}
                 onAccessibilityAction={(e) => {
                   if (e.nativeEvent.actionName === 'share') void exportSeed(p);
                 }}
@@ -355,7 +360,7 @@ export function VehicleSelectScreen() {
                   </XStack>
                   <Chip>
                     {PROTOCOL_LABELS[p.expectedProtocol]}
-                    {p.extendedPids?.length ? ' · experimental' : ''}
+                    {p.extendedPids?.length ? ` · ${t('profiles.experimental')}` : ''}
                   </Chip>
                   {p.notes ? (
                     <Paragraph theme="alt2" fontSize="$2" numberOfLines={3}>
@@ -368,9 +373,9 @@ export function VehicleSelectScreen() {
                         size="$3"
                         hitSlop={HIT_SLOP}
                         onPress={() => void exportSeed(p)}
-                        accessibilityLabel={`Share ${p.name} as a starting profile`}
+                        accessibilityLabel={t('profiles.shareA11y', { name: p.name })}
                       >
-                        Share as starting profile
+                        {t('profiles.share')}
                       </Button>
                     </XStack>
                   ) : null}

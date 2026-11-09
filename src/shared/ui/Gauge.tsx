@@ -1,6 +1,7 @@
 import React from 'react';
 import Svg, { Circle, G } from 'react-native-svg';
 import { YStack, Text } from 'tamagui';
+import { useTranslation } from '@/shared/i18n';
 import { usePalette } from './usePalette';
 
 interface GaugeProps {
@@ -17,6 +18,7 @@ interface GaugeProps {
  *  and the big number is capped at 1.3× font scale so it stays inside the arc. */
 export function Gauge({ label, value, min = 0, max = 100, unit, size = 150 }: GaugeProps) {
   const palette = usePalette();
+  const { t } = useTranslation();
   const stroke = 12;
   const r = (size - stroke) / 2;
   const cx = size / 2;
@@ -25,7 +27,7 @@ export function Gauge({ label, value, min = 0, max = 100, unit, size = 150 }: Ga
   const v = value ?? min;
   const pct = Math.max(0, Math.min(1, (v - min) / (max - min || 1)));
   const hasValue = value !== null && value !== undefined;
-  const valueText = hasValue ? `${Math.round(v)}${unit ? ` ${unit}` : ''}` : 'no reading';
+  const valueText = hasValue ? `${Math.round(v)}${unit ? ` ${unit}` : ''}` : t('gauge.noReading');
 
   return (
     <YStack

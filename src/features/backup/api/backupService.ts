@@ -44,6 +44,7 @@ import {
   migratableStores,
   storeRef,
 } from './registry';
+import { translate } from '@/shared/i18n';
 
 /** The legacy file-system entry point (the root `expo-file-system` has no `documentDirectory` on
  *  this SDK — see can-sniffer/api/captureExport.ts). */
@@ -264,7 +265,9 @@ export async function createBackup(
     const before = useBackupStore.getState().records;
     useBackupStore.getState().record(record);
     await deleteDroppedFiles(mods, before);
-    const shared = opts.share ? await share(mods, uri, 'application/json', 'Save backup') : false;
+    const shared = opts.share
+      ? await share(mods, uri, 'application/json', translate('backup:shareSave'))
+      : false;
     return { record, bundle, shared };
   } catch (e) {
     logError({ source: 'backup/create', error: e, context: { kind } });
@@ -342,7 +345,11 @@ export async function exportStore(
       mods,
       uri,
       format === 'csv' ? 'text/csv' : 'application/json',
-      `Export ${ref.label.toLowerCase()}`,
+      translate('backup:shareExport', {
+        name: translate(`backup:store.${ref.name.replace(/^bolid\./, '')}`, {
+          defaultValue: ref.label,
+        }).toLowerCase(),
+      }),
     );
     return uri;
   } catch (e) {
@@ -357,7 +364,7 @@ export async function readBackupFile(mods: BackupModules, uri: string): Promise<
     return parseBackup(await mods.FileSystem.readAsStringAsync(uri), STORE_NAMES);
   } catch (e) {
     logError({ source: 'backup/read', error: e, severity: 'warning' });
-    return { ok: false, reason: 'The file could not be read.' };
+    return { ok: false, reason: translate('backup:err.read') };
   }
 }
 
@@ -384,7 +391,7 @@ export async function pickBackupFile(mods: BackupModules): Promise<PickResult> {
     return {
       status: 'picked',
       name: '',
-      validation: { ok: false, reason: 'The file could not be opened.' },
+      validation: { ok: false, reason: translate('backup:err.open') },
     };
   }
 }
@@ -416,7 +423,7 @@ export async function restoreBackup(
   opts: RestoreOptions,
 ): Promise<RestoreResult> {
   const dir = docDir(mods);
-  if (!dir) return { ok: false, reason: 'This device has no app storage to restore into.' };
+  if (!dir) return { ok: false, reason: translate('backup:err.noStorage') };
   const clean = redactBackup(bundle);
   // Registry order (garage + selected car before maintenance), then anything unknown (skipped).
   const ordered = [
@@ -434,7 +441,7 @@ export async function restoreBackup(
   if (!snap) {
     return {
       ok: false,
-      reason: 'The current data could not be saved first, so nothing was restored.',
+      reason: translate('backup:err.snapshot'),
     };
   }
   await prunePreRestore(mods);
@@ -465,7 +472,7 @@ export async function restoreBackup(
       restored.push(blob.name);
     } catch (e) {
       logError({ source: 'backup/restore', error: e, context: { store: blob.name } });
-      skipped.push({ name: blob.name, reason: 'Could not be restored (see the error log).' });
+      skipped.push({ name: blob.name, reason: translate('backup:err.skipped') });
       // Put the store's previous file back, so the next launch does not load the blob the store
       // just rejected (it would hydrate empty, and the next write would lose the old data).
       if (written) await putBackStoreFile(blob.name, previous);
@@ -539,7 +546,7 @@ export async function shareBackupFile(mods: BackupModules, record: BackupRecord)
   } catch {
     return false;
   }
-  return share(mods, uri, 'application/json', 'Save backup');
+  return share(mods, uri, 'application/json', translate('backup:shareSave'));
 }
 
 /** Delete a file from the backup list (the file and its entry). */

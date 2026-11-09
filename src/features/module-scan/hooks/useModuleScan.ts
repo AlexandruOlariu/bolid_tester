@@ -26,6 +26,7 @@ import { scanModule, clearModule } from '../api/moduleScanService';
 import { discoveredToModule } from '../api/discovery';
 import { useModuleScanStore } from '../model/moduleScanStore';
 import { useScanHistoryStore, buildSavedScan } from '../model/scanHistoryStore';
+import { translate } from '@/shared/i18n';
 
 /** Best-effort bus wake before a scan (roadmap 6b.10): a short functional TesterPresent (0x3E00)
  *  burst to nudge a parked VW bus awake so the first physically-addressed request doesn't time out.
@@ -176,10 +177,7 @@ export function useModuleScan() {
         // ~1s here instead of burning a full scan's worth of timeouts.
         const probe = await probeTp20Capability(session.client);
         if (!probe.ok) {
-          store.setTp20Error(
-            'No raw-CAN traffic seen — this adapter may not support TP2.0 (many clones), or the ' +
-              'bus is asleep. Check ignition and try again.',
-          );
+          store.setTp20Error(translate('moduleScan:tp20.noTraffic'));
           return;
         }
         const link = new Elm327RawCanLink(session.client);

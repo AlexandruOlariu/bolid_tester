@@ -276,6 +276,29 @@ export const MORE_SECTIONS: MoreSection[] = [
   },
 ];
 
+/** `(key, english) → text in the UI language`; the More screen passes i18next's `t`. */
+export type SectionTranslator = (key: string, english: string) => string;
+
+/** The sections with titles, subtitles and blurbs in the UI language (plan 11): keys
+ *  `more:section.<id>.title|blurb` and `more:entry.<route or action>.title|subtitle`. The English
+ *  title and subtitle join the search keywords, so an English word still finds a row in Romanian. */
+export function localizeSections(sections: MoreSection[], tr: SectionTranslator): MoreSection[] {
+  return sections.map((s) => ({
+    ...s,
+    title: tr(`section.${s.id}.title`, s.title),
+    blurb: s.blurb ? tr(`section.${s.id}.blurb`, s.blurb) : undefined,
+    entries: s.entries.map((e) => {
+      const id = (e.route ?? e.action ?? e.title).replace(/^\//, '');
+      return {
+        ...e,
+        title: tr(`entry.${id}.title`, e.title),
+        subtitle: tr(`entry.${id}.subtitle`, e.subtitle),
+        keywords: [...(e.keywords ?? []), e.title, e.subtitle],
+      };
+    }),
+  }));
+}
+
 /** Lower-case words of a text (split on anything that is not a letter or a digit). */
 function words(text: string): string[] {
   return text

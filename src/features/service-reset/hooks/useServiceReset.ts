@@ -11,6 +11,7 @@ import { logError } from '@/shared/state/errorLogStore';
 import { activeSeedKeyVehicleKeys, decideSecurity, resolveSeedKey } from '@/shared/security';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { useServiceResetStore } from '../model/serviceResetStore';
+import { translate } from '@/shared/i18n';
 
 /** Run the profile's service-interval reset (cluster UDS routine/adaptation). CAN-only, gated. */
 export function useServiceReset() {
@@ -31,7 +32,7 @@ export function useServiceReset() {
 
   const run = useCallback(async () => {
     if (!session || !descriptor) {
-      setLastResult('Service reset is unavailable for this car / protocol.');
+      setLastResult(translate('serviceReset:msg.unavailable'));
       return false;
     }
     // SecurityAccess (plan 23): a `seedToKey` on the descriptor (tests / fakes only — no registry
@@ -52,7 +53,7 @@ export function useServiceReset() {
     );
     if (decision.kind === 'refuse') {
       const manual = descriptor.manualProcedure?.length
-        ? ' Use the manual procedure below instead.'
+        ? ` ${translate('serviceReset:msg.useManual')}`
         : '';
       setLastResult(decision.message + manual);
       return false;
@@ -80,7 +81,7 @@ export function useServiceReset() {
         });
       }
       setLastResult(
-        res.ok ? 'Service interval reset — confirm on the cluster.' : 'Reset did not complete.',
+        res.ok ? translate('serviceReset:msg.done') : translate('serviceReset:msg.incomplete'),
       );
       return res.ok;
     } catch (e) {
@@ -96,15 +97,14 @@ export function useServiceReset() {
         context: { transport, module: descriptor.module, moduleUnreachable },
       });
       const manualHint = descriptor.manualProcedure?.length
-        ? ' Use the manual procedure below instead.'
+        ? ` ${translate('serviceReset:msg.useManual')}`
         : '';
       setLastResult(
         moduleUnreachable
-          ? `${descriptor.module} did not respond (${msg}). ` +
-              (descriptor.obdUnreachable ??
-                'The adapter could not reach this module over the current link.') +
+          ? `${translate('serviceReset:msg.noResponse', { module: descriptor.module, error: msg })} ` +
+              (descriptor.obdUnreachable ?? translate('serviceReset:msg.unreachable')) +
               manualHint
-          : (describeUnlockFailure(e) ?? `Failed: ${msg}`),
+          : (describeUnlockFailure(e) ?? translate('serviceReset:msg.failed', { error: msg })),
       );
       return false;
     } finally {

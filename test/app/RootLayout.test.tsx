@@ -9,9 +9,19 @@ import RootLayout from '@/app/_layout';
 import { lastTabsScreenOptions } from '@test/mocks/router';
 import { setMockWindow, TABLET_WINDOW } from '@test/mocks/window';
 import { renderWithProviders } from '@test/renderWithProviders';
+import { act } from '@testing-library/react-native';
+import { i18n } from '@/shared/i18n';
 
 jest.mock('@/features/engine-host', () => ({ EngineHost: () => null }));
-jest.mock('@/shared/ui/AppSplash', () => ({ AppSplash: () => null }));
+// The splash renders nothing here; its props are recorded so the language gate's wiring is checked.
+const mockSplash = jest.fn((_props: { ready?: boolean }) => null);
+jest.mock('@/shared/ui/AppSplash', () => ({
+  AppSplash: (props: { ready?: boolean }) => mockSplash(props),
+}));
+// The language sync (plan 11) has its own test (src/shared/i18n/useLanguageSync.test.tsx); here it
+// only reports whether the first language is applied.
+let mockLanguageReady = true;
+jest.mock('@/shared/i18n/useLanguageSync', () => ({ useLanguageSync: () => mockLanguageReady }));
 
 /** The seven bottom tabs, in order: route file → tab title. */
 const TABS: [string, string][] = [
@@ -27,6 +37,19 @@ const TABS: [string, string][] = [
 const APP_DIR = path.join(__dirname, '..', '..', 'src', 'app');
 
 describe('RootLayout', () => {
+  afterEach(() => {
+    mockLanguageReady = true;
+  });
+
+  it('keeps the splash up until the UI language is applied (plan 11)', () => {
+    mockLanguageReady = false;
+    const view = render(<RootLayout />);
+    expect(mockSplash).toHaveBeenLastCalledWith({ ready: false });
+    mockLanguageReady = true;
+    view.rerender(<RootLayout />);
+    expect(mockSplash).toHaveBeenLastCalledWith({ ready: true });
+  });
+
   it('shows the seven tabs with their titles, in order', () => {
     render(<RootLayout />);
 
@@ -35,6 +58,27 @@ describe('RootLayout', () => {
       .queryAllByTestId(/^tab-/)
       .map((el) => [String(el.props.testID).slice(4), el.props.children]);
     expect(visible).toEqual(TABS);
+  });
+
+  it('shows the tab titles in Romanian when the language is Romanian (plan 11)', async () => {
+    await act(async () => {
+      await i18n.changeLanguage('ro');
+    });
+    render(<RootLayout />);
+
+    const bar = screen.getByTestId('tabs-root');
+    const titles = within(bar)
+      .queryAllByTestId(/^tab-/)
+      .map((el) => el.props.children);
+    expect(titles).toEqual([
+      'Conectare',
+      'Vehicul',
+      'Live',
+      'Erori',
+      'Info',
+      'Setări',
+      'Mai multe',
+    ]);
   });
 
   it('registers every route file, hiding everything but the seven tabs', () => {

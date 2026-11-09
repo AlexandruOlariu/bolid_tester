@@ -14,6 +14,8 @@ import { useTripStore, type TripSummary } from '@/features/trip-recording/model/
 import { useMaintenanceStore } from '@/features/maintenance/model/maintenanceStore';
 import { useCarBackupStore } from '@/features/coding/model/carBackupStore';
 import { AiEntryBody, HistoryScreen } from './HistoryScreen';
+import { formatDate } from '@/shared/lib/format';
+import { i18n } from '@/shared/i18n';
 
 // The UI project cannot run the variable-specifier `import('expo-sharing')` & co. (babel leaves it
 // to the VM), so the loader hands over the test doubles jest.setup.ui.ts installs; the real loader
@@ -165,7 +167,7 @@ describe('HistoryScreen — timeline (plan 16)', () => {
       `timeline-ai:${useHistoryStore.getState().entries[2].id}`,
       'timeline-backup:bk-1',
     ]);
-    expect(screen.getByText(new Date(at(12)).toLocaleDateString())).toBeTruthy();
+    expect(screen.getByText(formatDate(at(12)))).toBeTruthy();
     expect(screen.getByText('Service: Engine oil & filter')).toBeTruthy();
     expect(screen.getByText('Report (PDF)')).toBeTruthy();
     expect(
@@ -178,13 +180,25 @@ describe('HistoryScreen — timeline (plan 16)', () => {
     expect(screen.getByText('Coding backup')).toBeTruthy();
   });
 
+  it('rebuilds the item texts when the language changes while History stays mounted (plan 11)', async () => {
+    renderWithProviders(<HistoryScreen />);
+    expect(screen.getByText('Trip · 0.4 km')).toBeTruthy();
+    expect(screen.getByText('Fault-code check')).toBeTruthy();
+    await act(async () => {
+      await i18n.changeLanguage('ro');
+    });
+    expect(screen.getByText('Călătorie · 0,4 km')).toBeTruthy();
+    expect(screen.getByText('Verificare coduri de eroare')).toBeTruthy();
+    expect(screen.queryByText('Trip · 0.4 km')).toBeNull();
+  });
+
   it('groups items of another day under their own header', () => {
     useTripStore.setState({
       trips: [{ ...trip, header: { ...trip.header, startedAt: yesterday } }],
     });
     renderWithProviders(<HistoryScreen />);
-    expect(screen.getByText(new Date(yesterday).toLocaleDateString())).toBeTruthy();
-    expect(screen.getByText(new Date(at(12)).toLocaleDateString())).toBeTruthy();
+    expect(screen.getByText(formatDate(yesterday))).toBeTruthy();
+    expect(screen.getByText(formatDate(at(12)))).toBeTruthy();
   });
 
   it('kind chips combine, and the text filter narrows', () => {

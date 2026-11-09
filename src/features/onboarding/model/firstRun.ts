@@ -2,6 +2,7 @@
  *  read faults. The UI (`FirstRunCard`) feeds it live store values; keeping the rules here makes them
  *  unit-testable without React. See docs/features/onboarding.md. */
 import type { ConnState } from '@/shared/state/sessionStore';
+import { translate } from '@/shared/i18n';
 
 /** Hint id for the whole first-run card; dismissed manually or automatically once every step is done. */
 export const FIRST_RUN_HINT_ID = 'first-run';
@@ -30,22 +31,22 @@ export function firstRunSteps(i: FirstRunInput): FirstRunStep[] {
   return [
     {
       id: 'vehicle',
-      title: 'Pick your car',
-      hint: 'Choose your model on the Vehicle tab, or keep Auto / Generic for any OBD2 car.',
+      title: translate('onboarding:firstRun.vehicle.title'),
+      hint: translate('onboarding:firstRun.vehicle.hint'),
       done: i.selectedProfileId !== 'generic' || i.genericAccepted,
       route: '/vehicle',
     },
     {
       id: 'connect',
-      title: 'Connect the adapter',
-      hint: 'Plug the adapter into the OBD2 port, switch the ignition on, then scan below.',
+      title: translate('onboarding:firstRun.connect.title'),
+      hint: translate('onboarding:firstRun.connect.hint'),
       done: i.connectionStatus === 'connected',
       route: '/',
     },
     {
       id: 'faults',
-      title: 'Read fault codes',
-      hint: 'Open the Faults tab to read stored, pending and permanent trouble codes.',
+      title: translate('onboarding:firstRun.faults.title'),
+      hint: translate('onboarding:firstRun.faults.hint'),
       done: i.dtcLastReadAt !== null,
       route: '/faults',
     },

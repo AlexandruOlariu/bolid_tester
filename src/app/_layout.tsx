@@ -1,6 +1,7 @@
 import React from 'react';
 import { Platform, useColorScheme, View } from 'react-native';
 import { Tabs } from 'expo-router';
+import { useTranslation } from '@/shared/i18n';
 import { TamaguiProvider, Theme, XStack, Text } from 'tamagui';
 import {
   Bluetooth,
@@ -26,6 +27,7 @@ import {
   usesSideRail,
 } from '@/shared/ui';
 import { AppSplash } from '@/shared/ui/AppSplash';
+import { useLanguageSync } from '@/shared/i18n/useLanguageSync';
 import { EngineHost } from '@/features/engine-host';
 import { SimulatorBanner } from '@/features/connection';
 
@@ -60,6 +62,11 @@ export default function RootLayout() {
   // tab bar becomes a left side rail ('material' variant, labels under the icons); the header stays on
   // top. A phone on its side is too short for the non-scrolling rail and keeps the bottom bar.
   const rail = usesSideRail(useLayoutClass());
+  // Plan 11: the UI language follows Settings → Language (default: the device). The splash stays up
+  // until the stored choice is applied, so a Romanian phone never shows an English frame; `t`
+  // re-renders the tab and header titles when the language changes.
+  const languageReady = useLanguageSync();
+  const { t } = useTranslation();
 
   return (
     <TamaguiProvider config={config} defaultTheme={scheme}>
@@ -148,7 +155,7 @@ export default function RootLayout() {
               <Tabs.Screen
                 name="index"
                 options={{
-                  title: 'Connect',
+                  title: t('nav.connect'),
                   tabBarIcon: ({ color, size, focused }) =>
                     focused ? (
                       <BluetoothConnected size={size} color={color} />
@@ -160,87 +167,105 @@ export default function RootLayout() {
               <Tabs.Screen
                 name="vehicle"
                 options={{
-                  title: 'Vehicle',
+                  title: t('nav.vehicle'),
                   tabBarIcon: ({ color, size }) => <Car size={size} color={color} />,
                 }}
               />
               <Tabs.Screen
                 name="dashboard"
                 options={{
-                  title: 'Live',
+                  title: t('nav.live'),
                   tabBarIcon: ({ color, size }) => <Activity size={size} color={color} />,
                 }}
               />
               <Tabs.Screen
                 name="faults"
                 options={{
-                  title: 'Faults',
+                  title: t('nav.faults'),
                   tabBarIcon: ({ color, size }) => <AlertTriangle size={size} color={color} />,
                 }}
               />
               <Tabs.Screen
                 name="info"
                 options={{
-                  title: 'Info',
+                  title: t('nav.info'),
                   tabBarIcon: ({ color, size }) => <Info size={size} color={color} />,
                 }}
               />
               <Tabs.Screen
                 name="settings"
                 options={{
-                  title: 'Settings',
+                  title: t('nav.settings'),
                   tabBarIcon: ({ color, size }) => <Settings2 size={size} color={color} />,
                 }}
               />
               <Tabs.Screen
                 name="more"
                 options={{
-                  title: 'More',
+                  title: t('nav.more'),
                   tabBarIcon: ({ color, size }) => <LayoutGrid size={size} color={color} />,
                 }}
               />
               {/* Reachable from the Info / More screens; hidden from the tab bar. */}
-              <Tabs.Screen name="extended" options={{ href: null, title: 'Extended PIDs' }} />
-              <Tabs.Screen name="ai-diagnose" options={{ href: null, title: 'Diagnose (AI)' }} />
-              <Tabs.Screen name="history" options={{ href: null, title: 'History' }} />
-              <Tabs.Screen name="report" options={{ href: null, title: 'Vehicle report' }} />
-              <Tabs.Screen name="charts" options={{ href: null, title: 'Charts' }} />
-              <Tabs.Screen name="performance" options={{ href: null, title: 'Performance' }} />
-              <Tabs.Screen name="trips" options={{ href: null, title: 'Trips' }} />
-              <Tabs.Screen name="trip-detail" options={{ href: null, title: 'Trip' }} />
-              <Tabs.Screen name="alerts" options={{ href: null, title: 'Alerts' }} />
-              <Tabs.Screen name="sensors" options={{ href: null, title: 'Sensor tests' }} />
-              <Tabs.Screen name="coding" options={{ href: null, title: 'Coding' }} />
-              <Tabs.Screen name="notifications" options={{ href: null, title: 'Notifications' }} />
-              <Tabs.Screen name="service-reset" options={{ href: null, title: 'Service reset' }} />
-              <Tabs.Screen name="dpf" options={{ href: null, title: 'DPF / regen' }} />
+              <Tabs.Screen name="extended" options={{ href: null, title: t('nav.extended') }} />
               <Tabs.Screen
-                name="inspection"
-                options={{ href: null, title: 'Used-car inspection' }}
+                name="ai-diagnose"
+                options={{ href: null, title: t('nav.aiDiagnose') }}
               />
-              <Tabs.Screen name="battery" options={{ href: null, title: 'Battery & charging' }} />
-              <Tabs.Screen name="vin-decode" options={{ href: null, title: 'VIN decoder' }} />
-              <Tabs.Screen name="maintenance" options={{ href: null, title: 'Maintenance log' }} />
-              <Tabs.Screen name="error-log" options={{ href: null, title: 'Error log' }} />
-              <Tabs.Screen name="feedback" options={{ href: null, title: 'Report a problem' }} />
-              <Tabs.Screen name="backup" options={{ href: null, title: 'Backup & restore' }} />
-              <Tabs.Screen name="module-scan" options={{ href: null, title: 'Module scan' }} />
-              <Tabs.Screen name="adaptations" options={{ href: null, title: 'Adaptations' }} />
+              <Tabs.Screen name="history" options={{ href: null, title: t('nav.history') }} />
+              <Tabs.Screen name="report" options={{ href: null, title: t('nav.report') }} />
+              <Tabs.Screen name="charts" options={{ href: null, title: t('nav.charts') }} />
               <Tabs.Screen
-                name="routines"
-                options={{ href: null, title: 'Routines & output tests' }}
+                name="performance"
+                options={{ href: null, title: t('nav.performance') }}
               />
-              <Tabs.Screen name="sniffer" options={{ href: null, title: 'Bus sniffer' }} />
+              <Tabs.Screen name="trips" options={{ href: null, title: t('nav.trips') }} />
+              <Tabs.Screen
+                name="trip-detail"
+                options={{ href: null, title: t('nav.tripDetail') }}
+              />
+              <Tabs.Screen name="alerts" options={{ href: null, title: t('nav.alerts') }} />
+              <Tabs.Screen name="sensors" options={{ href: null, title: t('nav.sensors') }} />
+              <Tabs.Screen name="coding" options={{ href: null, title: t('nav.coding') }} />
+              <Tabs.Screen
+                name="notifications"
+                options={{ href: null, title: t('nav.notifications') }}
+              />
+              <Tabs.Screen
+                name="service-reset"
+                options={{ href: null, title: t('nav.serviceReset') }}
+              />
+              <Tabs.Screen name="dpf" options={{ href: null, title: t('nav.dpf') }} />
+              <Tabs.Screen name="inspection" options={{ href: null, title: t('nav.inspection') }} />
+              <Tabs.Screen name="battery" options={{ href: null, title: t('nav.battery') }} />
+              <Tabs.Screen name="vin-decode" options={{ href: null, title: t('nav.vinDecode') }} />
+              <Tabs.Screen
+                name="maintenance"
+                options={{ href: null, title: t('nav.maintenance') }}
+              />
+              <Tabs.Screen name="error-log" options={{ href: null, title: t('nav.errorLog') }} />
+              <Tabs.Screen name="feedback" options={{ href: null, title: t('nav.feedback') }} />
+              <Tabs.Screen name="backup" options={{ href: null, title: t('nav.backup') }} />
+              <Tabs.Screen
+                name="module-scan"
+                options={{ href: null, title: t('nav.moduleScan') }}
+              />
+              <Tabs.Screen
+                name="adaptations"
+                options={{ href: null, title: t('nav.adaptations') }}
+              />
+              <Tabs.Screen name="routines" options={{ href: null, title: t('nav.routines') }} />
+              <Tabs.Screen name="sniffer" options={{ href: null, title: t('nav.sniffer') }} />
               <Tabs.Screen
                 name="adapter-health"
-                options={{ href: null, title: 'Adapter health' }}
+                options={{ href: null, title: t('nav.adapterHealth') }}
               />
             </Tabs>
             {/* Short messages such as "Not available on web yet" (plan 28). */}
             <Toast />
             {/* The browser's Alert.alert (react-native-web's is a no-op); nothing on the phone. */}
             <AlertDialog />
-            <AppSplash />
+            <AppSplash ready={languageReady} />
           </RootErrorBoundary>
         </View>
       </Theme>

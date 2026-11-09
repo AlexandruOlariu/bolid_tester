@@ -6,10 +6,10 @@ User preferences first, then the developer and simulator controls in their own c
 
 **SettingsScreen** (plan 07) shows, in this order:
 
-1. **General** — **Theme** (system / light / dark) and the line "Units are metric: km/h, °C, km,
-   kPa and L/100 km." The app is **metric only** — no unit conversion layer and no unit setting
-   (decision 2026-11-08); values show as obd-core decodes them. A language picker joins General
-   with plan 11.
+1. **General** — **Theme** (system / light / dark), **Language** (plan 11, see
+   [Language](#language-plan-11)) and the line "Units are metric: km/h, °C, km, kPa and L/100 km."
+   The app is **metric only** — no unit conversion layer and no unit setting (decision 2026-11-08);
+   values show as obd-core decodes them.
 2. **Connection** — **Auto-reconnect**, **Poll interval** (250 / 500 / 1000 / 2000 ms; "How often
    live values are read. A slow K-line car sets its own pace.") and **Recognise my cars by VIN**.
 3. **Privacy** — **Send anonymous crash reports** (plan 31), see [Privacy](#privacy-crash-reports-plan-31).
@@ -42,6 +42,20 @@ labelled (**AI server URL**, **AI model**, **<provider> API key**, **Flow name**
 host / port**, custom DTCs).
 
 The parts in detail:
+
+### Language (plan 11)
+
+[Plan 11](../plans/11-i18n.md), [docs/i18n.md](../i18n.md). A `SegmentedControl` named
+**Language** (`testID="settings-language"`) with **Phone language** (`system`, the default),
+**English** and **Română** — the language names are shown in their own language. The choice is
+`settingsStore.language` (persisted; settings schema **v9**, an older file migrates to `system`,
+an unknown stored value is ignored on load and in a restored backup). Picking one applies it at
+once (`initI18n`), live, without a restart; the root layout's `useLanguageSync` also follows the
+stored value and holds the splash until the first language is applied, so the app never flashes
+English on a Romanian phone. **Phone language** takes the first supported language among the
+device's preferred locales (`expo-localization`), else English. Every label, hint and
+accessibility name on this screen is translated; numbers and dates follow the language, unit
+symbols do not. The privacy policy under About stays English (a note says so in Romanian).
 
 ### Privacy: crash reports (plan 31)
 

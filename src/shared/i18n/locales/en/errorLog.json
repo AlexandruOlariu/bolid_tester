@@ -1,0 +1,30 @@
+{
+  "title": "Error log",
+  "subtitle": "Saved errors to review and export",
+  "severity": {
+    "warning": "warning",
+    "error": "error",
+    "fatal": "fatal"
+  },
+  "deleteA11y": "Delete error: {{source}}",
+  "hideDetails": "Hide details",
+  "details": "Details",
+  "filter": {
+    "all": "All ({{count}})",
+    "fatal": "Fatal ({{count}})",
+    "error": "Errors ({{count}})",
+    "warning": "Warnings ({{count}})"
+  },
+  "clearTitle": "Clear error log?",
+  "clearBody": "This permanently deletes every saved error.",
+  "clearAll": "Clear all",
+  "exportTitle": "Export error log",
+  "exportBody": "Choose a format to share.",
+  "reportA11y": "Report a problem",
+  "report": "Report",
+  "filterA11y": "Show errors by severity",
+  "export": "Export",
+  "clear": "Clear",
+  "empty": "No errors logged. When something goes wrong it’ll be saved here so you can export and fix it later.",
+  "emptyFilter": "Nothing for this filter."
+}

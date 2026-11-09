@@ -20,6 +20,7 @@ import {
 import type { CarBackupModule } from '../api/carBackup';
 import { BACKUP_BUSY_MESSAGE, useBackupWorkStore } from '../model/backupWorkStore';
 import { planAdaptationRestore, type RestorePlanItem } from '../api/adaptationRestore';
+import { translate } from '@/shared/i18n';
 
 /** The plugin target for a channel's module: header, VAG address and the part number the live
  *  module scan read (as on the Adaptations screen), so a part-number-scoped plugin resolves the
@@ -122,17 +123,17 @@ export function useAdaptationRestore() {
   const writeItem = useCallback(
     async (item: RestorePlanItem): Promise<WriteOutcome> => {
       if (!session || !isCan(session.currentProtocol)) {
-        return { ok: false, message: 'Not connected over CAN.' };
+        return { ok: false, message: translate('coding:restore.notCan') };
       }
       // Read the unlock at write time, not from the render: fail closed if it was turned off.
       if (!useAdaptationsStore.getState().unlocked) {
         return {
           ok: false,
-          message: 'Locked — unlock adaptations on the Adaptations screen first.',
+          message: translate('coding:restore.lockedFirst'),
         };
       }
       if (item.action !== 'restore' || !item.channel || !item.snapshotRaw) {
-        return { ok: false, message: item.reason ?? 'Nothing to restore for this channel.' };
+        return { ok: false, message: item.reason ?? translate('coding:restore.nothing') };
       }
       const ch = item.channel;
       const raw = item.snapshotRaw;
@@ -151,7 +152,7 @@ export function useAdaptationRestore() {
               );
       } catch (e) {
         // writeChannel reports its own failures; this only catches a dead link in its finally.
-        res = { ok: false, message: `Failed: ${(e as Error).message}` };
+        res = { ok: false, message: translate('coding:failed', { error: (e as Error).message }) };
       }
       if (res.backup) {
         store.addBackup({ did: ch.did, module: ch.module, raw: res.backup, at: Date.now() });
@@ -164,7 +165,9 @@ export function useAdaptationRestore() {
           severity: 'warning',
           context: { did: ch.did, newRaw: hex(raw) },
         });
-      store.setLastResult(res.ok ? `Restored ${ch.name} from the backup.` : res.message);
+      store.setLastResult(
+        res.ok ? translate('coding:restore.restoredOne', { name: ch.name }) : res.message,
+      );
       return res;
     },
     [session],
@@ -175,7 +178,7 @@ export function useAdaptationRestore() {
   const restoreOne = useCallback(
     async (item: RestorePlanItem): Promise<WriteOutcome> => {
       const gate = useBackupWorkStore.getState();
-      if (!gate.tryBegin()) return { ok: false, message: BACKUP_BUSY_MESSAGE };
+      if (!gate.tryBegin()) return { ok: false, message: translate(BACKUP_BUSY_MESSAGE) };
       try {
         return await writeItem(item);
       } finally {
@@ -196,7 +199,7 @@ export function useAdaptationRestore() {
       const gate = useBackupWorkStore.getState();
       if (!gate.tryBegin()) {
         return todo.length
-          ? { done, failed: { did: todo[0].did, message: BACKUP_BUSY_MESSAGE } }
+          ? { done, failed: { did: todo[0].did, message: translate(BACKUP_BUSY_MESSAGE) } }
           : { done };
       }
       try {

@@ -42,6 +42,8 @@ import { AiReportView } from '@/features/ai-diagnose';
 import { useTimeline } from '../hooks/useTimeline';
 import { loadReshareModules, reshareReport } from '../api/reportFile';
 import { isWebRuntime } from '@/shared/lib/webRuntime';
+import { translate, useTranslation } from '@/shared/i18n';
+import { formatDate, formatTime } from '@/shared/lib/format';
 
 const KIND_ICON: Record<TimelineKind, typeof Sparkles> = {
   ai: Sparkles,
@@ -53,7 +55,8 @@ const KIND_ICON: Record<TimelineKind, typeof Sparkles> = {
   report: FileText,
 };
 
-/** Kind chip labels (plain English; "Service" is the maintenance log). */
+/** Kind chip labels in English ("Service" is the maintenance log); the screen shows the
+ *  translated `history:kind.<kind>` (plan 11). */
 export const KIND_LABEL: Record<TimelineKind, string> = {
   ai: 'AI',
   dtc: 'Faults',
@@ -72,22 +75,18 @@ const TONE: Record<TimelineTone, Tone> = {
 };
 
 function fmtTime(ts: number): string {
-  try {
-    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return String(ts);
-  }
+  return formatTime(ts);
 }
 
-/** `YYYY-MM-DD` (local) → the device's date format. */
+/** `YYYY-MM-DD` (local) → a date in the UI language. */
 function fmtDay(day: string): string {
   const [y, m, d] = day.split('-').map(Number);
-  try {
-    return new Date(y, m - 1, d).toLocaleDateString();
-  } catch {
-    return day;
-  }
+  const ts = new Date(y, m - 1, d).getTime();
+  return Number.isNaN(ts) ? day : formatDate(ts);
 }
+
+const kindLabel = (k: TimelineKind) =>
+  translate(`history:kind.${k}`, { defaultValue: KIND_LABEL[k] });
 
 /** One kind filter: several can be on at once, so each is a checkbox (plan 20). */
 function KindChip({
@@ -220,19 +219,20 @@ function emptyText(
   query: string,
   carFiltered: boolean,
 ): string {
-  if (total === 0) {
-    return 'Nothing yet. Diagnoses, fault-code reads, module scans, trips, service entries, coding backups and reports appear here, newest first, grouped by car.';
-  }
+  if (total === 0) return translate('history:empty.none');
   const q = query.trim();
-  if (q) return `Nothing matches “${q}”.`;
+  if (q) return translate('history:empty.query', { query: q });
   if (kinds.length > 0) {
-    const names = kinds.map((k) => KIND_LABEL[k].toLowerCase()).join(', ');
-    return `No ${names} ${carFiltered ? 'for this car' : 'yet'}.`;
+    const names = kinds.map((k) => kindLabel(k).toLowerCase()).join(', ');
+    return carFiltered
+      ? translate('history:empty.kindsCar', { names })
+      : translate('history:empty.kinds', { names });
   }
-  return 'Nothing for this car yet.';
+  return translate('history:empty.car');
 }
 
 export function HistoryScreen() {
+  const { t } = useTranslation('history');
   const router = useRouter();
   const palette = usePalette();
   const { items, entriesById, historyCount } = useTimeline();
@@ -298,20 +298,17 @@ export function HistoryScreen() {
     }));
     const body = formatDtcReport(checks, { title: 'Bolid Tester — fault-code history' });
     const uri = await exportReport('bolid-fault-history', body);
-    if (!uri) appAlert('Export unavailable', 'Sharing is not available on this device.');
+    if (!uri) appAlert(t('faultCodes:export.unavailable'), t('faultCodes:export.noSharing'));
   };
 
   const onReshare = async (entry: HistoryEntry | undefined) => {
     if (entry?.kind !== 'report') return;
     const result = await reshareReport(entry, await loadReshareModules());
     if (result === 'missing') {
-      appAlert(
-        'File no longer on device',
-        `${entry.fileName} was deleted. Make a new one from Vehicle report.`,
-      );
+      appAlert(t('reshare.missingTitle'), t('reshare.missingBody', { file: entry.fileName }));
     } else if (result === 'unavailable' && !isWebRuntime()) {
       // (In the browser the "not available on web yet" toast already explained it — plan 28.)
-      appAlert('Sharing unavailable', 'Sharing is not available on this device.');
+      appAlert(t('reshare.unavailable'), t('faultCodes:export.noSharing'));
     }
   };
 
@@ -330,29 +327,25 @@ export function HistoryScreen() {
   };
 
   const confirmClear = () =>
-    appAlert(
-      'Clear history?',
-      'This permanently deletes the saved AI diagnoses, fault-code checks and report records for every car. Module scans, trips, service entries and coding backups are kept — delete those on their own screens.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Clear', style: 'destructive', onPress: () => clear() },
-      ],
-    );
+    appAlert(t('clear.title'), t('clear.body'), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      { text: t('clear.confirm'), style: 'destructive', onPress: () => clear() },
+    ]);
 
   return (
-    <Screen title="History" subtitle="Everything that happened to this car">
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       {cars.length > 1 ? (
         <YStack gap="$1">
           <XStack alignItems="center" gap="$2">
             <Car size={14} color={palette.muted} />
             <Paragraph theme="alt2" fontSize="$2">
-              Car
+              {t('car')}
             </Paragraph>
           </XStack>
           <SegmentedControl
-            label="Show history for"
+            label={t('carFilterA11y')}
             options={[
-              { value: 'all', label: `All cars (${items.length})` },
+              { value: 'all', label: t('tripRecording:list.allCars', { count: items.length }) },
               ...cars.map((c) => ({ value: c.key, label: `${c.label} (${c.count})` })),
             ]}
             value={activeCar}
@@ -361,13 +354,13 @@ export function HistoryScreen() {
         </YStack>
       ) : null}
 
-      <XStack gap="$2" flexWrap="wrap" accessibilityLabel="Show kinds of events">
-        <KindChip active={kinds.length === 0} label="All" onPress={() => setKinds([])} />
+      <XStack gap="$2" flexWrap="wrap" accessibilityLabel={t('kindsA11y')}>
+        <KindChip active={kinds.length === 0} label={t('all')} onPress={() => setKinds([])} />
         {TIMELINE_KINDS.map((k) => (
           <KindChip
             key={k}
             active={kinds.includes(k)}
-            label={counts[k] > 0 ? `${KIND_LABEL[k]} (${counts[k]})` : KIND_LABEL[k]}
+            label={counts[k] > 0 ? `${kindLabel(k)} (${counts[k]})` : kindLabel(k)}
             onPress={() => toggleKind(k)}
           />
         ))}
@@ -377,10 +370,10 @@ export function HistoryScreen() {
         size="$3"
         value={query}
         onChangeText={setQuery}
-        placeholder="Filter (e.g. P0299, oil, trip)"
+        placeholder={t('filterPlaceholder')}
         autoCapitalize="none"
         autoCorrect={false}
-        accessibilityLabel="Filter the timeline"
+        accessibilityLabel={t('filterA11y')}
       />
 
       {dtcShown.length > 0 || historyCount > 0 ? (
@@ -392,9 +385,9 @@ export function HistoryScreen() {
               onPress={onExport}
               disabled={exporting}
               icon={<Share2 size={15} color={palette.accent} />}
-              accessibilityLabel="Export the listed fault-code checks"
+              accessibilityLabel={t('exportA11y')}
             >
-              Export
+              {t('export')}
             </Button>
           ) : null}
           {historyCount > 0 ? (
@@ -404,9 +397,9 @@ export function HistoryScreen() {
               theme="red"
               onPress={confirmClear}
               icon={<Trash2 size={15} />}
-              accessibilityLabel="Clear the diagnosis, fault-code and report history"
+              accessibilityLabel={t('clearA11y')}
             >
-              Clear
+              {t('clear.confirm')}
             </Button>
           ) : null}
         </XStack>

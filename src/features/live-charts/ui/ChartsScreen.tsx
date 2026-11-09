@@ -26,6 +26,8 @@ import {
   toScreen,
   type ScreenPoint,
 } from '../api/chartGeometry';
+import { useTranslation } from '@/shared/i18n';
+import { formatFixed, formatTime } from '@/shared/lib/format';
 
 const MIN_WINDOW = 10_000; //  10 s — most zoomed-in
 const MAX_WINDOW = 600_000; // 10 min — most zoomed-out
@@ -43,6 +45,7 @@ interface Inspect {
 }
 
 function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
+  const { t } = useTranslation('liveCharts');
   const profile = useActiveProfile();
   const palette = usePalette();
   const removePanel = useChartsStore((s) => s.removePanel);
@@ -162,7 +165,7 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
       <XStack justifyContent="space-between" alignItems="center">
         <H4 flexShrink={1}>{pids.map((k) => labels[k]).join(' / ')}</H4>
         <Text theme="alt2" fontSize="$2">
-          {Math.round(windowMs / 1000)}s{panned ? ' · panned' : ''}
+          {Math.round(windowMs / 1000)}s{panned ? ` · ${t('panned')}` : ''}
         </Text>
       </XStack>
 
@@ -172,7 +175,7 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
         {...responder.panHandlers}
         accessible
         accessibilityRole="image"
-        accessibilityLabel={`Chart for ${pids.map((k) => labels[k]).join(', ')}. Pinch to zoom, drag to pan, tap to inspect a sample.`}
+        accessibilityLabel={t('plotA11y', { series: pids.map((k) => labels[k]).join(', ') })}
       >
         <Svg width={width} height={height}>
           <Line
@@ -210,8 +213,8 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
 
       {inspect ? (
         <Paragraph theme="alt2" size="$2">
-          {labels[inspect.pid] ?? inspect.pid} @ {new Date(inspect.t).toLocaleTimeString()}:{' '}
-          <Text fontWeight="700">{inspect.v.toFixed(1)}</Text>
+          {labels[inspect.pid] ?? inspect.pid} @ {formatTime(inspect.t, true)}:{' '}
+          <Text fontWeight="700">{formatFixed(inspect.v, 1)}</Text>
         </Paragraph>
       ) : null}
 
@@ -221,8 +224,12 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
           <Paragraph key={pid} theme="alt2" size="$2">
             {labels[pid]}:{' '}
             {s
-              ? `now ${s.current.toFixed(1)} · min ${s.min.toFixed(1)} · max ${s.max.toFixed(1)}`
-              : 'no data'}
+              ? t('stats', {
+                  now: formatFixed(s.current, 1),
+                  min: formatFixed(s.min, 1),
+                  max: formatFixed(s.max, 1),
+                })
+              : t('noData')}
           </Paragraph>
         );
       })}
@@ -230,12 +237,12 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
       <XStack gap="$2" marginTop="$1" flexWrap="wrap">
         {panned ? (
           <Button size="$3" hitSlop={HIT_SLOP} theme="alt2" onPress={() => setPanOffsetMs(0)}>
-            Back to live
+            {t('backToLive')}
           </Button>
         ) : null}
         {inspect ? (
           <Button size="$3" hitSlop={HIT_SLOP} theme="alt2" onPress={() => setInspect(null)}>
-            Clear
+            {t('clear')}
           </Button>
         ) : null}
         <Button
@@ -245,10 +252,10 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
           disabled={busy}
           onPress={() => shareCsv(`chart-${id}`, series, labels)}
         >
-          Share window (CSV)
+          {t('share')}
         </Button>
         <Button size="$3" hitSlop={HIT_SLOP} theme="red" onPress={() => removePanel(id)}>
-          Remove
+          {t('remove')}
         </Button>
       </XStack>
     </YStack>
@@ -265,6 +272,7 @@ function PanelPicker({
   onAdd: (keys: string[]) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation('liveCharts');
   const [picked, setPicked] = useState<string[]>([]);
   const toggle = (key: string) =>
     setPicked((prev) =>
@@ -276,16 +284,12 @@ function PanelPicker({
     );
   return (
     <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$4">
-      <H4>New panel</H4>
+      <H4>{t('picker.title')}</H4>
       <Paragraph theme="alt2" size="$2">
-        Pick up to {MAX_PANEL_SERIES} values to plot together ({picked.length} picked).
-        {options.some((o) => o.extended)
-          ? ' Manufacturer values (with a DID number) are experimental.'
-          : ''}
+        {t('picker.help', { max: MAX_PANEL_SERIES, count: picked.length })}
+        {options.some((o) => o.extended) ? ` ${t('picker.experimental')}` : ''}
       </Paragraph>
-      {options.length === 0 ? (
-        <Paragraph theme="alt2">Connect to a car to see the values it reports.</Paragraph>
-      ) : null}
+      {options.length === 0 ? <Paragraph theme="alt2">{t('picker.connect')}</Paragraph> : null}
       <XStack flexWrap="wrap" gap="$2">
         {options.map((o) => {
           const on = picked.includes(o.key);
@@ -307,10 +311,10 @@ function PanelPicker({
       </XStack>
       <XStack gap="$2">
         <Button flex={1} theme="green" disabled={picked.length === 0} onPress={() => onAdd(picked)}>
-          Add panel
+          {t('addPanel')}
         </Button>
         <Button flex={1} theme="alt2" onPress={onCancel}>
-          Cancel
+          {t('common:actions.cancel')}
         </Button>
       </XStack>
     </YStack>
@@ -318,6 +322,7 @@ function PanelPicker({
 }
 
 export function ChartsScreen() {
+  const { t } = useTranslation('liveCharts');
   const panels = useChartsStore((s) => s.panels);
   const addPanel = useChartsStore((s) => s.addPanel);
   const session = useSessionStore((s) => s.session);
@@ -341,10 +346,9 @@ export function ChartsScreen() {
   );
 
   return (
-    <Screen title="Charts" subtitle="Live parameters over time" wide={twoPane}>
-      <HintCard id="charts-gestures" title="Explore the chart">
-        Pinch to zoom the time window (10 s–10 min), drag left/right to pan through history, and tap
-        a line to read the exact value and time. Use “Share window (CSV)” to send the data out.
+    <Screen title={t('title')} subtitle={t('subtitle')} wide={twoPane}>
+      <HintCard id="charts-gestures" title={t('hint.title')}>
+        {t('hint.body')}
       </HintCard>
       {/* Plan 21: two panels per row on a tablet / landscape phone (each plot stretches to its
           half), stacked on a portrait phone. One element tree for both, so rotating keeps every
@@ -377,7 +381,7 @@ export function ChartsScreen() {
         />
       ) : (
         <Button theme="blue" onPress={() => setPicking(true)}>
-          Add panel
+          {t('addPanel')}
         </Button>
       )}
     </Screen>

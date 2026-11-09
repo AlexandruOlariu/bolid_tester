@@ -1,0 +1,31 @@
+{
+  "title": "PID-uri extinse",
+  "subtitle": "Citiri experimentale ale producătorului (Mode 22) — valorile trebuie confirmate pe mașina reală",
+  "unavailable": "Indisponibil pentru acest vehicul/această conexiune. Citirile Mode 22 ale producătorului necesită o mașină CAN cu un profil care declară PID-uri extinse (de ex. Golf Plus).",
+  "groups": "Grupuri de măsurare",
+  "groupsHelp": "Grupuri în stil VCDS din pachetul de etichete pentru codul de piesă al motorului {{part}}. Grupările sunt ilustrative până la confirmarea pe mașina reală.",
+  "group": {
+    "title": "Grupul {{no}} · {{name}}",
+    "illustrative": "ILUSTRATIV",
+    "noDefinition": "Nicio definiție pentru {{did}} în acest profil.",
+    "log": "Înregistrează grupul",
+    "chart": "Grafic grup"
+  },
+  "liveHelp": "Valorile se actualizează live cât timp acest ecran este deschis. „Citește PID-urile extinse” arată și răspunsul brut al fiecărui DID.",
+  "read": "Citește PID-urile extinse",
+  "log": {
+    "title": "Jurnal blocuri de măsurare",
+    "rec_one": "REC · {{count}} ciclu",
+    "rec_few": "REC · {{count}} cicluri",
+    "rec_other": "REC · {{count}} de cicluri",
+    "recording": "Se înregistrează DID-urile selectate o dată pe secundă. Oprește pentru a salva și partaja un CSV.",
+    "select": "Selectează DID-uri mai jos, apoi pornește un jurnal. {{count}} selectate.",
+    "stop": "Oprește și partajează CSV",
+    "start": "Pornește jurnalul"
+  },
+  "logA11y": "Înregistrează {{name}}",
+  "noData": "fără date",
+  "raw": "brut {{raw}}",
+  "fromGuide": "din ghid",
+  "chartThis": "Grafic"
+}

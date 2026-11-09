@@ -1,0 +1,158 @@
+{
+  "nav": {
+    "connect": "Conectare",
+    "vehicle": "Vehicul",
+    "live": "Live",
+    "faults": "Erori",
+    "info": "Info",
+    "settings": "Setări",
+    "more": "Mai multe",
+    "extended": "PID-uri extinse",
+    "aiDiagnose": "Diagnoză (AI)",
+    "history": "Istoric",
+    "report": "Raport vehicul",
+    "charts": "Grafice",
+    "performance": "Performanță",
+    "trips": "Călătorii",
+    "tripDetail": "Călătorie",
+    "alerts": "Alerte",
+    "sensors": "Teste senzori",
+    "coding": "Codare",
+    "notifications": "Notificări",
+    "serviceReset": "Resetare interval service",
+    "dpf": "DPF / regenerare",
+    "inspection": "Verificare mașină second-hand",
+    "battery": "Baterie și încărcare",
+    "vinDecode": "Decodor VIN",
+    "maintenance": "Jurnal de întreținere",
+    "errorLog": "Jurnal de erori ale aplicației",
+    "feedback": "Raportează o problemă",
+    "backup": "Backup și restaurare",
+    "moduleScan": "Scanare module",
+    "adaptations": "Adaptări",
+    "routines": "Rutine și teste de actuatori",
+    "sniffer": "Monitor magistrală (sniffer)",
+    "adapterHealth": "Starea adaptorului"
+  },
+  "actions": {
+    "ok": "OK",
+    "cancel": "Anulează",
+    "close": "Închide",
+    "done": "Gata",
+    "retry": "Reîncearcă",
+    "dismiss": "Închide",
+    "import": "Importă",
+    "replace": "Înlocuiește",
+    "keepBoth": "Păstrează ambele"
+  },
+  "connState": {
+    "disconnected": "Deconectat",
+    "connecting": "Se conectează…",
+    "initializing": "Se inițializează…",
+    "connected": "Conectat",
+    "error": "Eroare",
+    "a11y": "Starea conexiunii: {{status}}"
+  },
+  "splash": {
+    "subtitle": "Diagnoză OBD2",
+    "loading": "Se încarcă datele salvate"
+  },
+  "errorBoundary": {
+    "title": "Ceva nu a mers",
+    "body": "Un ecran a întâlnit o eroare neașteptată. Datele salvate sunt în siguranță, iar eroarea a fost înregistrată. Încearcă din nou sau raporteaz-o din Mai multe > Raportează o problemă."
+  },
+  "gauge": {
+    "noReading": "fără citire"
+  },
+  "valueCard": {
+    "stale": "(neactualizat)"
+  },
+  "unlock": {
+    "none": "Nu necesită deblocare",
+    "unlockable": "Se poate debloca · {{plugin}}",
+    "plugin": "plugin",
+    "locked": "Blocat · necesită acces de securitate",
+    "a11y": "Acces de securitate: {{text}}"
+  },
+  "verification": {
+    "standard": "OBD2 standard",
+    "confirmed": "Confirmat {{on}} ({{source}})",
+    "unverified": "Ilustrativ — neconfirmat încă pe această mașină",
+    "a11y": "Verificare: {{text}}",
+    "source": {
+      "sniffer-capture": "captură sniffer",
+      "on-car": "pe mașină",
+      "vcds-log": "jurnal VCDS"
+    }
+  },
+  "fuel": {
+    "diesel": "Motorină",
+    "petrol": "Benzină",
+    "lpg": "GPL",
+    "hybrid": "Hibrid",
+    "other": "Altul"
+  },
+  "importPreview": {
+    "cantImport": "Fișierul nu poate fi importat",
+    "andMore_one": "…și încă {{count}}.",
+    "andMore_few": "…și încă {{count}}.",
+    "andMore_other": "…și încă {{count}}.",
+    "nothingChanged": "Nu s-a modificat nimic.",
+    "imported": "Importat",
+    "packsFull": "Ai deja 100 de pachete de etichete importate. Șterge unul din Setări → Date mai întâi.",
+    "profileTitle": "Importă profilul mașinii",
+    "name": "Nume",
+    "year": "An",
+    "fuel": "Combustibil",
+    "basedOn": "Bazat pe",
+    "vinEnding": "Final VIN",
+    "learned": "Învățat",
+    "learnedValue_one": "{{count}} citire · {{protocol}}",
+    "learnedValue_few": "{{count}} citiri · {{protocol}}",
+    "learnedValue_other": "{{count}} de citiri · {{protocol}}",
+    "notLearned": "Neînvățat încă — conectează-te la mașină pentru a-l învăța",
+    "modules": "Module",
+    "modulesDiscovered_one": "{{count}} descoperit",
+    "modulesDiscovered_few": "{{count}} descoperite",
+    "modulesDiscovered_other": "{{count}} descoperite",
+    "includesPacks_one": "Include {{count}} pachet de etichete: {{modules}}.",
+    "includesPacks_few": "Include {{count}} pachete de etichete: {{modules}}.",
+    "includesPacks_other": "Include {{count}} de pachete de etichete: {{modules}}.",
+    "packsKept": "Deja pe acest telefon (păstrate neschimbate): {{modules}}.",
+    "packsOverCap": "Neimportate — telefonul are deja 100 de pachete de etichete: {{modules}}.",
+    "baseUnknown": "Profilul de bază „{{id}}” nu există în această versiune a aplicației; mașina va folosi Auto / Generic.",
+    "conflictVin": "{{name}} din garajul tău are același VIN. Îl înlocuiești cu acest profil sau le păstrezi pe amândouă?",
+    "conflictName": "Garajul tău are deja o mașină numită {{name}}. O înlocuiești cu acest profil sau le păstrezi pe amândouă?",
+    "loginCodesNote": "Codurile de login nu fac niciodată parte dintr-un fișier de profil; o mașină înlocuită își păstrează codurile.",
+    "packTitle": "Importă pachet de etichete",
+    "module": "Modul",
+    "id": "Id",
+    "partNumbers": "Coduri de piesă",
+    "names": "Denumiri",
+    "namesValue": "{{measurements}} măsurători · {{codingBits}} biți de codare · {{adaptations}} adaptări · {{measuringGroups}} grupuri de măsurare",
+    "author": "Autor",
+    "licence": "Licență",
+    "source": "Sursă",
+    "checkedOnCar": "Verificat pe o mașină",
+    "checkedYes": "Da, {{on}}",
+    "checkedNo": "Nu — denumirile sunt neconfirmate",
+    "packReplace": "Ai importat deja un pachet cu id-ul {{id}}. Îl înlocuiești sau le păstrezi pe amândouă (copia primește un id nou)?",
+    "noPicker": "Importul are nevoie de selectorul de fișiere, pe care această versiune a aplicației nu îl include."
+  },
+  "share": {
+    "adapterHealthJson": "Raport stare adaptor (JSON)",
+    "adapterHealth": "Starea adaptorului",
+    "busCapture": "Partajează captura de magistrală",
+    "carBackup": "Exportă backupul mașinii",
+    "errorLog": "Exportă jurnalul de erori",
+    "measuringLog": "Exportă jurnalul de măsurători",
+    "problemReport": "Partajează raportul de problemă",
+    "vehicleReport": "Partajează raportul vehiculului",
+    "chartWindow": "Partajează fereastra graficului (CSV)",
+    "scanReport": "Partajează raportul de scanare automată",
+    "replayFixture": "Partajează fixture-ul de reluare"
+  },
+  "toast": {
+    "notOnWebYet": "Nu este disponibil încă pe web — salvarea sau deschiderea acestui fișier necesită aplicația Android."
+  }
+}

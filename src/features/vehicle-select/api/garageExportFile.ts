@@ -7,6 +7,7 @@ import { garageExportJson } from '@/shared/state/garageStore';
 import { logError } from '@/shared/state/errorLogStore';
 import { saveTextFile } from '@/shared/lib/saveFile';
 import type { UserVehicle } from '@/shared/vehicles';
+import { translate } from '@/shared/i18n';
 
 const SOURCE = 'vehicle-select/export';
 
@@ -26,7 +27,7 @@ export async function saveGarageExport(
       garageExportFileName(now),
       garageExportJson(vehicles, now.getTime()),
       'application/json',
-      { dialogTitle: 'Share garage' },
+      { dialogTitle: translate('vehicleSelect:editor.shareDialog') },
     );
     if (!uri) {
       logError({

@@ -16,6 +16,7 @@ import {
 } from '../api/carBackup';
 import { useCarBackupStore } from '../model/carBackupStore';
 import { useBackupWorkStore } from '../model/backupWorkStore';
+import { translate } from '@/shared/i18n';
 
 interface ModuleSpec {
   reqHeader: string;
@@ -151,7 +152,7 @@ export function useCarBackup() {
         `car-backup-${fileStamp(backup.ts)}.json`,
         JSON.stringify(backup, null, 2),
         'application/json',
-        { dialogTitle: 'Export car backup' },
+        { dialogTitle: translate('common:share.carBackup') },
       );
     } catch (e) {
       logError({ source: 'coding/backup/export', error: e });

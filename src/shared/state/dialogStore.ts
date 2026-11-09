@@ -16,7 +16,8 @@ export interface Dialog {
   id: number;
   title: string;
   message?: string;
-  /** Never empty: an alert given no buttons gets a single "OK", as on the phone. */
+  /** Never empty: an alert given no buttons gets a single "OK", as on the phone (a button without
+   *  `text`, which `AlertDialog` labels with the translated `actions.ok`, plan 11). */
   buttons: DialogButton[];
 }
 
@@ -35,7 +36,7 @@ export function openDialog(title: string, message?: string, buttons?: DialogButt
     id: ++seq,
     title,
     message,
-    buttons: buttons && buttons.length > 0 ? buttons : [{ text: 'OK' }],
+    buttons: buttons && buttons.length > 0 ? buttons : [{}],
   };
   useDialogStore.setState((s) => ({ queue: [...s.queue, dialog] }));
 }

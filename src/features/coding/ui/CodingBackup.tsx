@@ -15,14 +15,17 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { AdaptationRestorePanel } from './AdaptationRestorePanel';
 import { HIT_SLOP } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { formatDateTime } from '@/shared/lib/format';
 
-const fmtDate = (ts: number) => new Date(ts).toLocaleString();
+const fmtDate = (ts: number) => formatDateTime(ts);
 
 /** Per-module block in an expanded snapshot: ident + coding + adaptation values, a gated
  *  "Restore coding" action for codeable modules, and the adaptation compare / restore panel.
  *  `blocked` (the snapshot is from another car) disables every restore. The coding restore takes
  *  the Backup section's shared work gate, so it never overlaps an adaptation compare / restore. */
 function BackupModuleBlock({ m, blocked }: { m: CarBackupModule; blocked: string | null }) {
+  const { t } = useTranslation('coding');
   const { modules, write } = useCoding();
   const unlocked = useCodingStore((s) => s.unlocked);
   const [confirming, setConfirming] = useState(false);
@@ -65,7 +68,7 @@ function BackupModuleBlock({ m, blocked }: { m: CarBackupModule; blocked: string
       ) : null}
       {m.coding ? (
         <Paragraph size="$2" fontFamily="$mono">
-          Coding {m.coding.did}: {m.coding.hex}
+          {t('backup.coding', { did: m.coding.did, hex: m.coding.hex })}
         </Paragraph>
       ) : null}
       {m.adaptations.map((a) => (
@@ -82,13 +85,12 @@ function BackupModuleBlock({ m, blocked }: { m: CarBackupModule; blocked: string
             disabled={!unlocked || busy || !!blocked}
             onPress={() => unlocked && !busy && !blocked && setConfirming(true)}
           >
-            {unlocked ? 'Restore coding' : 'Unlock to restore coding'}
+            {unlocked ? t('backup.restoreCoding') : t('backup.unlockToRestore')}
           </Button>
         ) : (
           <YStack gap="$2" backgroundColor="$color2" padding="$2" borderRadius="$3">
             <Paragraph size="$2">
-              Restore {m.name} coding to {m.coding!.hex}? This is the same gated write — the current
-              value is backed up and re-verified.
+              {t('backup.confirmRestore', { name: m.name, hex: m.coding!.hex })}
             </Paragraph>
             <XStack gap="$2">
               <Button
@@ -99,7 +101,7 @@ function BackupModuleBlock({ m, blocked }: { m: CarBackupModule; blocked: string
                 disabled={busy || !!blocked}
                 onPress={restore}
               >
-                {busy ? 'Writing…' : 'Confirm restore'}
+                {busy ? t('tweak.writing') : t('backup.confirm')}
               </Button>
               <Button
                 flex={1}
@@ -108,7 +110,7 @@ function BackupModuleBlock({ m, blocked }: { m: CarBackupModule; blocked: string
                 disabled={busy}
                 onPress={() => setConfirming(false)}
               >
-                Cancel
+                {t('common:actions.cancel')}
               </Button>
             </XStack>
           </YStack>
@@ -128,6 +130,7 @@ function BackupRow({
   onExport: (b: CarBackup) => Promise<string | null>;
   onRemove: (id: string) => void;
 }) {
+  const { t } = useTranslation('coding');
   const [expanded, setExpanded] = useState(false);
   const [exporting, setExporting] = useState(false);
   const s = summarizeCarBackup(backup);
@@ -144,14 +147,23 @@ function BackupRow({
         onPress={() => setExpanded((e) => !e)}
         accessible
         accessibilityRole="button"
-        accessibilityLabel={`Car backup ${fmtDate(backup.ts)}. ${s.modules} modules, ${s.codedModules} coded, ${s.adaptations} adaptations`}
-        accessibilityHint={expanded ? 'Hides the backup' : 'Shows the backup'}
+        accessibilityLabel={t('backup.rowA11y', {
+          date: fmtDate(backup.ts),
+          modules: s.modules,
+          coded: s.codedModules,
+          adaptations: s.adaptations,
+        })}
+        accessibilityHint={expanded ? t('backup.hideHint') : t('backup.showHint')}
         accessibilityState={{ expanded }}
       >
         <YStack flex={1}>
           <Paragraph>{fmtDate(backup.ts)}</Paragraph>
           <Paragraph theme="alt2" size="$2">
-            {s.modules} modules · {s.codedModules} coded · {s.adaptations} adaptations
+            {t('backup.summary', {
+              modules: s.modules,
+              coded: s.codedModules,
+              adaptations: s.adaptations,
+            })}
             {backup.vehicle.vin ? ` · VIN …${backup.vehicle.vin.slice(-5)}` : ''}
           </Paragraph>
         </YStack>
@@ -183,7 +195,7 @@ function BackupRow({
                 }
               }}
             >
-              {exporting ? 'Exporting…' : 'Export .json'}
+              {exporting ? t('backup.exporting') : t('backup.export')}
             </Button>
             <Button
               flex={1}
@@ -192,7 +204,7 @@ function BackupRow({
               theme="red"
               onPress={() => onRemove(backup.id)}
             >
-              Delete
+              {t('backup.delete')}
             </Button>
           </XStack>
         </YStack>
@@ -205,6 +217,7 @@ function BackupRow({
  *  adaptation values, export as JSON, and restore coding and adaptation channels per module through
  *  the gated writes. */
 export function CodingBackup() {
+  const { t } = useTranslation('coding');
   const { available, creating, create, exportBackup } = useCarBackup();
   const workBusy = useBackupWorkStore((s) => s.busy);
   const backups = useCarBackupStore((s) => s.backups);
@@ -214,19 +227,17 @@ export function CodingBackup() {
 
   return (
     <YStack gap="$2" backgroundColor="$color2" borderRadius="$4" padding="$3">
-      <H4>Full backup — clone my car</H4>
+      <H4>{t('backup.title')}</H4>
       <Paragraph theme="alt2" size="$2">
-        One tap reads every declared module's long coding + adaptation values into a dated snapshot.
-        Export it as JSON to keep in a drawer, and restore coding and adaptation values per module
-        through the same gated writes. Experimental.
+        {t('backup.help')}
       </Paragraph>
       {available ? (
         <Button theme="green" disabled={creating || workBusy} onPress={() => create()}>
-          {creating ? 'Reading modules…' : 'Create backup'}
+          {creating ? t('backup.creating') : t('backup.create')}
         </Button>
       ) : (
         <Paragraph theme="alt2" size="$2">
-          Connect over CAN to create a new backup. Saved backups below stay exportable.
+          {t('backup.connectCan')}
         </Paragraph>
       )}
       {backups.map((b) => (

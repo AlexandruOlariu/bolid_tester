@@ -1,0 +1,30 @@
+{
+  "title": "Jurnal de erori",
+  "subtitle": "Erori salvate de verificat și exportat",
+  "severity": {
+    "warning": "avertizare",
+    "error": "eroare",
+    "fatal": "fatală"
+  },
+  "deleteA11y": "Șterge eroarea: {{source}}",
+  "hideDetails": "Ascunde detaliile",
+  "details": "Detalii",
+  "filter": {
+    "all": "Toate ({{count}})",
+    "fatal": "Fatale ({{count}})",
+    "error": "Erori ({{count}})",
+    "warning": "Avertizări ({{count}})"
+  },
+  "clearTitle": "Golești jurnalul de erori?",
+  "clearBody": "Se șterg definitiv toate erorile salvate.",
+  "clearAll": "Șterge tot",
+  "exportTitle": "Exportă jurnalul de erori",
+  "exportBody": "Alege un format de partajat.",
+  "reportA11y": "Raportează o problemă",
+  "report": "Raportează",
+  "filterA11y": "Arată erorile după gravitate",
+  "export": "Exportă",
+  "clear": "Golește",
+  "empty": "Nicio eroare înregistrată. Când ceva nu merge, va fi salvat aici ca să-l poți exporta și remedia mai târziu.",
+  "emptyFilter": "Nimic pentru acest filtru."
+}

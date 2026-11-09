@@ -14,6 +14,7 @@ import {
   type FirstRunInput,
 } from '../model/firstRun';
 import { HIT_SLOP, usePalette } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
 
 /** Three-step first-run guide on the Connect tab: pick car → connect → read faults. Dismissible like a
  *  `HintCard` (id `first-run`) and dismisses itself when it sees the last open step get done, so it
@@ -21,6 +22,7 @@ import { HIT_SLOP, usePalette } from '@/shared/ui';
  *  Only that transition dismisses it: after Settings → **Show hints again** the card comes back even
  *  when every step is already done this session (all ticked), and stays until the user closes it. */
 export function FirstRunCard() {
+  const { t } = useTranslation('onboarding');
   const router = useRouter();
   const dismissed = useOnboardingStore((s) => s.dismissed);
   const dismiss = useOnboardingStore((s) => s.dismiss);
@@ -57,7 +59,7 @@ export function FirstRunCard() {
       <YStack gap="$2">
         <XStack alignItems="center" gap="$2">
           <Text flex={1} fontWeight="800" fontSize="$4">
-            Getting started
+            {t('firstRun.title')}
           </Text>
           <XStack
             padding="$2"
@@ -65,7 +67,7 @@ export function FirstRunCard() {
             pressStyle={{ opacity: 0.6 }}
             accessible
             accessibilityRole="button"
-            accessibilityLabel="Dismiss the getting started guide"
+            accessibilityLabel={t('firstRun.dismissA11y')}
             onPress={() => dismiss(FIRST_RUN_HINT_ID)}
           >
             <X size={18} color={todoColour} />
@@ -80,7 +82,11 @@ export function FirstRunCard() {
               pressStyle={{ opacity: 0.6 }}
               accessible
               accessibilityRole="button"
-              accessibilityLabel={`Step ${n + 1}: ${step.title}${step.done ? ', done' : ''}`}
+              accessibilityLabel={
+                step.done
+                  ? t('firstRun.stepDoneA11y', { n: n + 1, title: step.title })
+                  : t('firstRun.stepA11y', { n: n + 1, title: step.title })
+              }
               onPress={() => router.push(step.route)}
             >
               {step.done ? (
@@ -112,7 +118,7 @@ export function FirstRunCard() {
                   chromeless
                   onPress={() => dismiss(FIRST_RUN_GENERIC_OK_ID)}
                 >
-                  Use Auto / Generic
+                  {t('firstRun.useGeneric')}
                 </Button>
               </XStack>
             ) : null}

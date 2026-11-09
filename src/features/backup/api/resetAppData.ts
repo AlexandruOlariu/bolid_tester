@@ -39,6 +39,7 @@ import { useAiDiagnoseStore } from '@/features/ai-diagnose/model/aiDiagnoseStore
 import { useModuleScanStore } from '@/features/module-scan/model/moduleScanStore';
 import { useDpfStore } from '@/features/dpf/model/dpfStore';
 import { useAdapterHealthStore } from '@/features/adapter-health/model/adapterHealthStore';
+import { translate } from '@/shared/i18n';
 
 /** The slice of a zustand `persist` store a reset needs. */
 interface ResettableStore {
@@ -178,7 +179,7 @@ export async function resetAllAppData(
           if (isExportFile(entry, persistFiles) && !names.includes(entry)) names.push(entry);
         }
       } catch (e) {
-        problems.push('Could not list the exported files to delete them.');
+        problems.push(translate('backup:reset.listFailed'));
         logError({
           source: 'settings/reset',
           error: e,
@@ -192,7 +193,7 @@ export async function resetAllAppData(
         await fs.deleteAsync(`${dir}${name}`, { idempotent: true });
         files.push(name);
       } catch (e) {
-        problems.push(`Could not delete ${name}.`);
+        problems.push(translate('backup:reset.deleteFailed', { name }));
         logError({ source: 'settings/reset', error: e, severity: 'warning', context: { name } });
       }
     }

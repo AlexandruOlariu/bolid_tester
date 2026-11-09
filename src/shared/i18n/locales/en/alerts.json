@@ -1,0 +1,25 @@
+{
+  "title": "Alerts",
+  "subtitle": "Threshold warnings on live parameters",
+  "active": "Active",
+  "rules": "Rules",
+  "noRules": "No rules yet.",
+  "op": {
+    "outside": "outside",
+    "inside": "inside"
+  },
+  "severity": {
+    "info": "info",
+    "warn": "warn",
+    "critical": "critical"
+  },
+  "ruleA11y": "Alert {{name}}",
+  "deleteA11y": "Delete alert {{name}}",
+  "delete": "Delete",
+  "notifyTitle": "Alert: {{name}}",
+  "defaultRule": {
+    "coolant-hot": "Coolant overheating",
+    "low-voltage": "Low battery voltage",
+    "over-rev": "High RPM"
+  }
+}

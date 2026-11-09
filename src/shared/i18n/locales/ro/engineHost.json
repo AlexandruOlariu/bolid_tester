@@ -1,0 +1,6 @@
+{
+  "monitorReady": "Monitor pregătit",
+  "monitorComplete": "Monitorul {{name}} este complet",
+  "readinessComplete": "Readiness complet",
+  "allReady": "Toate monitoarele sunt pregătite — mașina este gata pentru testul de emisii (ITP)."
+}

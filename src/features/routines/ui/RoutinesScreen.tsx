@@ -5,8 +5,10 @@ import { useUnlockStatus } from '@/shared/security';
 import type { GuidedRoutine } from '@/shared/vehicles';
 import { useRoutinesStore } from '../model/routinesStore';
 import { useRoutines } from '../hooks/useRoutines';
+import { useTranslation } from '@/shared/i18n';
 
 function RoutineRow({ routine }: { routine: GuidedRoutine }) {
+  const { t } = useTranslation('routines');
   const { start, stop } = useRoutines();
   const unlocked = useRoutinesStore((s) => s.unlocked);
   const activeId = useRoutinesStore((s) => s.activeId);
@@ -23,16 +25,17 @@ function RoutineRow({ routine }: { routine: GuidedRoutine }) {
       <H4>{routine.name}</H4>
       <Paragraph theme="alt2" size="$2">
         {routine.module} ·{' '}
-        {routine.kind === 'outputTest' ? 'output test (2F)' : 'basic setting (31)'} · id{' '}
-        {routine.id}
-        {routine.vcdsGroup !== undefined ? ` · VCDS group ${routine.vcdsGroup}` : ''}
+        {routine.kind === 'outputTest' ? t('row.outputTest') : t('row.basicSetting')} ·{' '}
+        {t('row.id', { id: routine.id })}
+        {routine.vcdsGroup !== undefined
+          ? ` · ${t('row.vcdsGroup', { group: routine.vcdsGroup })}`
+          : ''}
       </Paragraph>
       <VerificationBadge item={routine} testID={`verify-routine-${routine.id}`} />
       <UnlockBadge status={unlock} testID={`unlock-routine-${routine.id}`} />
       {unlock.state === 'locked' ? (
         <Paragraph theme="alt2" size="$2">
-          This module asks for security access and no plugin is installed: the routine is attempted
-          unlocked and the module decides.
+          {t('row.lockedNote')}
         </Paragraph>
       ) : null}
       <Paragraph size="$2">{routine.description}</Paragraph>
@@ -56,23 +59,20 @@ function RoutineRow({ routine }: { routine: GuidedRoutine }) {
             </XStack>
           ))}
           <Button theme="red" onPress={() => stop(routine)}>
-            Stop {routine.kind === 'outputTest' ? '(return control to ECU)' : 'routine'}
+            {routine.kind === 'outputTest' ? t('row.stopOutput') : t('row.stopRoutine')}
           </Button>
         </YStack>
       ) : !confirming ? (
         <Button disabled={!unlocked || busy} onPress={() => setConfirming(true)}>
           {!unlocked
-            ? 'Locked'
+            ? t('row.locked')
             : routine.unavailableReason
-              ? 'Attempt anyway (unverified — not expected to work)'
-              : 'Start…'}
+              ? t('row.attemptAnyway')
+              : t('row.start')}
         </Button>
       ) : (
         <YStack gap="$2" backgroundColor="$color1" padding="$2" borderRadius="$3">
-          <Paragraph size="$2">
-            The app will check the interlocks (engine/speed) live and refuse to start if they are
-            not met. Confirm you have read the description above.
-          </Paragraph>
+          <Paragraph size="$2">{t('row.confirmText')}</Paragraph>
           <XStack gap="$2">
             <Button
               flex={1}
@@ -82,10 +82,10 @@ function RoutineRow({ routine }: { routine: GuidedRoutine }) {
                 void start(routine);
               }}
             >
-              Check interlocks & start
+              {t('row.checkAndStart')}
             </Button>
             <Button flex={1} onPress={() => setConfirming(false)}>
-              Cancel
+              {t('common:actions.cancel')}
             </Button>
           </XStack>
         </YStack>
@@ -95,6 +95,7 @@ function RoutineRow({ routine }: { routine: GuidedRoutine }) {
 }
 
 export function RoutinesScreen() {
+  const { t } = useTranslation('routines');
   const { available, routines } = useRoutines();
   const unlocked = useRoutinesStore((s) => s.unlocked);
   const setUnlocked = useRoutinesStore((s) => s.setUnlocked);
@@ -104,21 +105,14 @@ export function RoutinesScreen() {
 
   if (!available) {
     return (
-      <Screen title="Routines & output tests">
-        <Paragraph theme="alt2">
-          Guided routines are unavailable for this car / protocol. They are experimental,
-          profile-driven and CAN-only — a generic ELM327 cannot run VAG basic settings on K-line
-          cars (that needs KWP1281, which it cannot speak).
-        </Paragraph>
+      <Screen title={t('title')}>
+        <Paragraph theme="alt2">{t('unavailable')}</Paragraph>
       </Screen>
     );
   }
 
   return (
-    <Screen
-      title="Routines & output tests"
-      subtitle="⚠ Experimental — actuates components / runs module routines. Read each description."
-    >
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <XStack
         alignItems="center"
         justifyContent="space-between"
@@ -127,22 +121,22 @@ export function RoutinesScreen() {
         borderRadius="$4"
       >
         <YStack flex={1}>
-          <H4>Unlock routines</H4>
+          <H4>{t('unlock')}</H4>
           <Paragraph theme="alt2" size="$2">
-            Off = browse only. Interlocks are enforced live before every start.
+            {t('unlockHelp')}
           </Paragraph>
         </YStack>
         <AccessibleSwitch
           checked={unlocked}
           onCheckedChange={setUnlocked}
-          accessibilityLabel="Unlock routines"
+          accessibilityLabel={t('unlock')}
         />
       </XStack>
 
       {message ? <Paragraph>{message}</Paragraph> : null}
       {phase === 'blocked' && interlockFailures.length ? (
         <YStack backgroundColor="$color2" padding="$3" borderRadius="$4" gap="$1">
-          <H4>Blocked by interlocks</H4>
+          <H4>{t('blocked')}</H4>
           {interlockFailures.map((f) => (
             <Paragraph key={f} size="$2">
               • {f}

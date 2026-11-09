@@ -18,19 +18,22 @@ import { ConnectionDiagnostics } from './ConnectionDiagnostics';
 import { SppConnect } from './SppConnect';
 import { WebBluetoothConnect } from './WebBluetoothConnect';
 import { Panel } from '../styles/connection.styles';
+import { Trans, useTranslation } from '@/shared/i18n';
 
-const STATUS_CONFIG: Record<ConnState, { icon: React.ElementType; tone: Tone; label: string }> = {
-  disconnected: { icon: CircleDashed, tone: 'muted', label: 'Disconnected' },
-  connecting: { icon: Loader, tone: 'statusWarn', label: 'Connecting…' },
-  initializing: { icon: Loader, tone: 'statusWarn', label: 'Initializing…' },
-  connected: { icon: CheckCircle2, tone: 'accent', label: 'Connected' },
-  error: { icon: XCircle, tone: 'statusError', label: 'Error' },
+const STATUS_CONFIG: Record<ConnState, { icon: React.ElementType; tone: Tone }> = {
+  disconnected: { icon: CircleDashed, tone: 'muted' },
+  connecting: { icon: Loader, tone: 'statusWarn' },
+  initializing: { icon: Loader, tone: 'statusWarn' },
+  connected: { icon: CheckCircle2, tone: 'accent' },
+  error: { icon: XCircle, tone: 'statusError' },
 };
 
 /** The connection state. A polite live region (plan 20): TalkBack / VoiceOver announce
  *  "Connecting…", "Connected" or "Error" as it changes, without the user moving focus. */
 function StatusHero({ status }: { status: ConnState }) {
+  const { t } = useTranslation('connection');
   const cfg = STATUS_CONFIG[status];
+  const label = t(`common:connState.${status}`);
   const colour = usePalette()[cfg.tone];
   const Icon = cfg.icon;
   return (
@@ -41,16 +44,16 @@ function StatusHero({ status }: { status: ConnState }) {
       borderWidth={1.5}
       accessible
       accessibilityRole="summary"
-      accessibilityLabel={`OBD2 adapter: ${cfg.label}`}
+      accessibilityLabel={t('status.a11y', { status: label })}
       accessibilityLiveRegion="polite"
       testID="connection-status"
     >
       <XStack alignItems="center" gap="$3">
         <Icon size={32} color={colour} />
         <YStack>
-          <SectionTitle color={colour}>{cfg.label}</SectionTitle>
+          <SectionTitle color={colour}>{label}</SectionTitle>
           <Text fontSize="$2" color="$placeholderColor">
-            OBD2 adapter
+            {t('status.adapter')}
           </Text>
         </YStack>
       </XStack>
@@ -58,41 +61,35 @@ function StatusHero({ status }: { status: ConnState }) {
   );
 }
 
-const SUBTITLES = {
-  ble: 'Pair with your OBD2 Bluetooth adapter',
-  wifi: 'Connect to your Wi-Fi OBD2 adapter',
-  spp: 'Connect to your paired classic Bluetooth adapter',
-  mock: 'Pair with your OBD2 Bluetooth adapter',
-} as const;
-
 /** The Wi-Fi adapter branch (plan 26): join the adapter's network, then connect to the endpoint
  *  from Settings. There is nothing to scan and no permission to ask for. */
 function WifiConnect({ busy, onConnect }: { busy: boolean; onConnect: () => void }) {
+  const { t } = useTranslation('connection');
   const wifi = useSettingsStore((s) => s.wifi);
   return (
     <YStack gap="$3" marginTop="$2" testID="connect-wifi">
       <Panel>
         <YStack gap="$2">
           <Text fontWeight="700" fontSize="$3">
-            Wi-Fi adapter
+            {t('wifi.title')}
           </Text>
           <Paragraph fontSize="$3">
-            Join the adapter’s Wi-Fi network first (usually{' '}
-            <Text fontWeight="700" color="$color">
-              WiFi_OBDII
-            </Text>
-            , no password). On Android, if the phone warns the network has no internet, choose{' '}
-            <Text fontStyle="italic" color="$color">
-              Stay connected
-            </Text>
-            .
+            <Trans
+              i18nKey="connection:wifi.join"
+              components={{
+                b: <Text fontWeight="700" color="$color" />,
+                i: <Text fontStyle="italic" color="$color" />,
+              }}
+            />
           </Paragraph>
           <Paragraph theme="alt2" fontSize="$2">
-            Adapter address:{' '}
-            <Text fontWeight="700" color="$color" testID="connect-wifi-endpoint">
-              {formatEndpoint(wifi)}
-            </Text>{' '}
-            — change it in Settings → Developer & simulator → Adapter source.
+            <Trans
+              i18nKey="connection:wifi.address"
+              values={{ endpoint: formatEndpoint(wifi) }}
+              components={{
+                b: <Text fontWeight="700" color="$color" testID="connect-wifi-endpoint" />,
+              }}
+            />
           </Paragraph>
         </YStack>
       </Panel>
@@ -103,16 +100,17 @@ function WifiConnect({ busy, onConnect }: { busy: boolean; onConnect: () => void
         icon={busy ? () => <Spinner /> : undefined}
         onPress={onConnect}
       >
-        Connect over Wi-Fi
+        {t('wifi.connect')}
       </Button>
       <Button size="$5" disabled={busy} onPress={() => void switchAdapterSource('ble')}>
-        Use a Bluetooth adapter
+        {t('wifi.useBluetooth')}
       </Button>
     </YStack>
   );
 }
 
 export function ConnectionScreen() {
+  const { t } = useTranslation('connection');
   const adapterSource = useSettingsStore((s) => s.adapterSource);
   // Set once when a stored Classic Bluetooth source was replaced on iOS (plan 27).
   const sourceNotice = useSettingsStore((s) => s.adapterSourceNotice);
@@ -134,16 +132,16 @@ export function ConnectionScreen() {
   const btBlocked = bt.poweredOff || bt.unauthorized || bt.unsupported;
 
   return (
-    <Screen title="Connect" subtitle={SUBTITLES[adapterSource]}>
+    <Screen title={t('title')} subtitle={t(`subtitle.${adapterSource}`)}>
       <StatusHero status={status} />
 
       <FirstRunCard />
 
       {sourceNotice ? (
         <Panel testID="adapter-source-notice">
-          <Paragraph fontSize="$3">{sourceNotice}</Paragraph>
+          <Paragraph fontSize="$3">{t(sourceNotice)}</Paragraph>
           <Button size="$3" hitSlop={HIT_SLOP} alignSelf="flex-start" onPress={dismissSourceNotice}>
-            OK
+            {t('common:actions.ok')}
           </Button>
         </Panel>
       ) : null}
@@ -161,10 +159,11 @@ export function ConnectionScreen() {
         <YStack gap="$3" marginTop="$2">
           <Panel>
             <Paragraph fontSize="$3">
-              Simulator mode is on — readings are not from a real car.{'\n'}Emulating:{' '}
-              <Text fontWeight="700" color="$color">
-                {simulated}
-              </Text>
+              <Trans
+                i18nKey="connection:mock.notice"
+                values={{ vehicle: simulated }}
+                components={{ b: <Text fontWeight="700" color="$color" /> }}
+              />
             </Paragraph>
           </Panel>
           <Button
@@ -174,10 +173,10 @@ export function ConnectionScreen() {
             icon={busy ? () => <Spinner /> : undefined}
             onPress={() => connect()}
           >
-            Connect to simulator
+            {t('mock.connect')}
           </Button>
           <Button size="$5" disabled={busy} onPress={() => void switchToRealAdapter()}>
-            Use a real adapter
+            {t('mock.useReal')}
           </Button>
         </YStack>
       ) : adapterSource === 'wifi' ? (
@@ -197,7 +196,7 @@ export function ConnectionScreen() {
             onPress={scanning ? stop : start}
             icon={scanning ? () => <Spinner /> : undefined}
           >
-            {scanning ? 'Scanning…' : 'Scan for adapters'}
+            {scanning ? t('ble.scanning') : t('ble.scan')}
           </Button>
           <YStack gap="$2">
             {devices.map((d) => (
@@ -210,19 +209,14 @@ export function ConnectionScreen() {
             ))}
             {!scanning && devices.length === 0 ? (
               <Paragraph theme="alt2" fontSize="$3">
-                {Platform.OS === 'android'
-                  ? 'No devices yet. Plug in the adapter, switch the ignition on, then scan. If the ' +
-                    'adapter is already paired in Android’s Bluetooth settings it may have stopped ' +
-                    'advertising — “Forget” it there first, or connect by address below.'
-                  : 'No devices yet. Plug in the adapter, switch the ignition on, then scan.'}
+                {Platform.OS === 'android' ? t('ble.noDevicesAndroid') : t('ble.noDevices')}
               </Paragraph>
             ) : null}
             {/* iOS exposes CoreBluetooth UUIDs, not MAC addresses, so there is no connect-by-address
                 panel; a Bluetooth LE adapter is never paired in iOS Settings (plan 09). */}
             {Platform.OS === 'ios' ? (
               <Paragraph theme="alt2" fontSize="$2" testID="ios-scan-hint">
-                If the adapter is not listed, turn it off and on; iOS does not pair OBD2 BLE
-                adapters in Settings.
+                {t('ble.iosHint')}
               </Paragraph>
             ) : null}
           </YStack>
@@ -231,11 +225,10 @@ export function ConnectionScreen() {
             <Panel>
               <YStack gap="$2">
                 <Text fontWeight="700" fontSize="$3">
-                  Connect by address
+                  {t('ble.byAddress')}
                 </Text>
                 <Paragraph theme="alt2" fontSize="$2">
-                  If the adapter never shows up in the scan, copy its Bluetooth MAC (from Android
-                  Settings → Bluetooth) and connect directly.
+                  {t('ble.byAddressHelp')}
                 </Paragraph>
                 <XStack gap="$2" alignItems="center">
                   <Input
@@ -245,14 +238,14 @@ export function ConnectionScreen() {
                     placeholder="AA:BB:CC:DD:EE:FF"
                     autoCapitalize="characters"
                     autoCorrect={false}
-                    accessibilityLabel="Adapter Bluetooth MAC address"
+                    accessibilityLabel={t('ble.macLabel')}
                   />
                   <Button
                     theme="green"
                     disabled={busy || manualId.trim().length === 0}
                     onPress={() => connect({ deviceId: manualId.trim().toUpperCase() })}
                   >
-                    Connect
+                    {t('ble.connect')}
                   </Button>
                 </XStack>
               </YStack>
@@ -267,7 +260,7 @@ export function ConnectionScreen() {
             disabled={busy}
             onPress={() => void switchAdapterSource('wifi')}
           >
-            Using a Wi-Fi adapter instead?
+            {t('ble.useWifi')}
           </Button>
           {/* Classic Bluetooth (SPP) is Android only: iOS needs MFi, which ELM327 clones lack. */}
           {Platform.OS === 'android' ? (
@@ -279,7 +272,7 @@ export function ConnectionScreen() {
               disabled={busy}
               onPress={() => void switchAdapterSource('spp')}
             >
-              Using a classic Bluetooth (3.0) adapter instead?
+              {t('ble.useSpp')}
             </Button>
           ) : null}
         </YStack>

@@ -1,0 +1,23 @@
+{
+  "title": "Charts",
+  "subtitle": "Live parameters over time",
+  "panned": "panned",
+  "plotA11y": "Chart for {{series}}. Pinch to zoom, drag to pan, tap to inspect a sample.",
+  "stats": "now {{now}} · min {{min}} · max {{max}}",
+  "noData": "no data",
+  "backToLive": "Back to live",
+  "clear": "Clear",
+  "share": "Share window (CSV)",
+  "remove": "Remove",
+  "addPanel": "Add panel",
+  "picker": {
+    "title": "New panel",
+    "help": "Pick up to {{max}} values to plot together ({{count}} picked).",
+    "experimental": "Manufacturer values (with a DID number) are experimental.",
+    "connect": "Connect to a car to see the values it reports."
+  },
+  "hint": {
+    "title": "Explore the chart",
+    "body": "Pinch to zoom the time window (10 s–10 min), drag left/right to pan through history, and tap a line to read the exact value and time. Use “Share window (CSV)” to send the data out."
+  }
+}

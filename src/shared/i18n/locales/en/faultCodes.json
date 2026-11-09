@@ -1,0 +1,91 @@
+{
+  "title": "Fault codes",
+  "notConnected": "Not connected.",
+  "row": {
+    "a11y": "{{code}}: {{description}}. Open details",
+    "hideGuide": "Hide guide",
+    "guide": "Guide"
+  },
+  "section": {
+    "none": "None",
+    "stored": "Stored",
+    "pending": "Pending",
+    "permanent": "Permanent"
+  },
+  "readiness": {
+    "title": "Readiness",
+    "milOn": "MIL ON",
+    "milOff": "MIL off",
+    "milOnA11y": "on",
+    "milOffA11y": "off",
+    "a11y_one": "Readiness. Check-engine light (MIL) {{mil}}. {{complete}} of {{total}} monitors complete. {{count}} stored fault code.",
+    "a11y_other": "Readiness. Check-engine light (MIL) {{mil}}. {{complete}} of {{total}} monitors complete. {{count}} stored fault codes.",
+    "notReadyA11y": "Not ready: {{names}}.",
+    "summary_one": "{{complete}}/{{total}} monitors complete · {{ignition}} ignition · {{count}} DTC",
+    "summary_other": "{{complete}}/{{total}} monitors complete · {{ignition}} ignition · {{count}} DTCs",
+    "notReady": "Not ready: {{names}}"
+  },
+  "coach": {
+    "title": "Drive-cycle coach",
+    "notReady_one": "{{count}} monitor not ready",
+    "notReady_other": "{{count}} monitors not ready",
+    "allReady": "All monitors ready",
+    "help": "Checking readiness every 30 s while connected. You'll get a notification as each monitor completes, and once when all are ready.",
+    "complete": "All readiness monitors complete."
+  },
+  "freezeFrame": {
+    "title": "Freeze frame",
+    "captured": "Captured when {{code}} set",
+    "aCode": "a code"
+  },
+  "export": {
+    "unavailable": "Export unavailable",
+    "noSharing": "Sharing is not available on this device.",
+    "shareDialog": "Share diagnostic report",
+    "shareUnavailable": "Share unavailable",
+    "dialog": "Export fault codes"
+  },
+  "clear": {
+    "title": "Clear fault codes?",
+    "body": "This erases stored codes and resets readiness monitors. Codes will return if the fault persists.",
+    "confirm": "Clear"
+  },
+  "actions": {
+    "reread": "Re-read",
+    "clear": "Clear codes",
+    "export": "Export report",
+    "share": "Share report",
+    "fullReport": "Full report"
+  },
+  "detail": {
+    "severityA11y": "Severity: {{label}}",
+    "severity": {
+      "high": {
+        "label": "High",
+        "hint": "Can damage the engine or catalyst, or affect safety. Check it before driving far."
+      },
+      "moderate": {
+        "label": "Moderate",
+        "hint": "Needs attention soon (emissions, a control module or a lost connection between modules)."
+      },
+      "info": {
+        "label": "Info",
+        "hint": "A recorded fault with a known meaning. Check it, but it is rarely urgent on its own."
+      },
+      "unknown": {
+        "label": "Unknown",
+        "hint": "No local description for this code. Use the web search or the AI explanation."
+      }
+    },
+    "manufacturerSpecific": "Manufacturer-specific",
+    "explainAi": "Explain with AI",
+    "searchWeb": "Search the web",
+    "share": "Share",
+    "footer": "Descriptions follow SAE J2012. Causes and fixes vary by car; use the guide and freeze frame before replacing parts."
+  },
+  "guide": {
+    "relatedData": "Related data",
+    "openRoutine": "Open routine",
+    "noFreezeFrame": "No freeze frame captured for this code."
+  }
+}

@@ -8,8 +8,11 @@ import { resolveProfile } from '@/shared/vehicles/resolve';
 import { tripCarKey, tripCars, UNKNOWN_TRIP_CAR, useTripStore } from '../model/tripStore';
 import { useTripRecorder, stopRecording, deleteTrip, shareTrip } from '../hooks/useTripRecorder';
 import { startTrackCapture } from '../api/trackRecorder';
+import { useTranslation } from '@/shared/i18n';
+import { formatDateTime, formatFixed } from '@/shared/lib/format';
 
 export function TripScreen() {
+  const { t } = useTranslation('tripRecording');
   useTripRecorder();
   const router = useRouter();
   const recording = useTripStore((s) => s.recording);
@@ -25,12 +28,12 @@ export function TripScreen() {
         ...c,
         label:
           c.key === UNKNOWN_TRIP_CAR
-            ? 'Unknown car'
+            ? t('list.unknownCar')
             : isUserVehicleId(c.key) && !garage.some((v) => v.id === c.key)
-              ? 'Removed car'
+              ? t('list.removedCar')
               : vehicleLabel(resolveProfile(c.key, garage)),
       })),
-    [trips, garage],
+    [trips, garage, t],
   );
   // The chips only show with two or more cars. A filter whose car has no trips left (its last trip
   // was deleted) or that has no chip row any more falls back to "All cars", so the list never
@@ -44,17 +47,17 @@ export function TripScreen() {
   const shown = activeKey === 'all' ? trips : trips.filter((t) => tripCarKey(t) === activeKey);
 
   // Metric only (plan 07 decision): km with two decimals.
-  const fmtDistance = (km: number) => `${km.toFixed(2)} km`;
+  const fmtDistance = (km: number) => `${formatFixed(km, 2)} km`;
 
   return (
-    <Screen title="Trips" subtitle="Record live data and export it">
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <XStack gap="$2" alignItems="center">
         <Paragraph flex={1}>
-          {recording ? `Recording… ${samples.length} samples` : 'Not recording'}
+          {recording ? t('recording', { count: samples.length }) : t('notRecording')}
         </Paragraph>
         {recording ? (
           <Button theme="red" onPress={() => void stopRecording()}>
-            Stop
+            {t('stop')}
           </Button>
         ) : (
           <Button
@@ -66,19 +69,19 @@ export function TripScreen() {
               void startTrackCapture();
             }}
           >
-            Record
+            {t('record')}
           </Button>
         )}
       </XStack>
 
       <YStack gap="$2">
-        <H4>Saved trips</H4>
-        {trips.length === 0 ? <Paragraph theme="alt2">No trips yet.</Paragraph> : null}
+        <H4>{t('list.title')}</H4>
+        {trips.length === 0 ? <Paragraph theme="alt2">{t('list.empty')}</Paragraph> : null}
         {cars.length > 1 ? (
           <SegmentedControl
-            label="Show trips for"
+            label={t('list.filterA11y')}
             options={[
-              { value: 'all', label: `All cars (${trips.length})` },
+              { value: 'all', label: t('list.allCars', { count: trips.length }) },
               ...cars.map((c) => ({ value: c.key, label: `${c.label} (${c.count})` })),
             ]}
             value={activeKey}
@@ -95,10 +98,10 @@ export function TripScreen() {
             padding="$2"
           >
             <Paragraph>
-              {new Date(header.startedAt).toLocaleString()} · {(stats.durationMs / 1000).toFixed(0)}{' '}
-              s · {stats.sampleCount} samples
+              {formatDateTime(header.startedAt)} · {formatFixed(stats.durationMs / 1000, 0)} s ·{' '}
+              {t('list.samples', { count: stats.sampleCount })}
               {stats.distanceKm != null ? ` · ${fmtDistance(stats.distanceKm)}` : ''}
-              {markerCount > 0 ? ` · ${markerCount} marker${markerCount === 1 ? '' : 's'}` : ''}
+              {markerCount > 0 ? ` · ${t('list.markers', { count: markerCount })}` : ''}
             </Paragraph>
             <XStack gap="$2" alignItems="center">
               <Button
@@ -106,10 +109,10 @@ export function TripScreen() {
                 hitSlop={HIT_SLOP}
                 onPress={() => router.push({ pathname: '/trip-detail', params: { id: header.id } })}
               >
-                Open
+                {t('list.open')}
               </Button>
               <Button size="$3" hitSlop={HIT_SLOP} onPress={() => void shareTrip(header)}>
-                Share CSV
+                {t('shareCsv')}
               </Button>
               <Button
                 size="$3"
@@ -117,7 +120,7 @@ export function TripScreen() {
                 theme="red"
                 onPress={() => void deleteTrip(header.id)}
               >
-                Delete
+                {t('list.delete')}
               </Button>
             </XStack>
           </YStack>

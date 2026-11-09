@@ -1,5 +1,6 @@
 import React from 'react';
-import { fireEvent, screen, within } from '@testing-library/react-native';
+import { act, fireEvent, screen, within } from '@testing-library/react-native';
+import { i18n } from '@/shared/i18n';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { setMockWindow, TABLET_WINDOW } from '@test/mocks/window';
 import { connectSimulator } from '@test/simulator';
@@ -54,6 +55,30 @@ describe('DashboardScreen', () => {
     expect(screen.getByText('km/h')).toBeTruthy();
     expect(screen.getByText('°C')).toBeTruthy();
     expect(screen.getByText('Customize')).toBeTruthy();
+  });
+
+  it('the fuel-economy card shows 12.5 in English and 12,5 in Romanian (plan 11)', async () => {
+    await connectSimulator();
+    // 12.5 L/h at 100 km/h = 12.5 L/100km.
+    useLiveDataStore.setState({
+      values: {
+        '015E': live('015E', 'Engine fuel rate', 'L/h', 12.5),
+        '010D': live('010D', 'Vehicle speed', 'km/h', 100),
+      },
+    });
+    renderWithProviders(<DashboardScreen />);
+    const card = () => within(screen.getByTestId('fuel-economy'));
+    expect(card().getByText('12.5')).toBeTruthy();
+    expect(card().getByText('L/100km')).toBeTruthy();
+    expect(card().getByText('· 12.5 L/h')).toBeTruthy();
+
+    await act(async () => {
+      await i18n.changeLanguage('ro');
+    });
+    expect(card().getByText('12,5')).toBeTruthy();
+    expect(card().getByText('L/100km')).toBeTruthy();
+    expect(card().getByText('· 12,5 L/h')).toBeTruthy();
+    expect(card().queryByText('12.5')).toBeNull();
   });
 
   it('the All sensors segment shows the grouped view and registers the whole effective set', async () => {

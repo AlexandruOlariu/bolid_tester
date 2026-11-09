@@ -3,6 +3,7 @@ import { Point } from '@/shared/obd-core';
 import { logError } from '@/shared/state/errorLogStore';
 import { fileStamp, saveTextFile } from '@/shared/lib/saveFile';
 import { seriesToCsv } from '../api/chartCsv';
+import { translate } from '@/shared/i18n';
 
 /** Share the current chart window as a CSV file: the OS share sheet on native, a browser download on
  *  web (`saveTextFile`, plan 28). PNG export would need a new native dependency, so CSV is the share
@@ -18,7 +19,7 @@ export function useChartExport() {
           `${baseName}-${fileStamp()}.csv`,
           seriesToCsv(series, labels),
           'text/csv',
-          { dialogTitle: 'Share chart window (CSV)' },
+          { dialogTitle: translate('common:share.chartWindow') },
         );
       } catch (e) {
         logError({ source: 'live-charts/export', error: e });

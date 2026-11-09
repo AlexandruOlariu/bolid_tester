@@ -8,7 +8,12 @@ import {
   type UserVehicle,
 } from '@/shared/vehicles';
 import type { NewUserVehicle } from '@/shared/state/garageStore';
+import { translate } from '@/shared/i18n';
 
+/** The fuel choices, in picker order; the labels are `common:fuel.<value>` (plan 11). */
+export const FUEL_VALUES: Fuel[] = ['petrol', 'diesel', 'lpg', 'hybrid', 'other'];
+
+/** English labels (kept for non-UI callers; the editor shows the translated `common:fuel.*`). */
 export const FUELS: { value: Fuel; label: string }[] = [
   { value: 'petrol', label: 'Petrol' },
   { value: 'diesel', label: 'Diesel' },
@@ -48,19 +53,20 @@ export function validateDraft(
   now: Date = new Date(),
 ): Partial<Record<keyof VehicleDraft, string>> {
   const errors: Partial<Record<keyof VehicleDraft, string>> = {};
-  if (!d.name.trim()) errors.name = 'Give the car a name, e.g. "Dacia Logan 2015".';
+  if (!d.name.trim()) errors.name = translate('vehicleSelect:validate.name');
   else if (d.name.trim().length > VEHICLE_NAME_MAX)
-    errors.name = `Keep the name to ${VEHICLE_NAME_MAX} characters or fewer.`;
+    errors.name = translate('vehicleSelect:validate.nameLong', { max: VEHICLE_NAME_MAX });
   if (d.notes.trim().length > VEHICLE_NOTES_MAX)
-    errors.notes = `Keep the notes to ${VEHICLE_NOTES_MAX} characters or fewer.`;
+    errors.notes = translate('vehicleSelect:validate.notesLong', { max: VEHICLE_NOTES_MAX });
   const y = d.year.trim();
   if (y) {
     const n = Number(y);
     const max = now.getFullYear() + 1;
     if (!/^\d{4}$/.test(y) || n < MIN_YEAR || n > max)
-      errors.year = `Year must be between ${MIN_YEAR} and ${max}, or left blank.`;
+      errors.year = translate('vehicleSelect:validate.year', { min: MIN_YEAR, max });
   }
-  if (!VEHICLE_REGISTRY[d.baseProfileId]) errors.baseProfileId = 'Pick a base profile.';
+  if (!VEHICLE_REGISTRY[d.baseProfileId])
+    errors.baseProfileId = translate('vehicleSelect:validate.base');
   return errors;
 }
 

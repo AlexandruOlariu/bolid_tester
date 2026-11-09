@@ -1,0 +1,120 @@
+{
+  "title": "Backup și restaurare",
+  "subtitle": "Totul într-un singur fișier pe care îl păstrezi",
+  "unknownDate": "dată necunoscută",
+  "unknown": "necunoscută",
+  "saved": "Salvat",
+  "items_one": "{{count}} element",
+  "items_few": "{{count}} elemente",
+  "items_other": "{{count}} de elemente",
+  "shareSave": "Salvează backupul",
+  "shareExport": "Exportă {{name}}",
+  "store": {
+    "settings": "Setări",
+    "garage": "Garaj (mașinile mele)",
+    "vehicle": "Vehicul selectat",
+    "loginBook": "Coduri de login ale modulelor (agendă de coduri)",
+    "labelPacks": "Pachete de etichete importate",
+    "history": "Istoric (diagnoze, verificări de coduri de eroare, rapoarte)",
+    "maintenance": "Jurnal de întreținere",
+    "trips": "Călătorii",
+    "scans": "Scanări de module",
+    "carBackups": "Backupuri de codare (capturi ale întregii mașini)",
+    "dashboard-layout": "Aranjamentul bordului",
+    "alerts": "Reguli de alertă",
+    "notifications": "Setări de notificare și mementouri",
+    "onboarding": "Sfaturi închise",
+    "errors": "Jurnal de erori"
+  },
+  "restore": {
+    "file": "Fișier de backup",
+    "made": "Creat {{date}} de versiunea aplicației {{version}} ({{platform}}).",
+    "choose": "Alege ce restaurezi. Restul rămâne neschimbat.",
+    "notInBackup": "Nu este în acest backup",
+    "trips": "Înregistrări de călătorii",
+    "tripFiles_one": "{{count}} fișier, {{size}}; doar pentru călătoriile din lista de călătorii",
+    "tripFiles_few": "{{count}} fișiere, {{size}}; doar pentru călătoriile din lista de călătorii",
+    "tripFiles_other": "{{count}} de fișiere, {{size}}; doar pentru călătoriile din lista de călătorii",
+    "restoreA11y": "Restaurează datele selectate",
+    "restore": "Restaurează"
+  },
+  "result": {
+    "nothing": "Nu s-a restaurat nimic",
+    "finished": "Restaurare terminată",
+    "restored": "Restaurate: {{list}}.",
+    "noData": "Nu s-au restaurat date.",
+    "trips": "Înregistrări de călătorii restaurate: {{count}}.",
+    "skipped": "Omis {{name}}: {{reason}}",
+    "undo": "Datele de dinaintea restaurării au fost salvate ca {{file}}. Restaurează acel fișier din lista de mai jos pentru a anula."
+  },
+  "record": {
+    "automatic": "Automat, înainte de o restaurare",
+    "withTrips": "cu călătorii",
+    "shareA11y": "Partajează {{file}}",
+    "share": "Partajează",
+    "restoreA11y": "Restaurează {{file}}",
+    "deleteA11y": "Șterge {{file}}",
+    "delete": "Șterge"
+  },
+  "status": {
+    "saved": "Salvat {{file}} ({{size}}).",
+    "notShared": "Partajarea nu este disponibilă aici; fișierul se află în lista de mai jos.",
+    "failed": "Backupul nu a putut fi salvat. Vezi Mai multe → Jurnal de erori pentru detalii."
+  },
+  "pick": {
+    "title": "Restaurează dintr-un fișier",
+    "unavailable": "Alegerea unui fișier necesită o versiune mai nouă a aplicației. Poți restaura în continuare un backup din lista de mai jos.",
+    "help": "Alege un fișier de backup. Vezi ce conține și alegi ce restaurezi înainte să se schimbe ceva.",
+    "choose": "Alege un fișier de backup…"
+  },
+  "confirm": {
+    "trips_one": "{{count}} înregistrare de călătorie",
+    "trips_few": "{{count}} înregistrări de călătorii",
+    "trips_other": "{{count}} de înregistrări de călătorii",
+    "title": "Restaurezi din acest backup?",
+    "body": "Se înlocuiesc: {{what}}. Datele curente sunt salvate mai întâi, ca să poți anula.",
+    "continue": "Continuă",
+    "title2": "Înlocuiești datele?",
+    "body2": "Datele selectate de pe acest telefon sunt înlocuite cu cele din backup. Adaptorul este deconectat mai întâi."
+  },
+  "deleteTitle": "Ștergi acest backup?",
+  "deleteBody": "{{file}} este șters de pe acest telefon.",
+  "export": {
+    "saved": "Salvat {{file}}.",
+    "failed": "Exportul nu a putut fi salvat. Vezi Mai multe → Jurnal de erori pentru detalii.",
+    "title": "Exportă o parte",
+    "help": "Partajează separat un singur tip de date: JSON pentru oricare, CSV (se deschide într-un tabel) pentru istoric, scanări de module și jurnalul de întreținere.",
+    "jsonA11y": "Exportă {{name}} ca JSON",
+    "csvA11y": "Exportă {{name}} ca CSV"
+  },
+  "backUp": {
+    "title": "Backup",
+    "help": "Un fișier cu garajul, istoricul, scanările, călătoriile, jurnalul de întreținere, backupurile de codare, regulile de alertă și setările. Rămâne pe acest telefon până îl partajezi; păstrează o copie în altă parte. Fișierul este text simplu și conține VIN-urile tale, dar niciodată o cheie API AI.",
+    "includeTrips": "Include înregistrările de călătorii",
+    "tripHint_one": "{{count}} fișier, aproximativ {{size}}",
+    "tripHint_few": "{{count}} fișiere, aproximativ {{size}}",
+    "tripHint_other": "{{count}} de fișiere, aproximativ {{size}}",
+    "noTrips": "Încă nicio înregistrare de călătorie",
+    "estimate": "Fișierul de backup va avea aproximativ {{size}}.",
+    "large": "Acest backup este mare (aproximativ {{size}}). Partajarea unui fișier atât de mare poate eșua.",
+    "largeTrips": "Acest backup este mare (aproximativ {{size}}). Partajarea unui fișier atât de mare poate eșua; lasă deoparte înregistrările de călătorii pentru un backup mic.",
+    "now": "Fă backup acum"
+  },
+  "list": {
+    "title": "Backupuri pe acest telefon",
+    "help": "Se păstrează cele mai noi {{max}} backupuri (capturile automate dinaintea unei restaurări se numără separat); un fișier mai vechi este șters când se salvează unul nou. Partajează-le pe cele pe care vrei să le păstrezi în altă parte.",
+    "empty": "Niciun backup încă."
+  },
+  "err": {
+    "read": "Fișierul nu a putut fi citit.",
+    "open": "Fișierul nu a putut fi deschis.",
+    "noStorage": "Acest dispozitiv nu are spațiu de stocare pentru aplicație în care să restaureze.",
+    "snapshot": "Datele curente nu au putut fi salvate mai întâi, așa că nu s-a restaurat nimic.",
+    "skipped": "Nu a putut fi restaurat (vezi jurnalul de erori).",
+    "noStorageShort": "Acest dispozitiv nu are spațiu de stocare pentru aplicație."
+  },
+  "reset": {
+    "listFailed": "Fișierele exportate nu au putut fi listate pentru a fi șterse.",
+    "deleteFailed": "{{name}} nu a putut fi șters."
+  }
+}

@@ -15,6 +15,8 @@ import { timelineId, type TimelineItem, type TimelineTone } from '@/shared/lib/t
 import type { SavedScan } from '@/features/module-scan/model/scanHistoryStore';
 import { tripCarKey, type TripSummary } from '@/features/trip-recording/model/tripStore';
 import type { CarBackup } from '@/features/coding/api/carBackup';
+import { translate } from '@/shared/i18n';
+import { formatFixed } from '@/shared/lib/format';
 
 /** Trips are not capped by their store; the timeline reads at most this many (newest first). */
 export const MAX_TIMELINE_TRIPS = 500;
@@ -70,28 +72,37 @@ export function fromHistory(entries: HistoryEntry[]): TimelineItem[] {
     if (e.kind === 'ai') {
       return {
         ...base,
-        title: `AI diagnosis · ${OVERALL_TEXT[e.overall] ?? e.overall}`,
+        title: translate('history:item.ai', {
+          overall: translate(`history:overall.${e.overall}`, {
+            defaultValue: OVERALL_TEXT[e.overall] ?? e.overall,
+          }),
+        }),
         subtitle: firstLine(e.summary) || undefined,
         tone: OVERALL_TONE[e.overall] ?? 'neutral',
       };
     }
     if (e.kind === 'dtc') {
       const codes = e.stored.length + e.pending.length + e.permanent.length;
-      const mil = e.milOn === null ? '' : ` · MIL ${e.milOn ? 'on' : 'off'}`;
+      const mil =
+        e.milOn === null
+          ? ''
+          : ` · ${e.milOn ? translate('history:item.milOn') : translate('history:item.milOff')}`;
       return {
         ...base,
-        title: 'Fault-code check',
-        subtitle: `${e.stored.length} stored · ${e.pending.length} pending${mil}`,
+        title: translate('history:item.dtc'),
+        subtitle: `${translate('history:item.dtcCounts', { stored: e.stored.length, pending: e.pending.length })}${mil}`,
         tone: e.milOn ? 'bad' : codes > 0 ? 'warn' : 'ok',
       };
     }
     return {
       ...base,
-      title: `Report (${REPORT_FORMAT_LABEL[e.format] ?? e.format})`,
+      title: translate('history:item.report', {
+        format: REPORT_FORMAT_LABEL[e.format] ?? e.format,
+      }),
       subtitle:
         e.sections.length > 0
           ? e.sections.map((id) => REPORT_SECTION_TITLES[id] ?? id).join(' · ')
-          : 'Identity only',
+          : translate('history:item.identityOnly'),
       tone: 'neutral',
     };
   });
@@ -123,8 +134,8 @@ export function fromScans(scans: SavedScan[]): TimelineItem[] {
       ts: s.ts,
       sourceId: s.id,
       ...car(s.vehicle),
-      title: `Auto-scan · ${faults} ${faults === 1 ? 'fault' : 'faults'}`,
-      subtitle: `${answered}/${total} modules answered`,
+      title: translate('history:item.scan', { count: faults }),
+      subtitle: translate('history:item.scanAnswered', { answered, total }),
       tone: faults > 0 ? 'warn' : 'ok',
       link: {
         route: '/module-scan',
@@ -152,8 +163,11 @@ export function fromTrips(
       ts: t.header.startedAt,
       sourceId: t.header.id,
       ...car(vehicle),
-      title: km === null ? 'Trip' : `Trip · ${km.toFixed(1)} km`,
-      subtitle: `${formatDuration(t.stats.durationMs)} · ${t.stats.sampleCount} samples${gps}`,
+      title:
+        km === null
+          ? translate('history:item.trip')
+          : translate('history:item.tripKm', { km: formatFixed(km, 1) }),
+      subtitle: `${formatDuration(t.stats.durationMs)} · ${translate('history:item.samples', { count: t.stats.sampleCount })}${gps}`,
       tone: 'neutral',
       link: { route: '/trip-detail', params: { id: t.header.id } },
     };
@@ -177,7 +191,11 @@ export function fromMaintenance(
       ts: e.date,
       sourceId: e.id,
       ...car(vehicle),
-      title: name ? `Service: ${name}` : 'Service',
+      title: name
+        ? translate('history:item.serviceNamed', {
+            name: translate(`maintenance:item.${e.itemId}`, { defaultValue: name }),
+          })
+        : translate('history:item.service'),
       subtitle: `${e.odoKm} km${note}`,
       tone: 'ok',
       link: { route: '/maintenance' },
@@ -194,8 +212,8 @@ export function fromBackups(backups: CarBackup[]): TimelineItem[] {
       ts: b.ts,
       sourceId: b.id,
       ...car(b.vehicle),
-      title: 'Coding backup',
-      subtitle: `${b.modules.length} ${b.modules.length === 1 ? 'module' : 'modules'}`,
+      title: translate('history:item.backup'),
+      subtitle: translate('history:item.modules', { count: b.modules.length }),
       tone: 'neutral',
       link: { route: '/coding' },
     }),

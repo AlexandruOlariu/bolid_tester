@@ -4,6 +4,8 @@ import { YStack, XStack, Card, Text, Paragraph, Separator, Button } from 'tamagu
 import { Screen } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useVehicleInfo } from '../hooks/useVehicleInfo';
+import { useTranslation } from '@/shared/i18n';
+import { formatFixed } from '@/shared/lib/format';
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -15,56 +17,60 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 export function VehicleInfoScreen() {
+  const { t } = useTranslation('vehicleInfo');
   const router = useRouter();
   const status = useSessionStore((s) => s.status);
   const { info, deviceName, protocolLabel } = useVehicleInfo();
 
   if (status !== 'connected' || !info) {
     return (
-      <Screen title="Vehicle info">
-        <Paragraph theme="alt2">Not connected.</Paragraph>
+      <Screen title={t('title')}>
+        <Paragraph theme="alt2">{t('notConnected')}</Paragraph>
         <Button theme="blue" onPress={() => router.push('/report')}>
-          Full vehicle report
+          {t('fullReport')}
         </Button>
       </Screen>
     );
   }
 
   return (
-    <Screen title="Vehicle info">
+    <Screen title={t('title')}>
       <Card bordered padding="$3">
-        <Row label="VIN" value={info.vin ?? 'not available'} />
+        <Row label="VIN" value={info.vin ?? t('notAvailable')} />
         <Separator />
-        <Row label="Calibration ID" value={info.calibrationId ?? 'not available'} />
+        <Row label={t('calibrationId')} value={info.calibrationId ?? t('notAvailable')} />
         <Separator />
-        <Row label="Protocol" value={protocolLabel} />
+        <Row label={t('protocol')} value={protocolLabel} />
         <Separator />
-        <Row label="Adapter" value={deviceName ?? '—'} />
+        <Row label={t('adapter')} value={deviceName ?? '—'} />
         <Separator />
-        <Row label="ELM version" value={info.version || '—'} />
+        <Row label={t('elmVersion')} value={info.version || '—'} />
         <Separator />
-        <Row label="Voltage" value={info.voltage != null ? `${info.voltage.toFixed(1)} V` : '—'} />
+        <Row
+          label={t('voltage')}
+          value={info.voltage != null ? `${formatFixed(info.voltage, 1)} V` : '—'}
+        />
         <Separator />
-        <Row label="Supported PIDs" value={String(info.supportedPids.length)} />
+        <Row label={t('supportedPids')} value={String(info.supportedPids.length)} />
       </Card>
 
       <YStack gap="$1">
-        <Text fontWeight="700">Supported Mode 01 PIDs</Text>
+        <Text fontWeight="700">{t('supportedMode01')}</Text>
         <Paragraph theme="alt2" fontSize="$2">
           {info.supportedPids.join('  ')}
         </Paragraph>
       </YStack>
 
       <Button theme="blue" onPress={() => router.push('/extended')}>
-        Extended PIDs (experimental)
+        {t('extended')}
       </Button>
 
       <Button theme="blue" onPress={() => router.push('/vin-decode')}>
-        Decode VIN
+        {t('decodeVin')}
       </Button>
 
       <Button theme="green" onPress={() => router.push('/report')}>
-        Full vehicle report
+        {t('fullReport')}
       </Button>
     </Screen>
   );

@@ -2576,6 +2576,11 @@
   ],
   [
     "feature:adaptations",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
     "store:errorLogStore",
     "imports"
   ],
@@ -2627,6 +2632,11 @@
   [
     "feature:adapter-health",
     "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "lib:format",
     "imports"
   ],
   [
@@ -2701,6 +2711,11 @@
   ],
   [
     "feature:ai-diagnose",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
     "service:ai",
     "imports"
   ],
@@ -2758,6 +2773,11 @@
     "feature:alerts",
     "doc:features/alerts",
     "named"
+  ],
+  [
+    "feature:alerts",
+    "lib:format",
+    "imports"
   ],
   [
     "feature:alerts",
@@ -2851,6 +2871,11 @@
   ],
   [
     "feature:backup",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:backup",
     "lib:webRuntime",
     "imports"
   ],
@@ -2923,6 +2948,11 @@
     "feature:battery-health",
     "doc:features/battery-health",
     "named"
+  ],
+  [
+    "feature:battery-health",
+    "lib:format",
+    "imports"
   ],
   [
     "feature:battery-health",
@@ -3037,6 +3067,11 @@
   [
     "feature:coding",
     "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "lib:format",
     "imports"
   ],
   [
@@ -3351,6 +3386,11 @@
   ],
   [
     "feature:error-log",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:error-log",
     "lib:saveFile",
     "imports"
   ],
@@ -3631,6 +3671,11 @@
   ],
   [
     "feature:history",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:history",
     "lib:timeline",
     "imports"
   ],
@@ -3736,6 +3781,11 @@
   ],
   [
     "feature:live-charts",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
     "lib:saveFile",
     "imports"
   ],
@@ -3797,6 +3847,11 @@
   [
     "feature:live-data",
     "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "lib:format",
     "imports"
   ],
   [
@@ -3951,6 +4006,11 @@
   ],
   [
     "feature:module-scan",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
     "lib:saveFile",
     "imports"
   ],
@@ -4068,6 +4128,11 @@
     "feature:performance-tests",
     "doc:features/performance-tests",
     "named"
+  ],
+  [
+    "feature:performance-tests",
+    "lib:format",
+    "imports"
   ],
   [
     "feature:performance-tests",
@@ -4286,6 +4351,11 @@
   ],
   [
     "feature:sensor-tests",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:sensor-tests",
     "store:errorLogStore",
     "imports"
   ],
@@ -4357,6 +4427,16 @@
   [
     "feature:settings",
     "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "lib:i18nResolve",
     "imports"
   ],
   [
@@ -4491,6 +4571,11 @@
   ],
   [
     "feature:trip-recording",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
     "lib:webRuntime",
     "imports"
   ],
@@ -4563,6 +4648,11 @@
     "feature:vehicle-info",
     "lib:appInfo",
     "named"
+  ],
+  [
+    "feature:vehicle-info",
+    "lib:format",
+    "imports"
   ],
   [
     "feature:vehicle-info",
@@ -4768,6 +4858,16 @@
     "lib:feedbackBundle",
     "lib:scrub",
     "imports"
+  ],
+  [
+    "lib:i18nParity",
+    "doc:vcds-parity-roadmap",
+    "named"
+  ],
+  [
+    "lib:i18nResolve",
+    "vehicle:resolve",
+    "named"
   ],
   [
     "lib:import",
@@ -5631,6 +5731,11 @@
   ],
   [
     "store:settingsStore",
+    "lib:i18nResolve",
+    "imports"
+  ],
+  [
+    "store:settingsStore",
     "store:errorLogStore",
     "imports"
   ],
@@ -5932,6 +6037,11 @@
   [
     "ui:Toast",
     "ui:SegmentedControl",
+    "imports"
+  ],
+  [
+    "ui:ValueCard",
+    "lib:format",
     "imports"
   ],
   [

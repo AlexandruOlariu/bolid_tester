@@ -35,6 +35,7 @@ import {
 } from '@/shared/telemetry/crashReporting';
 import { PRIVACY_POLICY_URL } from '@/shared/lib/appInfo';
 import { SettingsScreen } from './SettingsScreen';
+import { i18n } from '@/shared/i18n';
 
 // The real hook loads expo-file-system / expo-sharing with a variable-specifier dynamic import,
 // which Jest cannot run; this double records what Settings asked to export (the file it would
@@ -576,7 +577,7 @@ describe('SettingsScreen AI provider (plan 19)', () => {
 
     fireEvent.press(screen.getByText('Test connection'));
 
-    expect(await screen.findByText(/Connected ✓ — 2 model\(s\)/)).toBeTruthy();
+    expect(await screen.findByText(/Connected ✓ — 2 models/)).toBeTruthy();
     expect(calls[0].url).toMatch(/^https:\/\/api\.anthropic\.com\/v1\/models/);
     expect(calls[0].headers['x-api-key']).toBe('sk-ant-test');
     expect(useSettingsStore.getState().ai.apiKey).toBe('sk-ant-test');
@@ -809,5 +810,33 @@ describe('Settings → Privacy: crash reports (plan 31)', () => {
     await waitFor(() => expect(sdk.captureException).toHaveBeenCalledTimes(1));
     expect((sdk.captureException.mock.calls[0][0] as Error).message).toBe(TEST_REPORT_MESSAGE);
     expect(alert).toHaveBeenCalledWith('Test crash report', expect.stringMatching(/^Sent\./));
+  });
+});
+
+describe('SettingsScreen language (plan 11)', () => {
+  it('renders in Romanian: the Theme label reads Temă', async () => {
+    await act(async () => {
+      await i18n.changeLanguage('ro');
+    });
+    renderWithProviders(<SettingsScreen />);
+    expect(screen.getAllByText('Temă').length).toBeGreaterThan(0);
+    expect(screen.getByText('Setări')).toBeTruthy();
+    expect(screen.queryByText('Theme')).toBeNull();
+  });
+
+  it('offers System / English / Română and switches the language live, without a restart', async () => {
+    renderWithProviders(<SettingsScreen />);
+    expect(screen.getAllByText('Theme').length).toBeGreaterThan(0);
+    expect(useSettingsStore.getState().language).toBe('system');
+    expect(screen.getByText('Phone language')).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Română'));
+    expect(useSettingsStore.getState().language).toBe('ro');
+    await waitFor(() => expect(screen.getAllByText('Temă').length).toBeGreaterThan(0));
+    expect(i18n.language).toBe('ro');
+
+    fireEvent.press(screen.getByText('English'));
+    await waitFor(() => expect(screen.getAllByText('Theme').length).toBeGreaterThan(0));
+    expect(useSettingsStore.getState().language).toBe('en');
   });
 });

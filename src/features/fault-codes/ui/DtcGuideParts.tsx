@@ -4,10 +4,12 @@ import { YStack, XStack, Text, Paragraph, Button } from 'tamagui';
 import { ValueCard, HIT_SLOP } from '@/shared/ui';
 import type { FaultGuide } from '@/shared/vehicles/faultGuides';
 import type { FreezeFrame } from '@/shared/obd-core/session/DiagnosticSession';
+import { useTranslation } from '@/shared/i18n';
 
 /** Deep-link buttons of a fault guide (Related data → Extended PIDs, Open routine → Routines).
  *  Shared by the inline Guide in `DtcRow` and the detail sheet. Renders nothing without links. */
 export function GuideLinks({ guide, onNavigate }: { guide: FaultGuide; onNavigate?: () => void }) {
+  const { t } = useTranslation('faultCodes');
   const dids = guide.relatedDids ?? [];
   if (dids.length === 0 && !guide.routineId) return null;
   return (
@@ -22,7 +24,7 @@ export function GuideLinks({ guide, onNavigate }: { guide: FaultGuide; onNavigat
             router.push(`/extended?dids=${encodeURIComponent(dids.join(','))}`);
           }}
         >
-          Related data
+          {t('guide.relatedData')}
         </Button>
       ) : null}
       {guide.routineId ? (
@@ -35,7 +37,7 @@ export function GuideLinks({ guide, onNavigate }: { guide: FaultGuide; onNavigat
             router.push('/routines');
           }}
         >
-          Open routine
+          {t('guide.openRoutine')}
         </Button>
       ) : null}
     </XStack>
@@ -53,12 +55,13 @@ export function CodeFreezeFrame({
   guide: FaultGuide;
   freezeFrames: FreezeFrame[];
 }) {
+  const { t } = useTranslation('faultCodes');
   const ff = guide.freezeFrame ? freezeFrames.find((f) => f.triggerDtc === code) : undefined;
   if (ff)
     return (
       <YStack gap="$1">
         <Text fontWeight="700" fontSize="$2">
-          Freeze frame
+          {t('freezeFrame.title')}
         </Text>
         <XStack flexWrap="wrap" gap="$2">
           {ff.values.map((v) => (
@@ -70,7 +73,7 @@ export function CodeFreezeFrame({
   if (guide.freezeFrame)
     return (
       <Paragraph theme="alt2" fontSize="$2">
-        No freeze frame captured for this code.
+        {t('guide.noFreezeFrame')}
       </Paragraph>
     );
   return null;

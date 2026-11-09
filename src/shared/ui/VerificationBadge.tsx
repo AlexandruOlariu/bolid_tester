@@ -1,8 +1,9 @@
 import React from 'react';
 import { Stack, Text } from 'tamagui';
+import { useTranslation } from '@/shared/i18n';
+import type { TFunction } from '@/shared/i18n';
 import {
   verificationState,
-  verificationText,
   type VerifiableItem,
   type VerificationState,
 } from '../vehicles/confirmation';
@@ -19,8 +20,9 @@ const COLORS: Record<VerificationState, string> = {
  *  "Confirmed <date> (<source>)", amber "Illustrative — not yet confirmed on this car". Replaces
  *  the per-item "experimental / unverified" strings on the feature screens. */
 export function VerificationBadge({ item, testID }: { item: VerifiableItem; testID?: string }) {
+  const { t } = useTranslation();
   const state = verificationState(item);
-  const text = verificationText(item);
+  const text = verificationLabel(item, t);
   return (
     <Stack
       testID={testID}
@@ -31,11 +33,26 @@ export function VerificationBadge({ item, testID }: { item: VerifiableItem; test
       alignSelf="flex-start"
       accessible
       accessibilityRole="text"
-      accessibilityLabel={`Verification: ${text}`}
+      accessibilityLabel={t('verification.a11y', { text })}
     >
       <Text fontSize="$1" color="$onFill" fontWeight="700">
         {text}
       </Text>
     </Stack>
   );
+}
+
+/** The badge text in the UI language (plan 11); the English form is `verificationText` in
+ *  `shared/vehicles/confirmation.ts`. */
+export function verificationLabel(item: VerifiableItem, t: TFunction): string {
+  const state = verificationState(item);
+  if (state === 'standard') return t('verification.standard');
+  if (state === 'confirmed' && item.confirmed) {
+    const { on, source } = item.confirmed;
+    return t('verification.confirmed', {
+      on,
+      source: t(`verification.source.${source}`, { defaultValue: source }),
+    });
+  }
+  return t('verification.unverified');
 }

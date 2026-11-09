@@ -5,6 +5,7 @@ import type { DiagModule } from '@/shared/vehicles';
 import { useModuleScanStore } from '../model/moduleScanStore';
 import { diagModuleLiteral, isInModuleList } from '../api/discovery';
 import { HIT_SLOP } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
 
 /** `08/46` for a probe that covered a shared id pair, else the single address. */
 const addresses = (d: DiscoveredModule) =>
@@ -21,6 +22,7 @@ function AnsweredRow({
   isGarageCar: boolean;
   onAdd: (d: DiscoveredModule) => void;
 }) {
+  const { t } = useTranslation('moduleScan');
   const [showLiteral, setShowLiteral] = useState(false);
   // A shared id pair (08 / 46 on 746/7B0) is ONE module: the probe picked an address from its
   // ident, and the user can switch to another candidate on the same pair before adding it.
@@ -55,15 +57,21 @@ function AnsweredRow({
             {ident?.systemName ? ` · ${ident.systemName}` : ''}
           </Paragraph>
         </YStack>
-        <Paragraph size="$2">✓ answered</Paragraph>
+        <Paragraph size="$2">✓ {t('discover.answered')}</Paragraph>
       </XStack>
       {others.length ? (
         <YStack gap="$1">
           <Paragraph theme="alt2" size="$2">
-            Addresses {sharing.map((x) => x.address).join(' and ')} share these CAN ids on some
-            cars, so one module answered for both. Shown as {c.address}
-            {ident?.systemName ? ` from its ident (${ident.systemName})` : ''}; switch if its ident
-            says otherwise.
+            {ident?.systemName
+              ? t('discover.sharedIdent', {
+                  list: sharing.map((x) => x.address).join(` ${t('discover.and')} `),
+                  address: c.address,
+                  system: ident.systemName,
+                })
+              : t('discover.shared', {
+                  list: sharing.map((x) => x.address).join(` ${t('discover.and')} `),
+                  address: c.address,
+                })}
           </Paragraph>
           {listed
             ? null
@@ -74,30 +82,28 @@ function AnsweredRow({
                   hitSlop={HIT_SLOP}
                   onPress={() => setPicked(alt)}
                 >
-                  {`Record as ${alt.address} ${alt.name} instead`}
+                  {t('discover.recordAs', { address: alt.address, name: alt.name })}
                 </Button>
               ))}
         </YStack>
       ) : null}
       {listed ? (
         <Paragraph theme="alt2" size="$2">
-          Already in this car's module list.
+          {t('discover.listed')}
         </Paragraph>
       ) : isGarageCar ? (
         <Button size="$3" hitSlop={HIT_SLOP} onPress={() => onAdd(effective)}>
-          Add to this car's module list
+          {t('discover.add')}
         </Button>
       ) : (
         <YStack gap="$1">
           <Button size="$3" hitSlop={HIT_SLOP} onPress={() => setShowLiteral((v) => !v)}>
-            {showLiteral ? 'Hide module entry' : "Add to this car's module list"}
+            {showLiteral ? t('discover.hideEntry') : t('discover.add')}
           </Button>
           {showLiteral ? (
             <YStack gap="$1">
               <Paragraph theme="alt2" size="$2">
-                This car is a built-in profile, which lives in the app's code. Paste this entry into
-                its modules list (developer step), or add the car to My garage to keep the module on
-                this phone.
+                {t('discover.builtIn')}
               </Paragraph>
               <Paragraph fontFamily="$mono" size="$1" selectable testID="discovered-literal">
                 {diagModuleLiteral(effective)}
@@ -126,6 +132,7 @@ export function DiscoverySection({
   /** The last discovery on this car and connection (`useModuleScan` drops a stale one). */
   discovery: DiscoveredModule[] | null;
 }) {
+  const { t } = useTranslation('moduleScan');
   const running = useModuleScanStore((s) => s.running);
   const progress = useModuleScanStore((s) => s.discoveryProgress);
   const answered = discovery?.filter((d) => d.state === 'answered') ?? [];
@@ -134,18 +141,19 @@ export function DiscoverySection({
 
   return (
     <YStack gap="$2" backgroundColor="$color2" borderRadius="$4" padding="$3">
-      <H4>Discover modules</H4>
+      <H4>{t('discover.title')}</H4>
       <Paragraph theme="alt2" size="$2">
-        Asks each known VW-group module address for its part number (read-only) to find which
-        control modules really answer on this car. Takes a few seconds per silent address.
+        {t('discover.help')}
       </Paragraph>
       <Button disabled={running} onPress={() => void discover()}>
-        {progress ? `Discovering ${progress.done}/${progress.total}…` : 'Discover modules'}
+        {progress
+          ? t('discover.progress', { done: progress.done, total: progress.total })
+          : t('discover.title')}
       </Button>
       {discovery ? (
         <YStack gap="$2">
           <Paragraph size="$2">
-            {answered.length} of {discovery.length} addresses answered.
+            {t('discover.summary', { answered: answered.length, total: discovery.length })}
           </Paragraph>
           {answered.map((d) => (
             <AnsweredRow
@@ -158,9 +166,9 @@ export function DiscoverySection({
           ))}
           {silent.length ? (
             <Paragraph theme="alt2" size="$2">
-              No answer:{' '}
-              {silent.map((d) => `${addresses(d)} (${d.candidate.reqHeader})`).join(' · ')}. Silence
-              is not proof a module is missing — older modules may use VW TP2.0 instead.
+              {t('discover.silent', {
+                list: silent.map((d) => `${addresses(d)} (${d.candidate.reqHeader})`).join(' · '),
+              })}
             </Paragraph>
           ) : null}
           {errors.map((d) => (

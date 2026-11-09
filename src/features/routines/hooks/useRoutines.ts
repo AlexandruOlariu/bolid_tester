@@ -16,6 +16,7 @@ import {
   readLiveValues,
 } from '../api/routineService';
 import { useRoutinesStore } from '../model/routinesStore';
+import { translate } from '@/shared/i18n';
 
 /** One periodic tick drives keep-alive, live values AND the interlock re-check, in that order —
  *  a single interval keeps the sequencing deterministic (no keep-alive racing an address switch). */
@@ -57,7 +58,7 @@ export function useRoutines() {
     async (routine: GuidedRoutine) => {
       if (!session) return;
       if (!store.unlocked) {
-        store.setMessage('Locked — enable the routines unlock first.');
+        store.setMessage(translate('routines:msg.locked'));
         return;
       }
       store.setMessage(null);
@@ -83,8 +84,8 @@ export function useRoutines() {
         store.setActive(routine.id, 'running');
         store.setMessage(
           routine.service === '2F'
-            ? 'Output under test — stop to return control to the ECU.'
-            : 'Routine started.',
+            ? translate('routines:msg.outputRunning')
+            : translate('routines:msg.started'),
         );
         timers.current.tick = setInterval(async () => {
           if (ticking.current) return; // previous tick still on the wire (slow BLE) — skip
@@ -99,7 +100,11 @@ export function useRoutines() {
               const check = await checkInterlocksDuringRun(session, routine);
               if (!check.ok) {
                 store.setInterlockFailures(check.failures);
-                await stop(routine, 'error', `Stopped — interlock violated: ${check.failures[0]}`);
+                await stop(
+                  routine,
+                  'error',
+                  translate('routines:msg.interlockStop', { failure: check.failures[0] }),
+                );
               }
             }
           } catch {

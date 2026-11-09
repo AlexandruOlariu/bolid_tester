@@ -10,6 +10,7 @@ import { cleanup } from '@testing-library/react-native';
 import { cancelPendingWrites, resetStores } from './test/resetStores';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { disconnect } from '@/features/connection/api/connectionService';
+import { i18n } from '@/shared/i18n';
 
 // --- Bluetooth: the BLE stack is never touched in tests; the radio reports PoweredOn. -------------
 jest.mock('react-native-ble-plx', () => {
@@ -118,7 +119,11 @@ jest.setTimeout(20000);
 
 // Store/file reset between tests — see test/resetStores.ts. `afterAll` cancels the debounced
 // persist writes the file's last test scheduled, so no timer is left open when the file ends.
-beforeEach(() => resetStores());
+// Every test starts in English (plan 11): a test that switched to Romanian must not leak it.
+beforeEach(() => {
+  resetStores();
+  if (i18n.language !== 'en') void i18n.changeLanguage('en');
+});
 afterAll(() => cancelPendingWrites());
 
 // A test that connected the simulator leaves a live session (and its status watcher) behind; unmount

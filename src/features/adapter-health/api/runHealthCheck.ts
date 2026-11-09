@@ -4,6 +4,7 @@
 import { PROTOCOL_LABELS, type ProtocolId } from '@/shared/obd-core';
 import { gradeAdapter } from './gradeAdapter';
 import type { AdapterReportInput } from './adapterReport';
+import { translate } from '@/shared/i18n';
 
 /** The slice of `Elm327Client` the check uses. */
 export interface HealthCheckClient {
@@ -36,13 +37,13 @@ export async function runHealthCheck(
   const phase = opts.onPhase ?? (() => undefined);
   const now = opts.now ?? Date.now;
 
-  phase('Reading firmware (ATI)…');
+  phase(translate('adapterHealth:phase.firmware'));
   const version = await client.version().catch(() => '');
 
-  phase('Reading voltage (ATRV)…');
+  phase(translate('adapterHealth:phase.voltage'));
   const voltage = await client.voltage().catch(() => null);
 
-  phase('Detecting protocol (ATDPN)…');
+  phase(translate('adapterHealth:phase.protocol'));
   const protocolId = await client.protocolNumber().catch(() => 'UNKNOWN' as const);
   const protocol = PROTOCOL_LABELS[protocolId] ?? 'Unknown';
 
@@ -50,7 +51,7 @@ export async function runHealthCheck(
   let attempts = 0;
   for (let i = 0; i < burst; i++) {
     if (opts.shouldStop?.()) break;
-    phase(`Timing 0100 (${i + 1}/${burst})…`);
+    phase(translate('adapterHealth:phase.timing', { n: i + 1, total: burst }));
     attempts++;
     const t0 = now();
     try {

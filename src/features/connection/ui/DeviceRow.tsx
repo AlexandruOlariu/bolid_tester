@@ -9,6 +9,7 @@ import {
 } from '@/shared/adapters';
 import type { ScannedDevice } from '../model/scanStore';
 import { Panel } from '../styles/connection.styles';
+import { useTranslation } from '@/shared/i18n';
 
 interface DeviceRowProps {
   device: ScannedDevice;
@@ -26,6 +27,7 @@ const CHIP_COLORS: Record<KnownAdapter['typicalGrade'], string> = {
 /** "known good" / "known ok" / "known poor" — the community compatibility matrix's typical grade for
  *  this advertised name (plan 29, `@/shared/adapters`). */
 function KnownAdapterChip({ known }: { known: KnownAdapter }) {
+  const { t } = useTranslation('connection');
   return (
     <Stack
       testID="known-adapter-chip"
@@ -36,23 +38,24 @@ function KnownAdapterChip({ known }: { known: KnownAdapter }) {
       alignSelf="flex-start"
       accessible
       accessibilityRole="text"
-      accessibilityLabel={`Known adapter: ${communitySummary(known)}`}
+      accessibilityLabel={t('device.knownA11y', { summary: communitySummary(known) })}
     >
       <Text fontSize="$1" color="$onFill" fontWeight="700">
-        {knownAdapterChip(known)}
+        {t(`device.known.${known.typicalGrade}`, { defaultValue: knownAdapterChip(known) })}
       </Text>
     </Stack>
   );
 }
 
 export function DeviceRow({ device, onConnect, disabled }: DeviceRowProps) {
+  const { t } = useTranslation('connection');
   const known = matchKnownAdapter(device.name);
   return (
     <Panel>
       <XStack justifyContent="space-between" alignItems="center" gap="$2">
         <YStack flex={1}>
           <Text fontWeight="700" numberOfLines={1}>
-            {device.name ?? '(unnamed)'}
+            {device.name ?? t('device.unnamed')}
             {device.isLikelyAdapter ? '  ⭐' : ''}
           </Text>
           <Paragraph theme="alt2" fontSize="$2" numberOfLines={1}>
@@ -67,9 +70,9 @@ export function DeviceRow({ device, onConnect, disabled }: DeviceRowProps) {
           theme="green"
           onPress={onConnect}
           disabled={disabled}
-          accessibilityLabel={`Connect to ${device.name ?? device.id}`}
+          accessibilityLabel={t('device.connectTo', { name: device.name ?? device.id })}
         >
-          Connect
+          {t('ble.connect')}
         </Button>
       </XStack>
     </Panel>

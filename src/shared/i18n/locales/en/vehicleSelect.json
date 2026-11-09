@@ -1,0 +1,89 @@
+{
+  "title": "Vehicle",
+  "subtitle": "Pick a car, or use Auto / Generic for any OBD2 car",
+  "card": {
+    "edit": "Edit",
+    "export": "Export",
+    "delete": "Delete",
+    "byHand": "added by hand",
+    "deleteTitle": "Delete this car?",
+    "deleteBody": "{{name}} is removed from your garage. Its history, scans and trips stay on this phone.",
+    "selected": "Selected",
+    "notSelected": "Not selected",
+    "selectHint": "Selects this car.",
+    "pids_one": "{{count}} PID",
+    "pids_other": "{{count}} PIDs",
+    "basedOn": "Based on {{name}}",
+    "editA11y": "Edit {{name}}",
+    "exportA11y": "Export {{name}}",
+    "deleteA11y": "Delete {{name}}"
+  },
+  "export": {
+    "saved": "Saved {{file}}.",
+    "failed": "Could not export the profile. See More → Error log for details."
+  },
+  "match": {
+    "garageA11y": "The connected car is {{name}} from your garage. Switch to it.",
+    "garage": "The connected car is <b>{{name}}</b> from your garage — tap to switch to it.",
+    "profileA11y": "The connected car's VIN matches {{name}}. Switch to that profile.",
+    "profile": "The connected car's VIN ({{vin}}) matches <b>{{name}}</b> — tap to switch to that profile."
+  },
+  "garage": {
+    "title": "My garage",
+    "copy": "Cars you add here are remembered on this phone. Built-in profiles are curated and documented.",
+    "relearn": "Re-learn from connected car",
+    "addFromCar": "Add from connected car",
+    "addManually": "Add manually",
+    "importA11y": "Import a car profile from a file",
+    "import": "Import profile",
+    "relearnNote": "The connected car is already in your garage as {{name}} — re-learning refreshes its protocol and supported readings and keeps its name and notes.",
+    "connectFirst": "Connect to a car first to add it from the connection — the app reads its VIN, protocol and supported readings.",
+    "empty": "No cars in your garage yet."
+  },
+  "profiles": {
+    "title": "Built-in profiles",
+    "experimental": "experimental",
+    "share": "Share as starting profile",
+    "shareA11y": "Share {{name}} as a starting profile"
+  },
+  "editor": {
+    "editTitle": "Edit car",
+    "addTitle": "Add a car",
+    "name": "Name",
+    "namePlaceholder": "e.g. Dacia Logan 2015",
+    "nameA11y": "Car name",
+    "year": "Year",
+    "yearPlaceholder": "e.g. 2015",
+    "yearA11y": "Model year",
+    "fuel": "Fuel",
+    "baseProfile": "Base profile",
+    "baseProfileHelp": "Everything the app does not learn from the car comes from this built-in profile. Auto / Generic works for any OBD2 car; a specific profile also brings its experimental, car-specific readings and tools — pick one only for that exact car.",
+    "notes": "Notes",
+    "notesPlaceholder": "Engine code, quirks, anything you want to remember",
+    "loginCodes": "Login codes",
+    "loginCodesHelp": "Module login codes you chose to remember for this car on the Adaptations screen. The app ships none.",
+    "noLoginCodes": "No login codes saved for this car.",
+    "module": "Module {{address}}",
+    "code": "Code {{code}}",
+    "hideCodeA11y": "Hide login code for module {{address}}",
+    "showCodeA11y": "Show login code for module {{address}}",
+    "hide": "Hide",
+    "show": "Show",
+    "deleteCodeA11y": "Delete login code for module {{address}}",
+    "save": "Save",
+    "shareGarage": "Share garage as JSON",
+    "shareGarageHelp": "Shares every car in your garage as a JSON file. Importing a garage file comes in a later version.",
+    "shareDialog": "Share garage"
+  },
+  "validate": {
+    "name": "Give the car a name, e.g. \"Dacia Logan 2015\".",
+    "nameLong": "Keep the name to {{max}} characters or fewer.",
+    "notesLong": "Keep the notes to {{max}} characters or fewer.",
+    "year": "Year must be between {{min}} and {{max}}, or left blank.",
+    "base": "Pick a base profile."
+  },
+  "notify": {
+    "recognised": "Car recognised"
+  },
+  "shareTitle": "Share {{name}}"
+}

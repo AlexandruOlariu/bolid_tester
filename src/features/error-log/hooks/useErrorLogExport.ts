@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { formatErrorsForExport, errorsToJson, type LoggedError } from '@/shared/lib/errorLog';
 import { logError } from '@/shared/state/errorLogStore';
 import { fileStamp, saveTextFile } from '@/shared/lib/saveFile';
+import { translate } from '@/shared/i18n';
 
 export type ExportFormat = 'md' | 'json';
 
@@ -20,7 +21,7 @@ export function useErrorLogExport() {
           `bolid-errors-${fileStamp()}.${isJson ? 'json' : 'md'}`,
           isJson ? errorsToJson(errors) : formatErrorsForExport(errors),
           isJson ? 'application/json' : 'text/markdown',
-          { dialogTitle: 'Export error log' },
+          { dialogTitle: translate('common:share.errorLog') },
         );
       } catch (e) {
         // Don't let an export failure vanish — record it in the same zone.

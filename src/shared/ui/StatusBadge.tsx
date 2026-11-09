@@ -1,5 +1,6 @@
 import React from 'react';
 import { Stack, Text } from 'tamagui';
+import { useTranslation } from '@/shared/i18n';
 import type { ConnState } from '../state/sessionStore';
 
 /** Fill tokens (plan 20): the semantic colours, with `$onFill` text on them — ink on the dark
@@ -13,15 +14,9 @@ const COLORS: Record<ConnState, string> = {
   error: '$statusError',
 };
 
-const LABELS: Record<ConnState, string> = {
-  disconnected: 'Disconnected',
-  connecting: 'Connecting…',
-  initializing: 'Initializing…',
-  connected: 'Connected',
-  error: 'Error',
-};
-
 export function StatusBadge({ status }: { status: ConnState }) {
+  const { t } = useTranslation();
+  const label = t(`connState.${status}`);
   return (
     <Stack
       backgroundColor={COLORS[status]}
@@ -31,10 +26,10 @@ export function StatusBadge({ status }: { status: ConnState }) {
       alignSelf="flex-start"
       accessible
       accessibilityRole="text"
-      accessibilityLabel={`Connection status: ${LABELS[status]}`}
+      accessibilityLabel={t('connState.a11y', { status: label })}
     >
       <Text color="$onFill" fontSize="$2" fontWeight="700">
-        {LABELS[status]}
+        {label}
       </Text>
     </Stack>
   );

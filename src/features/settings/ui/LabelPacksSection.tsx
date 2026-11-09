@@ -8,16 +8,17 @@ import { useExchangeImport } from '@/shared/ui/useExchangeImport';
 import { LABEL_PACKS_SOURCE, shareLabelPackFile } from '../api/labelPackFile';
 import { appAlert, HIT_SLOP } from '@/shared/ui';
 import { isWebRuntime } from '@/shared/lib/webRuntime';
+import { useTranslation, type TFunction } from '@/shared/i18n';
 
-function countsText(pack: LabelPack): string {
+function countsText(pack: LabelPack, t: TFunction): string {
   const c = labelPackCounts(pack);
   const parts = [
-    c.measurements ? `${c.measurements} measurements` : null,
-    c.codingBits ? `${c.codingBits} coding bits` : null,
-    c.adaptations ? `${c.adaptations} adaptations` : null,
-    c.measuringGroups ? `${c.measuringGroups} measuring groups` : null,
+    c.measurements ? t('packs.measurements', { count: c.measurements }) : null,
+    c.codingBits ? t('packs.codingBits', { count: c.codingBits }) : null,
+    c.adaptations ? t('packs.adaptations', { count: c.adaptations }) : null,
+    c.measuringGroups ? t('packs.measuringGroups', { count: c.measuringGroups }) : null,
   ].filter(Boolean);
-  return parts.length ? parts.join(' · ') : 'no names';
+  return parts.length ? parts.join(' · ') : t('packs.noNames');
 }
 
 function PackRow({
@@ -31,6 +32,7 @@ function PackRow({
   onDelete?: () => void;
   exportLabel: string;
 }) {
+  const { t } = useTranslation('settings');
   return (
     <Card bordered padding="$3" backgroundColor="$background">
       <YStack gap="$1">
@@ -41,7 +43,7 @@ function PackRow({
           {pack.partNumberPrefixes.map((p) => `${p}…`).join(', ')}
         </Paragraph>
         <Paragraph theme="alt2" fontSize="$1">
-          {countsText(pack)}
+          {countsText(pack, t)}
         </Paragraph>
         <XStack gap="$2" marginTop="$1">
           <Button
@@ -58,9 +60,9 @@ function PackRow({
               hitSlop={HIT_SLOP}
               theme="red"
               onPress={onDelete}
-              accessibilityLabel={`Delete ${pack.module}`}
+              accessibilityLabel={t('packs.deleteA11y', { module: pack.module })}
             >
-              Delete
+              {t('packs.delete')}
             </Button>
           ) : null}
         </XStack>
@@ -73,6 +75,7 @@ function PackRow({
  *  packs (Export / Delete) and the bundled ones (Export as template). Imported packs take
  *  precedence over bundled ones for the part numbers both match. */
 export function LabelPacksSection() {
+  const { t } = useTranslation('settings');
   const packs = useLabelPackStore((s) => s.packs);
   const remove = useLabelPackStore((s) => s.remove);
   const importer = useExchangeImport(LABEL_PACKS_SOURCE);
@@ -83,37 +86,30 @@ export function LabelPacksSection() {
     if (!uri && isWebRuntime()) return; // the "not available on web yet" toast already said why
     setNote(
       uri
-        ? `Saved ${uri.slice(uri.lastIndexOf('/') + 1)}.`
-        : 'Could not export the pack. See More → Error log for details.',
+        ? t('packs.saved', { file: uri.slice(uri.lastIndexOf('/') + 1) })
+        : t('packs.exportFailed'),
     );
   };
   const confirmDelete = (pack: LabelPack) =>
-    appAlert(
-      'Delete this label pack?',
-      `${pack.module} is removed from this phone. Bundled names for the same part numbers come back.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => remove(pack.id) },
-      ],
-    );
+    appAlert(t('packs.deleteTitle'), t('packs.deleteBody', { module: pack.module }), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      { text: t('packs.delete'), style: 'destructive', onPress: () => remove(pack.id) },
+    ]);
 
   return (
     <YStack gap="$2" testID="label-packs-section">
       <Text fontWeight="700" fontSize="$3">
-        Label packs
+        {t('packs.title')}
       </Text>
-      <Paragraph fontSize="$2">
-        Label packs name a module's measurements, coding bits and adaptation channels by part
-        number. Import one from a file; imported names take precedence over the bundled ones.
-      </Paragraph>
+      <Paragraph fontSize="$2">{t('packs.help')}</Paragraph>
       <Button
         size="$3"
         hitSlop={HIT_SLOP}
         disabled={importer.busy}
         onPress={() => void importer.startImport()}
-        accessibilityLabel="Import a label pack from a file"
+        accessibilityLabel={t('packs.importA11y')}
       >
-        Import label pack
+        {t('packs.import')}
       </Button>
       {importer.note ? (
         <Paragraph theme="alt2" fontSize="$1">
@@ -126,30 +122,30 @@ export function LabelPacksSection() {
         </Paragraph>
       ) : null}
       <Paragraph theme="alt2" fontSize="$2">
-        Imported ({packs.length})
+        {t('packs.imported', { count: packs.length })}
       </Paragraph>
       {packs.length === 0 ? (
         <Paragraph theme="alt2" fontSize="$1">
-          No imported label packs yet.
+          {t('packs.none')}
         </Paragraph>
       ) : null}
       {packs.map((p) => (
         <PackRow
           key={p.id}
           pack={p}
-          exportLabel="Export"
+          exportLabel={t('packs.export')}
           onExport={() => void share(p)}
           onDelete={() => confirmDelete(p)}
         />
       ))}
       <Paragraph theme="alt2" fontSize="$2">
-        Bundled with the app
+        {t('packs.bundled')}
       </Paragraph>
       {LABEL_PACKS.map((p) => (
         <PackRow
           key={p.id}
           pack={p}
-          exportLabel="Export as template"
+          exportLabel={t('packs.exportTemplate')}
           onExport={() => void share(p)}
         />
       ))}

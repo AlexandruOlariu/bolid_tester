@@ -79,6 +79,8 @@ describe('AlertDialog + appAlert', () => {
   it('a notice with no buttons gets an OK that closes it', () => {
     renderWithProviders(<AlertDialog />);
     act(() => openDialog('Export unavailable', 'Sharing is not available on this device.'));
+    // No literal label: AlertDialog names it with the translated `actions.ok` (plan 11).
+    expect(useDialogStore.getState().queue[0].buttons).toEqual([{}]);
     fireEvent.press(screen.getByText('OK'));
     expect(screen.queryByTestId('alert-dialog')).toBeNull();
   });

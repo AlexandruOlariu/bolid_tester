@@ -3,6 +3,7 @@ import { logError } from '@/shared/state/errorLogStore';
 import { fileStamp, saveTextFile } from '@/shared/lib/saveFile';
 import { formatAutoScanReport } from '../api/scanReport';
 import type { SavedScan } from '../model/scanHistoryStore';
+import { translate } from '@/shared/i18n';
 
 /** Share a saved auto-scan as the forum-pasteable VCDS-style text report (.txt): written to a file
  *  and handed to the OS share sheet on native, downloaded on web (`saveTextFile`, plan 28). Returns
@@ -18,7 +19,7 @@ export function useScanShare() {
         `auto-scan-${fileStamp(scan.ts)}.txt`,
         formatAutoScanReport(scan),
         'text/plain',
-        { dialogTitle: 'Share auto-scan report' },
+        { dialogTitle: translate('common:share.scanReport') },
       );
     } catch (e) {
       logError({ source: 'module-scan/share', error: e });

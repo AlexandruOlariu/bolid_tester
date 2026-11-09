@@ -11,6 +11,7 @@ import {
 } from '@/shared/obd-core';
 import type { DiagModule } from '@/shared/vehicles';
 import type { ModuleScanResult } from '../model/moduleScanStore';
+import { translate } from '@/shared/i18n';
 
 export async function scanModule(
   session: DiagnosticSession,
@@ -20,9 +21,7 @@ export async function scanModule(
     return {
       module,
       state: 'skipped',
-      reason:
-        'This module speaks VW TP2.0 (pre-UDS) — use the "Gateway scan (TP2.0)" action on this ' +
-        'screen to read it. See docs/features/module-scan.md.',
+      reason: translate('moduleScan:reason.tp20'),
       dtcs: [],
     };
   }
@@ -39,7 +38,7 @@ export async function scanModule(
       return {
         module,
         state: 'silent',
-        reason: 'No response on this address — module absent, asleep, or a different address on this car.',
+        reason: translate('moduleScan:reason.silent'),
         dtcs: [],
       };
     }
@@ -55,7 +54,12 @@ export async function clearModule(
   module: DiagModule,
 ): Promise<ModuleScanResult> {
   if (module.transport !== 'uds' || !module.reqHeader) {
-    return { module, state: 'skipped', reason: 'Not clearable over this transport yet.', dtcs: [] };
+    return {
+      module,
+      state: 'skipped',
+      reason: translate('moduleScan:reason.notClearable'),
+      dtcs: [],
+    };
   }
   try {
     await session.setHeader(module.reqHeader);

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Pressable, View } from 'react-native';
 import { XStack, YStack, Text, Paragraph, Button } from 'tamagui';
 import { HIT_SLOP } from './SegmentedControl';
+import { i18n } from '@/shared/i18n';
 import { dismissDialog, pressDialogButton, useDialogStore } from '@/shared/state/dialogStore';
 
 type KeyListener = (e: { key?: string }) => void;
@@ -85,7 +86,7 @@ export function AlertDialog() {
               chromeless={b.style === 'cancel'}
               onPress={() => pressDialogButton(dialog.id, i)}
             >
-              {b.text ?? 'OK'}
+              {b.text ?? i18n.t('actions.ok')}
             </Button>
           ))}
         </XStack>

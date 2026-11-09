@@ -24,6 +24,8 @@ import { GENERIC_GUIDE, matchFaultGuide, type FaultGuide } from '@/shared/vehicl
 // Faults screen).
 import { GuideLinks } from '@/features/fault-codes';
 import { usePalette, type Tone, SectionTitle } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { formatDateTime } from '@/shared/lib/format';
 
 const SEV_TONE: Record<DiagSeverity, Tone> = {
   ok: 'statusOk',
@@ -32,21 +34,16 @@ const SEV_TONE: Record<DiagSeverity, Tone> = {
   critical: 'statusError',
 };
 
-const SEV_LABEL: Record<DiagSeverity, string> = {
-  ok: 'OK',
-  info: 'INFO',
-  warn: 'ATTENTION',
-  critical: 'CRITICAL',
+/** Verdict tone + icon; the labels are `aiDiagnose:overall.<overall>` and the severity chips
+ *  `aiDiagnose:severity.<severity>` (plan 11). */
+const OVERALL_META: Record<OverallHealth, { tone: Tone; Icon: typeof ShieldCheck }> = {
+  ok: { tone: 'statusOk', Icon: ShieldCheck },
+  attention: { tone: 'statusWarn', Icon: TriangleAlert },
+  urgent: { tone: 'statusError', Icon: CircleAlert },
 };
 
-const OVERALL_META: Record<OverallHealth, { tone: Tone; Icon: typeof ShieldCheck; label: string }> =
-  {
-    ok: { tone: 'statusOk', Icon: ShieldCheck, label: 'Looks healthy' },
-    attention: { tone: 'statusWarn', Icon: TriangleAlert, label: 'Needs attention' },
-    urgent: { tone: 'statusError', Icon: CircleAlert, label: 'Urgent' },
-  };
-
 export function OverallBanner({ report }: { report: AiReport }) {
+  const { t } = useTranslation('aiDiagnose');
   const palette = usePalette();
   const meta = OVERALL_META[report.overall];
   const color = palette[meta.tone];
@@ -57,7 +54,7 @@ export function OverallBanner({ report }: { report: AiReport }) {
         <Icon size={28} color={color} />
         <YStack flex={1}>
           <Text fontWeight="900" fontSize="$7" color={color} accessibilityRole="header">
-            {meta.label}
+            {t(`overall.${report.overall}`)}
           </Text>
           <XStack alignItems="center" gap="$2">
             {report.source === 'ai' ? (
@@ -66,7 +63,7 @@ export function OverallBanner({ report }: { report: AiReport }) {
               <Shield size={13} color={palette.muted} />
             )}
             <Paragraph theme="alt2" fontSize="$1">
-              {report.source === 'ai' ? 'AI analysis' : 'On-device rule-based analysis'}
+              {report.source === 'ai' ? t('source.ai') : t('source.rules')}
             </Paragraph>
           </XStack>
         </YStack>
@@ -96,6 +93,7 @@ export function FindingCard({
   /** Called before a fault-guide button navigates away (a sheet closes itself with it). */
   onNavigate?: () => void;
 }) {
+  const { t } = useTranslation('aiDiagnose');
   const color = usePalette()[SEV_TONE[finding.severity]];
   const guides = findingGuides(profileId, finding.codes);
   return (
@@ -105,7 +103,7 @@ export function FindingCard({
           {finding.title}
         </Text>
         <Text fontWeight="800" fontSize="$1" color={color} letterSpacing={0.6}>
-          {SEV_LABEL[finding.severity]}
+          {t(`severity.${finding.severity}`)}
         </Text>
       </XStack>
       {finding.detail ? (
@@ -141,13 +139,13 @@ export function FindingCard({
           padding="$2"
           borderRadius="$3"
         >
-          <Paragraph fontSize="$2">Known check for this car: {g.note}</Paragraph>
+          <Paragraph fontSize="$2">{t('knownCheck', { note: g.note })}</Paragraph>
           <GuideLinks guide={g} onNavigate={onNavigate} />
         </YStack>
       ))}
       {finding.likelyCauses && finding.likelyCauses.length > 0 ? (
         <Paragraph theme="alt2" fontSize="$2" marginTop="$1">
-          Likely causes: {finding.likelyCauses.join('; ')}.
+          {t('likelyCauses', { causes: finding.likelyCauses.join('; ') })}
         </Paragraph>
       ) : null}
     </Card>
@@ -179,23 +177,24 @@ export function AiReportView({
   ranAt: number | null;
   onNavigate?: () => void;
 }) {
+  const { t } = useTranslation('aiDiagnose');
   const palette = usePalette();
   return (
     <YStack gap="$3">
       <OverallBanner report={report} />
       {report.findings.length > 0 ? (
         <YStack gap="$2">
-          <SectionTitle>Findings ({report.findings.length})</SectionTitle>
+          <SectionTitle>{t('findings', { count: report.findings.length })}</SectionTitle>
           {report.findings.map((f, i) => (
             <FindingCard key={`f-${i}`} finding={f} profileId={profileId} onNavigate={onNavigate} />
           ))}
         </YStack>
       ) : (
-        <Paragraph theme="alt2">No specific issues were flagged.</Paragraph>
+        <Paragraph theme="alt2">{t('noIssues')}</Paragraph>
       )}
       {report.actions.length > 0 ? (
         <YStack gap="$2">
-          <SectionTitle>Recommended actions</SectionTitle>
+          <SectionTitle>{t('actions')}</SectionTitle>
           {report.actions.map((a, i) => {
             const Icon = ACTION_ICON[a.type] ?? Activity;
             return (
@@ -216,7 +215,7 @@ export function AiReportView({
       ) : null}
       <Paragraph theme="alt2" fontSize="$1" marginTop="$2">
         {report.disclaimer}
-        {ranAt ? ` · ${new Date(ranAt).toLocaleString()}` : ''}
+        {ranAt ? ` · ${formatDateTime(ranAt)}` : ''}
       </Paragraph>
     </YStack>
   );

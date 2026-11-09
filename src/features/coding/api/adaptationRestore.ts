@@ -8,6 +8,7 @@
 import { adaptationBoundsError, decodeAdaptationRaw } from '@/shared/obd-core';
 import type { AdaptationChannel } from '@/shared/vehicles';
 import { buildCarBackup, type BackupModuleDiff, type CarBackupModule } from './carBackup';
+import { translate } from '@/shared/i18n';
 
 /** Why a snapshot channel is not restored. */
 export type RestoreSkip = 'equal' | 'no-channel' | 'no-snapshot-raw' | 'out-of-bounds' | 'locked';
@@ -85,24 +86,18 @@ export function planAdaptationRestore(
     });
 
     if (!channel) {
-      return skip('no-channel', 'The current car profile no longer declares this channel.');
+      return skip('no-channel', translate('coding:restore.skipNoChannel'));
     }
     if (!a.raw) {
-      return skip(
-        'no-snapshot-raw',
-        'The backup could not read this channel, so there is nothing to restore.',
-      );
+      return skip('no-snapshot-raw', translate('coding:restore.skipNoRaw'));
     }
     const bounds = adaptationBoundsError(channel, a.raw);
     if (bounds) return skip('out-of-bounds', bounds);
     if (channel.security && !opts.unlockable(channel)) {
-      return skip(
-        'locked',
-        'This channel needs security access and no unlock is available for this module — read-only.',
-      );
+      return skip('locked', translate('coding:restore.skipLocked'));
     }
     if (currentRaw && sameBytes(currentRaw, a.raw)) {
-      return skip('equal', 'The car already has the backed-up value.');
+      return skip('equal', translate('coding:restore.skipEqual'));
     }
     return { ...base, action: 'restore' };
   });
@@ -190,19 +185,24 @@ export function restoreHeadline(
   }
   const parts: string[] = [];
   if (snapshot.adaptations.length) {
-    if (differs === 0 && notCompared === 0) parts.push('Adaptations match the backup');
+    if (differs === 0 && notCompared === 0) parts.push(translate('coding:restore.allMatch'));
     else {
       parts.push(
         differs === 0
-          ? 'No adaptation differs'
-          : `${differs} adaptation${differs === 1 ? '' : 's'} differ${differs === 1 ? 's' : ''}`,
+          ? translate('coding:restore.noneDiffer')
+          : translate('coding:restore.differ', { count: differs }),
       );
-      if (notCompared) parts.push(`${notCompared} not compared`);
+      if (notCompared) parts.push(translate('coding:restore.notCompared', { count: notCompared }));
     }
   }
   if (snapshot.coding) {
-    if (!current.coding) parts.push('coding not read');
-    else parts.push(diff.codingChanged ? 'coding changed' : 'coding unchanged');
+    if (!current.coding) parts.push(translate('coding:restore.codingNotRead'));
+    else
+      parts.push(
+        diff.codingChanged
+          ? translate('coding:restore.codingChanged')
+          : translate('coding:restore.codingUnchanged'),
+      );
   }
   const line = parts.join(', ');
   return line.charAt(0).toUpperCase() + line.slice(1);

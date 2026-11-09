@@ -1,0 +1,221 @@
+{
+  "title": "Conectare",
+  "subtitle": {
+    "ble": "Asociază adaptorul OBD2 Bluetooth",
+    "wifi": "Conectează-te la adaptorul OBD2 Wi-Fi",
+    "spp": "Conectează-te la adaptorul Bluetooth clasic asociat",
+    "mock": "Asociază adaptorul OBD2 Bluetooth"
+  },
+  "status": {
+    "adapter": "Adaptor OBD2",
+    "a11y": "Adaptor OBD2: {{status}}"
+  },
+  "notice": {
+    "sppFallback": "Adaptoarele Bluetooth clasic funcționează doar pe Android, așa că aplicația a trecut pe Bluetooth LE. Folosește pe acest dispozitiv un adaptor OBD2 Bluetooth LE sau Wi-Fi.",
+    "webSourceFallback": "Un browser nu poate accesa adaptoare Wi-Fi sau Bluetooth clasic, așa că aplicația a trecut pe Bluetooth LE. Folosește un adaptor OBD2 Bluetooth LE în Chrome sau Edge, ori simulatorul."
+  },
+  "wifi": {
+    "title": "Adaptor Wi-Fi",
+    "join": "Conectează-te mai întâi la rețeaua Wi-Fi a adaptorului (de obicei <b>WiFi_OBDII</b>, fără parolă). Pe Android, dacă telefonul avertizează că rețeaua nu are internet, alege <i>Rămâi conectat</i>.",
+    "address": "Adresa adaptorului: <b>{{endpoint}}</b> — o poți schimba în Setări → Dezvoltator și simulator → Sursa adaptorului.",
+    "connect": "Conectare prin Wi-Fi",
+    "useBluetooth": "Folosește un adaptor Bluetooth"
+  },
+  "mock": {
+    "notice": "Modul simulator este activ — citirile nu provin de la o mașină reală.\nSe emulează: <b>{{vehicle}}</b>",
+    "connect": "Conectare la simulator",
+    "useReal": "Folosește un adaptor real"
+  },
+  "ble": {
+    "scanning": "Se caută…",
+    "scan": "Caută adaptoare",
+    "noDevicesAndroid": "Niciun dispozitiv încă. Conectează adaptorul, pune contactul, apoi caută. Dacă adaptorul este deja asociat în setările Bluetooth ale Android-ului, s-ar putea să nu mai fie vizibil — „Uită-l” acolo mai întâi sau conectează-te după adresă mai jos.",
+    "noDevices": "Niciun dispozitiv încă. Conectează adaptorul, pune contactul, apoi caută.",
+    "iosHint": "Dacă adaptorul nu apare în listă, oprește-l și pornește-l din nou; iOS nu asociază adaptoare OBD2 BLE din Setări.",
+    "byAddress": "Conectare după adresă",
+    "byAddressHelp": "Dacă adaptorul nu apare niciodată la căutare, copiază adresa sa MAC Bluetooth (din Setări Android → Bluetooth) și conectează-te direct.",
+    "macLabel": "Adresa MAC Bluetooth a adaptorului",
+    "connect": "Conectare",
+    "useWifi": "Folosești un adaptor Wi-Fi?",
+    "useSpp": "Folosești un adaptor Bluetooth clasic (3.0)?"
+  },
+  "prompt": {
+    "turnOnFailed": "Bluetooth nu a putut fi pornit automat — deschide Setările rapide și activează-l.",
+    "unsupportedTitle": "Bluetooth LE indisponibil",
+    "unsupportedBody": "Acest dispozitiv nu suportă Bluetooth Low Energy, deci nu poate folosi un adaptor OBD2 wireless. Poți folosi în continuare simulatorul integrat (Setări → Dezvoltator și simulator).",
+    "permissionTitle": "Este necesară permisiunea Bluetooth",
+    "permissionIos": "Permite Bluetooth pentru Bolid Tester în Setări, apoi revino aici.",
+    "permissionAndroid": "Permite „Dispozitive din apropiere” pentru Bolid Tester în setările sistemului, apoi revino aici.",
+    "openSettings": "Deschide setările",
+    "offTitle": "Bluetooth este oprit",
+    "offAndroid": "Pornește Bluetooth pentru a căuta adaptorul OBD2.",
+    "offIos": "Deschide Centrul de control și pornește Bluetooth pentru a căuta adaptorul OBD2.",
+    "turningOn": "Se pornește…",
+    "turnOn": "Pornește Bluetooth"
+  },
+  "device": {
+    "unnamed": "(fără nume)",
+    "connectTo": "Conectare la {{name}}",
+    "knownA11y": "Adaptor cunoscut: {{summary}}",
+    "known": {
+      "good": "cunoscut: bun",
+      "ok": "cunoscut: acceptabil",
+      "poor": "cunoscut: slab"
+    }
+  },
+  "banner": {
+    "a11y": "Modul simulator este activ. Citirile nu provin de la o mașină reală.",
+    "text": "Mod simulator · se emulează {{vehicle}}",
+    "useReal": "Folosește adaptorul real"
+  },
+  "diag": {
+    "shareTitle": "Diagnoza conexiunii",
+    "failedAt": "A eșuat la: {{stage}}",
+    "whatToTry": "Ce poți încerca",
+    "hideDetails": "Ascunde detaliile conexiunii",
+    "showDetails": "Arată detaliile conexiunii",
+    "details": "Detalii",
+    "device": "Dispozitiv: {{name}}",
+    "unknown": "necunoscut",
+    "reached": "A ajuns până la: {{stage}}",
+    "bleLink": "Legătură: MTU {{mtu}} ({{payload}} octeți per scriere) · serviciu {{service}} · {{mode}}",
+    "writeNoResponse": "scriere fără răspuns",
+    "writeWithResponse": "scriere cu răspuns",
+    "wifiLink": "Legătură: Wi-Fi (socket TCP)",
+    "wifiLinkTo": "Legătură: Wi-Fi (socket TCP) către {{target}}",
+    "sppLink": "Legătură: Bluetooth clasic (port serial)",
+    "sppLinkTo": "Legătură: Bluetooth clasic (port serial) către {{target}}",
+    "noTraffic": "Niciun trafic cu adaptorul în această încercare.",
+    "copy": "Copiază detaliile",
+    "openErrorLog": "Deschide jurnalul de erori"
+  },
+  "spp": {
+    "title": "Adaptoare asociate",
+    "help": "Adaptoarele Bluetooth clasic („3.0”) se conectează ca dispozitiv asociat — alege-l pe al tău mai jos. Monitorul de magistrală (sniffer) nu este disponibil prin Bluetooth clasic.",
+    "pairFirst": "Asociază mai întâi adaptorul: Setări Android → Bluetooth → asociază <b>OBDII</b> (PIN 1234 sau 0000), apoi revino.",
+    "openSettings": "Deschide setările Bluetooth",
+    "refresh": "Reîmprospătează",
+    "useBle": "Folosește un adaptor Bluetooth LE",
+    "permissionDenied": "Permisiunea Bluetooth a fost refuzată. Permite „Dispozitive din apropiere” pentru Bolid Tester în setările sistemului, apoi reîmprospătează lista."
+  },
+  "web": {
+    "note": "Funcționează în Chrome și Edge pe calculator sau pe un telefon Android, prin HTTPS. Nu și în Safari, Firefox sau pe iPhone.",
+    "unsupportedTitle": "Adaptoarele Bluetooth nu sunt suportate în acest browser",
+    "unsupported": "Acest browser nu poate comunica cu adaptoare Bluetooth. Folosește Chrome sau Edge pe calculator sau pe Android, prin HTTPS — Safari, Firefox și toate browserele de pe iPhone nu suportă Web Bluetooth. Simulatorul funcționează în continuare aici.",
+    "useSimulator": "Folosește simulatorul",
+    "instructions": "Conectează adaptorul în priza OBD2 și pune contactul. Browserul va afișa apoi dispozitivele Bluetooth din apropiere — alege adaptorul OBD2 (deseori numit OBDII, Vgate sau IOS-Vlink).",
+    "choose": "Alege adaptorul și conectează-te",
+    "trySimulator": "Nu ai adaptor? Încearcă simulatorul"
+  },
+  "diagnose": {
+    "stage": {
+      "bluetooth": "Bluetooth-ul telefonului",
+      "transport": "Legătura Bluetooth",
+      "init": "Pornirea adaptorului",
+      "probe": "Mașina nu răspunde",
+      "identify": "Citirea datelor mașinii",
+      "wifi": "Legătura Wi-Fi",
+      "spp": "Legătura Bluetooth clasic"
+    },
+    "wifiUnreachable": {
+      "title": "Adaptorul Wi-Fi nu poate fi accesat",
+      "explanation": "Telefonul nu este în rețeaua Wi-Fi a adaptorului sau adaptorul folosește altă adresă.",
+      "s1": "Conectează-te la rețeaua Wi-Fi a adaptorului (de obicei „WiFi_OBDII”, fără parolă). Pe Android, alege „Rămâi conectat” dacă telefonul avertizează că rețeaua nu are internet.",
+      "s2": "Verifică adresa adaptorului: majoritatea folosesc 192.168.0.10, portul 35000 (Setări → Dezvoltator și simulator → Sursa adaptorului).",
+      "s3": "Oprește datele mobile, ca telefonul să nu trimită conexiunea prin rețeaua mobilă.",
+      "s4": "Pe iPhone, permite Rețea locală pentru Bolid Tester (Setări → Confidențialitate și securitate → Rețea locală)."
+    },
+    "sppUnreachable": {
+      "title": "Adaptorul Bluetooth clasic nu poate fi deschis",
+      "explanation": "Adaptorul este asociat, dar nu poate fi accesat.",
+      "s1": "Repornește adaptorul: scoate-l 10 secunde, pune-l la loc, apoi reconectează-te.",
+      "s2": "Asigură-te că nicio altă aplicație (de ex. Torque) nu ține conexiunea — închide-o sau dezactivează-i conectarea automată.",
+      "s3": "Ține telefonul aproape de adaptor, cu contactul pus.",
+      "s4": "Tot nu merge? Dezasociază adaptorul din Setări Android → Bluetooth, asociază-l din nou (PIN 1234 sau 0000), apoi reîmprospătează lista."
+    },
+    "btPermission": {
+      "title": "Este necesară permisiunea Bluetooth",
+      "explanation": "Bolid Tester nu are voie să folosească Bluetooth, deci nu poate accesa adaptorul.",
+      "s1": "Deschide setările sistemului și permite „Dispozitive din apropiere” (Android) sau Bluetooth (iOS) pentru Bolid Tester.",
+      "s2": "Revino aici și conectează-te din nou."
+    },
+    "bleUnsupported": {
+      "title": "Bluetooth LE indisponibil",
+      "explanation": "Acest dispozitiv nu suportă Bluetooth Low Energy, deci nu poate folosi un adaptor OBD2 wireless.",
+      "s1": "Folosește un telefon sau o tabletă cu Bluetooth Low Energy.",
+      "s2": "Explorează aplicația cu simulatorul integrat (Setări → Dezvoltator și simulator → Sursa adaptorului)."
+    },
+    "btOff": {
+      "title": "Bluetooth este oprit",
+      "explanation": "Bluetooth-ul telefonului este oprit, deci aplicația nu poate accesa adaptorul.",
+      "s1": "Pornește Bluetooth (Setări rapide pe Android, Centrul de control pe iOS).",
+      "s2": "Caută din nou adaptorul după ce l-ai pornit."
+    },
+    "notBleSerial": {
+      "title": "Nu este un adaptor serial Bluetooth LE",
+      "explanation": "Acest dispozitiv nu expune caracteristicile seriale prin BLE pe care le folosește un ELM327 — poate fi un adaptor Bluetooth clasic (SPP), care se conectează ca dispozitiv asociat.",
+      "s1": "Verifică dacă ai ales adaptorul OBD2, nu alt dispozitiv din apropiere.",
+      "s2": "Un adaptor Bluetooth clasic („3.0”): pe Android, asociază-l în setările Bluetooth ale telefonului și alege Bluetooth clasic (Setări → Dezvoltator și simulator → Sursa adaptorului). iPhone-urile nu pot folosi adaptoare clasice.",
+      "s3": "Caută din nou și alege adaptorul după nume (Vlink, OBDII, VEEPEAK…)."
+    },
+    "adapterSilent": {
+      "title": "Adaptorul nu răspunde",
+      "explanation": "Adaptorul a acceptat legătura, dar nu a răspuns la `ATZ` — nu este alimentat sau este în repaus.",
+      "s1": "Verifică dacă adaptorul este introdus complet în priza OBD2 și dacă ledul lui este aprins.",
+      "s2": "Trezește-l: scoate adaptorul 10 secunde, pune-l la loc, apoi reconectează-te.",
+      "s3": "Apropie telefonul de adaptor.",
+      "s4wifi": "Tot nu merge? Verifică dacă telefonul este încă în rețeaua Wi-Fi a adaptorului.",
+      "s4spp": "Tot nu merge? Închide orice altă aplicație OBD2 care ar putea ține adaptorul, apoi reconectează-te.",
+      "s4ble": "Tot nu merge? Șterge adaptorul din lista Bluetooth a telefonului și caută din nou."
+    },
+    "carSilent": {
+      "title": "Mașina nu răspunde",
+      "explanation": "Adaptorul funcționează, dar calculatorul motorului nu a răspuns la prima cerere OBD2 („0100”). Aproape întotdeauna înseamnă că nu este pus contactul.",
+      "s1": "Pune contactul (ON) — cu motorul pornit este cel mai sigur.",
+      "s2": "Verifică dacă adaptorul este introdus complet în priza OBD2.",
+      "s3": "Reconectează-te."
+    },
+    "busInit": {
+      "title": "Magistrala de diagnoză nu a putut fi pornită",
+      "explanation": "Adaptorul nu a putut deschide o sesiune pe magistrala mașinii („UNABLE TO CONNECT” / „BUS INIT”). Mașinile mai vechi folosesc magistrala lentă K-line, care are nevoie de contact pus și câteva secunde pentru pornire.",
+      "s1": "Pune contactul (ON) și așteaptă 5 secunde înainte de conectare.",
+      "s2": "Reconectează-te — pornirea K-line reușește deseori la a doua încercare.",
+      "s3": "Verifică dacă adaptorul este introdus complet în priza OBD2.",
+      "s4": "Verifică dacă mașina are OBD2 / EOBD (UE: benzină din 2001, motorină din 2004)."
+    },
+    "linkStalled": {
+      "title": "Legătura nu mai răspunde",
+      "explanation": "Mașina a răspuns la început, dar o cerere a expirat în timp ce aplicația citea datele mașinii — {{link}} sau adaptorul s-a blocat.",
+      "s1": "Reconectează-te.",
+      "s2": "Apropie telefonul de adaptor.",
+      "s3": "Dacă se tot întâmplă, scoate adaptorul 10 secunde și pune-l la loc."
+    },
+    "failed": {
+      "title": "Conexiunea a eșuat",
+      "error": "Conexiunea a eșuat: {{error}}",
+      "errorTo": "Conexiunea la {{device}} a eșuat: {{error}}",
+      "unknown": "Conexiunea a eșuat dintr-un motiv necunoscut.",
+      "unknownTo": "Conexiunea la {{device}} a eșuat dintr-un motiv necunoscut.",
+      "s1": "Verifică dacă adaptorul este conectat și ledul lui este aprins.",
+      "s2": "Apropie telefonul de adaptor.",
+      "s3wifi": "Reconectează-te la rețeaua Wi-Fi a adaptorului, apoi la adaptor.",
+      "s3bt": "Oprește și pornește din nou Bluetooth, apoi reconectează-te.",
+      "s4": "Deschide jurnalul de erori pentru detaliile tehnice."
+    }
+  },
+  "service": {
+    "linkLost": "Legătura cu adaptorul s-a pierdut — conexiunea a căzut neașteptat. Verifică dacă adaptorul este bine introdus în priza OBD2 și reconectează-te.",
+    "flapPaused": "Legătura a căzut de 3 ori într-un minut — reconectarea automată a fost oprită. Verifică dacă adaptorul este bine introdus și reconectează-te manual.",
+    "reconnecting": "Reconectare la adaptor… încercarea {{attempt}} din {{total}}.",
+    "lastError": "Ultima eroare: {{error}}",
+    "reconnectFailed_one": "Reconectarea automată a eșuat după {{count}} încercare. Reconectează-te manual când adaptorul este alimentat și din nou în raza de acțiune.",
+    "reconnectFailed_few": "Reconectarea automată a eșuat după {{count}} încercări. Reconectează-te manual când adaptorul este alimentat și din nou în raza de acțiune.",
+    "reconnectFailed_other": "Reconectarea automată a eșuat după {{count}} de încercări. Reconectează-te manual când adaptorul este alimentat și din nou în raza de acțiune."
+  },
+  "scan": {
+    "permissionDenied": "Permisiunea Bluetooth a fost refuzată. Permite „Dispozitive din apropiere” (Android 12+) sau Locație (Android 11 și mai vechi) pentru Bolid Tester în setările sistemului, pornește Bluetooth, apoi caută din nou.",
+    "permissionDeniedIos": "Permisiunea Bluetooth a fost refuzată. Permite Bluetooth pentru Bolid Tester în Setări → Bolid Tester, apoi caută din nou.",
+    "off": "Bluetooth este oprit. Pornește Bluetooth, apoi caută din nou.",
+    "settling": "Bluetooth nu este încă pregătit. Așteaptă puțin, apoi caută din nou."
+  }
+}

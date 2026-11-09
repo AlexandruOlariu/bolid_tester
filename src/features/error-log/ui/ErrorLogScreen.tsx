@@ -22,6 +22,8 @@ import {
 import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import type { ErrorSeverity, LoggedError } from '@/shared/lib/errorLog';
 import { useErrorLogExport } from '../hooks/useErrorLogExport';
+import { useTranslation } from '@/shared/i18n';
+import { formatDateTime } from '@/shared/lib/format';
 
 /** Severity colour tokens (plan 20): AA in both themes. */
 const SEVERITY_COLOR: Record<ErrorSeverity, string> = {
@@ -33,14 +35,11 @@ const SEVERITY_COLOR: Record<ErrorSeverity, string> = {
 type SeverityFilter = 'all' | ErrorSeverity;
 
 function fmtTime(ts: number): string {
-  try {
-    return new Date(ts).toLocaleString();
-  } catch {
-    return String(ts);
-  }
+  return formatDateTime(ts);
 }
 
 function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => void }) {
+  const { t } = useTranslation('errorLog');
   const palette = usePalette();
   const [open, setOpen] = useState(false);
   const color = SEVERITY_COLOR[e.severity];
@@ -51,7 +50,7 @@ function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => 
     <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor={color} gap="$1">
       <XStack alignItems="center" gap="$2">
         <Text fontWeight="800" fontSize="$1" color={color} textTransform="uppercase">
-          {e.severity}
+          {t(`severity.${e.severity}`)}
         </Text>
         <Text fontWeight="700" fontSize="$2" flex={1} numberOfLines={1}>
           {e.source}
@@ -62,7 +61,7 @@ function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => 
           chromeless
           hitSlop={HIT_SLOP}
           icon={<Trash2 size={16} color={palette.muted} />}
-          accessibilityLabel={`Delete error: ${e.source}`}
+          accessibilityLabel={t('deleteA11y', { source: e.source })}
           onPress={() => onRemove(e.id)}
         />
       </XStack>
@@ -89,7 +88,7 @@ function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => 
           onPress={() => setOpen((v) => !v)}
         >
           <Text fontSize="$1" color="$muted">
-            {open ? 'Hide details' : 'Details'}
+            {open ? t('hideDetails') : t('details')}
           </Text>
         </Button>
       ) : null}
@@ -116,6 +115,7 @@ function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => 
 }
 
 export function ErrorLogScreen() {
+  const { t } = useTranslation('errorLog');
   const palette = usePalette();
   const router = useRouter();
   const errors = useErrorLogStore((s) => s.errors);
@@ -136,27 +136,27 @@ export function ErrorLogScreen() {
   );
 
   const filterOptions: SegmentOption<SeverityFilter>[] = [
-    { value: 'all', label: `All (${errors.length})` },
-    { value: 'fatal', label: `Fatal (${counts.fatal})` },
-    { value: 'error', label: `Errors (${counts.error})` },
-    { value: 'warning', label: `Warnings (${counts.warning})` },
+    { value: 'all', label: t('filter.all', { count: errors.length }) },
+    { value: 'fatal', label: t('filter.fatal', { count: counts.fatal }) },
+    { value: 'error', label: t('filter.error', { count: counts.error }) },
+    { value: 'warning', label: t('filter.warning', { count: counts.warning }) },
   ];
 
   const confirmClear = () =>
-    appAlert('Clear error log?', 'This permanently deletes every saved error.', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear all', style: 'destructive', onPress: () => clear() },
+    appAlert(t('clearTitle'), t('clearBody'), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      { text: t('clearAll'), style: 'destructive', onPress: () => clear() },
     ]);
 
   const onExport = () =>
-    appAlert('Export error log', 'Choose a format to share.', [
-      { text: 'Cancel', style: 'cancel' },
+    appAlert(t('exportTitle'), t('exportBody'), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
       { text: 'Markdown', onPress: () => void exportErrors(shown, 'md') },
       { text: 'JSON', onPress: () => void exportErrors(shown, 'json') },
     ]);
 
   return (
-    <Screen title="Error log" subtitle="Saved errors to review and export">
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       {/* Plan 32: the one-tap problem report bundles this log with the adapter log and device info. */}
       <Button
         size="$3"
@@ -164,12 +164,12 @@ export function ErrorLogScreen() {
         alignSelf="flex-start"
         onPress={() => router.push('/feedback')}
         icon={<MessageSquareWarning size={16} color={palette.accent} />}
-        accessibilityLabel="Report a problem"
+        accessibilityLabel={t('reportA11y')}
       >
-        Report
+        {t('report')}
       </Button>
       <SegmentedControl
-        label="Show errors by severity"
+        label={t('filterA11y')}
         options={filterOptions}
         value={filter}
         onChange={setFilter}
@@ -184,10 +184,10 @@ export function ErrorLogScreen() {
             onPress={onExport}
             icon={busy ? () => <Spinner /> : <Download size={16} />}
           >
-            Export
+            {t('export')}
           </Button>
           <Button theme="red" onPress={confirmClear} icon={<Trash2 size={16} />}>
-            Clear
+            {t('clear')}
           </Button>
         </XStack>
       ) : null}
@@ -196,9 +196,7 @@ export function ErrorLogScreen() {
         <YStack alignItems="center" gap="$2" paddingVertical="$6">
           <Bug size={28} color={palette.accent} />
           <Paragraph theme="alt2" textAlign="center">
-            {errors.length === 0
-              ? 'No errors logged. When something goes wrong it’ll be saved here so you can export and fix it later.'
-              : 'Nothing for this filter.'}
+            {errors.length === 0 ? t('empty') : t('emptyFilter')}
           </Paragraph>
         </YStack>
       ) : (

@@ -4,8 +4,10 @@ import { Screen, UnlockBadge, VerificationBadge } from '@/shared/ui';
 import { useUnlockStatus } from '@/shared/security';
 import { useServiceResetStore } from '../model/serviceResetStore';
 import { useServiceReset } from '../hooks/useServiceReset';
+import { useTranslation } from '@/shared/i18n';
 
 export function ServiceResetScreen() {
+  const { t } = useTranslation('serviceReset');
   const { available, descriptor, run } = useServiceReset();
   const running = useServiceResetStore((s) => s.running);
   const lastResult = useServiceResetStore((s) => s.lastResult);
@@ -14,12 +16,8 @@ export function ServiceResetScreen() {
 
   if (!available || !descriptor) {
     return (
-      <Screen title="Service reset">
-        <Paragraph theme="alt2">
-          Service-interval reset is unavailable for this car / protocol. It is experimental and
-          profile-gated — it needs a CAN (UDS) link, or a K-line (KWP2000) link for cars that use
-          it.
-        </Paragraph>
+      <Screen title={t('title')}>
+        <Paragraph theme="alt2">{t('unavailable')}</Paragraph>
       </Screen>
     );
   }
@@ -31,11 +29,9 @@ export function ServiceResetScreen() {
   const manualProcedure =
     descriptor.manualProcedure && descriptor.manualProcedure.length > 0 ? (
       <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$4">
-        <H4>Manual procedure{obdUnreachable ? ' (recommended)' : ''}</H4>
+        <H4>{obdUnreachable ? t('manualRecommended') : t('manual')}</H4>
         <Paragraph theme="alt2" size="$2">
-          {obdUnreachable
-            ? 'The reliable reset for this car.'
-            : 'The reliable reset for this car. Use it if the OBD reset above does not complete.'}
+          {obdUnreachable ? t('manualReliable') : t('manualFallback')}
         </Paragraph>
         {descriptor.manualProcedure.map((step, i) => (
           <Paragraph key={i} size="$2">
@@ -51,7 +47,7 @@ export function ServiceResetScreen() {
       onPress={() => setConfirming(true)}
       disabled={running}
     >
-      {obdUnreachable ? 'Try OBD reset anyway (not expected to work)' : 'Reset service interval'}
+      {obdUnreachable ? t('tryAnyway') : t('reset')}
     </Button>
   ) : (
     <XStack gap="$2">
@@ -64,25 +60,22 @@ export function ServiceResetScreen() {
           await run();
         }}
       >
-        {running ? 'Resetting…' : 'Confirm reset'}
+        {running ? t('resetting') : t('confirm')}
       </Button>
       <Button flex={1} onPress={() => setConfirming(false)} disabled={running}>
-        Cancel
+        {t('common:actions.cancel')}
       </Button>
     </XStack>
   );
 
   return (
-    <Screen
-      title="Service reset"
-      subtitle="⚠ Experimental — writes to the instrument cluster. Confirm on the dash afterwards."
-    >
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$4">
         <H4>{descriptor.module}</H4>
         <Paragraph theme="alt2" size="$2">
-          Method: {descriptor.method}
-          {descriptor.routineId ? ` · routine ${descriptor.routineId}` : ''} · header{' '}
-          {descriptor.reqHeader}
+          {t('method', { method: descriptor.method })}
+          {descriptor.routineId ? ` · ${t('routine', { id: descriptor.routineId })}` : ''} ·{' '}
+          {t('header', { header: descriptor.reqHeader })}
         </Paragraph>
         <VerificationBadge item={descriptor} testID="verify-service-reset" />
         <UnlockBadge status={unlock} testID="unlock-service-reset" />

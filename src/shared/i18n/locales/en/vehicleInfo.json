@@ -1,0 +1,15 @@
+{
+  "title": "Vehicle info",
+  "notConnected": "Not connected.",
+  "fullReport": "Full vehicle report",
+  "notAvailable": "not available",
+  "calibrationId": "Calibration ID",
+  "protocol": "Protocol",
+  "adapter": "Adapter",
+  "elmVersion": "ELM version",
+  "voltage": "Voltage",
+  "supportedPids": "Supported PIDs",
+  "supportedMode01": "Supported Mode 01 PIDs",
+  "extended": "Extended PIDs (experimental)",
+  "decodeVin": "Decode VIN"
+}

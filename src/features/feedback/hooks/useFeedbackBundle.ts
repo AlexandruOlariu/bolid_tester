@@ -20,6 +20,7 @@ import { useGarageStore } from '@/shared/state/garageStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { vehicleLabel } from '@/shared/vehicles';
+import { translate } from '@/shared/i18n';
 
 /** The last module scan as text (`formatAutoScanReport(scans[0])`), or null. Handed in by the route
  *  (`src/app/feedback.tsx`), because a feature never imports another feature's store. */
@@ -125,7 +126,7 @@ export function useFeedbackBundle({ getLastScanReport }: FeedbackOptions = {}) {
                 maxLogLines: bundle.adapterLog.length,
               }),
           isJson ? 'application/json' : 'text/markdown',
-          { dialogTitle: 'Share problem report' },
+          { dialogTitle: translate('common:share.problemReport') },
         );
         // saveTextFile returns null without throwing when the device has no document directory;
         // log it, so the screen's "See More → Error log" pointer always finds an entry.

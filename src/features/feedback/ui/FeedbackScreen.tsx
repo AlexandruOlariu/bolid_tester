@@ -24,8 +24,7 @@ import { useGarageStore } from '@/shared/state/garageStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { vehicleLabel } from '@/shared/vehicles';
 import { useFeedbackBundle, type LastScanReport } from '../hooks/useFeedbackBundle';
-
-const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+import { useTranslation } from '@/shared/i18n';
 
 function Item({ children, testID }: { children: string; testID?: string }) {
   return (
@@ -56,6 +55,7 @@ export interface FeedbackScreenProps {
  *  counts, the **Keep VIN and adapter address** switch (off by default) and the four ways to hand
  *  the redacted bundle over. Nothing is sent until the user picks where to share it. */
 export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackScreenProps) {
+  const { t } = useTranslation('feedback');
   const params = useLocalSearchParams<{ preview?: string }>();
   const preview = params.preview === '1';
   const errorCount = useErrorLogStore((s) => s.errors.length);
@@ -93,15 +93,13 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
     (s) => s.vehicles.find((v) => v.id === profile.id)?.learned?.vin ?? null,
   );
   const vin = sessionVin ?? garageVin;
-  const vinText = !vin ? 'VIN not read' : keep ? `VIN ${vin}` : 'VIN hidden';
+  const vinText = !vin ? t('vinNotRead') : keep ? `VIN ${vin}` : t('vinHidden');
   const device = platformLabel(Platform.OS, String(Platform.Version ?? ''));
 
   const afterShare = (saved: string | null) => {
     if (saved) handedOver.current = true;
     setNote(
-      saved
-        ? `Thanks — bundle saved to the app folder as ${saved.split('/').pop() ?? saved}.`
-        : 'The bundle could not be saved. See More → Error log for details.',
+      saved ? t('note.saved', { file: saved.split('/').pop() ?? saved }) : t('note.saveFailed'),
     );
   };
 
@@ -110,20 +108,12 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
   const onIssue = async () => {
     const ok = await fb.openIssue(description);
     if (ok) handedOver.current = true;
-    setNote(
-      ok
-        ? 'The issue opens in your browser with the summary filled in (the VIN and adapter address are always removed there). Attach the JSON bundle to it for the full logs.'
-        : 'The browser could not be opened. See More → Error log for details.',
-    );
+    setNote(ok ? t('note.issue') : t('note.browserFailed'));
   };
   const onEmail = async () => {
     const ok = await fb.email(description, keep);
     if (ok) handedOver.current = true;
-    setNote(
-      ok
-        ? 'Your email app opens with a draft. Attach the JSON bundle from Share bundle.'
-        : 'No email app could be opened. Share the bundle instead.',
-    );
+    setNote(ok ? t('note.email') : t('note.emailFailed'));
   };
   const openPolicy = () => {
     Linking.openURL(PRIVACY_POLICY_URL).catch((e: unknown) =>
@@ -136,20 +126,17 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
   const palette = usePalette();
 
   return (
-    <Screen
-      title="Report a problem"
-      subtitle="Share what happened and the app’s logs — identifiers are removed unless you choose to keep them."
-    >
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <YStack gap="$2">
-        <H4>What happened?</H4>
+        <H4>{t('whatHappened')}</H4>
         <TextArea
           value={description}
-          onChangeText={(t) => setDescription(t.slice(0, FEEDBACK_DESCRIPTION_MAX))}
-          placeholder="What were you doing? What did you expect?"
+          onChangeText={(text) => setDescription(text.slice(0, FEEDBACK_DESCRIPTION_MAX))}
+          placeholder={t('placeholder')}
           numberOfLines={5}
           minHeight={110}
           maxLength={FEEDBACK_DESCRIPTION_MAX}
-          accessibilityLabel="What were you doing? What did you expect?"
+          accessibilityLabel={t('placeholder')}
           testID="feedback-description"
         />
         <Paragraph theme="alt2" fontSize="$1" textAlign="right">
@@ -158,17 +145,17 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
       </YStack>
 
       <Card bordered padding="$3" gap="$2" testID="feedback-contents">
-        <Text fontWeight="700">The bundle contains</Text>
-        <Item testID="feedback-errors">{`${plural(errorCount, 'error', 'errors')} from the error log`}</Item>
-        <Item testID="feedback-log">
-          {plural(logLines, 'adapter log line', 'adapter log lines')}
+        <Text fontWeight="700">{t('contains')}</Text>
+        <Item testID="feedback-errors">{t('errors', { count: errorCount })}</Item>
+        <Item testID="feedback-log">{t('logLines', { count: logLines })}</Item>
+        <Item testID="feedback-app">{t('app', { version: APP_VERSION, device })}</Item>
+        <Item testID="feedback-vehicle">
+          {t('vehicle', { car: vehicleLabel(profile), vin: vinText })}
         </Item>
-        <Item testID="feedback-app">{`app v${APP_VERSION} · ${device}`}</Item>
-        <Item testID="feedback-vehicle">{`vehicle: ${vehicleLabel(profile)} (${vinText})`}</Item>
-        <Item testID="feedback-scan">{`last module scan: ${hasScan ? 'yes' : 'no'}`}</Item>
+        <Item testID="feedback-scan">{hasScan ? t('scanYes') : t('scanNo')}</Item>
         {fb.sizeBytes !== null ? (
           <Paragraph theme="alt2" fontSize="$2" testID="feedback-size">
-            Bundle size: {formatBytes(fb.sizeBytes)}
+            {t('size', { size: formatBytes(fb.sizeBytes) })}
           </Paragraph>
         ) : null}
       </Card>
@@ -182,9 +169,9 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
         gap="$3"
       >
         <YStack flex={1}>
-          <Text fontWeight="700">Keep VIN and adapter address</Text>
+          <Text fontWeight="700">{t('keep')}</Text>
           <Paragraph theme="alt2" size="$2">
-            Only turn this on if the maintainer asked for them.
+            {t('keepHelp')}
           </Paragraph>
         </YStack>
         <Switch
@@ -194,7 +181,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
           accessible
           role="switch"
           accessibilityRole="switch"
-          accessibilityLabel="Keep VIN and adapter address"
+          accessibilityLabel={t('keep')}
           accessibilityState={{ checked: keep }}
           testID="feedback-keep"
         >
@@ -210,7 +197,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
           icon={spinner ?? <Braces size={16} />}
           testID="feedback-share-json"
         >
-          Share bundle (JSON)
+          {t('shareJson')}
         </Button>
         <Button
           disabled={disabled}
@@ -218,7 +205,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
           icon={spinner ?? <FileText size={16} color={palette.muted} />}
           testID="feedback-share-md"
         >
-          Share summary (Markdown)
+          {t('shareMarkdown')}
         </Button>
         <Button
           disabled={disabled}
@@ -226,7 +213,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
           icon={spinner ?? <ExternalLink size={16} color={palette.muted} />}
           testID="feedback-issue"
         >
-          Open GitHub issue
+          {t('issue')}
         </Button>
         {fb.emailAvailable ? (
           <Button
@@ -235,7 +222,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
             icon={spinner ?? <Mail size={16} color={palette.muted} />}
             testID="feedback-email"
           >
-            Email
+            {t('email')}
           </Button>
         ) : null}
       </YStack>
@@ -248,7 +235,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
 
       <YStack gap="$1" paddingTop="$2">
         <Paragraph theme="alt2" fontSize="$2">
-          Nothing is sent until you choose where to share it.
+          {t('nothingSent')}
         </Paragraph>
         <Button
           size="$3"
@@ -260,7 +247,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
           accessibilityRole="link"
         >
           <Text fontSize="$2" color="$accent" textDecorationLine="underline">
-            Privacy policy
+            {t('policy')}
           </Text>
         </Button>
       </YStack>

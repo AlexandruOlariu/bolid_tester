@@ -28,6 +28,7 @@ import {
   type PickResult,
   type RestoreResult,
 } from '../api/backupService';
+import { translate } from '@/shared/i18n';
 
 export type BackupAction = 'backup' | 'pick' | 'restore' | 'export' | 'file';
 
@@ -94,8 +95,10 @@ export function useBackup() {
 
   const open = useCallback(
     (record: BackupRecord): Promise<BackupValidation> =>
-      run<BackupValidation>('file', { ok: false, reason: 'This device has no app storage.' }, (m) =>
-        readListedBackup(m, record),
+      run<BackupValidation>(
+        'file',
+        { ok: false, reason: translate('backup:err.noStorageShort') },
+        (m) => readListedBackup(m, record),
       ),
     [run],
   );
@@ -104,7 +107,7 @@ export function useBackup() {
     (bundle: BackupBundle, stores: string[], includeTrips: boolean): Promise<RestoreResult> =>
       run<RestoreResult>(
         'restore',
-        { ok: false, reason: 'This device has no app storage to restore into.' },
+        { ok: false, reason: translate('backup:err.noStorage') },
         async (m) => {
           await connectionService.resetForRestore();
           return restoreBackup(m, bundle, { stores, includeTrips, platform: Platform.OS });

@@ -22,11 +22,13 @@ import {
   fromScans,
   fromTrips,
 } from '../api/timelineSources';
+import { translate, useTranslation } from '@/shared/i18n';
 
 /** Display name of a car by its registry / garage id (the Trips screen's rule). */
 export function carLabel(carId: string, garage: UserVehicle[]): string {
-  if (carId === UNKNOWN_TRIP_CAR) return 'Unknown car';
-  if (isUserVehicleId(carId) && !garage.some((v) => v.id === carId)) return 'Removed car';
+  if (carId === UNKNOWN_TRIP_CAR) return translate('tripRecording:list.unknownCar');
+  if (isUserVehicleId(carId) && !garage.some((v) => v.id === carId))
+    return translate('tripRecording:list.removedCar');
   return vehicleLabel(resolveProfile(carId, garage));
 }
 
@@ -39,7 +41,7 @@ export function maintenanceVehicle(key: string, garage: UserVehicle[]): HistoryV
     const owner = garage.find((v) => v.learned?.vin === vin);
     return owner
       ? { id: owner.id, label: carLabel(owner.id, garage), vin }
-      : { id: key, label: 'Unknown car', vin };
+      : { id: key, label: translate('tripRecording:list.unknownCar'), vin };
   }
   const id = key.startsWith('id:') ? key.slice(3) : key;
   return { id, label: carLabel(id, garage), vin: null };
@@ -60,6 +62,10 @@ export function useTimeline(): {
   const serviceItems = useMaintenanceStore((s) => s.items);
   const backups = useCarBackupStore((s) => s.backups);
   const garage = useGarageStore((s) => s.vehicles);
+  // The item titles / subtitles are built with `translate` and `formatFixed`, so the list is rebuilt
+  // when the language changes — History stays mounted once visited (plan 11).
+  const { i18n } = useTranslation();
+  const language = i18n.language;
 
   const items = useMemo(() => {
     const maintenance = Object.entries(byVehicle).flatMap(([key, bucket]) => {
@@ -73,7 +79,9 @@ export function useTimeline(): {
       maintenance,
       fromBackups(backups),
     ]);
-  }, [entries, scans, trips, byVehicle, serviceItems, backups, garage]);
+    // `language`: not read inside, but every string above depends on it (see above).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, scans, trips, byVehicle, serviceItems, backups, garage, language]);
 
   const entriesById = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
 

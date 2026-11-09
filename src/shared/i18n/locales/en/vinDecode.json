@@ -1,0 +1,21 @@
+{
+  "title": "VIN decoder",
+  "subtitle": "Offline WMI / country / year / check digit.",
+  "check": {
+    "valid": "valid",
+    "invalid": "invalid (≠ {{expected}})",
+    "na": "n/a (non-US VIN)"
+  },
+  "labelFromCar": "VIN (from the car — or type another)",
+  "labelType": "VIN (type a 17-char VIN)",
+  "placeholder": "e.g. WVWZZZ1KZ9W903398",
+  "inputA11y": "Vehicle identification number (VIN)",
+  "manufacturer": "Manufacturer",
+  "country": "Country",
+  "modelYear": "Model year",
+  "unknown": "unknown",
+  "plantSerial": "Plant / serial",
+  "checkDigit": "Check digit",
+  "invalid": "Not a valid 17-character VIN (the letters I, O and Q are never used).",
+  "none": "No VIN yet — connect to a car or type a VIN above."
+}

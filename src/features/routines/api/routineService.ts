@@ -11,6 +11,7 @@ import {
   UdsError,
 } from '@/shared/obd-core';
 import type { GuidedRoutine, ExtendedPid } from '@/shared/vehicles';
+import { translate } from '@/shared/i18n';
 
 export interface InterlockCheck {
   ok: boolean;
@@ -38,19 +39,19 @@ export async function checkInterlocks(
   const speed = needSpeed ? ((await session.readValue('010D'))?.value ?? null) : null;
 
   if (il.requireEngineOff) {
-    if (rpm === null) failures.push('Cannot verify the engine is off — RPM is unreadable.');
+    if (rpm === null) failures.push(translate('routines:interlock.rpmUnreadable'));
     else if (rpm > 0)
-      failures.push(`Engine must be OFF (ignition on) — currently ${Math.round(rpm)} rpm.`);
+      failures.push(translate('routines:interlock.engineOff', { rpm: Math.round(rpm) }));
   }
   if (il.requireIdle) {
-    if (rpm === null || rpm < 400) failures.push('Engine must be RUNNING at idle.');
-    else if (rpm > 1200) failures.push(`Engine must idle — currently ${Math.round(rpm)} rpm.`);
+    if (rpm === null || rpm < 400) failures.push(translate('routines:interlock.engineRunning'));
+    else if (rpm > 1200)
+      failures.push(translate('routines:interlock.engineIdle', { rpm: Math.round(rpm) }));
   }
   if (il.maxSpeedKmh !== undefined) {
-    if (speed === null)
-      failures.push('Cannot verify the vehicle is stationary — speed is unreadable.');
+    if (speed === null) failures.push(translate('routines:interlock.speedUnreadable'));
     else if (speed > il.maxSpeedKmh) {
-      failures.push(`Vehicle must be stationary — currently ${Math.round(speed)} km/h.`);
+      failures.push(translate('routines:interlock.stationary', { speed: Math.round(speed) }));
     }
   }
   return { ok: failures.length === 0, failures };
@@ -109,15 +110,16 @@ export function describeRoutineFailure(err: unknown, routine: GuidedRoutine): st
   if (err instanceof UdsError && err.nrc !== undefined) {
     switch (err.nrc) {
       case 0x33: // securityAccessDenied
-        return (
-          `The ${routine.module} refused this ${routine.kind === 'outputTest' ? 'output test' : 'basic setting'} ` +
-          'without security access (NRC 0x33). VAG basic settings usually need the ECU unlocked ' +
-          '(UDS 0x27 seed/key), and the app ships no seed→key routines. The routine cannot run ' +
-          'until you install a security-access plugin for this module (Settings → Data → ' +
-          'Security access plugins).'
-        );
+        return translate('routines:failure.nrc33', {
+          module: routine.module,
+          kind: translate(
+            routine.kind === 'outputTest'
+              ? 'routines:kind.outputTest'
+              : 'routines:kind.basicSetting',
+          ),
+        });
       case 0x35: // invalidKey
-        return 'Security unlock was rejected (NRC 0x35 invalid key) — the installed plugin’s seed→key routine is wrong for this ECU. Each wrong key counts toward the module’s lockout.';
+        return translate('routines:failure.nrc35');
       case 0x36: // exceedNumberOfAttempts
       case 0x37: // requiredTimeDelayNotExpired
         return describeUnlockFailure(err) ?? err.message;
@@ -126,24 +128,15 @@ export function describeRoutineFailure(err: unknown, routine: GuidedRoutine): st
       case 0x31: // requestOutOfRange
       case 0x7e: // subFunctionNotSupportedInActiveSession
       case 0x7f: // serviceNotSupportedInActiveSession
-        return (
-          `The ${routine.module} does not recognise this routine (id ${routine.id}, NRC 0x${err.nrc.toString(16)}). ` +
-          'This routine ID is unverified for your exact car — it needs confirming from a VCDS "Basic Settings" ' +
-          'session or a UDS capture on the real ECU before it will run.'
-        );
+        return translate('routines:failure.unknownId', {
+          module: routine.module,
+          id: routine.id,
+          nrc: err.nrc.toString(16),
+        });
       case 0x22: // conditionsNotCorrect
-        return (
-          `The ${routine.module} rejected the routine because conditions are not correct (NRC 0x22). ` +
-          'The engine usually must be warm and at a steady idle with no active faults. Clear stored faults, ' +
-          'let it reach operating temperature, and retry.'
-        );
+        return translate('routines:failure.nrc22', { module: routine.module });
       case 0x24: // requestSequenceError
-        return (
-          `The ${routine.module} rejected the routine as out of sequence (NRC 0x24) — a required step ` +
-          'is missing before it, most often a security-access unlock or a specific diagnostic ' +
-          'session. The exact start sequence for this routine is unverified for your car and needs ' +
-          'confirming from a VCDS session or a UDS capture.'
-        );
+        return translate('routines:failure.nrc24', { module: routine.module });
       default:
         return err.message;
     }

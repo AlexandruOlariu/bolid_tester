@@ -9,6 +9,7 @@ import {
   getMeasuringLog,
   buildMeasuringLogCsv,
 } from '../api/measuringLog';
+import { translate } from '@/shared/i18n';
 
 /** How often the log samples the selected DIDs. Extended (Mode 22) reads are sequential and slower
  *  than Mode 01, so a 1 s sweep is a safe, VCDS-like cadence that won't overrun the ELM queue. */
@@ -102,7 +103,7 @@ export function useMeasuringLog(): MeasuringLog {
         `measuring-log-${fileStamp()}.csv`,
         buildMeasuringLogCsv(rows),
         'text/csv',
-        { dialogTitle: 'Export measuring log' },
+        { dialogTitle: translate('common:share.measuringLog') },
       );
     } catch (e) {
       logError({ source: 'extended-pids/log-export', error: e });

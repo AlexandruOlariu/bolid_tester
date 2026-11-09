@@ -1,0 +1,98 @@
+{
+  "title": "Module scan",
+  "subtitle_one": "VCDS-style auto-scan · {{count}} module declared · link {{proto}}",
+  "subtitle_other": "VCDS-style auto-scan · {{count}} modules declared · link {{proto}}",
+  "noModules": "No control modules are declared for this vehicle profile. Module scan needs a profile with a module list (see the Golf Plus example) — the generic profile scans the engine only, via the Fault codes screen.",
+  "discoverBelow": "Discover modules below finds the modules this car answers on.",
+  "needsCan": "Module scan needs a CAN (UDS) link. On K-line cars a generic ELM327 reaches the engine ECU only — use the Fault codes screen for engine faults.",
+  "scanning": "Scanning {{done}}/{{total}}…",
+  "scanAll": "Scan all modules",
+  "lastScan": "Last scan {{time}}",
+  "help": "Scans every declared module for identification (part number, software) and fault codes with VAG code numbers — like a VCDS auto-scan, over the modules this adapter can reach.",
+  "kwpStatus": "status 0x{{status}}",
+  "faults_one": "{{count}} fault",
+  "faults_other": "{{count}} faults",
+  "noFaults": "no faults",
+  "noResponse": "no response",
+  "error": "error",
+  "tp20State": {
+    "not-installed": "not fitted",
+    "refused": "✕ refused",
+    "silent": "– silent"
+  },
+  "row": {
+    "hideHint": "Hides the module details",
+    "showHint": "Shows the module details",
+    "system": "System: {{name}}",
+    "clear": "Clear this module's faults",
+    "confirmClear": "Confirm clear"
+  },
+  "flag": {
+    "confirmed": "confirmed",
+    "pending": "pending",
+    "failing": "failing now",
+    "lamp": "warning lamp",
+    "stored": "stored"
+  },
+  "tp20": {
+    "title": "Pre-UDS modules (TP2.0)",
+    "help": "⚠ Experimental. Older VAG modules (cluster, comfort, gateway) speak VW TP2.0, not UDS. This opens a channel to the gateway, reads its installation list, and identifies each module. On a real generic ELM327 this is timing-sensitive and may not work on every adapter.",
+    "scanning": "Scanning…",
+    "scan": "Scan gateway (TP2.0)",
+    "installed_one": "Gateway reports {{count}} installed module: {{list}}",
+    "installed_other": "Gateway reports {{count}} installed modules: {{list}}",
+    "noFaults": "No faults stored.",
+    "monitorUnavailable": "The TP2.0 scan reads the bus in raw-CAN monitor mode, which a Classic Bluetooth adapter link cannot stream. Use a Bluetooth LE or Wi-Fi adapter for pre-UDS modules.",
+    "noTraffic": "No raw-CAN traffic seen — this adapter may not support TP2.0 (many clones), or the bus is asleep. Check ignition and try again."
+  },
+  "reason": {
+    "tp20": "This module speaks VW TP2.0 (pre-UDS) — use the \"Gateway scan (TP2.0)\" action on this screen to read it. See docs/features/module-scan.md.",
+    "silent": "No response on this address — module absent, asleep, or a different address on this car.",
+    "notClearable": "Not clearable over this transport yet."
+  },
+  "discover": {
+    "title": "Discover modules",
+    "help": "Asks each known VW-group module address for its part number (read-only) to find which control modules really answer on this car. Takes a few seconds per silent address.",
+    "progress": "Discovering {{done}}/{{total}}…",
+    "summary": "{{answered}} of {{total}} addresses answered.",
+    "answered": "answered",
+    "and": "and",
+    "shared": "Addresses {{list}} share these CAN ids on some cars, so one module answered for both. Shown as {{address}}; switch if its ident says otherwise.",
+    "sharedIdent": "Addresses {{list}} share these CAN ids on some cars, so one module answered for both. Shown as {{address}} from its ident ({{system}}); switch if its ident says otherwise.",
+    "recordAs": "Record as {{address}} {{name}} instead",
+    "listed": "Already in this car's module list.",
+    "add": "Add to this car's module list",
+    "hideEntry": "Hide module entry",
+    "builtIn": "This car is a built-in profile, which lives in the app's code. Paste this entry into its modules list (developer step), or add the car to My garage to keep the module on this phone.",
+    "silent": "No answer: {{list}}. Silence is not proof a module is missing — older modules may use VW TP2.0 instead."
+  },
+  "history": {
+    "title": "Saved scans ({{count}})",
+    "latest": "Latest scan · {{date}}",
+    "modules_one": "{{count}} module",
+    "modules_other": "{{count}} modules",
+    "sharing": "Sharing…",
+    "share": "Share report",
+    "search": "Search faults",
+    "searchPlaceholder": "VAG number, P-code or text (e.g. 08579, P2183, coolant)",
+    "searchA11y": "Search the scan's fault codes",
+    "noMatch": "No fault in the last scan matches “{{query}}”."
+  },
+  "diff": {
+    "newModule": "new module",
+    "gone": "gone",
+    "appeared": "appeared",
+    "cleared": "cleared",
+    "coding": "coding",
+    "partNo": "part no"
+  },
+  "compare": {
+    "title": "Compare scans",
+    "before": "Before (baseline)",
+    "after": "After",
+    "noEarlier": "No earlier scan of this car — pick a baseline above.",
+    "pickTwo": "Pick two different scans to compare.",
+    "totals": "{{appeared}} appeared · {{cleared}} cleared · {{changed}} changed · {{added}} added · {{removed}} removed",
+    "none": "No differences between these two scans."
+  }
+}

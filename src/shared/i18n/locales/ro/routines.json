@@ -1,0 +1,47 @@
+{
+  "title": "Rutine și teste de actuatori",
+  "unavailable": "Rutinele ghidate nu sunt disponibile pentru această mașină / acest protocol. Sunt experimentale, depind de profil și funcționează doar pe CAN — un ELM327 generic nu poate rula setări de bază VAG pe mașinile cu K-line (acestea necesită KWP1281, pe care nu îl suportă).",
+  "subtitle": "⚠ Experimental — acționează componente / rulează rutine ale modulelor. Citește fiecare descriere.",
+  "unlock": "Deblochează rutinele",
+  "unlockHelp": "Dezactivat = doar vizualizare. Condițiile de siguranță (interlock-urile) sunt verificate live înainte de fiecare pornire.",
+  "blocked": "Blocat de condițiile de siguranță",
+  "kind": {
+    "outputTest": "test de actuator",
+    "basicSetting": "setare de bază"
+  },
+  "row": {
+    "outputTest": "test de actuator (2F)",
+    "basicSetting": "setare de bază (31)",
+    "id": "id {{id}}",
+    "vcdsGroup": "grup VCDS {{group}}",
+    "lockedNote": "Acest modul cere acces de securitate și niciun plugin nu este instalat: rutina este încercată fără deblocare, iar modulul decide.",
+    "stopOutput": "Oprește (redă controlul ECU-ului)",
+    "stopRoutine": "Oprește rutina",
+    "locked": "Blocat",
+    "attemptAnyway": "Încearcă totuși (neverificat — nu e de așteptat să meargă)",
+    "start": "Pornește…",
+    "confirmText": "Aplicația va verifica live condițiile de siguranță (motor/viteză) și va refuza pornirea dacă nu sunt îndeplinite. Confirmă că ai citit descrierea de mai sus.",
+    "checkAndStart": "Verifică condițiile și pornește"
+  },
+  "interlock": {
+    "rpmUnreadable": "Nu se poate verifica dacă motorul este oprit — turația nu poate fi citită.",
+    "engineOff": "Motorul trebuie să fie OPRIT (contactul pus) — acum {{rpm}} rpm.",
+    "engineRunning": "Motorul trebuie să FUNCȚIONEZE la ralanti.",
+    "engineIdle": "Motorul trebuie să fie la ralanti — acum {{rpm}} rpm.",
+    "speedUnreadable": "Nu se poate verifica dacă vehiculul stă pe loc — viteza nu poate fi citită.",
+    "stationary": "Vehiculul trebuie să stea pe loc — acum {{speed}} km/h."
+  },
+  "failure": {
+    "nrc33": "{{module}} a refuzat această {{kind}} fără acces de securitate (NRC 0x33). Setările de bază VAG necesită de obicei deblocarea ECU-ului (UDS 0x27 seed/key), iar aplicația nu include rutine seed→key. Rutina nu poate rula până nu instalezi un plugin de acces de securitate pentru acest modul (Setări → Date → Pluginuri de acces de securitate).",
+    "nrc35": "Deblocarea de securitate a fost respinsă (NRC 0x35 cheie invalidă) — rutina seed→key a pluginului instalat este greșită pentru acest ECU. Fiecare cheie greșită contează la blocarea modulului.",
+    "unknownId": "{{module}} nu recunoaște această rutină (id {{id}}, NRC 0x{{nrc}}). ID-ul rutinei nu este verificat pentru exact mașina ta — trebuie confirmat dintr-o sesiune VCDS „Setări de bază” sau dintr-o captură UDS pe ECU-ul real înainte să ruleze.",
+    "nrc22": "{{module}} a respins rutina deoarece condițiile nu sunt corecte (NRC 0x22). De obicei motorul trebuie să fie cald, la ralanti stabil și fără erori active. Șterge erorile memorate, lasă motorul să ajungă la temperatura de funcționare și reîncearcă.",
+    "nrc24": "{{module}} a respins rutina ca fiind în afara secvenței (NRC 0x24) — lipsește un pas necesar înaintea ei, cel mai des o deblocare de securitate sau o anumită sesiune de diagnoză. Secvența exactă de pornire a acestei rutine nu este verificată pentru mașina ta și trebuie confirmată dintr-o sesiune VCDS sau dintr-o captură UDS."
+  },
+  "msg": {
+    "locked": "Blocat — activează mai întâi deblocarea rutinelor.",
+    "outputRunning": "Actuator în test — oprește pentru a reda controlul ECU-ului.",
+    "started": "Rutină pornită.",
+    "interlockStop": "Oprit — condiție de siguranță încălcată: {{failure}}"
+  }
+}

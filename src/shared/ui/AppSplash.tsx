@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, StyleSheet, Text } from 'react-native';
+import { useTranslation } from '@/shared/i18n';
 import { AppLogo } from './AppLogo';
 import { useReducedMotion } from './useReducedMotion';
 import palette from './palette.json';
@@ -53,8 +54,10 @@ function useStoresHydrated(): boolean {
 /** Animated branded launch screen. Overlays the whole app at startup and fades out once the persisted
  *  stores have hydrated AND a minimum display time has elapsed. Pure presentation plus a hydration
  *  gate — no navigation deps — so the root layout renders it as a sibling above the navigator. Uses
- *  React Native's built-in Animated (no extra native dependency). */
-export function AppSplash() {
+ *  React Native's built-in Animated (no extra native dependency). `ready` is an extra gate from the
+ *  root layout: the UI language has been applied (plan 11), so the app never flashes English. */
+export function AppSplash({ ready: languageReady = true }: { ready?: boolean } = {}) {
+  const { t } = useTranslation();
   const hydrated = useStoresHydrated();
   const [minElapsed, setMinElapsed] = useState(false);
   const [gone, setGone] = useState(false);
@@ -96,7 +99,7 @@ export function AppSplash() {
   }, []);
 
   // Fade out once everything is ready, then unmount.
-  const ready = hydrated && minElapsed;
+  const ready = hydrated && minElapsed && languageReady;
   useEffect(() => {
     if (!ready) return;
     const anim = Animated.timing(fade, {
@@ -132,14 +135,17 @@ export function AppSplash() {
       <Text style={styles.title} maxFontSizeMultiplier={1.3} accessibilityRole="header">
         Bolid Tester
       </Text>
-      <Text style={styles.subtitle} maxFontSizeMultiplier={1.3}>
-        OBD2 diagnostics
+      {/* No words until the UI language is applied: i18next starts in English and the stored /
+          device language lands a moment later, so a Romanian phone would otherwise read English
+          first (plan 11). A non-breaking space keeps the line's height, so nothing shifts. */}
+      <Text style={styles.subtitle} maxFontSizeMultiplier={1.3} testID="app-splash-subtitle">
+        {languageReady ? t('splash.subtitle') : '\u00A0'}
       </Text>
 
       <ActivityIndicator
         color={INK}
         style={styles.spinner}
-        accessibilityLabel="Loading your saved data"
+        accessibilityLabel={languageReady ? t('splash.loading') : undefined}
       />
     </Animated.View>
   );

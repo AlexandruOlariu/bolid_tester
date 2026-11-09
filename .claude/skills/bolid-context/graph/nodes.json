@@ -2448,6 +2448,15 @@
     ],
     "type": "doc"
   },
+  "doc:i18n": {
+    "path": "docs/i18n.md",
+    "summary": "Localization (i18n)",
+    "tokens": [
+      "18",
+      "localization"
+    ],
+    "type": "doc"
+  },
   "doc:implementation-log": {
     "path": "docs/implementation-log.md",
     "summary": "Implementation Log",
@@ -3192,6 +3201,9 @@
   "feature:alerts": {
     "path": "src/features/alerts",
     "summary": "User-defined **thresholds** on live PIDs that fire visual + haptic (and optional audible) alerts \u2014",
+    "tests": [
+      "src/features/alerts/ui/AlertsScreen.test.tsx"
+    ],
     "tokens": [
       "alerts"
     ],
@@ -3705,6 +3717,17 @@
     ],
     "type": "lib"
   },
+  "lib:format": {
+    "path": "src/shared/lib/format.ts",
+    "summary": "Locale-aware number and date formatting (plan 11, docs/i18n.md).",
+    "tests": [
+      "src/shared/lib/format.test.ts"
+    ],
+    "tokens": [
+      "format"
+    ],
+    "type": "lib"
+  },
   "lib:hex": {
     "path": "src/shared/lib/hex.ts",
     "summary": "Hex <-> byte helpers.",
@@ -3713,6 +3736,30 @@
     ],
     "tokens": [
       "hex"
+    ],
+    "type": "lib"
+  },
+  "lib:i18nParity": {
+    "path": "src/shared/lib/i18nParity.ts",
+    "summary": "Locale completeness checks (plan 11, docs/i18n.md): every key of the reference language (English) exists in each translation and vice versa, no value\u2026",
+    "tests": [
+      "src/shared/lib/i18nParity.test.ts"
+    ],
+    "tokens": [
+      "18",
+      "parity"
+    ],
+    "type": "lib"
+  },
+  "lib:i18nResolve": {
+    "path": "src/shared/lib/i18nResolve.ts",
+    "summary": "Pure language resolution for the app's localization (plan 11, docs/i18n.md).",
+    "tests": [
+      "src/shared/lib/i18nResolve.test.ts"
+    ],
+    "tokens": [
+      "18",
+      "resolve"
     ],
     "type": "lib"
   },
@@ -4481,6 +4528,9 @@
   "ui:AppSplash": {
     "path": "src/shared/ui/AppSplash.tsx",
     "summary": "Brand green screen with the title and subtitle in ink: 7.3:1 (white on the green was 2.6:1, plan 20).",
+    "tests": [
+      "src/shared/ui/AppSplash.test.tsx"
+    ],
     "tokens": [
       "app",
       "splash"
@@ -4604,6 +4654,9 @@
   "ui:ValueCard": {
     "path": "src/shared/ui/ValueCard.tsx",
     "summary": "Above this OS font scale a value card takes the whole row (plan 20): two 150 dp tiles side by side cannot hold a 2\u00d7 number and its unit.",
+    "tests": [
+      "src/shared/ui/ValueCard.test.tsx"
+    ],
     "tokens": [
       "card",
       "value"

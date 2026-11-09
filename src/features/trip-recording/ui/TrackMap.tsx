@@ -21,16 +21,20 @@ import {
   type TrackPoint,
   type TripSample,
 } from '@/shared/obd-core';
+import { useTranslation, type TFunction } from '@/shared/i18n';
+import { formatFixed, formatTime } from '@/shared/lib/format';
 
 const PAD = 16;
 /** Map width before the first layout pass (and in tests). */
 const DEFAULT_WIDTH = 320;
 
-const CHANNELS: { value: OverlayChannel; label: string; accessibilityLabel?: string }[] = [
-  { value: 'speed', label: 'Speed' },
-  { value: 'rpm', label: 'RPM' },
-  { value: 'fuelRate', label: 'Fuel', accessibilityLabel: 'Fuel rate' },
-  { value: 'none', label: 'None', accessibilityLabel: 'No colouring' },
+const channels = (
+  t: TFunction,
+): { value: OverlayChannel; label: string; accessibilityLabel?: string }[] => [
+  { value: 'speed', label: t('map.speed') },
+  { value: 'rpm', label: t('map.rpm') },
+  { value: 'fuelRate', label: t('map.fuel'), accessibilityLabel: t('map.fuelA11y') },
+  { value: 'none', label: t('map.none'), accessibilityLabel: t('map.noneA11y') },
 ];
 
 /** "+1:05" — elapsed time since the first fix. */
@@ -40,7 +44,7 @@ function elapsed(ms: number): string {
 }
 
 const fmt = (v: number | null, digits: number, unit: string) =>
-  v == null ? `— ${unit}` : `${v.toFixed(digits)} ${unit}`;
+  v == null ? `— ${unit}` : `${formatFixed(v, digits)} ${unit}`;
 
 interface TrackMapProps {
   track: TrackPoint[];
@@ -48,6 +52,7 @@ interface TrackMapProps {
 }
 
 export function TrackMap({ track, samples }: TrackMapProps) {
+  const { t } = useTranslation('tripRecording');
   const palette = usePalette();
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const height = Math.round((width * 2) / 3);
@@ -95,8 +100,8 @@ export function TrackMap({ track, samples }: TrackMapProps) {
   return (
     <YStack gap="$2">
       <SegmentedControl
-        label="Colour the track by"
-        options={CHANNELS}
+        label={t('map.colourBy')}
+        options={channels(t)}
         value={channel}
         onChange={setChannel}
       />
@@ -112,7 +117,7 @@ export function TrackMap({ track, samples }: TrackMapProps) {
           testID="track-map"
           onPress={onPress}
           accessibilityRole="image"
-          accessibilityLabel={`GPS track map, ${track.length} fixes. Tap the track for details.`}
+          accessibilityLabel={t('map.a11y', { count: track.length })}
         >
           <Svg width={width} height={height}>
             {segments.map((s, k) => (
@@ -176,7 +181,7 @@ export function TrackMap({ track, samples }: TrackMapProps) {
           fontWeight="800"
           theme="alt2"
           pointerEvents="none"
-          accessibilityLabel="North is up"
+          accessibilityLabel={t('map.north')}
         >
           N ↑
         </Text>
@@ -208,7 +213,7 @@ export function TrackMap({ track, samples }: TrackMapProps) {
       {sel != null ? (
         <Card bordered padding="$2.5" testID="track-tooltip">
           <Paragraph fontWeight="700">
-            {new Date(track[sel].t).toLocaleTimeString()} ({elapsed(track[sel].t - track[0].t)})
+            {formatTime(track[sel].t, true)} ({elapsed(track[sel].t - track[0].t)})
           </Paragraph>
           <Paragraph>
             {fmt(speed[sel], 0, 'km/h')} · {fmt(rpm[sel], 0, 'rpm')} · {fmt(fuel[sel], 1, 'L/h')}
@@ -216,7 +221,7 @@ export function TrackMap({ track, samples }: TrackMapProps) {
         </Card>
       ) : (
         <Paragraph theme="alt2" fontSize="$2">
-          Tap the track to see the speed, RPM and fuel rate at that point.
+          {t('map.tapHint')}
         </Paragraph>
       )}
     </YStack>

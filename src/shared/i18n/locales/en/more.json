@@ -1,0 +1,140 @@
+{
+  "title": "More",
+  "subtitle": "Diagnostics, ownership & workshop tools",
+  "searchPlaceholder": "Search tools…",
+  "searchA11y": "Search tools",
+  "noMatch": "No tools match “{{query}}”.",
+  "experimental": "experimental",
+  "experimentalA11y": "Experimental",
+  "checking": "Checking…",
+  "updates": {
+    "availableTitle": "Update available",
+    "availableBody": "Download and restart now?",
+    "later": "Later",
+    "update": "Update",
+    "upToDateTitle": "Up to date",
+    "upToDateBody": "You already have the latest version.",
+    "unavailableTitle": "Updates unavailable",
+    "unavailableBody": "Over-the-air updates are not enabled in this build."
+  },
+  "section": {
+    "diagnose": {
+      "title": "Diagnose"
+    },
+    "drive": {
+      "title": "Drive"
+    },
+    "ownership": {
+      "title": "Ownership"
+    },
+    "workshop": {
+      "title": "Workshop",
+      "blurb": "Talks to control modules beyond the engine. CAN cars only; addresses are confirmed per car."
+    },
+    "tools": {
+      "title": "Tools"
+    }
+  },
+  "entry": {
+    "ai-diagnose": {
+      "title": "Diagnose (AI)",
+      "subtitle": "One-tap AI health check"
+    },
+    "inspection": {
+      "title": "Used-car inspection",
+      "subtitle": "Pre-purchase health check"
+    },
+    "history": {
+      "title": "History",
+      "subtitle": "Timeline of diagnoses, scans, trips, service and reports"
+    },
+    "report": {
+      "title": "Vehicle report",
+      "subtitle": "The whole car in one PDF to share"
+    },
+    "sensors": {
+      "title": "Sensor tests",
+      "subtitle": "Mode 06 monitors + module sensors"
+    },
+    "charts": {
+      "title": "Charts",
+      "subtitle": "Live parameters over time"
+    },
+    "performance": {
+      "title": "Performance",
+      "subtitle": "0–100, ¼-mile, braking"
+    },
+    "trips": {
+      "title": "Trips",
+      "subtitle": "Record & export live data"
+    },
+    "alerts": {
+      "title": "Alerts",
+      "subtitle": "Threshold warnings"
+    },
+    "maintenance": {
+      "title": "Maintenance log",
+      "subtitle": "Service history & due items"
+    },
+    "battery": {
+      "title": "Battery & charging",
+      "subtitle": "Voltage, cranking, alternator"
+    },
+    "dpf": {
+      "title": "DPF / regen",
+      "subtitle": "Diesel soot & regeneration"
+    },
+    "vin-decode": {
+      "title": "VIN decoder",
+      "subtitle": "Decode the VIN offline"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "Alerts & reminders"
+    },
+    "module-scan": {
+      "title": "Module scan",
+      "subtitle": "VCDS-style auto-scan: all modules"
+    },
+    "adaptations": {
+      "title": "Adaptations",
+      "subtitle": "Channel read/write with backup"
+    },
+    "routines": {
+      "title": "Routines & output tests",
+      "subtitle": "Basic settings, actuator tests, forced regeneration"
+    },
+    "coding": {
+      "title": "Coding",
+      "subtitle": "Experimental module coding"
+    },
+    "service-reset": {
+      "title": "Service reset",
+      "subtitle": "Reset the service interval"
+    },
+    "sniffer": {
+      "title": "Bus sniffer",
+      "subtitle": "Raw CAN/K-line monitor (ATMA); save and share captures"
+    },
+    "adapter-health": {
+      "title": "Adapter health",
+      "subtitle": "Grade your ELM327: firmware, latency"
+    },
+    "backup": {
+      "title": "Backup & restore",
+      "subtitle": "All your data in one file; restore it on any phone"
+    },
+    "error-log": {
+      "title": "Error log",
+      "subtitle": "Saved errors to export & fix later"
+    },
+    "feedback": {
+      "title": "Report a problem",
+      "subtitle": "Send the maintainer a redacted log bundle"
+    },
+    "check-updates": {
+      "title": "Check for updates",
+      "subtitle": "Over-the-air app updates"
+    }
+  }
+}

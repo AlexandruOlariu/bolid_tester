@@ -69,9 +69,19 @@ describe('settings defaults', () => {
     expect(useSettingsStore.getInitialState().autoSelectByVin).toBe(true);
   });
 
-  it('persists at schema version 8', () => {
-    expect(SETTINGS_VERSION).toBe(8);
-    expect(useSettingsStore.persist.getOptions().version).toBe(8);
+  it('persists at schema version 9', () => {
+    expect(SETTINGS_VERSION).toBe(9);
+    expect(useSettingsStore.persist.getOptions().version).toBe(9);
+  });
+
+  it('a fresh install follows the device language, and the choice is persisted (plan 11)', () => {
+    expect(useSettingsStore.getInitialState().language).toBe('system');
+    const partialize = useSettingsStore.persist.getOptions().partialize!;
+    expect(partialize(useSettingsStore.getInitialState())).toHaveProperty('language', 'system');
+    expect(partialize({ ...useSettingsStore.getInitialState(), language: 'ro' })).toHaveProperty(
+      'language',
+      'ro',
+    );
   });
 
   it('a fresh install sends no crash reports, and the choice is persisted (plan 31)', () => {
@@ -116,6 +126,7 @@ describe('migrateSettings', () => {
       autoSelectByVin: true,
       wifi: DEFAULT_WIFI_ENDPOINT,
       crashReports: false,
+      language: 'system',
     });
   });
 
@@ -128,6 +139,7 @@ describe('migrateSettings', () => {
       autoSelectByVin: true,
       wifi: DEFAULT_WIFI_ENDPOINT,
       crashReports: false,
+      language: 'system',
     });
     expect(migrateSettings(undefined, 1)).toEqual({
       adapterSource: 'ble',
@@ -136,6 +148,7 @@ describe('migrateSettings', () => {
       autoSelectByVin: true,
       wifi: DEFAULT_WIFI_ENDPOINT,
       crashReports: false,
+      language: 'system',
     });
   });
 
@@ -146,6 +159,7 @@ describe('migrateSettings', () => {
       autoSelectByVin: true,
       wifi: WIFI,
       crashReports: false,
+      language: 'system',
     });
     expect(migrateSettings({ theme: 'light' as const }, 2)).toEqual({
       theme: 'light',
@@ -153,6 +167,7 @@ describe('migrateSettings', () => {
       autoSelectByVin: true,
       wifi: WIFI,
       crashReports: false,
+      language: 'system',
     });
   });
 
@@ -168,12 +183,14 @@ describe('migrateSettings', () => {
       autoSelectByVin: true,
       wifi: WIFI,
       crashReports: false,
+      language: 'system',
     });
     expect(migrateSettings({ ...blob, autoSelectByVin: false }, 3)).toEqual({
       ...blob,
       autoSelectByVin: false,
       wifi: WIFI,
       crashReports: false,
+      language: 'system',
     });
   });
 
@@ -196,6 +213,7 @@ describe('migrateSettings', () => {
       theme: 'dark',
       wifi: WIFI,
       crashReports: false,
+      language: 'system',
     });
   });
 
@@ -205,39 +223,62 @@ describe('migrateSettings', () => {
       ...blob,
       wifi: WIFI,
       crashReports: false,
+      language: 'system',
     });
     expect(migrateSettings({ ...blob, units: 'metric' }, 1)).not.toHaveProperty('units');
-    expect(migrateSettings(blob, 5)).toEqual({ ...blob, wifi: WIFI, crashReports: false });
+    expect(migrateSettings(blob, 5)).toEqual({
+      ...blob,
+      wifi: WIFI,
+      crashReports: false,
+      language: 'system',
+    });
   });
 
   it('v6 → v7 fills the Wi-Fi endpoint and keeps a stored one (plan 26)', () => {
     const blob = { adapterSource: 'ble' as const, theme: 'light' as const };
-    expect(migrateSettings(blob, 6)).toEqual({ ...blob, wifi: WIFI, crashReports: false });
+    expect(migrateSettings(blob, 6)).toEqual({
+      ...blob,
+      wifi: WIFI,
+      crashReports: false,
+      language: 'system',
+    });
     const custom = { ...blob, wifi: { host: '192.168.4.1', port: 23 } };
-    expect(migrateSettings(custom, 6)).toEqual({ ...custom, crashReports: false });
+    expect(migrateSettings(custom, 6)).toEqual({
+      ...custom,
+      crashReports: false,
+      language: 'system',
+    });
     // A fresh copy: the frozen default is never handed out as mutable state.
     expect(migrateSettings(blob, 6).wifi).not.toBe(DEFAULT_WIFI_ENDPOINT);
   });
 
   it('v7 → v8 adds crash reports, off, and never opts anyone in (plan 31)', () => {
     const blob = { adapterSource: 'ble' as const, theme: 'light' as const, wifi: WIFI };
-    expect(migrateSettings(blob, 7)).toEqual({ ...blob, crashReports: false });
+    expect(migrateSettings(blob, 7)).toEqual({ ...blob, crashReports: false, language: 'system' });
     // A malformed value is not consent.
     expect(migrateSettings({ ...blob, crashReports: 'yes' } as never, 7).crashReports).toBe(false);
     expect(migrateSettings(undefined, 1).crashReports).toBe(false);
   });
 
-  it('is the identity from v8 on', () => {
+  it('v8 → v9 adds the UI language, following the device, and keeps a stored one (plan 11)', () => {
+    const blob = { adapterSource: 'ble' as const, theme: 'light' as const, crashReports: true };
+    expect(migrateSettings(blob, 8)).toEqual({ ...blob, language: 'system' });
+    expect(migrateSettings({ ...blob, language: 'ro' }, 8).language).toBe('ro');
+    expect(migrateSettings({ ...blob, language: 'de' } as never, 8).language).toBe('system');
+  });
+
+  it('is the identity from v9 on', () => {
     const blob = {
       adapterSource: 'mock' as const,
       injectedDtcs: ['P0420'],
       theme: 'light' as const,
+      language: 'ro' as const,
       ai: { ...DEFAULT_AI_SETTINGS, provider: 'local' as const, baseUrl: 'https://api.openai.com' },
       crashReports: true,
     };
-    expect(migrateSettings(blob, 8)).toEqual(blob);
+    expect(migrateSettings(blob, 9)).toEqual(blob);
     const partial = { theme: 'dark' as const };
-    expect(migrateSettings(partial, 8)).toEqual(partial);
+    expect(migrateSettings(partial, 9)).toEqual(partial);
   });
 });
 
@@ -639,5 +680,32 @@ describe('crash reports setting (plan 31)', () => {
     expect(JSON.parse(files.get(SETTINGS_FILE) ?? '{}').state.crashReports).toBe(true);
     useSettingsStore.getState().setCrashReports(false);
     expect(JSON.parse(files.get(SETTINGS_FILE) ?? '{}').state.crashReports).toBe(false);
+  });
+});
+
+describe('UI language setting (plan 11)', () => {
+  beforeEach(() => {
+    files.clear();
+    useSettingsStore.setState(useSettingsStore.getInitialState(), true);
+  });
+
+  const writeBlob = (state: Record<string, unknown>, version: number) =>
+    files.set(SETTINGS_FILE, JSON.stringify({ state, version }));
+
+  it('setLanguage stores the choice and writes it to the settings file', () => {
+    useSettingsStore.getState().setLanguage('ro');
+    expect(useSettingsStore.getState().language).toBe('ro');
+    expect(JSON.parse(files.get(SETTINGS_FILE) ?? '{}').state.language).toBe('ro');
+  });
+
+  it('a v8 blob rehydrates following the device; an unknown stored language is ignored', async () => {
+    writeBlob({ adapterSource: 'ble', theme: 'light' }, 8);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().language).toBe('system');
+
+    useSettingsStore.setState({ language: 'en' });
+    writeBlob({ adapterSource: 'ble', language: 'xx' }, 9);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().language).toBe('en');
   });
 });

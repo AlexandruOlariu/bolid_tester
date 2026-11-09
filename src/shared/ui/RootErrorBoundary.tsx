@@ -9,6 +9,7 @@
 import React from 'react';
 import { YStack, Text, Paragraph, Button } from 'tamagui';
 import { logError } from '@/shared/state/errorLogStore';
+import { i18n } from '@/shared/i18n';
 
 interface Props {
   children: React.ReactNode;
@@ -49,17 +50,16 @@ export class RootErrorBoundary extends React.Component<Props, State> {
         gap="$4"
       >
         <Text fontSize={22} fontWeight="800" color="$color">
-          Something broke
+          {i18n.t('errorBoundary.title')}
         </Text>
         <Paragraph theme="alt2" textAlign="center">
-          A screen hit an unexpected error. Your saved data is safe and the error was logged. Try
-          again, or report it from More {'>'} Report a problem.
+          {i18n.t('errorBoundary.body')}
         </Paragraph>
         <Text fontSize="$2" color="$color" opacity={0.7} textAlign="center">
           {error.message}
         </Text>
         <Button theme="green" onPress={this.reset}>
-          Retry
+          {i18n.t('actions.retry')}
         </Button>
       </YStack>
     );

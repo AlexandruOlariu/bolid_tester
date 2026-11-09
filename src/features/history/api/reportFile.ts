@@ -7,6 +7,7 @@ import { logError } from '@/shared/state/errorLogStore';
 import { isWebRuntime } from '@/shared/lib/webRuntime';
 import { NOT_ON_WEB_YET, showToast } from '@/shared/state/toastStore';
 import type { ReportHistoryEntry } from '@/shared/state/historyStore';
+import { translate } from '@/shared/i18n';
 
 export interface ReshareFileSystem {
   documentDirectory?: string | null;
@@ -73,7 +74,7 @@ export async function reshareReport(
     if (!(await mods.Sharing.isAvailableAsync())) return 'unavailable';
     await mods.Sharing.shareAsync(uri, {
       mimeType: MIME[entry.format],
-      dialogTitle: 'Share vehicle report',
+      dialogTitle: translate('common:share.vehicleReport'),
     });
     return 'shared';
   } catch (e) {

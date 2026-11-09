@@ -10,14 +10,7 @@ import {
   type ImportPreview,
 } from '@/shared/state/exchangeService';
 import type { PendingImport } from './useExchangeImport';
-
-const FUEL_LABEL: Record<string, string> = {
-  diesel: 'Diesel',
-  petrol: 'Petrol',
-  lpg: 'LPG',
-  hybrid: 'Hybrid',
-  other: 'Other',
-};
+import { useTranslation } from '@/shared/i18n';
 
 /** How many validator errors the sheet lists for a refused file. */
 export const SHOWN_ERRORS = 3;
@@ -89,13 +82,14 @@ export function ImportPreviewBody({
   onClose: () => void;
   onImported?: (outcome: ImportOutcome) => void;
 }) {
+  const { t } = useTranslation();
   const [outcome, setOutcome] = useState<ImportOutcome | null>(null);
 
   if ('error' in pending) {
     return (
       <YStack gap="$3">
         <Text fontWeight="800" fontSize="$6">
-          Can't import this file
+          {t('importPreview.cantImport')}
         </Text>
         <Paragraph>{pending.error}</Paragraph>
         {pending.details.slice(0, SHOWN_ERRORS).map((d) => (
@@ -105,13 +99,13 @@ export function ImportPreviewBody({
         ))}
         {pending.details.length > SHOWN_ERRORS ? (
           <Paragraph fontSize="$1" theme="alt2">
-            …and {pending.details.length - SHOWN_ERRORS} more.
+            {t('importPreview.andMore', { count: pending.details.length - SHOWN_ERRORS })}
           </Paragraph>
         ) : null}
         <Paragraph fontSize="$1" theme="alt2">
-          Nothing was changed.
+          {t('importPreview.nothingChanged')}
         </Paragraph>
-        <Button onPress={onClose}>Close</Button>
+        <Button onPress={onClose}>{t('actions.close')}</Button>
       </YStack>
     );
   }
@@ -120,11 +114,11 @@ export function ImportPreviewBody({
     return (
       <YStack gap="$3">
         <Text fontWeight="800" fontSize="$6">
-          {outcome.ok ? 'Imported' : "Can't import this file"}
+          {outcome.ok ? t('importPreview.imported') : t('importPreview.cantImport')}
         </Text>
         <Paragraph>{outcome.message}</Paragraph>
         <Button theme={outcome.ok ? 'green' : undefined} onPress={onClose}>
-          Done
+          {t('actions.done')}
         </Button>
       </YStack>
     );
@@ -144,15 +138,11 @@ export function ImportPreviewBody({
   return (
     <YStack gap="$3">
       {pending.kind === 'profile' ? <ProfilePreview p={pending} /> : <PackPreview p={pending} />}
-      {blocked ? (
-        <Warning>
-          You already have 100 imported label packs. Delete one in Settings → Data first.
-        </Warning>
-      ) : null}
+      {blocked ? <Warning>{t('importPreview.packsFull')}</Warning> : null}
       {conflict ? (
         <XStack gap="$2" flexWrap="wrap">
           <Button flex={1} theme="green" onPress={() => apply('replace')}>
-            Replace
+            {t('actions.replace')}
           </Button>
           <Button
             flex={1}
@@ -160,10 +150,10 @@ export function ImportPreviewBody({
             opacity={blocked ? 0.5 : 1}
             onPress={() => apply('keep-both')}
           >
-            Keep both
+            {t('actions.keepBoth')}
           </Button>
           <Button flex={1} onPress={onClose}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
         </XStack>
       ) : (
@@ -175,10 +165,10 @@ export function ImportPreviewBody({
             opacity={blocked ? 0.5 : 1}
             onPress={() => apply('create')}
           >
-            Import
+            {t('actions.import')}
           </Button>
           <Button flex={1} onPress={onClose}>
-            Cancel
+            {t('actions.cancel')}
           </Button>
         </XStack>
       )}
@@ -187,87 +177,105 @@ export function ImportPreviewBody({
 }
 
 function ProfilePreview({ p }: { p: Extract<ImportPreview, { kind: 'profile' }> }) {
+  const { t } = useTranslation();
   const v = p.file.payload.vehicle;
   const suffix = vinSuffix(v.learned?.vin);
   return (
     <YStack gap="$2">
       <Text fontWeight="800" fontSize="$6">
-        Import car profile
+        {t('importPreview.profileTitle')}
       </Text>
-      <Row label="Name" value={v.name} />
-      {v.year !== undefined ? <Row label="Year" value={String(v.year)} /> : null}
-      <Row label="Fuel" value={FUEL_LABEL[v.fuel] ?? v.fuel} />
-      <Row label="Based on" value={p.baseName} />
-      {suffix ? <Row label="VIN ending" value={suffix} /> : null}
+      <Row label={t('importPreview.name')} value={v.name} />
+      {v.year !== undefined ? <Row label={t('importPreview.year')} value={String(v.year)} /> : null}
+      <Row label={t('importPreview.fuel')} value={t(`fuel.${v.fuel}`, { defaultValue: v.fuel })} />
+      <Row label={t('importPreview.basedOn')} value={p.baseName} />
+      {suffix ? <Row label={t('importPreview.vinEnding')} value={suffix} /> : null}
       <Row
-        label="Learned"
+        label={t('importPreview.learned')}
         value={
           v.learned
-            ? `${v.learned.supportedPids.length} readings · ${PROTOCOL_LABELS[v.learned.protocol]}`
-            : 'Not learned yet — connect to the car to learn it'
+            ? t('importPreview.learnedValue', {
+                count: v.learned.supportedPids.length,
+                protocol: PROTOCOL_LABELS[v.learned.protocol],
+              })
+            : t('importPreview.notLearned')
         }
       />
-      {v.modules?.length ? <Row label="Modules" value={`${v.modules.length} discovered`} /> : null}
+      {v.modules?.length ? (
+        <Row
+          label={t('importPreview.modules')}
+          value={t('importPreview.modulesDiscovered', { count: v.modules.length })}
+        />
+      ) : null}
       {p.packs.add.length ? (
         <Paragraph fontSize="$2">
-          Includes {p.packs.add.length} label pack{p.packs.add.length === 1 ? '' : 's'}:{' '}
-          {p.packs.add.map((x) => x.module).join(', ')}.
+          {t('importPreview.includesPacks', {
+            count: p.packs.add.length,
+            modules: p.packs.add.map((x) => x.module).join(', '),
+          })}
         </Paragraph>
       ) : null}
       {p.packs.kept.length ? (
         <Paragraph fontSize="$2" theme="alt2">
-          Already on this phone (kept as they are): {p.packs.kept.map((x) => x.module).join(', ')}.
+          {t('importPreview.packsKept', { modules: p.packs.kept.map((x) => x.module).join(', ') })}
         </Paragraph>
       ) : null}
       {p.packs.overCap.length ? (
-        <Warning>{`Not imported — the phone already holds 100 label packs: ${p.packs.overCap.map((x) => x.module).join(', ')}.`}</Warning>
+        <Warning>
+          {t('importPreview.packsOverCap', {
+            modules: p.packs.overCap.map((x) => x.module).join(', '),
+          })}
+        </Warning>
       ) : null}
       {!p.baseKnown ? (
-        <Warning>{`The base profile "${v.baseProfileId}" is not in this version of the app; the car will use Auto / Generic.`}</Warning>
+        <Warning>{t('importPreview.baseUnknown', { id: v.baseProfileId })}</Warning>
       ) : null}
       {p.plan.action === 'conflict' ? (
         <Warning>
           {p.plan.reason === 'same-vin'
-            ? `${p.plan.existingName} in your garage has the same VIN. Replace it with this profile, or keep both?`
-            : `Your garage already has a car named ${p.plan.existingName}. Replace it with this profile, or keep both?`}
+            ? t('importPreview.conflictVin', { name: p.plan.existingName })
+            : t('importPreview.conflictName', { name: p.plan.existingName })}
         </Warning>
       ) : null}
       <Paragraph fontSize="$1" theme="alt2">
-        Login codes are never part of a profile file; a replaced car keeps its own.
+        {t('importPreview.loginCodesNote')}
       </Paragraph>
     </YStack>
   );
 }
 
 function PackPreview({ p }: { p: Extract<ImportPreview, { kind: 'labelpack' }> }) {
+  const { t } = useTranslation();
   const pack = p.file.payload;
   const c = labelPackCounts(pack);
   return (
     <YStack gap="$2">
       <Text fontWeight="800" fontSize="$6">
-        Import label pack
+        {t('importPreview.packTitle')}
       </Text>
-      <Row label="Module" value={pack.module} />
-      <Row label="Id" value={pack.id} />
-      <Row label="Part numbers" value={pack.partNumberPrefixes.map((x) => `${x}…`).join(', ')} />
+      <Row label={t('importPreview.module')} value={pack.module} />
+      <Row label={t('importPreview.id')} value={pack.id} />
       <Row
-        label="Names"
-        value={`${c.measurements} measurements · ${c.codingBits} coding bits · ${c.adaptations} adaptations · ${c.measuringGroups} measuring groups`}
+        label={t('importPreview.partNumbers')}
+        value={pack.partNumberPrefixes.map((x) => `${x}…`).join(', ')}
       />
-      {pack.author ? <Row label="Author" value={pack.author} /> : null}
-      {pack.license ? <Row label="Licence" value={pack.license} /> : null}
-      {pack.source ? <Row label="Source" value={pack.source} /> : null}
+      <Row label={t('importPreview.names')} value={t('importPreview.namesValue', { ...c })} />
+      {pack.author ? <Row label={t('importPreview.author')} value={pack.author} /> : null}
+      {pack.license ? <Row label={t('importPreview.licence')} value={pack.license} /> : null}
+      {pack.source ? <Row label={t('importPreview.source')} value={pack.source} /> : null}
       <Row
-        label="Checked on a car"
-        value={pack.confirmed ? `Yes, ${pack.confirmed.on}` : 'No — names are unconfirmed'}
+        label={t('importPreview.checkedOnCar')}
+        value={
+          pack.confirmed
+            ? t('importPreview.checkedYes', { on: pack.confirmed.on })
+            : t('importPreview.checkedNo')
+        }
       />
       {p.plan.overlaps.map((o) => (
         <Warning key={`${o.packId}:${o.prefix}:${o.otherPrefix}`}>{overlapText(o)}</Warning>
       ))}
       {p.plan.action === 'replace' ? (
-        <Warning>
-          {`You already imported a pack with the id ${pack.id}. Replace it, or keep both (the copy gets a new id)?`}
-        </Warning>
+        <Warning>{t('importPreview.packReplace', { id: pack.id })}</Warning>
       ) : null}
     </YStack>
   );

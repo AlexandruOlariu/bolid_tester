@@ -16,8 +16,7 @@ interface BackupWorkState {
   end: () => void;
 }
 
-export const BACKUP_BUSY_MESSAGE =
-  'Another module read or write is still running — wait for it to finish.';
+export const BACKUP_BUSY_MESSAGE = 'coding:backup.busy';
 
 export const useBackupWorkStore = create<BackupWorkState>((set, get) => ({
   busy: false,

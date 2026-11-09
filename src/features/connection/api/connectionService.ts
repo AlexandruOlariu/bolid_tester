@@ -58,6 +58,7 @@ import {
   WEB_BLE_DEVICE_NAME,
   WIFI_DEVICE_NAME,
 } from '@/shared/adapters/adapterMatrix';
+import { translate } from '@/shared/i18n';
 
 /** Tap the transport to mirror every command/response into the adapter I/O log (a throttled ring
  *  buffer — see adapterLog.ts).
@@ -110,11 +111,11 @@ export interface ConnectTarget {
   webDevice?: WebBtDevice;
 }
 
-const LINK_LOST_MESSAGE =
-  'Adapter link lost — the connection dropped unexpectedly. Check the adapter is seated in the ' +
-  'OBD2 port and reconnect.';
+/** Shown when the link drops unexpectedly (an i18n key, plan 11). */
+const LINK_LOST_MESSAGE = 'connection:service.linkLost';
 
-/** Shown when the flap guard pauses auto-reconnect (see flapGuard.ts). */
+/** Shown when the flap guard pauses auto-reconnect (see flapGuard.ts). English; the store gets the
+ *  UI-language text (`connection:service.flapPaused`, plan 11). */
 export const FLAP_PAUSED_MESSAGE =
   'The link dropped 3 times in a minute — auto-reconnect paused. Check the adapter is seated and ' +
   'reconnect manually.';
@@ -277,7 +278,7 @@ function handleUnexpectedDrop(): void {
   store.session?.disconnect().catch(() => undefined);
 
   liveRawTransport = null;
-  store.markDisconnected(LINK_LOST_MESSAGE);
+  store.markDisconnected(translate(LINK_LOST_MESSAGE));
   logError({
     source: 'connection',
     error: new Error('Adapter link lost (unsolicited transport disconnect)'),
@@ -291,7 +292,7 @@ function handleUnexpectedDrop(): void {
   if (shouldAutoReconnect(dropsAt, now)) {
     startAutoReconnect();
   } else {
-    useSessionStore.getState().setError(FLAP_PAUSED_MESSAGE);
+    useSessionStore.getState().setError(translate('connection:service.flapPaused'));
     logError({
       source: 'connection/auto-reconnect',
       error: new Error(`Auto-reconnect paused after ${dropsAt.length} drops in a minute`),
@@ -313,7 +314,7 @@ function startAutoReconnect(): void {
       if (run.aborted) return;
       const store = useSessionStore.getState();
       store.setStatus('connecting');
-      store.setError(`Reconnecting to the adapter… attempt ${attempt} of ${total}.`);
+      store.setError(translate('connection:service.reconnecting', { attempt, total }));
     },
     // connectInternal (not the public connect) so this attempt doesn't abort its own run.
     attemptConnect: async () => {
@@ -327,11 +328,13 @@ function startAutoReconnect(): void {
       // End in `error` (not `disconnected`) so the diagnostics panel stays up for the failure the
       // user has to act on, and keep the last attempt's cause in the text for its classifier.
       const store = useSessionStore.getState();
-      const cause = store.error ? ` Last error: ${store.error}` : '';
+      // The cause stays as the transport wrote it (English): diagnoseFailure classifies it.
+      const cause = store.error
+        ? ` ${translate('connection:service.lastError', { error: store.error })}`
+        : '';
       store.setStatus('error');
       store.setError(
-        `Auto-reconnect failed after ${RECONNECT_DELAYS_MS.length} attempts. Reconnect manually ` +
-          `when the adapter is powered and back in range.${cause}`,
+        `${translate('connection:service.reconnectFailed', { count: RECONNECT_DELAYS_MS.length })}${cause}`,
       );
     }
   });

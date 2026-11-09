@@ -13,6 +13,7 @@ import {
   reportSections,
   type VehicleReportModel,
 } from '@/shared/lib/vehicleReport';
+import { translate } from '@/shared/i18n';
 
 export type ReportFormat = 'pdf' | 'html' | 'md';
 
@@ -116,7 +117,7 @@ export async function exportVehicleReport(
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(uri, {
           mimeType: REPORT_MIME[format],
-          dialogTitle: 'Share vehicle report',
+          dialogTitle: translate('common:share.vehicleReport'),
         });
       }
     } catch (e) {

@@ -1,0 +1,48 @@
+{
+  "title": "Date în timp real",
+  "subtitle": "Se transmit parametrii suportați de acest ECU",
+  "subtitleSensors": "Toți senzorii raportați de acest ECU, grupați pe sisteme",
+  "notConnected": "Neconectat. Conectează mai întâi un adaptor sau simulatorul.",
+  "reading": "Se citește…",
+  "view": {
+    "dashboard": "Bord",
+    "sensors": "Toți senzorii"
+  },
+  "gauge": {
+    "rpm": "Turație",
+    "speed": "Viteză",
+    "coolant": "Lichid de răcire"
+  },
+  "fuel": {
+    "titleRate": "Consum (debit combustibil)",
+    "titleMaf": "Consum (din MAF)",
+    "standstill": "staționare"
+  },
+  "edit": {
+    "help": "Reordonează cu săgețile și comută vizibilitatea. Se salvează per profil de vehicul; Resetează revine la implicitul pentru tipul de combustibil al mașinii.",
+    "gauge": "indicator",
+    "moveUp": "Mută {{label}} în sus",
+    "moveDown": "Mută {{label}} în jos",
+    "show": "Arată {{label}}",
+    "hide": "Ascunde {{label}}",
+    "reset": "Resetează",
+    "customize": "Personalizează"
+  },
+  "group": {
+    "engine": "Motor",
+    "temperatures": "Temperaturi",
+    "air": "Aer și presiune turbo",
+    "fuel": "Combustibil și injecție",
+    "electrical": "Electric",
+    "distance": "Distanță",
+    "other": "Altele",
+    "injection": "Injecție"
+  },
+  "sensors": {
+    "live": "Live — toți senzorii suportați, grupați",
+    "idle": "Toți senzorii suportați, grupați",
+    "refresh": "Reîmprospătează",
+    "noInjectorTitle": "Datele per injector nu sunt disponibile aici",
+    "noInjectorBody": "Cantitatea injectată, balansul și corecțiile per cilindru se află în blocurile de măsurare ale producătorului (grupuri VAG), pe care un ELM327 generic nu le poate citi prin OBD-II standard pe această mașină — mai ales pe un ECU K-line. Parametrii sistemului de combustibil din „Combustibil și injecție” de mai sus (presiune în rampă, debit, corecții de amestec) sunt ce se poate citi generic; datele complete ale injectoarelor necesită unelte de tip VCDS / avansate."
+  }
+}

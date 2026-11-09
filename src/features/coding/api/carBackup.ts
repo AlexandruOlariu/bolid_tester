@@ -6,6 +6,7 @@
 
 import { bytesToHexString, diffCoding } from '@/shared/obd-core';
 import type { HistoryVehicle } from '@/shared/state/historyStore';
+import { translate } from '@/shared/i18n';
 
 /** Long coding captured for a module. */
 export interface CarBackupCoding {
@@ -155,13 +156,13 @@ export function backupVehicleMismatch(
   live: { profileId: string; vin: string | null | undefined },
 ): string | null {
   if (backupVehicle.id && backupVehicle.id !== live.profileId) {
-    return `This backup was taken from ${backupVehicle.label || backupVehicle.id}, not the car selected now — restore is blocked. Select that car to restore it.`;
+    return translate('coding:backup.otherCar', { car: backupVehicle.label || backupVehicle.id });
   }
   const norm = (v: string | null | undefined) => (v ?? '').replace(/\s+/g, '').toUpperCase();
   const a = norm(backupVehicle.vin);
   const b = norm(live.vin);
   if (a && b && a !== b) {
-    return `This backup was taken from VIN …${a.slice(-5)}, but the connected car reports VIN …${b.slice(-5)} — restore is blocked.`;
+    return translate('coding:backup.otherVin', { backup: a.slice(-5), car: b.slice(-5) });
   }
   return null;
 }

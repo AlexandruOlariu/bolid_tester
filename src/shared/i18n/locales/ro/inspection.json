@@ -1,0 +1,12 @@
+{
+  "title": "Verificare mașină second-hand",
+  "notConnected": "Conectează-te la mașină (sau la simulator) pentru a rula o verificare.",
+  "subtitle": "Verifică ECU-ul motorului/emisiilor — nu este o verificare mecanică.",
+  "running": "Se rulează…",
+  "run": "Rulează verificarea",
+  "verdict": {
+    "pass": "TRECUT",
+    "caution": "ATENȚIE",
+    "fail": "PICAT"
+  }
+}

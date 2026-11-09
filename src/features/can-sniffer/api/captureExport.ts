@@ -11,6 +11,7 @@ import {
 } from '@/shared/obd-core';
 import { logError } from '@/shared/state/errorLogStore';
 import { saveTextFile } from '@/shared/lib/saveFile';
+import { translate } from '@/shared/i18n';
 
 export type CaptureFormat = 'csv' | 'raw';
 
@@ -82,7 +83,7 @@ export function buildCaptureFile(
 export async function shareCaptureFile(file: CaptureFile): Promise<string | null> {
   try {
     return await saveTextFile(file.fileName, file.body, file.mimeType, {
-      dialogTitle: 'Share bus capture',
+      dialogTitle: translate('common:share.busCapture'),
     });
   } catch (e) {
     logError({ source: 'can-sniffer/export', error: e });

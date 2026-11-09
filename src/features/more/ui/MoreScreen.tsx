@@ -34,9 +34,11 @@ import {
   MORE_SECTIONS,
   entryKey,
   filterSections,
+  localizeSections,
   type IconName,
   type MoreEntry,
 } from '../model/sections';
+import { useTranslation } from '@/shared/i18n';
 
 /** The lucide icon for each `IconName` (kept here so the model stays icon-free and node-testable). */
 const ICONS: Record<IconName, typeof LineChart> = {
@@ -83,6 +85,7 @@ function SectionHeader({ title, workshop }: { title: string; workshop: boolean }
 }
 
 function ExperimentalChip() {
+  const { t } = useTranslation('more');
   return (
     <Text
       fontSize="$1"
@@ -95,7 +98,7 @@ function ExperimentalChip() {
       paddingHorizontal="$1.5"
       paddingVertical={1}
     >
-      experimental
+      {t('experimental')}
     </Text>
   );
 }
@@ -109,9 +112,10 @@ function EntryRow({
   busy: boolean;
   onPress: (() => void) | undefined;
 }) {
+  const { t } = useTranslation('more');
   const Icon = ICONS[entry.icon];
   const palette = usePalette();
-  const subtitle = busy ? 'Checking…' : entry.subtitle;
+  const subtitle = busy ? t('checking') : entry.subtitle;
   return (
     <XStack
       alignItems="center"
@@ -122,7 +126,7 @@ function EntryRow({
       pressStyle={{ backgroundColor: '$color4' }}
       accessible
       accessibilityRole="button"
-      accessibilityLabel={`${entry.title}. ${entry.subtitle}${entry.experimental ? '. Experimental' : ''}`}
+      accessibilityLabel={`${entry.title}. ${entry.subtitle}${entry.experimental ? `. ${t('experimentalA11y')}` : ''}`}
       onPress={onPress}
     >
       {busy ? <Spinner /> : <Icon size={22} color={palette.accent} />}
@@ -143,24 +147,29 @@ function EntryRow({
 }
 
 export function MoreScreen() {
+  const { t } = useTranslation('more');
   const router = useRouter();
   const [checking, setChecking] = useState(false);
   const [query, setQuery] = useState('');
-  const sections = useMemo(() => filterSections(MORE_SECTIONS, query), [query]);
+  const localized = useMemo(
+    () => localizeSections(MORE_SECTIONS, (key, english) => t(key, { defaultValue: english })),
+    [t],
+  );
+  const sections = useMemo(() => filterSections(localized, query), [localized, query]);
 
   const onCheckUpdates = async () => {
     setChecking(true);
     try {
       const result = await checkForUpdate();
       if (result === 'available') {
-        appAlert('Update available', 'Download and restart now?', [
-          { text: 'Later', style: 'cancel' },
-          { text: 'Update', onPress: () => fetchAndReload() },
+        appAlert(t('updates.availableTitle'), t('updates.availableBody'), [
+          { text: t('updates.later'), style: 'cancel' },
+          { text: t('updates.update'), onPress: () => fetchAndReload() },
         ]);
       } else if (result === 'up-to-date') {
-        appAlert('Up to date', 'You already have the latest version.');
+        appAlert(t('updates.upToDateTitle'), t('updates.upToDateBody'));
       } else {
-        appAlert('Updates unavailable', 'Over-the-air updates are not enabled in this build.');
+        appAlert(t('updates.unavailableTitle'), t('updates.unavailableBody'));
       }
     } finally {
       setChecking(false);
@@ -174,18 +183,18 @@ export function MoreScreen() {
   };
 
   return (
-    <Screen title="More" subtitle="Diagnostics, ownership & workshop tools">
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <Input
         value={query}
         onChangeText={setQuery}
-        placeholder="Search tools…"
+        placeholder={t('searchPlaceholder')}
         autoCapitalize="none"
         autoCorrect={false}
         clearButtonMode="while-editing"
-        accessibilityLabel="Search tools"
+        accessibilityLabel={t('searchA11y')}
       />
       {sections.length === 0 ? (
-        <Paragraph theme="alt2">No tools match “{query.trim()}”.</Paragraph>
+        <Paragraph theme="alt2">{t('noMatch', { query: query.trim() })}</Paragraph>
       ) : null}
       {sections.map((section) => (
         <YStack key={section.id} gap="$2" testID={`more-section-${section.id}`}>

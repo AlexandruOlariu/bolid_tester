@@ -7,8 +7,10 @@ import { diffScans, type ModuleDiff } from '../api/scanDiff';
 import { historyVehicleKey } from '@/shared/state/historyStore';
 import { useScanHistoryStore, type SavedScan } from '../model/scanHistoryStore';
 import { HIT_SLOP } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
+import { formatDateTime } from '@/shared/lib/format';
 
-const fmtDate = (ts: number) => new Date(ts).toLocaleString();
+const fmtDate = (ts: number) => formatDateTime(ts);
 
 /** Coloured pill for a diff/badge count. Semantic tokens only (plan 20): the scale's `$red10` /
  *  `$green10` / `$yellow10` miss 4.5:1 on the light background. */
@@ -34,17 +36,18 @@ function Badge({
 
 /** Share the newest saved scan as the forum-pasteable VCDS-style text report. */
 function ShareRow({ latest }: { latest: SavedScan }) {
+  const { t } = useTranslation('moduleScan');
   const { shareReport, busy } = useScanShare();
   return (
     <XStack gap="$2" alignItems="center">
       <YStack flex={1}>
-        <Paragraph>Latest scan · {fmtDate(latest.ts)}</Paragraph>
+        <Paragraph>{t('history.latest', { date: fmtDate(latest.ts) })}</Paragraph>
         <Paragraph theme="alt2" size="$2">
-          {latest.modules.length} modules · {latest.vehicle.label}
+          {t('history.modules', { count: latest.modules.length })} · {latest.vehicle.label}
         </Paragraph>
       </YStack>
       <Button size="$3" hitSlop={HIT_SLOP} disabled={busy} onPress={() => shareReport(latest)}>
-        {busy ? 'Sharing…' : 'Share report'}
+        {busy ? t('history.sharing') : t('history.share')}
       </Button>
     </XStack>
   );
@@ -52,23 +55,24 @@ function ShareRow({ latest }: { latest: SavedScan }) {
 
 /** Search the latest saved scan's faults across every module (VAG number / SAE code / text). */
 function SearchSection({ latest }: { latest: SavedScan }) {
+  const { t } = useTranslation('moduleScan');
   const [query, setQuery] = useState('');
   const hits = useMemo(() => searchScan(latest.modules, query), [latest, query]);
   const trimmed = query.trim();
   return (
     <YStack gap="$2">
-      <H4>Search faults</H4>
+      <H4>{t('history.search')}</H4>
       <Input
         size="$3"
-        placeholder="VAG number, P-code or text (e.g. 08579, P2183, coolant)"
+        placeholder={t('history.searchPlaceholder')}
         value={query}
         onChangeText={setQuery}
         autoCapitalize="none"
-        accessibilityLabel="Search the scan's fault codes"
+        accessibilityLabel={t('history.searchA11y')}
       />
       {trimmed && !hits.length ? (
         <Paragraph theme="alt2" size="$2">
-          No fault in the last scan matches “{trimmed}”.
+          {t('history.noMatch', { query: trimmed })}
         </Paragraph>
       ) : null}
       {hits.map((h) => (
@@ -99,6 +103,7 @@ function SearchSection({ latest }: { latest: SavedScan }) {
 
 /** One module's row in the before→after diff. */
 function DiffRow({ m }: { m: ModuleDiff }) {
+  const { t } = useTranslation('moduleScan');
   if (m.status === 'unchanged') return null;
   return (
     <YStack backgroundColor="$color1" borderRadius="$3" padding="$2" gap="$1">
@@ -107,8 +112,8 @@ function DiffRow({ m }: { m: ModuleDiff }) {
           {m.address}
         </Paragraph>
         <Paragraph flex={1}>{m.name}</Paragraph>
-        {m.status === 'added' ? <Badge label="new module" tone="statusWarn" /> : null}
-        {m.status === 'removed' ? <Badge label="gone" tone="alt2" /> : null}
+        {m.status === 'added' ? <Badge label={t('diff.newModule')} tone="statusWarn" /> : null}
+        {m.status === 'removed' ? <Badge label={t('diff.gone')} tone="alt2" /> : null}
         {m.faultsAppeared.length ? (
           <Badge label={`+${m.faultsAppeared.length}`} tone="statusError" />
         ) : null}
@@ -118,22 +123,25 @@ function DiffRow({ m }: { m: ModuleDiff }) {
       </XStack>
       {m.faultsAppeared.map((d) => (
         <Paragraph key={`a-${d.display}`} size="$2" color="$statusError">
-          appeared · {d.display} {d.vagCode ? `(VAG ${d.vagCode})` : ''} — {d.description}
+          {t('diff.appeared')} · {d.display} {d.vagCode ? `(VAG ${d.vagCode})` : ''} —{' '}
+          {d.description}
         </Paragraph>
       ))}
       {m.faultsCleared.map((d) => (
         <Paragraph key={`c-${d.display}`} size="$2" color="$statusOk">
-          cleared · {d.display} {d.vagCode ? `(VAG ${d.vagCode})` : ''} — {d.description}
+          {t('diff.cleared')} · {d.display} {d.vagCode ? `(VAG ${d.vagCode})` : ''} —{' '}
+          {d.description}
         </Paragraph>
       ))}
       {m.codingChanged ? (
         <Paragraph size="$2" theme="alt2">
-          coding {m.codingChanged.before ?? '—'} → {m.codingChanged.after ?? '—'}
+          {t('diff.coding')} {m.codingChanged.before ?? '—'} → {m.codingChanged.after ?? '—'}
         </Paragraph>
       ) : null}
       {m.partNumberChanged ? (
         <Paragraph size="$2" theme="alt2">
-          part no {m.partNumberChanged.before ?? '—'} → {m.partNumberChanged.after ?? '—'}
+          {t('diff.partNo')} {m.partNumberChanged.before ?? '—'} →{' '}
+          {m.partNumberChanged.after ?? '—'}
         </Paragraph>
       ) : null}
     </YStack>
@@ -170,6 +178,7 @@ export function CompareSection({
   initialBeforeId?: string;
   initialAfterId?: string;
 }) {
+  const { t } = useTranslation('moduleScan');
   const [beforeId, setBeforeId] = useState<string>(
     () => linkedBefore(scans, initialBeforeId, initialAfterId) ?? scans[1]?.id ?? '',
   );
@@ -220,31 +229,35 @@ export function CompareSection({
 
   return (
     <YStack gap="$2">
-      <H4>Compare scans</H4>
-      <Picker title="Before (baseline)" selectedId={before?.id ?? ''} onSelect={setBeforeId} />
-      <Picker title="After" selectedId={after?.id ?? ''} onSelect={setAfterId} />
+      <H4>{t('compare.title')}</H4>
+      <Picker title={t('compare.before')} selectedId={before?.id ?? ''} onSelect={setBeforeId} />
+      <Picker title={t('compare.after')} selectedId={after?.id ?? ''} onSelect={setAfterId} />
       {after && !before ? (
         <Paragraph theme="alt2" size="$2">
-          No earlier scan of this car — pick a baseline above.
+          {t('compare.noEarlier')}
         </Paragraph>
       ) : null}
       {diff && before && after ? (
         before.id === after.id ? (
           <Paragraph theme="alt2" size="$2">
-            Pick two different scans to compare.
+            {t('compare.pickTwo')}
           </Paragraph>
         ) : (
           <YStack gap="$2">
             <Paragraph size="$2" theme="alt2">
-              {diff.totals.appeared} appeared · {diff.totals.cleared} cleared ·{' '}
-              {diff.totals.modulesChanged} changed · {diff.totals.modulesAdded} added ·{' '}
-              {diff.totals.modulesRemoved} removed
+              {t('compare.totals', {
+                appeared: diff.totals.appeared,
+                cleared: diff.totals.cleared,
+                changed: diff.totals.modulesChanged,
+                added: diff.totals.modulesAdded,
+                removed: diff.totals.modulesRemoved,
+              })}
             </Paragraph>
             {changed.length ? (
               changed.map((m) => <DiffRow key={`${m.status}-${m.address}`} m={m} />)
             ) : (
               <Paragraph theme="alt2" size="$2">
-                No differences between these two scans.
+                {t('compare.none')}
               </Paragraph>
             )}
           </YStack>
@@ -266,6 +279,7 @@ function firstParam(v: string | string[] | undefined): string | undefined {
  *  Compare pickers, then the params are cleared on this route so the same link works again after
  *  the pickers were changed by hand. */
 export function ScanHistorySection() {
+  const { t } = useTranslation('moduleScan');
   const scans = useScanHistoryStore((s) => s.scans);
   const params = useLocalSearchParams<{ before?: string | string[]; after?: string | string[] }>();
   const navigation = useNavigation<{
@@ -283,7 +297,7 @@ export function ScanHistorySection() {
 
   return (
     <YStack gap="$3" backgroundColor="$color2" borderRadius="$4" padding="$3">
-      <H4>Saved scans ({scans.length})</H4>
+      <H4>{t('history.title', { count: scans.length })}</H4>
       <ShareRow latest={latest} />
       <SearchSection latest={latest} />
       {scans.length >= 2 ? (

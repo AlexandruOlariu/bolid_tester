@@ -5,12 +5,14 @@ import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { switchToRealAdapter } from '../api/connectionService';
 import { usePalette, HIT_SLOP } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
 
 /** App-wide amber strip shown whenever the simulator is the adapter source (or a simulator session is
  *  live), so simulated readings are never mistaken for the real car. Mounted once in the root layout
  *  (above the tab navigator), so it sits under the header on every route, hidden routes included.
  *  Renders nothing for a real adapter. */
 export function SimulatorBanner() {
+  const { t } = useTranslation('connection');
   const palette = usePalette();
   const adapterSource = useSettingsStore((s) => s.adapterSource);
   const simulated = useSettingsStore((s) => s.simulatedVehicleId);
@@ -30,11 +32,11 @@ export function SimulatorBanner() {
       borderBottomWidth={1}
       borderBottomColor="$yellow7"
       accessibilityRole="alert"
-      accessibilityLabel="Simulator mode is on. Readings are not from a real car."
+      accessibilityLabel={t('banner.a11y')}
     >
       <FlaskConical size={16} color={palette.statusWarn} />
       <Text flex={1} fontSize="$2" fontWeight="700" color="$yellow11" numberOfLines={1}>
-        Simulator mode · emulating {simulated}
+        {t('banner.text', { vehicle: simulated })}
       </Text>
       <Button
         size="$3"
@@ -43,7 +45,7 @@ export function SimulatorBanner() {
         color="$yellow11"
         onPress={() => void switchToRealAdapter()}
       >
-        Use real adapter
+        {t('banner.useReal')}
       </Button>
     </XStack>
   );

@@ -1,0 +1,18 @@
+{
+  "title": "Baterie și încărcare",
+  "notConnected": "Conectează-te la o mașină (sau la simulator) pentru a capta tensiunea.",
+  "subtitle": "Stare pe baza tensiunii — nu este un test de sarcină.",
+  "live": "Tensiune live",
+  "capturing": "Se captează… (pornește motorul pentru a prinde căderea la pornire)",
+  "capture": "Captează (~6 s)",
+  "verdict": {
+    "good": "BUNĂ",
+    "fair": "ACCEPTABILĂ",
+    "weak": "SLABĂ",
+    "unknown": "NECUNOSCUTĂ"
+  },
+  "charge": "{{pct}}% încărcare",
+  "resting": "În repaus",
+  "crankDip": "Cădere la pornire",
+  "charging": "La încărcare"
+}

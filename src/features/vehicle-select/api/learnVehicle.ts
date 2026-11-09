@@ -17,6 +17,7 @@ import {
 } from '@/shared/vehicles';
 import { simulatorSourceFor } from '@/shared/vehicles/resolve';
 import { useVehicleStore } from '../model/vehicleStore';
+import { translate } from '@/shared/i18n';
 
 /** Requires a connected session. Creates a garage car from the live `SessionInfo` (or re-learns
  *  `existingId`, keeping its name / fuel / notes), selects it and returns it. Null when no session
@@ -82,7 +83,7 @@ export function autoSelectGarageCarForVin(vin: string | null | undefined): UserV
     void notify({
       category: 'connection',
       severity: 'info',
-      title: 'Car recognised',
+      title: translate('vehicleSelect:notify.recognised'),
       body: match.name,
     });
   }

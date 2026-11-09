@@ -1,0 +1,6 @@
+{
+  "monitorReady": "Monitor ready",
+  "monitorComplete": "{{name}} monitor complete",
+  "readinessComplete": "Readiness complete",
+  "allReady": "All monitors are ready — the car is set for an emissions test."
+}

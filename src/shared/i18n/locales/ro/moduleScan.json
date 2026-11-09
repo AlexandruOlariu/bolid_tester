@@ -1,0 +1,102 @@
+{
+  "title": "Scanare module",
+  "subtitle_one": "Scanare automată în stil VCDS · {{count}} modul declarat · legătură {{proto}}",
+  "subtitle_few": "Scanare automată în stil VCDS · {{count}} module declarate · legătură {{proto}}",
+  "subtitle_other": "Scanare automată în stil VCDS · {{count}} de module declarate · legătură {{proto}}",
+  "noModules": "Niciun modul de control nu este declarat pentru acest profil de vehicul. Scanarea modulelor necesită un profil cu listă de module (vezi exemplul Golf Plus) — profilul generic scanează doar motorul, din ecranul Coduri de eroare.",
+  "discoverBelow": "Descoperă modulele, mai jos, găsește modulele care răspund pe această mașină.",
+  "needsCan": "Scanarea modulelor necesită o legătură CAN (UDS). Pe mașinile cu K-line, un ELM327 generic ajunge doar la ECU-ul motorului — folosește ecranul Coduri de eroare pentru erorile motorului.",
+  "scanning": "Se scanează {{done}}/{{total}}…",
+  "scanAll": "Scanează toate modulele",
+  "lastScan": "Ultima scanare {{time}}",
+  "help": "Scanează fiecare modul declarat pentru identificare (cod de piesă, software) și coduri de eroare cu numere de cod VAG — ca o scanare automată VCDS, pe modulele la care ajunge acest adaptor.",
+  "kwpStatus": "stare 0x{{status}}",
+  "faults_one": "{{count}} eroare",
+  "faults_few": "{{count}} erori",
+  "faults_other": "{{count}} de erori",
+  "noFaults": "fără erori",
+  "noResponse": "fără răspuns",
+  "error": "eroare",
+  "tp20State": {
+    "not-installed": "nemontat",
+    "refused": "✕ refuzat",
+    "silent": "– fără răspuns"
+  },
+  "row": {
+    "hideHint": "Ascunde detaliile modulului",
+    "showHint": "Arată detaliile modulului",
+    "system": "Sistem: {{name}}",
+    "clear": "Șterge erorile acestui modul",
+    "confirmClear": "Confirmă ștergerea"
+  },
+  "flag": {
+    "confirmed": "confirmată",
+    "pending": "în așteptare",
+    "failing": "activă acum",
+    "lamp": "martor de avertizare",
+    "stored": "memorată"
+  },
+  "tp20": {
+    "title": "Module pre-UDS (TP2.0)",
+    "help": "⚠ Experimental. Modulele VAG mai vechi (bord, confort, gateway) folosesc VW TP2.0, nu UDS. Se deschide un canal către gateway, se citește lista de instalare și se identifică fiecare modul. Pe un ELM327 generic real, procesul este sensibil la temporizare și s-ar putea să nu meargă pe orice adaptor.",
+    "scanning": "Se scanează…",
+    "scan": "Scanează gateway-ul (TP2.0)",
+    "installed_one": "Gateway-ul raportează {{count}} modul instalat: {{list}}",
+    "installed_few": "Gateway-ul raportează {{count}} module instalate: {{list}}",
+    "installed_other": "Gateway-ul raportează {{count}} de module instalate: {{list}}",
+    "noFaults": "Nicio eroare memorată.",
+    "monitorUnavailable": "Scanarea TP2.0 citește magistrala în modul de monitorizare CAN brut, pe care o legătură Bluetooth clasic nu îl poate transmite. Folosește un adaptor Bluetooth LE sau Wi-Fi pentru modulele pre-UDS.",
+    "noTraffic": "Niciun trafic CAN brut — acest adaptor s-ar putea să nu suporte TP2.0 (multe clone) sau magistrala este în repaus. Verifică contactul și încearcă din nou."
+  },
+  "reason": {
+    "tp20": "Acest modul folosește VW TP2.0 (pre-UDS) — folosește acțiunea „Scanează gateway-ul (TP2.0)” din acest ecran pentru a-l citi. Vezi docs/features/module-scan.md.",
+    "silent": "Niciun răspuns la această adresă — modul absent, în repaus sau cu altă adresă pe această mașină.",
+    "notClearable": "Încă nu se poate șterge prin acest tip de legătură."
+  },
+  "discover": {
+    "title": "Descoperă modulele",
+    "help": "Întreabă fiecare adresă cunoscută de modul VW-group care îi este codul de piesă (doar citire) pentru a afla ce module de control răspund cu adevărat pe această mașină. Durează câteva secunde pentru fiecare adresă care nu răspunde.",
+    "progress": "Se descoperă {{done}}/{{total}}…",
+    "summary": "{{answered}} din {{total}} adrese au răspuns.",
+    "answered": "a răspuns",
+    "and": "și",
+    "shared": "Adresele {{list}} folosesc aceleași id-uri CAN pe unele mașini, deci un singur modul a răspuns pentru ambele. Afișat ca {{address}}; schimbă dacă identificarea lui spune altceva.",
+    "sharedIdent": "Adresele {{list}} folosesc aceleași id-uri CAN pe unele mașini, deci un singur modul a răspuns pentru ambele. Afișat ca {{address}} după identificarea lui ({{system}}); schimbă dacă identificarea spune altceva.",
+    "recordAs": "Înregistrează în schimb ca {{address}} {{name}}",
+    "listed": "Deja în lista de module a acestei mașini.",
+    "add": "Adaugă în lista de module a acestei mașini",
+    "hideEntry": "Ascunde intrarea modulului",
+    "builtIn": "Această mașină este un profil integrat, care se află în codul aplicației. Lipește această intrare în lista ei de module (pas de dezvoltator) sau adaugă mașina în Garajul meu pentru a păstra modulul pe acest telefon.",
+    "silent": "Fără răspuns: {{list}}. Lipsa răspunsului nu dovedește că un modul lipsește — modulele mai vechi pot folosi în schimb VW TP2.0."
+  },
+  "history": {
+    "title": "Scanări salvate ({{count}})",
+    "latest": "Ultima scanare · {{date}}",
+    "modules_one": "{{count}} modul",
+    "modules_few": "{{count}} module",
+    "modules_other": "{{count}} de module",
+    "sharing": "Se partajează…",
+    "share": "Partajează raportul",
+    "search": "Caută erori",
+    "searchPlaceholder": "Număr VAG, cod P sau text (de ex. 08579, P2183, răcire)",
+    "searchA11y": "Caută în codurile de eroare ale scanării",
+    "noMatch": "Nicio eroare din ultima scanare nu se potrivește cu „{{query}}”."
+  },
+  "diff": {
+    "newModule": "modul nou",
+    "gone": "dispărut",
+    "appeared": "apărută",
+    "cleared": "ștearsă",
+    "coding": "codare",
+    "partNo": "cod piesă"
+  },
+  "compare": {
+    "title": "Compară scanări",
+    "before": "Înainte (referință)",
+    "after": "După",
+    "noEarlier": "Nicio scanare anterioară a acestei mașini — alege o referință mai sus.",
+    "pickTwo": "Alege două scanări diferite pentru comparație.",
+    "totals": "{{appeared}} apărute · {{cleared}} șterse · {{changed}} modificate · {{added}} adăugate · {{removed}} eliminate",
+    "none": "Nicio diferență între aceste două scanări."
+  }
+}

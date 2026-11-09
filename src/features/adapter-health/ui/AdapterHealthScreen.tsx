@@ -4,6 +4,8 @@ import { Screen, ValueCard } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { communitySummary, matchKnownAdapter } from '@/shared/adapters';
 import { useAdapterHealth } from '../hooks/useAdapterHealth';
+import { useTranslation } from '@/shared/i18n';
+import { formatFixed } from '@/shared/lib/format';
 
 const GRADE_COLOR: Record<string, string> = {
   good: '$statusOk',
@@ -12,16 +14,14 @@ const GRADE_COLOR: Record<string, string> = {
 };
 
 export function AdapterHealthScreen() {
+  const { t } = useTranslation('adapterHealth');
   const status = useSessionStore((s) => s.status);
   const { running, phase, report, run, share, sharing } = useAdapterHealth();
 
   if (status !== 'connected') {
     return (
-      <Screen title="Adapter health">
-        <Paragraph theme="alt2">
-          Connect to a car (or the simulator) to test the adapter. This times a burst of commands
-          and grades your ELM327.
-        </Paragraph>
+      <Screen title={t('title')}>
+        <Paragraph theme="alt2">{t('notConnected')}</Paragraph>
       </Screen>
     );
   }
@@ -31,12 +31,9 @@ export function AdapterHealthScreen() {
   const known = report ? matchKnownAdapter(report.context.deviceName, report.version) : null;
 
   return (
-    <Screen
-      title="Adapter health"
-      subtitle="Firmware, voltage, protocol & latency — is my clone junk?"
-    >
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <Button theme="green" onPress={run} disabled={running}>
-        {running ? (phase ?? 'Running…') : report ? 'Run again' : 'Run health check (~5 s)'}
+        {running ? (phase ?? t('running')) : report ? t('runAgain') : t('run')}
       </Button>
       {running ? (
         <XStack alignItems="center" gap="$2">
@@ -50,31 +47,33 @@ export function AdapterHealthScreen() {
       {report ? (
         <YStack gap="$3">
           <XStack alignItems="center" gap="$2">
-            <H3 color={GRADE_COLOR[report.result.grade]}>{report.result.grade.toUpperCase()}</H3>
+            <H3 color={GRADE_COLOR[report.result.grade]}>
+              {t(`grade.${report.result.grade}`, {
+                defaultValue: report.result.grade.toUpperCase(),
+              })}
+            </H3>
             {report.result.cloneSuspected ? (
-              <Paragraph theme="alt2">· clone suspected</Paragraph>
+              <Paragraph theme="alt2">· {t('clone')}</Paragraph>
             ) : null}
           </XStack>
           <Paragraph theme="alt2" size="$2" testID="adapter-community">
-            {known
-              ? `Community: ${communitySummary(known)}`
-              : 'No community reports for this adapter yet — share the JSON to add one.'}
+            {known ? t('community', { summary: communitySummary(known) }) : t('noCommunity')}
           </Paragraph>
 
           <Card bordered padding="$3">
             <YStack gap="$1.5">
               <XStack justifyContent="space-between">
-                <Paragraph theme="alt2">Firmware</Paragraph>
+                <Paragraph theme="alt2">{t('firmware')}</Paragraph>
                 <Text fontWeight="700">{report.version || '—'}</Text>
               </XStack>
               <XStack justifyContent="space-between">
-                <Paragraph theme="alt2">Voltage</Paragraph>
+                <Paragraph theme="alt2">{t('voltage')}</Paragraph>
                 <Text fontWeight="700">
-                  {report.voltage == null ? '—' : `${report.voltage.toFixed(1)} V`}
+                  {report.voltage == null ? '—' : `${formatFixed(report.voltage, 1)} V`}
                 </Text>
               </XStack>
               <XStack justifyContent="space-between">
-                <Paragraph theme="alt2">Protocol</Paragraph>
+                <Paragraph theme="alt2">{t('protocol')}</Paragraph>
                 <Text fontWeight="700">{report.protocol}</Text>
               </XStack>
             </YStack>
@@ -82,24 +81,23 @@ export function AdapterHealthScreen() {
 
           <XStack flexWrap="wrap" gap="$2">
             <ValueCard
-              name="Min latency"
+              name={t('minLatency')}
               value={latency ? Math.round(latency.min) : null}
               unit="ms"
             />
             <ValueCard
-              name="Median latency"
+              name={t('medianLatency')}
               value={latency ? Math.round(latency.median) : null}
               unit="ms"
             />
             <ValueCard
-              name="Max latency"
+              name={t('maxLatency')}
               value={latency ? Math.round(latency.max) : null}
               unit="ms"
             />
           </XStack>
           <Paragraph theme="alt2" size="$2">
-            {latency ? `${latency.count}/${report.attempts}` : `0/${report.attempts}`} 0100 commands
-            answered
+            {t('answered', { done: latency ? latency.count : 0, total: report.attempts })}
           </Paragraph>
 
           <YStack gap="$1">
@@ -116,10 +114,10 @@ export function AdapterHealthScreen() {
             disabled={sharing}
             icon={sharing ? () => <Spinner /> : undefined}
           >
-            Share as text
+            {t('shareText')}
           </Button>
           <Button onPress={() => share('json')} disabled={sharing}>
-            Share JSON (for the compatibility matrix)
+            {t('shareJson')}
           </Button>
         </YStack>
       ) : null}

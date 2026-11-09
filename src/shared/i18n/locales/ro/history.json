@@ -1,0 +1,68 @@
+{
+  "title": "Istoric",
+  "subtitle": "Tot ce s-a întâmplat cu această mașină",
+  "car": "Mașină",
+  "carFilterA11y": "Arată istoricul pentru",
+  "kindsA11y": "Arată tipurile de evenimente",
+  "all": "Toate",
+  "kind": {
+    "ai": "AI",
+    "dtc": "Erori",
+    "scan": "Scanări",
+    "trip": "Călătorii",
+    "maintenance": "Service",
+    "backup": "Backupuri",
+    "report": "Rapoarte"
+  },
+  "filterPlaceholder": "Filtrează (de ex. P0299, ulei, călătorie)",
+  "filterA11y": "Filtrează cronologia",
+  "exportA11y": "Exportă verificările codurilor de eroare listate",
+  "export": "Exportă",
+  "clearA11y": "Șterge istoricul diagnozelor, codurilor de eroare și rapoartelor",
+  "clear": {
+    "title": "Ștergi istoricul?",
+    "body": "Se șterg definitiv diagnozele AI, verificările codurilor de eroare și înregistrările rapoartelor salvate pentru toate mașinile. Scanările de module, călătoriile, intrările de service și backupurile de codare se păstrează — șterge-le din ecranele lor.",
+    "confirm": "Șterge"
+  },
+  "reshare": {
+    "missingTitle": "Fișierul nu mai este pe dispozitiv",
+    "missingBody": "{{file}} a fost șters. Creează unul nou din Raport vehicul.",
+    "unavailable": "Partajare indisponibilă"
+  },
+  "empty": {
+    "none": "Nimic încă. Diagnozele, citirile codurilor de eroare, scanările de module, călătoriile, intrările de service, backupurile de codare și rapoartele apar aici, cele mai noi primele, grupate pe mașini.",
+    "query": "Nimic nu se potrivește cu „{{query}}”.",
+    "kinds": "Încă nimic din: {{names}}.",
+    "kindsCar": "Nimic din {{names}} pentru această mașină.",
+    "car": "Nimic pentru această mașină încă."
+  },
+  "overall": {
+    "ok": "în stare bună",
+    "attention": "necesită atenție",
+    "urgent": "urgent"
+  },
+  "item": {
+    "ai": "Diagnoză AI · {{overall}}",
+    "milOn": "martor motor aprins",
+    "milOff": "martor motor stins",
+    "dtc": "Verificare coduri de eroare",
+    "dtcCounts": "{{stored}} memorate · {{pending}} în așteptare",
+    "report": "Raport ({{format}})",
+    "identityOnly": "Doar identificare",
+    "scan_one": "Scanare automată · {{count}} eroare",
+    "scan_few": "Scanare automată · {{count}} erori",
+    "scan_other": "Scanare automată · {{count}} de erori",
+    "scanAnswered": "{{answered}}/{{total}} module au răspuns",
+    "trip": "Călătorie",
+    "tripKm": "Călătorie · {{km}} km",
+    "samples_one": "{{count}} eșantion",
+    "samples_few": "{{count}} eșantioane",
+    "samples_other": "{{count}} de eșantioane",
+    "service": "Service",
+    "serviceNamed": "Service: {{name}}",
+    "backup": "Backup codare",
+    "modules_one": "{{count}} modul",
+    "modules_few": "{{count}} module",
+    "modules_other": "{{count}} de module"
+  }
+}

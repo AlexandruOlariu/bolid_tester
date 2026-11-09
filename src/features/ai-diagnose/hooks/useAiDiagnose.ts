@@ -7,6 +7,7 @@ import { curatedProfileId } from '@/shared/vehicles';
 import type { DiagnosisOptions } from '@/shared/obd-core';
 import { useAiDiagnoseStore } from '../model/aiDiagnoseStore';
 import * as diagnoseService from '../api/diagnoseService';
+import { translate } from '@/shared/i18n';
 
 /** Orchestrates a one-tap diagnosis: gather → analyse (AI or local) → store report + save to history.
  *  `run({ focusCode })` focuses the analysis on one fault code (fault-codes "Explain with AI").
@@ -42,23 +43,23 @@ export function useAiDiagnose() {
       const focus = opts.focusCode?.trim().toUpperCase() || null;
       setFocusCode(focus);
       if (useSessionStore.getState().status !== 'connected') {
-        setError('Connect to a vehicle first (Connect tab).');
+        setError(translate('aiDiagnose:msg.connectFirst'));
         return;
       }
-      setPhase('gathering', 'Reading fault codes, readiness & live data…');
+      setPhase('gathering', translate('aiDiagnose:msg.gathering'));
       try {
         const snapshot = await diagnoseService.gatherSnapshot();
         setSnapshot(snapshot);
         const { report: r, notice: n } = await diagnoseService.analyze(
           snapshot,
-          () => setPhase('analyzing', 'Asking the AI model to analyse the data…'),
+          () => setPhase('analyzing', translate('aiDiagnose:msg.analyzing')),
           { focusCode: focus ?? undefined },
         );
         setReport(r, n);
         useHistoryStore.getState().addAiRun({
           vehicle: {
             id: getActiveProfile().id,
-            label: snapshot.vehicle?.label ?? 'Unknown vehicle',
+            label: snapshot.vehicle?.label ?? translate('aiDiagnose:unknownVehicle'),
             vin: snapshot.vin,
           },
           source: r.source,

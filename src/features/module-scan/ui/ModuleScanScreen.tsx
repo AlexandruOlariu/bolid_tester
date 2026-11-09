@@ -7,30 +7,28 @@ import { useModuleScan, TP20_MONITOR_UNAVAILABLE } from '../hooks/useModuleScan'
 import { useModuleScanStore, ModuleScanResult } from '../model/moduleScanStore';
 import { ScanHistorySection } from './ScanHistorySection';
 import { DiscoverySection } from './DiscoverySection';
+import { translate, useTranslation } from '@/shared/i18n';
+import { formatTime } from '@/shared/lib/format';
 
 const hex2 = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
 
 /** A native KWP fault (TP2.0 module): 5-digit number, component text when known, status byte. */
 const kwpFaultLine = (vag: string, status: number) => {
   const text = vagNativeDtcText(vag);
-  return `${vag}${text ? ` ${text}` : ''} (status 0x${hex2(status)})`;
+  return `${vag}${text ? ` ${text}` : ''} (${translate('moduleScan:kwpStatus', { status: hex2(status) })})`;
 };
 
-const tp20StateLabel: Record<string, string> = {
-  ok: '✓',
-  'not-installed': 'not fitted',
-  refused: '✕ refused',
-  silent: '– silent',
-};
+const tp20StateLabel = (state: string): string =>
+  state === 'ok' ? '✓' : translate(`moduleScan:tp20State.${state}`, { defaultValue: state });
 
 function stateBadge(r: ModuleScanResult): string {
   if (r.state === 'ok')
     return r.dtcs.length
-      ? `⚠ ${r.dtcs.length} fault${r.dtcs.length > 1 ? 's' : ''}`
-      : '✓ no faults';
-  if (r.state === 'silent') return '– no response';
+      ? `⚠ ${translate('moduleScan:faults', { count: r.dtcs.length })}`
+      : `✓ ${translate('moduleScan:noFaults')}`;
+  if (r.state === 'silent') return `– ${translate('moduleScan:noResponse')}`;
   if (r.state === 'skipped') return '⏳ TP2.0';
-  return '✕ error';
+  return `✕ ${translate('moduleScan:error')}`;
 }
 
 function ModuleRow({
@@ -43,6 +41,7 @@ function ModuleRow({
   onClear: (key: string) => void;
   running: boolean;
 }) {
+  const { t } = useTranslation('moduleScan');
   const [expanded, setExpanded] = useState(false);
   const [confirmingClear, setConfirmingClear] = useState(false);
   const m = result.module;
@@ -55,7 +54,7 @@ function ModuleRow({
         accessible
         accessibilityRole="button"
         accessibilityLabel={`${m.address} ${m.name}. ${stateBadge(result)}`}
-        accessibilityHint={expanded ? 'Hides the module details' : 'Shows the module details'}
+        accessibilityHint={expanded ? t('row.hideHint') : t('row.showHint')}
         accessibilityState={{ expanded }}
       >
         <Paragraph fontFamily="$mono" theme="alt2">
@@ -83,7 +82,7 @@ function ModuleRow({
           <VerificationBadge item={m} testID={`verify-module-${diagModuleKey(m)}`} />
           {result.ident?.systemName ? (
             <Paragraph theme="alt2" size="$2">
-              System: {result.ident.systemName}
+              {t('row.system', { name: result.ident.systemName })}
             </Paragraph>
           ) : null}
           {result.dtcs.map((d) => (
@@ -97,13 +96,13 @@ function ModuleRow({
               <Paragraph size="$2">{d.description}</Paragraph>
               <Paragraph theme="alt2" size="$2">
                 {[
-                  d.statusFlags.confirmed ? 'confirmed' : null,
-                  d.statusFlags.pending ? 'pending' : null,
-                  d.statusFlags.testFailed ? 'failing now' : null,
-                  d.statusFlags.warningIndicator ? 'warning lamp' : null,
+                  d.statusFlags.confirmed ? t('flag.confirmed') : null,
+                  d.statusFlags.pending ? t('flag.pending') : null,
+                  d.statusFlags.testFailed ? t('flag.failing') : null,
+                  d.statusFlags.warningIndicator ? t('flag.lamp') : null,
                 ]
                   .filter(Boolean)
-                  .join(' · ') || 'stored'}
+                  .join(' · ') || t('flag.stored')}
               </Paragraph>
             </YStack>
           ))}
@@ -115,7 +114,7 @@ function ModuleRow({
                 disabled={running || !result.dtcs.length}
                 onPress={() => setConfirmingClear(true)}
               >
-                Clear this module's faults
+                {t('row.clear')}
               </Button>
             ) : (
               <XStack gap="$2">
@@ -130,7 +129,7 @@ function ModuleRow({
                     onClear(diagModuleKey(m));
                   }}
                 >
-                  Confirm clear
+                  {t('row.confirmClear')}
                 </Button>
                 <Button
                   flex={1}
@@ -138,7 +137,7 @@ function ModuleRow({
                   hitSlop={HIT_SLOP}
                   onPress={() => setConfirmingClear(false)}
                 >
-                  Cancel
+                  {t('common:actions.cancel')}
                 </Button>
               </XStack>
             )
@@ -150,6 +149,7 @@ function ModuleRow({
 }
 
 export function ModuleScanScreen() {
+  const { t } = useTranslation('moduleScan');
   const {
     available,
     canScanTp20,
@@ -183,15 +183,11 @@ export function ModuleScanScreen() {
 
   if (!available) {
     return (
-      <Screen title="Module scan">
+      <Screen title={t('title')}>
         <Paragraph theme="alt2">
           {modules.length === 0
-            ? 'No control modules are declared for this vehicle profile. Module scan needs a ' +
-              'profile with a module list (see the Golf Plus example) — the generic profile scans ' +
-              'the engine only, via the Fault codes screen.' +
-              (canDiscover ? ' Discover modules below finds the modules this car answers on.' : '')
-            : 'Module scan needs a CAN (UDS) link. On K-line cars a generic ELM327 reaches the ' +
-              'engine ECU only — use the Fault codes screen for engine faults.'}
+            ? `${t('noModules')}${canDiscover ? ` ${t('discoverBelow')}` : ''}`
+            : t('needsCan')}
         </Paragraph>
         {discovery}
       </Screen>
@@ -199,16 +195,15 @@ export function ModuleScanScreen() {
   }
 
   return (
-    <Screen
-      title="Module scan"
-      subtitle={`VCDS-style auto-scan · ${modules.length} modules declared · link ${proto}`}
-    >
+    <Screen title={t('title')} subtitle={t('subtitle', { count: modules.length, proto })}>
       <Button theme="green" disabled={running} onPress={scanAll}>
-        {running && progress ? `Scanning ${progress.done}/${progress.total}…` : 'Scan all modules'}
+        {running && progress
+          ? t('scanning', { done: progress.done, total: progress.total })
+          : t('scanAll')}
       </Button>
       {lastScanTs ? (
         <Paragraph theme="alt2" size="$2">
-          Last scan {new Date(lastScanTs).toLocaleTimeString()}
+          {t('lastScan', { time: formatTime(lastScanTs, true) })}
         </Paragraph>
       ) : null}
       {results.map((r) => (
@@ -219,20 +214,17 @@ export function ModuleScanScreen() {
 
       {canScanTp20 ? (
         <YStack gap="$2" backgroundColor="$color2" borderRadius="$4" padding="$3">
-          <H4>Pre-UDS modules (TP2.0)</H4>
+          <H4>{t('tp20.title')}</H4>
           <Paragraph theme="alt2" size="$2">
-            ⚠ Experimental. Older VAG modules (cluster, comfort, gateway) speak VW TP2.0, not UDS.
-            This opens a channel to the gateway, reads its installation list, and identifies each
-            module. On a real generic ELM327 this is timing-sensitive and may not work on every
-            adapter.
+            {t('tp20.help')}
           </Paragraph>
           {tp20MonitorUnavailable ? (
             <Paragraph fontWeight="700" size="$2">
-              {TP20_MONITOR_UNAVAILABLE}
+              {t('tp20.monitorUnavailable')}
             </Paragraph>
           ) : (
             <Button disabled={running} onPress={scanGateway}>
-              {running ? 'Scanning…' : 'Scan gateway (TP2.0)'}
+              {running ? t('tp20.scanning') : t('tp20.scan')}
             </Button>
           )}
           {tp20Error && tp20Error !== TP20_MONITOR_UNAVAILABLE ? (
@@ -244,8 +236,10 @@ export function ModuleScanScreen() {
             <YStack gap="$2">
               {tp20.installed.length ? (
                 <Paragraph theme="alt2" size="$2">
-                  Gateway reports {tp20.installed.length} installed modules:{' '}
-                  {tp20.installed.map((a) => `${hex2(a)} ${vagModuleName(a)}`).join(' · ')}
+                  {t('tp20.installed', {
+                    count: tp20.installed.length,
+                    list: tp20.installed.map((a) => `${hex2(a)} ${vagModuleName(a)}`).join(' · '),
+                  })}
                 </Paragraph>
               ) : null}
               {tp20.modules.map((m) => (
@@ -269,7 +263,7 @@ export function ModuleScanScreen() {
                         ))
                       ) : (
                         <Paragraph theme="alt2" size="$2">
-                          No faults stored.
+                          {t('tp20.noFaults')}
                         </Paragraph>
                       )
                     ) : null}
@@ -281,8 +275,8 @@ export function ModuleScanScreen() {
                   </YStack>
                   <Paragraph theme="alt2" size="$2">
                     {m.dtcs?.length && m.state === 'ok'
-                      ? `⚠ ${m.dtcs.length} fault${m.dtcs.length > 1 ? 's' : ''}`
-                      : (tp20StateLabel[m.state] ?? m.state)}
+                      ? `⚠ ${t('faults', { count: m.dtcs.length })}`
+                      : tp20StateLabel(m.state)}
                   </Paragraph>
                 </XStack>
               ))}
@@ -292,12 +286,7 @@ export function ModuleScanScreen() {
       ) : null}
       <ScanHistorySection />
 
-      {!results.length && !running ? (
-        <Paragraph theme="alt2">
-          Scans every declared module for identification (part number, software) and fault codes
-          with VAG code numbers — like a VCDS auto-scan, over the modules this adapter can reach.
-        </Paragraph>
-      ) : null}
+      {!results.length && !running ? <Paragraph theme="alt2">{t('help')}</Paragraph> : null}
     </Screen>
   );
 }

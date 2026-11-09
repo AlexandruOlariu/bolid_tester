@@ -10,6 +10,7 @@ import {
   vehicleExportFile,
 } from '@/shared/state/exchangeService';
 import type { UserVehicle, VehicleProfile } from '@/shared/vehicles';
+import { translate } from '@/shared/i18n';
 
 export const EXCHANGE_SOURCE = 'vehicle-select/exchange';
 
@@ -22,7 +23,7 @@ export async function shareVehicleFile(
   if (!mods) return null;
   return shareExchangeFile(mods, vehicleExportFile(user, now.getTime()), {
     source: EXCHANGE_SOURCE,
-    title: `Share ${user.name}`,
+    title: translate('vehicleSelect:shareTitle', { name: user.name }),
     now,
   });
 }
@@ -36,7 +37,7 @@ export async function shareProfileSeedFile(
   if (!mods) return null;
   return shareExchangeFile(mods, profileSeedFile(profile, now.getTime()), {
     source: EXCHANGE_SOURCE,
-    title: `Share ${profile.name}`,
+    title: translate('vehicleSelect:shareTitle', { name: profile.name }),
     now,
   });
 }

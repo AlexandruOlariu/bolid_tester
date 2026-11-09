@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { logError } from '@/shared/state/errorLogStore';
 import { fileStamp, saveTextFile } from '@/shared/lib/saveFile';
+import { translate } from '@/shared/i18n';
 
 /** Optional format overrides for a report export. Defaults produce the Markdown report; the Faults
  *  screen passes `{ ext: 'html', mimeType: 'text/html' }` for the shareable HTML report. */
@@ -32,7 +33,7 @@ export function useDtcExport() {
           `${baseName}-${fileStamp()}.${opts.ext ?? 'md'}`,
           body,
           opts.mimeType ?? 'text/markdown',
-          { dialogTitle: opts.dialogTitle ?? 'Export fault codes' },
+          { dialogTitle: opts.dialogTitle ?? translate('faultCodes:export.dialog') },
         );
       } catch (e) {
         // Don't let an export failure vanish — record it in the in-app error log.

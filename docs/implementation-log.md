@@ -5,6 +5,121 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 11 — Localization: English and Romanian (2026-11-10)
+
+[Plan 11](./plans/11-i18n.md) landed: every user-visible string of every screen (the seven tabs,
+all hidden routes from waves 1–4, the shared components, feature hooks' status messages and the
+EngineHost notifications) goes through i18next; the app ships English and Romanian, follows the
+phone's language by default and switches live from **Settings → General → Language**. Numbers
+and dates follow the language (`12.5` / `12,5`); units stay metric and untranslated. Roadmap ✅
+with "Romanian copy: owner review pending" (the plan's deferred part). Guide:
+[docs/i18n.md](./i18n.md).
+
+- **Runtime (`src/shared/i18n/`).** `i18next` 27 + `react-i18next` 18, statically bundled JSON
+  in `locales/{en,ro}/<namespace>.json` (35 namespaces: `common` + one per feature slice; 1 614
+  English keys, Romanian adds the `_few` plural forms) registered in `locales/index.ts`. i18next
+  initialises **synchronously in English** (`initAsync: false`), so the first render and every
+  test have strings. `initI18n(pref)` / `setLanguage` / `currentLanguage` / `translate(key,
+values)` (for code outside React) and the re-exported `useTranslation` / `Trans`: components
+  import from `@/shared/i18n`, which guarantees the instance is initialised. `intl-pluralrules`
+  polyfills `Intl.PluralRules` (Hermes has none). `expo-localization` (`npx expo install`; its
+  config plugin added to `app.json` before the release-signing plugin, which must stay last) gives
+  the device locales, loaded with a variable import specifier (absent → English).
+- **No English flash.** `useLanguageSync()` in `_layout.tsx` waits for the settings file to
+  hydrate, applies the stored preference and re-applies on every change; `AppSplash` takes a new
+  `ready` prop, stays up until the first language is applied and shows no words before then (its
+  subtitle is a non-breaking space and the spinner unlabelled until `ready`). Tab and route titles
+  re-render with the language.
+- **Setting.** `settingsStore.language: 'system' | 'en' | 'ro'` (default `system`, persisted;
+  `SETTINGS_VERSION` 8 → **9**, `migrateSettings` fills `system`, `merge` ignores an unknown
+  stored value). Settings → General → **Language** (`SegmentedControl`, `settings-language`):
+  **Phone language** / **English** / **Română** (endonyms), applied at once via `initI18n`.
+- **Pure helpers (core-typechecked).** `src/shared/lib/i18nResolve.ts` (`SUPPORTED`,
+  `resolveLanguage`: explicit preference wins, `system` → first supported device tag, else
+  English), `src/shared/lib/format.ts` (`formatNumber`, `formatFixed`, `formatDate`,
+  `formatDateTime`, `formatTime`; the i18n module sets the locale on every language change),
+  `src/shared/lib/i18nParity.ts` (completeness check). `tsconfig.json` now includes
+  `src/shared/i18n/locales/**/*.ts`.
+- **Extraction.** Semantic keys nested by screen part; plurals with `count` (`_one` / `_other`,
+  Romanian `_one` / `_few` / `_other`) replace every `n === 1 ? '' : 's'`; rich text (a bold word
+  in a sentence) uses `<Trans>`; accessibility labels / hints translated. All `toFixed` /
+  `toLocale*String` in UI code → the format helpers (Live fuel economy, value cards, charts, trips,
+  battery, history days, error log, scans, backups …). Non-React messages via `translate`:
+  connection diagnosis (`diagnoseFailure` — the classifier rules unchanged), link-lost / reconnect
+  / scan-permission messages, routine interlocks and NRC guidance, adaptation / coding / restore /
+  service-reset results, module-scan reasons, backup / restore errors, timeline item titles, first-
+  run steps, vehicle-editor validation, adapter-health phases, notification titles and bodies,
+  share-sheet titles. Stored notices (the adapter-source fallback, the backup-busy message) are
+  stored as i18n keys and translated when shown. The More hub's model gained
+  `localizeSections(sections, tr)` (English titles stay searchable in Romanian).
+- **Boundary (documented in docs/i18n.md).** English stays for technical identifiers (PID names,
+  DTC codes + descriptions, protocol labels, AT commands, part numbers, VAG numbers, units), for
+  output of the core / shared-library modules (`obd-core`, `shared/lib`, `shared/vehicles`,
+  `shared/adapters`: analysis texts, validation and transport messages), for files that leave the
+  phone (reports, CSV, feedback bundle, diagnostics "Copy details" frame), for profile / guide /
+  label-pack data and AI answers, and for the privacy policy (Romanian shows a note that it is
+  published in English).
+- **Tests (+5 suites).** `i18nParity.test.ts` (every file registered; every EN key in RO and back;
+  no empty values; placeholders and plural categories match; no cedilla ş/ţ; synthetic cases prove
+  a missing key fails — also proven once by deleting `settings.general.theme` from `ro`),
+  `i18nResolve.test.ts`, `format.test.ts` (`12.5 l/100 km` / `12,5 l/100 km`),
+  `useLanguageSync.test.tsx`, `ValueCard.test.tsx` (decimal comma, live switch, StatusBadge in
+  Romanian); `SettingsScreen.test.tsx` (Romanian → **Temă**; the picker switches live),
+  `RootLayout.test.tsx` (Romanian tab titles), `settingsStore.test.ts` (v9 migration, persistence).
+  `jest.setup.ui.ts` puts every UI test back in English.
+- **Docs.** New [docs/i18n.md](./i18n.md) (setup, key conventions, glossary, boundary, adding a
+  language, owner review); [settings](./features/settings.md) → Language; roadmap.
+
+**Deviations.** `compatibilityJSON: 'v4'` is not passed — i18next 24+ removed the option (v4 JSON
+is the only format). Pure parts live in `src/shared/lib/{i18nResolve,i18nParity,format}.ts` (the
+plan's alternative) and the tests are `src/shared/lib/i18n*.test.ts` rather than
+`src/shared/i18n/i18n.test.ts`. The parity test checks plural _categories per language_ (Romanian
+needs `_few`), not identical suffix sets. Namespaces are one per feature slice (camelCase) plus
+`common`, not the plan's illustrative list. `intl-pluralrules` added (Hermes lacks
+`Intl.PluralRules`). Romanian **permission** errors also match the diagnosis classifier
+(`/permission|permisiun/`). The fuel-economy unit keeps the app's existing symbol `L/100km`
+(acceptance example wrote `l/100 km`; the decimal separator is what changes). Two existing tests
+were updated for intended copy changes: "2 model(s)" → "2 models" (real plurals) and the History
+day header now uses `formatDate` (the UI language, not the device locale).
+
+**Deferred (owner).** Native review of every `locales/ro/*.json`, especially the workshop safety
+copy (routines, adaptations, coding, service reset, reset-all-data, crash reports, diagnosis
+suggestions) — see docs/i18n.md → Owner review; and the on-device check that a Romanian phone opens
+in Romanian with no English frame.
+
+**Review follow-ups (same day).** Seven reviewer findings, all fixed:
+
+- _Splash read English first._ i18next starts in English and the stored / device language lands
+  after hydration plus the async `expo-localization` import, so the splash's own subtitle and
+  spinner label showed English for its first frames. `AppSplash` now renders no words until
+  `ready` (layout kept by a non-breaking space). New `src/shared/ui/AppSplash.test.tsx` (no words
+  and no fade while not ready, even past the minimum time; Romanian words once ready; then gone);
+  `RootLayout.test.tsx` records the splash's props and checks `ready` follows `useLanguageSync`;
+  `useLanguageSync.test.tsx` asserts the _waiting_ state (English, not ready) before the settings
+  file hydrates.
+- _Alert names and numbers._ The starter rules' English labels from `defaultRules` (obd-core)
+  reached the OS notification and the Alerts screen. New `src/features/alerts/model/ruleLabel.ts`:
+  `ruleLabel(rule)` shows a starter rule whose label is unchanged from `alerts:defaultRule.<id>`
+  (a renamed rule or one without a label is shown as is) and `formatAlertValue` (`11.8` / `11,8`).
+  EngineHost's alert notification (title and `PID = value` body) and the Alerts screen (active
+  list, thresholds, switch / delete labels) use both. New `AlertsScreen.test.tsx`.
+- _Dashboard fuel economy untested._ `DashboardScreen.test.tsx` now checks the `fuel-economy`
+  card reads `12.5` / `· 12.5 L/h` in English and `12,5` / `· 12,5 L/h` after switching to
+  Romanian.
+- _History kept the old language._ `useTimeline` builds its titles with `translate` /
+  `formatFixed` inside a `useMemo` keyed only on the stores, and History stays mounted once
+  visited; the memo now also depends on `i18n.language` (as `ConnectionDiagnostics` does). New
+  HistoryScreen test switches language with the screen mounted.
+- _Web dialog's OK._ `openDialog` filled a literal `{ text: 'OK' }`, so `AlertDialog`'s translated
+  `actions.ok` fallback never ran; the default button is now `{}` (Romanian's `OK` is the same
+  word, but a later language would not be). `AlertDialog.test.tsx` asserts the default button.
+- _"Not available on web yet" toast._ `NOT_ON_WEB_YET` is now the i18n key
+  `common:toast.notOnWebYet` (the `SPP_FALLBACK_NOTICE` pattern); `Toast` translates a message that
+  is a known key and shows any other message as given. `Toast.test.tsx` covers Romanian and a plain
+  message.
+
+---
+
 ## Plan 20 — Accessibility pass (2026-11-09)
 
 [Plan 20](./plans/20-accessibility-pass.md) landed: one colour palette that passes WCAG AA in both

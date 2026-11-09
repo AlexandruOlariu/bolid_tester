@@ -8,6 +8,7 @@ import {
   shareExchangeFile,
 } from '@/shared/state/exchangeService';
 import type { LabelPack } from '@/shared/labels';
+import { translate } from '@/shared/i18n';
 
 export const LABEL_PACKS_SOURCE = 'settings/label-packs';
 
@@ -20,7 +21,7 @@ export async function shareLabelPackFile(
   if (!mods) return null;
   return shareExchangeFile(mods, labelPackExportFile(pack, now.getTime()), {
     source: LABEL_PACKS_SOURCE,
-    title: `Share ${pack.module} labels`,
+    title: translate('settings:packs.shareTitle', { module: pack.module }),
     now,
   });
 }

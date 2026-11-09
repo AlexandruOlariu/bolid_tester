@@ -7,6 +7,8 @@ import { isCan, isExtendedKey } from '@/shared/obd-core';
 import { logError } from '@/shared/state/errorLogStore';
 import { useActiveProfile } from '@/shared/state/activeProfile';
 import { useLiveData } from '../hooks/useLiveData';
+import { useTranslation } from '@/shared/i18n';
+import { formatFixed } from '@/shared/lib/format';
 
 /** Live → **All sensors** (plan 07; was the standalone Sensor readings screen): every live Mode 01
  *  value grouped by system, then the profile's injection DIDs on CAN cars. Rendered by
@@ -14,17 +16,18 @@ import { useLiveData } from '../hooks/useLiveData';
  *  `useLiveData()` registers the whole effective PID set, and the injection DIDs are read on mount.
  *  See docs/features/live-data.md#all-sensors. */
 
-/** Mode 01 PIDs grouped into human sections. PIDs the ECU doesn't support simply never appear. */
-export const GROUPS: { title: string; pids: string[] }[] = [
-  { title: 'Engine', pids: ['010C', '010D', '0104', '0111', '010E', '011F'] },
-  { title: 'Temperatures', pids: ['0105', '010F', '0146', '015C'] },
-  { title: 'Air & boost', pids: ['010B', '0110', '0133'] },
+/** Mode 01 PIDs grouped into human sections. PIDs the ECU doesn't support simply never appear.
+ *  Section titles are `liveData:group.<id>` (plan 11). */
+export const GROUPS: { id: string; pids: string[] }[] = [
+  { id: 'engine', pids: ['010C', '010D', '0104', '0111', '010E', '011F'] },
+  { id: 'temperatures', pids: ['0105', '010F', '0146', '015C'] },
+  { id: 'air', pids: ['010B', '0110', '0133'] },
   {
-    title: 'Fuel & injection',
+    id: 'fuel',
     pids: ['010A', '0122', '0123', '015E', '0106', '0107', '0144', '012F'],
   },
-  { title: 'Electrical', pids: ['0142'] },
-  { title: 'Distance', pids: ['0121', '0131'] },
+  { id: 'electrical', pids: ['0142'] },
+  { id: 'distance', pids: ['0121', '0131'] },
 ];
 const GROUPED_PIDS = new Set(GROUPS.flatMap((g) => g.pids));
 
@@ -36,6 +39,7 @@ interface InjectionReading {
 }
 
 export function SensorGroups() {
+  const { t } = useTranslation('liveData');
   const status = useSessionStore((s) => s.status);
   const session = useSessionStore((s) => s.session);
   const profile = useActiveProfile();
@@ -105,14 +109,14 @@ export function SensorGroups() {
   return (
     <YStack gap="$3" testID="live-all-sensors">
       <Paragraph theme="alt2" fontSize="$2">
-        {polling ? 'Live — every supported sensor, grouped' : 'Every supported sensor, grouped'}
+        {polling ? t('sensors.live') : t('sensors.idle')}
       </Paragraph>
       {GROUPS.map((g) => {
         const items = g.pids.map((pid) => values[pid]).filter((v) => v != null);
         if (items.length === 0) return null;
         return (
-          <YStack key={g.title} gap="$2">
-            <SectionTitle>{g.title}</SectionTitle>
+          <YStack key={g.id} gap="$2">
+            <SectionTitle>{t(`group.${g.id}`)}</SectionTitle>
             <XStack flexWrap="wrap" gap="$2">
               {items.map((v) => (
                 <ValueCard key={v.pid} name={v.name} value={v.value} unit={v.unit} />
@@ -124,7 +128,7 @@ export function SensorGroups() {
 
       {ungrouped.length > 0 ? (
         <YStack gap="$2">
-          <SectionTitle>Other</SectionTitle>
+          <SectionTitle>{t('group.other')}</SectionTitle>
           <XStack flexWrap="wrap" gap="$2">
             {ungrouped.map((v) => (
               <ValueCard key={v.pid} name={v.name} value={v.value} unit={v.unit} />
@@ -135,7 +139,7 @@ export function SensorGroups() {
 
       <YStack gap="$2">
         <XStack justifyContent="space-between" alignItems="center">
-          <SectionTitle>Injection</SectionTitle>
+          <SectionTitle>{t('group.injection')}</SectionTitle>
           {canInjection ? (
             <Button
               size="$3"
@@ -143,7 +147,7 @@ export function SensorGroups() {
               onPress={readInjection}
               icon={injLoading ? () => <Spinner /> : undefined}
             >
-              Refresh
+              {t('sensors.refresh')}
             </Button>
           ) : null}
         </XStack>
@@ -161,7 +165,7 @@ export function SensorGroups() {
                   {r.name}
                 </Paragraph>
                 <Text fontWeight="800" fontSize="$6" maxFontSizeMultiplier={1.3}>
-                  {r.value != null ? r.value.toFixed(2) : '—'}{' '}
+                  {r.value != null ? formatFixed(r.value, 2) : '—'}{' '}
                   <Text fontSize="$2" theme="alt2">
                     {r.unit}
                   </Text>
@@ -169,18 +173,14 @@ export function SensorGroups() {
               </Card>
             ))}
             {injection.length === 0 && !injLoading ? (
-              <Paragraph theme="alt2">Reading…</Paragraph>
+              <Paragraph theme="alt2">{t('reading')}</Paragraph>
             ) : null}
           </XStack>
         ) : (
           <Card bordered padding="$3" gap="$1">
-            <H4>Per-injector data isn’t available here</H4>
+            <H4>{t('sensors.noInjectorTitle')}</H4>
             <Paragraph theme="alt2" size="$2">
-              Injection quantity, balance and per-cylinder corrections live in manufacturer
-              measuring blocks (VAG groups), which a generic ELM327 cannot read over standard OBD-II
-              on this car — especially on a K-line ECU. The fuel-system parameters in “Fuel &
-              injection” above (rail pressure, fuel rate, fuel trims) are what is available
-              generically; full injector data needs VCDS-style / enhanced tooling.
+              {t('sensors.noInjectorBody')}
             </Paragraph>
           </Card>
         )}

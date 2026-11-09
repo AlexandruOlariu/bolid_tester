@@ -43,6 +43,8 @@ import { useDtcStore } from '@/shared/state/dtcStore';
 import { useCoachStore } from '@/features/fault-codes/model/coachStore';
 import { computePollPids, enabledRulePids, planSweep } from './pollPids';
 import { decodeExtendedSnapshot } from './extendedSnapshot';
+import { translate } from '@/shared/i18n';
+import { formatAlertValue, ruleLabel } from '@/features/alerts/model/ruleLabel';
 
 // Dedupe repeated poll-loop errors so a persistent fault doesn't flood the capped error log. The
 // extended (Mode 22) phase keeps its own key so a failing DID never masks a Mode 01 fault.
@@ -78,8 +80,9 @@ function evaluateAlerts(engine: AlertEngine, snap: Record<string, LiveValue>): v
         void notify({
           category: 'alert',
           severity: a.severity,
-          title: a.rule.label ?? a.pid,
-          body: `${a.pid} = ${a.value}`,
+          // The starter rules' names and the number format follow the UI language (plan 11).
+          title: ruleLabel(a.rule),
+          body: `${a.pid} = ${formatAlertValue(a.value)}`,
         });
     }
   } catch (e) {
@@ -300,15 +303,15 @@ export function EngineHost(): null {
             void notify({
               category: 'diagnostic',
               severity: 'info',
-              title: 'Monitor ready',
-              body: `${m.name} monitor complete`,
+              title: translate('engineHost:monitorReady'),
+              body: translate('engineHost:monitorComplete', { name: m.name }),
             });
           if (diff.becameAllReady)
             void notify({
               category: 'diagnostic',
               severity: 'info',
-              title: 'Readiness complete',
-              body: 'All monitors are ready — the car is set for an emissions test.',
+              title: translate('engineHost:readinessComplete'),
+              body: translate('engineHost:allReady'),
             });
           prev = r;
         }

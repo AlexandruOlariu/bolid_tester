@@ -4,9 +4,10 @@
  *  layout. A newer toast replaces the current one. */
 import { create } from 'zustand';
 
-/** Shown when a file export / import that needs the phone's file system is tapped in the browser. */
-export const NOT_ON_WEB_YET =
-  'Not available on web yet — saving or opening this file needs the Android app.';
+/** Shown when a file export / import that needs the phone's file system is tapped in the browser.
+ *  An i18n key (plan 11, like `SPP_FALLBACK_NOTICE`): `Toast` renders a message that is a known key
+ *  in the UI language, and any other message as given. */
+export const NOT_ON_WEB_YET = 'common:toast.notOnWebYet';
 
 /** How long a toast stays up unless dismissed. */
 export const TOAST_MS = 5000;

@@ -8,6 +8,7 @@ import {
 } from '@/shared/state/exchangeService';
 import type { ExchangeParseError } from '@/shared/lib/exchange';
 import { isWebRuntime } from '@/shared/lib/webRuntime';
+import { i18n } from '@/shared/i18n';
 
 /** What the import sheet shows: a preview to confirm, or why the file was refused. */
 export type PendingImport = ImportPreview | ExchangeParseError;
@@ -31,7 +32,7 @@ export function useExchangeImport(source: string) {
       if (picked.status === 'unavailable') {
         // Browser: loadExchangeModules already showed the "not available on web yet" toast.
         if (isWebRuntime()) return;
-        setNote('Importing needs the file picker, which this build of the app does not include.');
+        setNote(i18n.t('importPreview.noPicker'));
         return;
       }
       if (picked.status === 'cancelled') return;

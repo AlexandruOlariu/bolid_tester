@@ -5,6 +5,7 @@ import type { LayoutChangeEvent } from 'react-native';
 import Svg, { Line, Polyline } from 'react-native-svg';
 import { Paragraph, Text, XStack, YStack } from 'tamagui';
 import { usePalette } from '@/shared/ui';
+import { useTranslation } from '@/shared/i18n';
 
 const HEIGHT = 90;
 const PAD_X = 4;
@@ -26,12 +27,13 @@ export function formatSpan(ms: number): string {
 }
 
 export function SpeedStrip({ profile }: { profile: { t: number; kmh: number }[] }) {
+  const { t } = useTranslation('tripRecording');
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const palette = usePalette();
   if (profile.length < 2) {
     return (
       <Paragraph theme="alt2" fontSize="$2">
-        Not enough speed readings to draw the speed over time.
+        {t('speed.notEnough')}
       </Paragraph>
     );
   }
@@ -66,7 +68,7 @@ export function SpeedStrip({ profile }: { profile: { t: number; kmh: number }[] 
         overflow="hidden"
         accessible
         accessibilityRole="image"
-        accessibilityLabel={`Speed over time, ${profile.length} points, up to ${top} km/h`}
+        accessibilityLabel={t('speed.a11y', { count: profile.length, top })}
       >
         <Svg width={width} height={HEIGHT}>
           <Line

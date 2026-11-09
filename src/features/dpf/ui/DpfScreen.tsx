@@ -3,17 +3,20 @@ import { XStack, Paragraph, H3, Button, Card } from 'tamagui';
 import { Screen, ValueCard } from '@/shared/ui';
 import { allConfirmed } from '@/shared/vehicles';
 import { useDpf } from '../hooks/useDpf';
+import { useTranslation } from '@/shared/i18n';
 
-const STATUS: Record<string, { color: string; label: string }> = {
-  ok: { color: '$accent', label: 'Filter healthy' },
-  filling: { color: '$statusOk', label: 'Soot building (normal)' },
-  'regen-due': { color: '$statusWarn', label: 'Regeneration due' },
-  regenerating: { color: '$statusInfo', label: 'Regenerating now' },
-  high: { color: '$statusError', label: 'Soot load high' },
-  unknown: { color: '$muted', label: 'No reading' },
+/** Status colours; the labels are `dpf:status.<status>` (plan 11). */
+const STATUS: Record<string, { color: string }> = {
+  ok: { color: '$accent' },
+  filling: { color: '$statusOk' },
+  'regen-due': { color: '$statusWarn' },
+  regenerating: { color: '$statusInfo' },
+  high: { color: '$statusError' },
+  unknown: { color: '$muted' },
 };
 
 export function DpfScreen() {
+  const { t } = useTranslation('dpf');
   const { available, values, report, running, refresh, dieselPids } = useDpf();
 
   useEffect(() => {
@@ -23,29 +26,24 @@ export function DpfScreen() {
 
   if (!available) {
     return (
-      <Screen title="DPF / regen">
-        <Paragraph theme="alt2">
-          The DPF monitor needs a diesel profile with DPF PIDs on a CAN (UDS) link. It is hidden for
-          petrol cars and K-line cars (no Mode 22). Select the Golf TDI (or another diesel CAN
-          profile) to use it.
-        </Paragraph>
+      <Screen title={t('title')}>
+        <Paragraph theme="alt2">{t('unavailable')}</Paragraph>
       </Screen>
     );
   }
 
-  const s = report ? (STATUS[report.status] ?? STATUS.unknown) : STATUS.unknown;
+  const statusId = report && STATUS[report.status] ? report.status : 'unknown';
+  const s = STATUS[statusId];
   return (
     <Screen
-      title="DPF / regen"
-      subtitle={
-        allConfirmed(dieselPids)
-          ? 'All DIDs confirmed on this car'
-          : '⚠ Experimental Mode 22 reads — confirm values on the car.'
-      }
+      title={t('title')}
+      subtitle={allConfirmed(dieselPids) ? t('allConfirmed') : t('experimental')}
     >
       <Card bordered padding="$3" backgroundColor="$color2">
-        <H3 color={s.color}>{s.label}</H3>
-        {report?.sootPct != null ? <Paragraph>Soot load {report.sootPct}%</Paragraph> : null}
+        <H3 color={s.color}>{t(`status.${statusId}`)}</H3>
+        {report?.sootPct != null ? (
+          <Paragraph>{t('soot', { pct: report.sootPct })}</Paragraph>
+        ) : null}
         {report?.advice ? (
           <Paragraph theme="alt2" size="$2">
             {report.advice}
@@ -54,7 +52,7 @@ export function DpfScreen() {
       </Card>
 
       <Button theme="blue" onPress={refresh} disabled={running}>
-        {running ? 'Reading…' : 'Refresh'}
+        {running ? t('reading') : t('refresh')}
       </Button>
 
       <XStack flexWrap="wrap" gap="$2">

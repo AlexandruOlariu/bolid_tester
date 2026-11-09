@@ -13,9 +13,15 @@ import type { RestoreResult } from '../api/backupService';
 import { MAX_BACKUP_RECORDS, type BackupRecord } from '../model/backupStore';
 import { useBackup } from '../hooks/useBackup';
 import { isWebRuntime } from '@/shared/lib/webRuntime';
+import { translate, useTranslation } from '@/shared/i18n';
+import { formatDateTime } from '@/shared/lib/format';
 
-const fmtDate = (ts: number) => (ts > 0 ? new Date(ts).toLocaleString() : 'unknown date');
-const labelOf = (name: string) => storeRef(name)?.label ?? name;
+const fmtDate = (ts: number) => (ts > 0 ? formatDateTime(ts) : translate('backup:unknownDate'));
+/** A store's name in the UI language (`backup:store.<name without "bolid.">`, plan 11). */
+const labelOf = (name: string) =>
+  translate(`backup:store.${name.replace(/^bolid\./, '')}`, {
+    defaultValue: storeRef(name)?.label ?? name,
+  });
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -82,7 +88,7 @@ interface Pending {
 
 function itemsText(name: string, state: unknown): string {
   const n = storeRef(name)?.count(state) ?? null;
-  return n === null ? 'Saved' : `${n} item${n === 1 ? '' : 's'}`;
+  return n === null ? translate('backup:saved') : translate('backup:items', { count: n });
 }
 
 function RestoreCard({
@@ -96,6 +102,7 @@ function RestoreCard({
   onRestore: (stores: string[], includeTrips: boolean) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation('backup');
   const { bundle } = pending;
   const inFile = useMemo(() => new Set(bundle.stores.map((s) => s.name)), [bundle]);
   const [selected, setSelected] = useState<ReadonlySet<string>>(
@@ -117,24 +124,27 @@ function RestoreCard({
 
   return (
     <Card bordered padding="$3" gap="$2" borderLeftWidth={3} borderLeftColor="$accent">
-      <Text fontWeight="800">{pending.name || 'Backup file'}</Text>
+      <Text fontWeight="800">{pending.name || t('restore.file')}</Text>
       <Paragraph theme="alt2" fontSize="$2">
-        Made {fmtDate(bundle.createdAt)} by app version {bundle.app.version ?? 'unknown'} (
-        {bundle.app.platform}).
+        {t('restore.made', {
+          date: fmtDate(bundle.createdAt),
+          version: bundle.app.version ?? t('unknown'),
+          platform: bundle.app.platform,
+        })}
       </Paragraph>
       {pending.warnings.map((w) => (
         <Paragraph key={w} fontSize="$2" color="$statusWarn">
           {w}
         </Paragraph>
       ))}
-      <Paragraph fontSize="$2">Choose what to restore. Everything else stays as it is.</Paragraph>
+      <Paragraph fontSize="$2">{t('restore.choose')}</Paragraph>
       {PERSISTED_STORES.map((s) => {
         const blob = blobOf(s.name);
         return (
           <CheckRow
             key={s.name}
-            label={s.label}
-            hint={blob ? itemsText(s.name, blob.state) : 'Not in this backup'}
+            label={labelOf(s.name)}
+            hint={blob ? itemsText(s.name, blob.state) : t('restore.notInBackup')}
             checked={!!blob && selected.has(s.name)}
             disabled={!blob}
             onToggle={() => toggle(s.name)}
@@ -142,11 +152,14 @@ function RestoreCard({
         );
       })}
       <CheckRow
-        label="Trip recordings"
+        label={t('restore.trips')}
         hint={
           tripFiles > 0
-            ? `${tripFiles} file${tripFiles === 1 ? '' : 's'}, ${formatBytes(bundle.sizes.tripBytes)}; only for trips in the trips list`
-            : 'Not in this backup'
+            ? t('restore.tripFiles', {
+                count: tripFiles,
+                size: formatBytes(bundle.sizes.tripBytes),
+              })
+            : t('restore.notInBackup')
         }
         checked={includeTrips}
         disabled={tripFiles === 0}
@@ -158,7 +171,7 @@ function RestoreCard({
           theme="green"
           disabled={busy || (selected.size === 0 && !includeTrips)}
           icon={busy ? <Spinner /> : undefined}
-          accessibilityLabel="Restore the selected data"
+          accessibilityLabel={t('restore.restoreA11y')}
           onPress={() =>
             onRestore(
               PERSISTED_STORES.map((s) => s.name).filter((n) => selected.has(n)),
@@ -166,10 +179,10 @@ function RestoreCard({
             )
           }
         >
-          Restore
+          {t('restore.restore')}
         </Button>
         <Button flex={1} disabled={busy} onPress={onCancel}>
-          Cancel
+          {t('common:actions.cancel')}
         </Button>
       </XStack>
     </Card>
@@ -177,39 +190,41 @@ function RestoreCard({
 }
 
 function ResultCard({ result, onDone }: { result: RestoreResult; onDone: () => void }) {
+  const { t } = useTranslation('backup');
   if (!result.ok) {
     return (
       <Card bordered padding="$3" gap="$2" borderLeftWidth={3} borderLeftColor="$statusError">
-        <Text fontWeight="800">Nothing was restored</Text>
+        <Text fontWeight="800">{t('result.nothing')}</Text>
         <Paragraph fontSize="$2">{result.reason}</Paragraph>
         <Button size="$3" hitSlop={HIT_SLOP} onPress={onDone}>
-          OK
+          {t('common:actions.ok')}
         </Button>
       </Card>
     );
   }
   return (
     <Card bordered padding="$3" gap="$2" borderLeftWidth={3} borderLeftColor="$accent">
-      <Text fontWeight="800">Restore finished</Text>
+      <Text fontWeight="800">{t('result.finished')}</Text>
       {result.restored.length > 0 ? (
-        <Paragraph fontSize="$2">Restored: {result.restored.map(labelOf).join(', ')}.</Paragraph>
+        <Paragraph fontSize="$2">
+          {t('result.restored', { list: result.restored.map(labelOf).join(', ') })}
+        </Paragraph>
       ) : (
-        <Paragraph fontSize="$2">No data was restored.</Paragraph>
+        <Paragraph fontSize="$2">{t('result.noData')}</Paragraph>
       )}
       {result.tripFilesWritten > 0 ? (
-        <Paragraph fontSize="$2">Trip recordings restored: {result.tripFilesWritten}.</Paragraph>
+        <Paragraph fontSize="$2">{t('result.trips', { count: result.tripFilesWritten })}</Paragraph>
       ) : null}
       {result.skipped.map((s) => (
         <Paragraph key={s.name} fontSize="$2" color="$statusWarn">
-          Skipped {labelOf(s.name)}: {s.reason}
+          {t('result.skipped', { name: labelOf(s.name), reason: s.reason })}
         </Paragraph>
       ))}
       <Paragraph theme="alt2" fontSize="$1">
-        Your data from before the restore was saved as {result.snapshot.fileName}. Restore that file
-        from the list below to undo.
+        {t('result.undo', { file: result.snapshot.fileName })}
       </Paragraph>
       <Button size="$3" hitSlop={HIT_SLOP} onPress={onDone}>
-        OK
+        {t('common:actions.ok')}
       </Button>
     </Card>
   );
@@ -228,15 +243,16 @@ function RecordRow({
   onRestore: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation('backup');
   return (
     <YStack paddingVertical="$2" gap="$1" borderBottomWidth={1} borderColor="$borderColor">
       <Text fontWeight="700" fontSize="$3">
         {record.fileName}
       </Text>
       <Paragraph theme="alt2" fontSize="$1">
-        {record.kind === 'pre-restore' ? 'Automatic, before a restore · ' : ''}
+        {record.kind === 'pre-restore' ? `${t('record.automatic')} · ` : ''}
         {fmtDate(record.createdAt)} · {formatBytes(record.bytes)}
-        {record.includesTrips ? ' · with trips' : ''}
+        {record.includesTrips ? ` · ${t('record.withTrips')}` : ''}
       </Paragraph>
       <XStack gap="$2">
         <Button
@@ -244,18 +260,18 @@ function RecordRow({
           hitSlop={HIT_SLOP}
           disabled={busy}
           onPress={onShare}
-          accessibilityLabel={`Share ${record.fileName}`}
+          accessibilityLabel={t('record.shareA11y', { file: record.fileName })}
         >
-          Share
+          {t('record.share')}
         </Button>
         <Button
           size="$3"
           hitSlop={HIT_SLOP}
           disabled={busy}
           onPress={onRestore}
-          accessibilityLabel={`Restore ${record.fileName}`}
+          accessibilityLabel={t('record.restoreA11y', { file: record.fileName })}
         >
-          Restore
+          {t('restore.restore')}
         </Button>
         <Button
           size="$3"
@@ -263,9 +279,9 @@ function RecordRow({
           theme="red"
           disabled={busy}
           onPress={onDelete}
-          accessibilityLabel={`Delete ${record.fileName}`}
+          accessibilityLabel={t('record.deleteA11y', { file: record.fileName })}
         >
-          Delete
+          {t('record.delete')}
         </Button>
       </XStack>
     </YStack>
@@ -276,6 +292,7 @@ function RecordRow({
  *  the phone and shared wherever the user keeps it; restore from such a file after validating it,
  *  with the current data snapshotted first; per-store JSON / CSV export. See docs/features/backup.md. */
 export function BackupScreen() {
+  const { t } = useTranslation('backup');
   const {
     records,
     trips,
@@ -307,8 +324,11 @@ export function BackupScreen() {
     if (!created && isWebRuntime()) return;
     setStatus(
       created
-        ? `Saved ${created.record.fileName} (${formatBytes(created.record.bytes)}).${created.shared ? '' : ' Sharing is not available here; the file is in the list below.'}`
-        : 'The backup could not be saved. See More → Error log for details.',
+        ? `${t('status.saved', {
+            file: created.record.fileName,
+            size: formatBytes(created.record.bytes),
+          })}${created.shared ? '' : ` ${t('status.notShared')}`}`
+        : t('status.failed'),
     );
   };
 
@@ -327,79 +347,63 @@ export function BackupScreen() {
     const res = await pick();
     if (res.status === 'unavailable' && isWebRuntime()) return; // the toast already said why
     if (res.status === 'unavailable') {
-      setPickError(
-        'Choosing a file needs a newer build of the app. You can still restore a backup from the list below.',
-      );
+      setPickError(t('pick.unavailable'));
     } else if (res.status === 'picked') accept(res.name, res.validation);
   };
 
   const onRestore = (bundleToRestore: BackupBundle, stores: string[], withTrips: boolean) => {
     const what = [
       ...stores.map(labelOf),
-      ...(withTrips ? [`${bundleToRestore.tripFiles?.length ?? 0} trip recordings`] : []),
+      ...(withTrips ? [t('confirm.trips', { count: bundleToRestore.tripFiles?.length ?? 0 })] : []),
     ].join(', ');
-    appAlert(
-      'Restore from this backup?',
-      `This replaces: ${what}. Your current data is snapshotted first, so you can undo.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Continue',
-          onPress: () =>
-            appAlert(
-              'Replace your data?',
-              'The selected data on this phone is replaced by the backup. The adapter is disconnected first.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Restore',
-                  style: 'destructive',
-                  onPress: async () => {
-                    const res = await restore(bundleToRestore, stores, withTrips);
-                    setPending(null);
-                    setResult(res);
-                  },
-                },
-              ],
-            ),
-        },
-      ],
-    );
+    appAlert(t('confirm.title'), t('confirm.body', { what }), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      {
+        text: t('confirm.continue'),
+        onPress: () =>
+          appAlert(t('confirm.title2'), t('confirm.body2'), [
+            { text: t('common:actions.cancel'), style: 'cancel' },
+            {
+              text: t('restore.restore'),
+              style: 'destructive',
+              onPress: async () => {
+                const res = await restore(bundleToRestore, stores, withTrips);
+                setPending(null);
+                setResult(res);
+              },
+            },
+          ]),
+      },
+    ]);
   };
 
   const onDelete = (record: BackupRecord) =>
-    appAlert('Delete this backup?', `${record.fileName} is deleted from this phone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => void remove(record) },
+    appAlert(t('deleteTitle'), t('deleteBody', { file: record.fileName }), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      { text: t('record.delete'), style: 'destructive', onPress: () => void remove(record) },
     ]);
 
   const onExport = async (name: string, format: 'json' | 'csv') => {
     const uri = await exportOne(name, format);
     if (!uri && isWebRuntime()) return; // the toast already said why
     setExported(
-      uri
-        ? `Saved ${uri.slice(uri.lastIndexOf('/') + 1)}.`
-        : 'The export could not be saved. See More → Error log for details.',
+      uri ? t('export.saved', { file: uri.slice(uri.lastIndexOf('/') + 1) }) : t('export.failed'),
     );
   };
 
   const tripHint =
     trips.count > 0
-      ? `${trips.count} file${trips.count === 1 ? '' : 's'}, about ${formatBytes(trips.bytes)}`
-      : 'No trip recordings yet';
+      ? t('backUp.tripHint', { count: trips.count, size: formatBytes(trips.bytes) })
+      : t('backUp.noTrips');
 
   return (
-    <Screen title="Backup & restore" subtitle="Everything in one file you keep">
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <YStack gap="$2">
-        <SectionLabel>Back up</SectionLabel>
+        <SectionLabel>{t('backUp.title')}</SectionLabel>
         <Card bordered padding="$3" gap="$2">
-          <Paragraph fontSize="$2">
-            One file with your garage, history, scans, trips, maintenance log, coding backups, alert
-            rules and settings. It stays on this phone until you share it; keep a copy somewhere
-            else. The file is plain text and holds your VINs, but never an AI API key.
-          </Paragraph>
+          <Paragraph fontSize="$2">{t('backUp.help')}</Paragraph>
           <CheckRow
-            label="Include trip recordings"
+            label={t('backUp.includeTrips')}
             hint={tripHint}
             checked={tripsIncluded}
             disabled={trips.count === 0}
@@ -407,13 +411,14 @@ export function BackupScreen() {
           />
           {estimate > 0 ? (
             <Paragraph theme="alt2" fontSize="$2">
-              The backup file will be about {formatBytes(estimate)}.
+              {t('backUp.estimate', { size: formatBytes(estimate) })}
             </Paragraph>
           ) : null}
           {estimate > LARGE_BACKUP_BYTES ? (
             <Paragraph fontSize="$2" color="$statusWarn">
-              This backup is large (about {formatBytes(estimate)}). Sharing a file this big can fail
-              {tripsIncluded ? '; leave the trip recordings out to make a small backup.' : '.'}
+              {tripsIncluded
+                ? t('backUp.largeTrips', { size: formatBytes(estimate) })
+                : t('backUp.large', { size: formatBytes(estimate) })}
             </Paragraph>
           ) : null}
           <Button
@@ -422,14 +427,14 @@ export function BackupScreen() {
             icon={busy === 'backup' ? <Spinner /> : undefined}
             onPress={() => void onBackUp()}
           >
-            Back up now
+            {t('backUp.now')}
           </Button>
           {status ? <Paragraph fontSize="$2">{status}</Paragraph> : null}
         </Card>
       </YStack>
 
       <YStack gap="$2">
-        <SectionLabel>Restore from file</SectionLabel>
+        <SectionLabel>{t('pick.title')}</SectionLabel>
         {result ? <ResultCard result={result} onDone={() => setResult(null)} /> : null}
         {pending ? (
           <RestoreCard
@@ -441,16 +446,13 @@ export function BackupScreen() {
           />
         ) : (
           <Card bordered padding="$3" gap="$2">
-            <Paragraph fontSize="$2">
-              Pick a backup file. You see what it holds and choose what to restore before anything
-              changes.
-            </Paragraph>
+            <Paragraph fontSize="$2">{t('pick.help')}</Paragraph>
             <Button
               disabled={busy !== null}
               icon={busy === 'pick' ? <Spinner /> : undefined}
               onPress={() => void onPick()}
             >
-              Choose a backup file…
+              {t('pick.choose')}
             </Button>
             {pickError ? (
               <Paragraph fontSize="$2" color="$statusError">
@@ -462,18 +464,16 @@ export function BackupScreen() {
       </YStack>
 
       <YStack gap="$2">
-        <SectionLabel>Backups on this phone</SectionLabel>
+        <SectionLabel>{t('list.title')}</SectionLabel>
         <Card bordered padding="$3">
           {records.length > 0 ? (
             <Paragraph theme="alt2" fontSize="$1">
-              The newest {MAX_BACKUP_RECORDS} backups are kept (the automatic snapshots taken before
-              a restore are counted apart); an older file is deleted when a new one is saved. Share
-              the ones you want to keep elsewhere.
+              {t('list.help', { max: MAX_BACKUP_RECORDS })}
             </Paragraph>
           ) : null}
           {records.length === 0 ? (
             <Paragraph theme="alt2" fontSize="$2">
-              No backups yet.
+              {t('list.empty')}
             </Paragraph>
           ) : (
             records.map((r) => (
@@ -491,23 +491,22 @@ export function BackupScreen() {
       </YStack>
 
       <YStack gap="$2">
-        <SectionLabel>Export one part</SectionLabel>
+        <SectionLabel>{t('export.title')}</SectionLabel>
         <Card bordered padding="$3" gap="$1">
           <Paragraph theme="alt2" fontSize="$2">
-            Share one kind of data on its own: JSON for any of them, CSV (opens in a spreadsheet)
-            for history, module scans and the maintenance log.
+            {t('export.help')}
           </Paragraph>
           {PERSISTED_STORES.map((s) => (
             <XStack key={s.name} alignItems="center" gap="$2" paddingVertical="$1">
               <Paragraph flex={1} fontSize="$3">
-                {s.label}
+                {labelOf(s.name)}
               </Paragraph>
               <Button
                 size="$3"
                 hitSlop={HIT_SLOP}
                 disabled={busy !== null}
                 onPress={() => void onExport(s.name, 'json')}
-                accessibilityLabel={`Export ${s.label} as JSON`}
+                accessibilityLabel={t('export.jsonA11y', { name: labelOf(s.name) })}
               >
                 JSON
               </Button>
@@ -517,7 +516,7 @@ export function BackupScreen() {
                   hitSlop={HIT_SLOP}
                   disabled={busy !== null}
                   onPress={() => void onExport(s.name, 'csv')}
-                  accessibilityLabel={`Export ${s.label} as CSV`}
+                  accessibilityLabel={t('export.csvA11y', { name: labelOf(s.name) })}
                 >
                   CSV
                 </Button>

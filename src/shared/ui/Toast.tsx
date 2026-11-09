@@ -1,6 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { XStack, Text, Button } from 'tamagui';
+import { useTranslation } from '@/shared/i18n';
 import { hideToast, useToastStore } from '@/shared/state/toastStore';
 import { HIT_SLOP } from './SegmentedControl';
 
@@ -8,6 +9,7 @@ import { HIT_SLOP } from './SegmentedControl';
  *  Mounted once in the root layout; renders nothing while no toast is up. Announced to screen
  *  readers as a live region. */
 export function Toast() {
+  const { t, i18n } = useTranslation();
   const toast = useToastStore((s) => s.toast);
   if (!toast) return null;
   return (
@@ -29,7 +31,8 @@ export function Toast() {
         accessibilityLiveRegion="polite"
       >
         <Text flex={1} fontSize="$3" color="$color1">
-          {toast.message}
+          {/* A message that is an i18n key (`NOT_ON_WEB_YET`) follows the UI language (plan 11). */}
+          {i18n.exists(toast.message) ? t(toast.message) : toast.message}
         </Text>
         <Button
           size="$3"
@@ -37,9 +40,9 @@ export function Toast() {
           chromeless
           color="$color1"
           onPress={hideToast}
-          accessibilityLabel="Dismiss"
+          accessibilityLabel={t('actions.dismiss')}
         >
-          OK
+          {t('actions.ok')}
         </Button>
       </XStack>
     </View>

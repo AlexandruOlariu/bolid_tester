@@ -27,6 +27,7 @@ import {
   scannedPartNumber,
   useModuleScanStore,
 } from '@/features/module-scan/model/moduleScanStore';
+import { translate } from '@/shared/i18n';
 
 /** A KWP login for one write: the code, the workshop code, and whether to remember it. */
 export interface LoginInput {
@@ -149,7 +150,9 @@ export function useAdaptations() {
       } catch (e) {
         open.delete(ch.reqHeader);
         logError({ source: 'adaptations/read', error: e, context: { did: ch.did } });
-        store.setLastResult(`Read failed: ${(e as Error).message}`);
+        store.setLastResult(
+          translate('adaptations:msg.readFailed', { error: (e as Error).message }),
+        );
         return null;
       } finally {
         store.setRunning(false);
@@ -166,7 +169,7 @@ export function useAdaptations() {
    *  again instead of re-sending it. */
   const runWrite = useCallback(
     async (ch: AdaptationChannel, raw: number[], login?: LoginInput): Promise<WriteOutcome> => {
-      if (!session) return { ok: false, message: 'Not connected.' };
+      if (!session) return { ok: false, message: translate('adaptations:msg.notConnected') };
       // SecurityAccess (plan 23): only with an installed plugin for this module; otherwise refuse
       // before any bus traffic.
       const decision = await securityDecisionForActiveCar(ch.security, {
@@ -202,13 +205,13 @@ export function useAdaptations() {
         store.setLastResult(message);
         return { ok: false, message };
       };
-      if (!session) return refused('Not connected.');
-      if (!store.unlocked) return refused('Locked — enable the adaptations unlock first.');
+      if (!session) return refused(translate('adaptations:msg.notConnected'));
+      if (!store.unlocked) return refused(translate('adaptations:msg.locked'));
       if (ch.min !== undefined && displayValue < ch.min) {
-        return refused(`Out of bounds: minimum is ${ch.min}${ch.unit ?? ''}.`);
+        return refused(translate('adaptations:msg.min', { min: `${ch.min}${ch.unit ?? ''}` }));
       }
       if (ch.max !== undefined && displayValue > ch.max) {
-        return refused(`Out of bounds: maximum is ${ch.max}${ch.unit ?? ''}.`);
+        return refused(translate('adaptations:msg.max', { max: `${ch.max}${ch.unit ?? ''}` }));
       }
       const newRaw = encodeAdaptationValue(displayValue, ch);
       store.setRunning(true);
@@ -241,7 +244,7 @@ export function useAdaptations() {
 
   const restore = useCallback(
     async (ch: AdaptationChannel, raw: number[], login?: LoginInput): Promise<WriteOutcome> => {
-      if (!session) return { ok: false, message: 'Not connected.' };
+      if (!session) return { ok: false, message: translate('adaptations:msg.notConnected') };
       store.setRunning(true);
       try {
         const res = await runWrite(ch, raw, login);

@@ -1,0 +1,50 @@
+{
+  "title": "Vehicle report",
+  "subtitle": "Everything about this car in one shareable document",
+  "sections": "Sections",
+  "section": {
+    "faults": {
+      "title": "Fault codes & readiness",
+      "hint": "Readiness, stored / pending / permanent codes with VAG numbers, freeze frames"
+    },
+    "scan": {
+      "title": "Module scan",
+      "hint": "Newest saved module scan for this car"
+    },
+    "inspection": {
+      "title": "Used-car inspection",
+      "hint": "Pre-purchase verdict and every check"
+    },
+    "battery": {
+      "title": "Battery & charging",
+      "hint": "Resting, cranking and charging voltage"
+    },
+    "ai": {
+      "title": "AI diagnosis",
+      "hint": "Overall health, summary and findings"
+    },
+    "maintenance": {
+      "title": "Maintenance due",
+      "hint": "What is due, from your logbook"
+    }
+  },
+  "notRun": "Not run yet",
+  "runNowA11y": "Run now: {{title}}",
+  "runNow": "Run now",
+  "severity": {
+    "ok": "OK",
+    "attention": "Attention",
+    "urgent": "Urgent"
+  },
+  "notAvailable": "not available",
+  "connected": "Connected — identity from the live session.",
+  "notConnected": "Not connected — identity and results from the last connection.",
+  "shareUnavailable": "Share unavailable",
+  "notSaved": "The report could not be saved on this device.",
+  "pdfUnavailable": "PDF unavailable",
+  "sharedHtml": "The report was shared as an HTML page instead.",
+  "sharePdf": "Share PDF",
+  "shareHtml": "Share HTML",
+  "shareMarkdown": "Share Markdown",
+  "saved": "Saved {{file}} — it is listed in History."
+}

@@ -1,0 +1,25 @@
+{
+  "title": "Service reset",
+  "unavailable": "Service-interval reset is unavailable for this car / protocol. It is experimental and profile-gated — it needs a CAN (UDS) link, or a K-line (KWP2000) link for cars that use it.",
+  "manual": "Manual procedure",
+  "manualRecommended": "Manual procedure (recommended)",
+  "manualReliable": "The reliable reset for this car.",
+  "manualFallback": "The reliable reset for this car. Use it if the OBD reset above does not complete.",
+  "tryAnyway": "Try OBD reset anyway (not expected to work)",
+  "reset": "Reset service interval",
+  "resetting": "Resetting…",
+  "confirm": "Confirm reset",
+  "subtitle": "⚠ Experimental — writes to the instrument cluster. Confirm on the dash afterwards.",
+  "method": "Method: {{method}}",
+  "routine": "routine {{id}}",
+  "header": "header {{header}}",
+  "msg": {
+    "unavailable": "Service reset is unavailable for this car / protocol.",
+    "done": "Service interval reset — confirm on the cluster.",
+    "incomplete": "Reset did not complete.",
+    "useManual": "Use the manual procedure below instead.",
+    "noResponse": "{{module}} did not respond ({{error}}).",
+    "unreachable": "The adapter could not reach this module over the current link.",
+    "failed": "Failed: {{error}}"
+  }
+}

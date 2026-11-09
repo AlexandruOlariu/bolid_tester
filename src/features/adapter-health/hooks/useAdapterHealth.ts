@@ -16,6 +16,7 @@ import {
   type AdapterReportJsonContext,
 } from '../api/adapterReportJson';
 import { useAdapterHealthStore, AdapterHealthReport } from '../model/adapterHealthStore';
+import { translate } from '@/shared/i18n';
 
 /** What a shared report is saved as: the pasteable text, or the schema-v1 JSON for the
  *  compatibility matrix (plan 29). */
@@ -103,14 +104,14 @@ export function useAdapterHealth() {
             reportFileName(json),
             `${JSON.stringify(json, null, 2)}\n`,
             'application/json',
-            { dialogTitle: 'Adapter health report (JSON)' },
+            { dialogTitle: translate('common:share.adapterHealthJson') },
           );
         } else {
           await saveTextFile(
             `adapter-health-${fileStamp(report.ranAt)}.txt`,
             formatAdapterReport(report),
             'text/plain',
-            { dialogTitle: 'Adapter health' },
+            { dialogTitle: translate('common:share.adapterHealth') },
           );
         }
       } catch (e) {

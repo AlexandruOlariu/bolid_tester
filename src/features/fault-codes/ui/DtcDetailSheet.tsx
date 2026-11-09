@@ -16,6 +16,7 @@ import {
   dtcWebSearchUrl,
 } from '../model/dtcDetail';
 import { CodeFreezeFrame, GuideLinks } from './DtcGuideParts';
+import { useTranslation } from '@/shared/i18n';
 
 /** Full detail for one fault code (plan 05), opened by tapping the code in a DTC row: meaning,
  *  severity, system, freeze frame, the fault guide, and the Explain with AI / web search / share
@@ -72,6 +73,7 @@ function DtcDetailBody({
   freezeFrames: FreezeFrame[];
   onClose: () => void;
 }) {
+  const { t } = useTranslation('faultCodes');
   const vehicleName = profile.id === 'generic' ? undefined : profile.name;
   const detail = buildDtcDetail(dtc.code, dtc.description, profile.make);
   const { info } = detail;
@@ -118,9 +120,11 @@ function DtcDetailBody({
           paddingHorizontal="$3"
           paddingVertical="$1.5"
           borderRadius="$10"
-          accessibilityLabel={`Severity: ${sev.label}`}
+          accessibilityLabel={t('detail.severityA11y', {
+            label: t(`detail.severity.${info.severity}.label`),
+          })}
         >
-          {sev.label}
+          {t(`detail.severity.${info.severity}.label`, { defaultValue: sev.label })}
         </Text>
       </XStack>
 
@@ -132,7 +136,7 @@ function DtcDetailBody({
           {detail.systemLine}
         </Paragraph>
         <Paragraph theme="alt2" fontSize="$2">
-          {sev.hint}
+          {t(`detail.severity.${info.severity}.hint`, { defaultValue: sev.hint })}
         </Paragraph>
         {info.manufacturerSpecific ? (
           <Text
@@ -146,7 +150,7 @@ function DtcDetailBody({
             paddingHorizontal="$2"
             paddingVertical="$1"
           >
-            Manufacturer-specific
+            {t('detail.manufacturerSpecific')}
           </Text>
         ) : null}
       </YStack>
@@ -154,25 +158,25 @@ function DtcDetailBody({
       <CodeFreezeFrame code={info.code} guide={guide} freezeFrames={freezeFrames} />
 
       <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$3">
-        <Text fontWeight="700">Guide</Text>
+        <Text fontWeight="700">{t('row.guide')}</Text>
         <Paragraph fontSize="$2">{guide.note}</Paragraph>
         <GuideLinks guide={guide} onNavigate={onClose} />
       </YStack>
 
       <XStack gap="$2" flexWrap="wrap">
         <Button theme="green" onPress={explainWithAi} icon={<Sparkles size={16} />}>
-          Explain with AI
+          {t('detail.explainAi')}
         </Button>
         <Button onPress={searchWeb} icon={() => <Search size={16} />}>
-          Search the web
+          {t('detail.searchWeb')}
         </Button>
         <Button onPress={share} icon={() => <Share2 size={16} />}>
-          Share
+          {t('detail.share')}
         </Button>
       </XStack>
 
       <Paragraph theme="alt2" fontSize="$1">
-        {DTC_DETAIL_FOOTER}
+        {t('detail.footer', { defaultValue: DTC_DETAIL_FOOTER })}
       </Paragraph>
     </YStack>
   );

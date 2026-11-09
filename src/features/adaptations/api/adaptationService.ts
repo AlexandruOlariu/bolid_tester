@@ -25,6 +25,7 @@ import {
 } from '@/shared/obd-core';
 import type { AdaptationChannel } from '@/shared/vehicles';
 import { NO_PLUGIN_MESSAGE } from '@/shared/security/messages';
+import { translate } from '@/shared/i18n';
 
 /** KWP2000 session a K-line adaptation channel runs in unless it says otherwise. */
 export const DEFAULT_KWP_SESSION = 0x85;
@@ -114,7 +115,10 @@ export async function writeChannel(
     });
     return verifiedOutcome(res.verified, res.backup);
   } catch (e) {
-    return { ok: false, message: `Failed: ${(e as Error).message}` };
+    return {
+      ok: false,
+      message: translate('adaptations:msg.failed', { error: (e as Error).message }),
+    };
   } finally {
     await session.resetAddressing();
   }
@@ -124,7 +128,9 @@ function verifiedOutcome(verified: boolean, backup: number[]): WriteOutcome {
   return {
     ok: verified,
     backup,
-    message: verified ? 'Write verified.' : 'Write sent but verification failed — check the value.',
+    message: verified
+      ? translate('adaptations:msg.verified')
+      : translate('adaptations:msg.unverified'),
   };
 }
 
@@ -142,7 +148,7 @@ async function writeKwpChannel(
     return {
       ok: false,
       loginRequired: true,
-      message: 'Login required — enter the login code for this module first. Nothing was sent.',
+      message: translate('adaptations:msg.loginRequired'),
     };
   }
   let backup: number[] | undefined;
@@ -168,7 +174,7 @@ async function writeKwpChannel(
       ...(backup ? { backup } : {}),
       ...(loginAccepted ? { loginAccepted } : {}),
       ...(e instanceof UdsError && e.nrc === 0x35 ? { loginRejected: true } : {}),
-      message: described ?? `Failed: ${(e as Error).message}`,
+      message: described ?? translate('adaptations:msg.failed', { error: (e as Error).message }),
     };
   } finally {
     await session.resetAddressing();

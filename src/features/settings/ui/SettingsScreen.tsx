@@ -58,6 +58,8 @@ import {
   isValidHost,
   parseEndpoint,
 } from '@/shared/transports/tcp/endpoint';
+import { i18n, initI18n, useTranslation, type TFunction } from '@/shared/i18n';
+import type { LanguagePref } from '@/shared/lib/i18nResolve';
 
 /** A section heading (announced as a heading, plan 20) in the theme's accent colour. */
 function SectionLabel({ children }: { children: string }) {
@@ -94,6 +96,7 @@ function SegGroup({ children }: { children: React.ReactNode }) {
 }
 
 function AiSection() {
+  const { t } = useTranslation('settings');
   const ai = useSettingsStore((s) => s.ai);
   const setAi = useSettingsStore((s) => s.setAi);
   const [testing, setTesting] = useState(false);
@@ -109,7 +112,7 @@ function AiSection() {
 
   const test = async (autofillModel: boolean) => {
     setTesting(true);
-    setStatusText('Connecting…');
+    setStatusText(t('ai.connecting'));
     // The owner may switch provider (or edit the address) while the request runs: its model list
     // and status then belong to settings no longer shown, so they are dropped, not applied.
     const stale = () => {
@@ -122,21 +125,24 @@ function AiSection() {
       const models = await getAiClient(ai).listModels();
       if (stale()) return;
       if (models.length === 0) {
-        setStatusText(
-          'Connected, but the server lists no models. Load a model on the server first.',
-        );
+        setStatusText(t('ai.noModels'));
       } else {
         // A cloud list is long: keep a listed model there; a local server's first model is the loaded one.
         if (autofillModel && !(fixedUrl && models.includes(ai.model))) setAi({ model: models[0] });
         const shown = models.slice(0, 4).join(', ');
         setStatusText(
-          `Connected ✓ — ${models.length} model(s): ${shown}${models.length > 4 ? '…' : ''}`,
+          t('ai.connected', {
+            count: models.length,
+            models: `${shown}${models.length > 4 ? '…' : ''}`,
+          }),
         );
       }
     } catch (e) {
       if (stale()) return;
       setStatusText(
-        `Failed: ${e instanceof AiClientError || e instanceof Error ? e.message : String(e)}`,
+        t('ai.failed', {
+          error: e instanceof AiClientError || e instanceof Error ? e.message : String(e),
+        }),
       );
       logError({
         source: 'settings/ai-test',
@@ -153,12 +159,12 @@ function AiSection() {
 
   return (
     <YStack gap="$2">
-      <SectionLabel>AI assistant (auto-diagnose)</SectionLabel>
+      <SectionLabel>{t('ai.title')}</SectionLabel>
       <SegGroup>
         <YStack gap="$3">
           <LabeledSwitch
-            label="Enabled"
-            accessibilityLabel="AI assistant enabled"
+            label={t('ai.enabled')}
+            accessibilityLabel={t('ai.enabledA11y')}
             checked={ai.enabled}
             onCheckedChange={(enabled) => setAi({ enabled })}
             testID="settings-ai-enabled"
@@ -166,25 +172,25 @@ function AiSection() {
 
           <YStack gap="$1">
             <Paragraph theme="alt2" fontSize="$2">
-              Provider
+              {t('ai.provider')}
             </Paragraph>
             <SegmentedControl
-              label="AI provider"
+              label={t('ai.providerA11y')}
               options={AI_PROVIDER_IDS.map((id) => ({
                 value: id,
-                label: AI_PROVIDER_PRESETS[id].label,
+                label: t(`ai.providerLabel.${id}`, { defaultValue: AI_PROVIDER_PRESETS[id].label }),
               }))}
               value={ai.provider}
               onChange={switchProvider}
             />
             <Paragraph theme="alt2" fontSize="$1">
-              {preset.hint}
+              {t(`ai.providerHint.${ai.provider}`, { defaultValue: preset.hint })}
             </Paragraph>
           </YStack>
 
           <YStack gap="$1">
             <Paragraph theme="alt2" fontSize="$2">
-              {fixedUrl ? 'Server URL' : 'Server URL (OpenAI-compatible, e.g. LM Studio or Ollama)'}
+              {fixedUrl ? t('ai.serverUrl') : t('ai.serverUrlCustom')}
             </Paragraph>
             {fixedUrl ? (
               <XStack gap="$2" alignItems="center">
@@ -195,23 +201,23 @@ function AiSection() {
                   size="$3"
                   hitSlop={HIT_SLOP}
                   chromeless
-                  accessibilityLabel="Edit the server address (switches to Custom)"
+                  accessibilityLabel={t('ai.editUrlA11y')}
                   onPress={() =>
                     setAi({ provider: 'custom', baseUrl: ai.baseUrl, model: ai.model })
                   }
                 >
-                  Edit
+                  {t('ai.edit')}
                 </Button>
               </XStack>
             ) : (
               <Input
                 value={ai.baseUrl}
-                onChangeText={(t) => setAi({ baseUrl: t })}
+                onChangeText={(text) => setAi({ baseUrl: text })}
                 placeholder="http://192.168.1.50:1234"
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"
-                accessibilityLabel="AI server URL"
+                accessibilityLabel={t('ai.serverUrlA11y')}
               />
             )}
             {ai.baseUrl ? (
@@ -224,26 +230,27 @@ function AiSection() {
           {ai.provider !== 'local' ? (
             <YStack gap="$1">
               <Paragraph theme="alt2" fontSize="$2">
-                {preset.needsKey ? 'API key' : 'API key (optional)'}
+                {preset.needsKey ? t('ai.apiKey') : t('ai.apiKeyOptional')}
               </Paragraph>
               <Input
                 value={ai.apiKey}
-                onChangeText={(t) => setAi({ apiKey: t.trim() })}
-                placeholder={preset.needsKey ? 'Paste your API key' : 'Only if the server asks'}
+                onChangeText={(text) => setAi({ apiKey: text.trim() })}
+                placeholder={preset.needsKey ? t('ai.apiKeyPlaceholder') : t('ai.apiKeyIfAsked')}
                 secureTextEntry
                 autoCapitalize="none"
                 autoCorrect={false}
-                accessibilityLabel={`${preset.label} API key`}
+                accessibilityLabel={t('ai.apiKeyA11y', {
+                  provider: t(`ai.providerLabel.${ai.provider}`, { defaultValue: preset.label }),
+                })}
               />
               {Platform.OS === 'web' ? (
                 // Web (plan 28): there is no keystore in the browser, so the key is memory-only.
                 <Paragraph theme="alt2" fontSize="$1" testID="settings-ai-key-web">
-                  In the browser the key is kept only until this tab closes — it is never saved.
+                  {t('ai.keyWeb')}
                 </Paragraph>
               ) : (
                 <Paragraph theme="alt2" fontSize="$1">
-                  Stored in the phone's secure keystore, never in backups. Each provider keeps its
-                  own key.
+                  {t('ai.keyStored')}
                 </Paragraph>
               )}
             </YStack>
@@ -251,40 +258,38 @@ function AiSection() {
 
           <YStack gap="$1">
             <Paragraph theme="alt2" fontSize="$2">
-              Model
+              {t('ai.model')}
             </Paragraph>
             <Input
               value={ai.model}
-              onChangeText={(t) => setAi({ model: t })}
-              placeholder={preset.defaultModel || 'e.g. qwen2.5-7b-instruct'}
+              onChangeText={(text) => setAi({ model: text })}
+              placeholder={preset.defaultModel || t('ai.modelPlaceholder')}
               autoCapitalize="none"
               autoCorrect={false}
-              accessibilityLabel="AI model"
+              accessibilityLabel={t('ai.modelA11y')}
             />
           </YStack>
 
           {anthropic ? null : (
             <YStack gap="$1" testID="ai-structured-output">
-              <Paragraph>Structured output</Paragraph>
+              <Paragraph>{t('ai.structured')}</Paragraph>
               <SegmentedControl
-                label="Structured output"
-                options={JSON_MODE_OPTIONS}
+                label={t('ai.structured')}
+                options={jsonModeOptions(t)}
                 value={ai.jsonMode}
                 onChange={(jsonMode) => setAi({ jsonMode })}
               />
               <Paragraph theme="alt2" fontSize="$1">
-                Schema = json_schema (LM Studio / current OpenAI). JSON = json_object (older
-                OpenAI). Off = plain text. The app auto-falls back to text if the server rejects the
-                format.
+                {t('ai.structuredHelp')}
               </Paragraph>
             </YStack>
           )}
 
           <YStack gap="$1">
-            <Paragraph>Timeout</Paragraph>
+            <Paragraph>{t('ai.timeout')}</Paragraph>
             <SegmentedControl
-              label="AI request timeout"
-              options={TIMEOUT_OPTIONS}
+              label={t('ai.timeoutA11y')}
+              options={timeoutOptions(t)}
               value={ai.timeoutMs}
               onChange={(timeoutMs) => setAi({ timeoutMs })}
             />
@@ -297,10 +302,10 @@ function AiSection() {
               disabled={testing}
               icon={testing ? () => <Spinner /> : undefined}
             >
-              Test connection
+              {t('ai.test')}
             </Button>
             <Button flex={1} theme="green" onPress={() => void test(true)} disabled={testing}>
-              Detect model
+              {t('ai.detect')}
             </Button>
           </XStack>
           {statusText ? (
@@ -314,35 +319,53 @@ function AiSection() {
   );
 }
 
-const JSON_MODE_OPTIONS: SegmentOption<'schema' | 'object' | 'off'>[] = [
-  { value: 'schema', label: 'Schema' },
+const jsonModeOptions = (t: TFunction): SegmentOption<'schema' | 'object' | 'off'>[] => [
+  { value: 'schema', label: t('ai.jsonSchema') },
   { value: 'object', label: 'JSON' },
-  { value: 'off', label: 'Off', accessibilityLabel: 'Off (plain text)' },
+  { value: 'off', label: t('ai.jsonOff'), accessibilityLabel: t('ai.jsonOffA11y') },
 ];
 
-const TIMEOUT_OPTIONS: SegmentOption<number>[] = [15000, 30000, 60000].map((ms) => ({
-  value: ms,
-  label: `${ms / 1000}s`,
-  accessibilityLabel: `${ms / 1000} seconds`,
-}));
+const timeoutOptions = (t: TFunction): SegmentOption<number>[] =>
+  [15000, 30000, 60000].map((ms) => ({
+    value: ms,
+    label: `${ms / 1000}s`,
+    accessibilityLabel: t('seconds', { count: ms / 1000 }),
+  }));
 
-const POLL_OPTIONS: SegmentOption<number>[] = [250, 500, 1000, 2000].map((ms) => ({
-  value: ms,
-  label: `${ms} ms`,
-  accessibilityLabel: `${ms} milliseconds`,
-}));
+const pollOptions = (t: TFunction): SegmentOption<number>[] =>
+  [250, 500, 1000, 2000].map((ms) => ({
+    value: ms,
+    label: `${ms} ms`,
+    accessibilityLabel: t('milliseconds', { count: ms }),
+  }));
 
-const THEME_OPTIONS: SegmentOption<'system' | 'light' | 'dark'>[] = [
-  { value: 'system', label: 'system', accessibilityLabel: 'System' },
-  { value: 'light', label: 'light', accessibilityLabel: 'Light' },
-  { value: 'dark', label: 'dark', accessibilityLabel: 'Dark' },
+const themeOptions = (t: TFunction): SegmentOption<'system' | 'light' | 'dark'>[] => [
+  {
+    value: 'system',
+    label: t('general.themeSystem'),
+    accessibilityLabel: t('general.themeSystemA11y'),
+  },
+  {
+    value: 'light',
+    label: t('general.themeLight'),
+    accessibilityLabel: t('general.themeLightA11y'),
+  },
+  { value: 'dark', label: t('general.themeDark'), accessibilityLabel: t('general.themeDarkA11y') },
+];
+
+/** The language picker (plan 11): follow the phone, or a fixed language. Language names are shown in
+ *  their own language (endonyms) so anyone can find theirs. */
+const languageOptions = (t: TFunction): SegmentOption<LanguagePref>[] => [
+  { value: 'system', label: t('general.languageSystem') },
+  { value: 'en', label: 'English', accessibilityLabel: 'English' },
+  { value: 'ro', label: 'Română', accessibilityLabel: 'Română' },
 ];
 
 /** The value of the Custom… option in the injected-DTC row. */
 const CUSTOM_DTCS = 'custom';
 
 const DTC_PRESETS: { label: string; codes: string[] }[] = [
-  { label: 'None', codes: [] },
+  { label: 'none', codes: [] },
   { label: 'P0299', codes: ['P0299'] },
   { label: 'P0299+P0401', codes: ['P0299', 'P0401'] },
 ];
@@ -350,6 +373,7 @@ const DTC_PRESETS: { label: string; codes: string[] }[] = [
 /** Simulator fault injection: three presets plus **Custom…**, a free-text list of codes
  *  (comma-separated, each `[PCBU]` + 4 hex digits; invalid entries are ignored). */
 function InjectedDtcsSection() {
+  const { t } = useTranslation('settings');
   const injected = useSettingsStore((st) => st.injectedDtcs);
   const setInjectedDtcs = useSettingsStore((st) => st.setInjectedDtcs);
   const matchesPreset = DTC_PRESETS.some((p) => p.codes.join() === injected.join());
@@ -367,14 +391,21 @@ function InjectedDtcsSection() {
 
   return (
     <YStack gap="$2">
-      <SubLabel>Injected DTCs</SubLabel>
+      <SubLabel>{t('dev.injected')}</SubLabel>
       <YStack>
         <YStack gap="$2">
           <SegmentedControl
-            label="Injected fault codes"
+            label={t('dev.injectedA11y')}
             options={[
-              ...DTC_PRESETS.map((p) => ({ value: p.label, label: p.label })),
-              { value: CUSTOM_DTCS, label: 'Custom…', accessibilityLabel: 'Custom codes' },
+              ...DTC_PRESETS.map((p) => ({
+                value: p.label,
+                label: p.label === 'none' ? t('dev.none') : p.label,
+              })),
+              {
+                value: CUSTOM_DTCS,
+                label: t('dev.custom'),
+                accessibilityLabel: t('dev.customA11y'),
+              },
             ]}
             value={
               customOpen
@@ -396,15 +427,15 @@ function InjectedDtcsSection() {
               <Input
                 value={customText}
                 onChangeText={editCustom}
-                placeholder="e.g. P0135, P0420"
+                placeholder={t('dev.customPlaceholder')}
                 autoCapitalize="characters"
                 autoCorrect={false}
-                accessibilityLabel="Custom fault codes to inject, comma-separated"
+                accessibilityLabel={t('dev.customInputA11y')}
               />
               <Paragraph theme="alt2" fontSize="$1">
                 {injected.length > 0
-                  ? `Injecting: ${injected.join(', ')}. Reconnect the simulator to apply.`
-                  : 'Enter codes like P0135 (letter P, C, B or U plus four digits). Invalid codes are ignored.'}
+                  ? t('dev.injecting', { codes: injected.join(', ') })
+                  : t('dev.customHelp')}
               </Paragraph>
             </YStack>
           ) : null}
@@ -418,40 +449,34 @@ function InjectedDtcsSection() {
  *  link (auto-reconnect + flap guard), or make the next simulator connect get no reply to `ATZ`
  *  (the Connect screen's diagnostics panel, stage "Adapter start-up"). */
 function SimulatorDeveloperSection() {
+  const { t } = useTranslation('settings');
   const status = useSessionStore((st) => st.status);
   const [note, setNote] = useState<string | null>(null);
 
   const drop = () => {
     const dropped = connectionService.__sim.simulateDrop();
-    setNote(
-      dropped
-        ? 'Link dropped. With auto-reconnect on it reconnects in 2 s; three drops in a minute pause it.'
-        : 'Connect to the simulator first.',
-    );
+    setNote(dropped ? t('dev.dropped') : t('dev.connectSimFirst'));
   };
   const failNext = () => {
     connectionService.__sim.failNextConnect();
-    setNote(
-      'Armed: the next simulator connect gets no reply to ATZ. Connect to see the diagnostics.',
-    );
+    setNote(t('dev.armed'));
   };
 
   return (
     <YStack gap="$2">
-      <SubLabel>Simulator test controls</SubLabel>
+      <SubLabel>{t('dev.simControls')}</SubLabel>
       <YStack>
         <YStack gap="$2">
           <XStack gap="$2" flexWrap="wrap">
             <Button size="$3" hitSlop={HIT_SLOP} disabled={status !== 'connected'} onPress={drop}>
-              Simulate a link drop
+              {t('dev.simulateDrop')}
             </Button>
             <Button size="$3" hitSlop={HIT_SLOP} onPress={failNext}>
-              Fail next connect: no reply to ATZ
+              {t('dev.failNext')}
             </Button>
           </XStack>
           <Paragraph theme="alt2" fontSize="$1">
-            {note ??
-              'Test the connection hardening without a car: a dropped link, and an adapter that never answers.'}
+            {note ?? t('dev.simControlsHelp')}
           </Paragraph>
         </YStack>
       </YStack>
@@ -463,11 +488,12 @@ function SimulatorDeveloperSection() {
  *  `app.json` carries one, the privacy policy (its text lives in `model/privacyPolicy.ts` and is
  *  published as docs/privacy-policy.md) and a link to the documentation. */
 function AboutSection() {
+  const { t } = useTranslation('settings');
   const [policyOpen, setPolicyOpen] = useState(false);
 
   return (
     <YStack gap="$2">
-      <SectionLabel>About</SectionLabel>
+      <SectionLabel>{t('about.title')}</SectionLabel>
       <SegGroup>
         <YStack gap="$2">
           <Paragraph fontWeight="700">
@@ -475,38 +501,42 @@ function AboutSection() {
           </Paragraph>
           {APP_BUILD ? (
             <Paragraph theme="alt2" fontSize="$2">
-              Build {APP_BUILD}
+              {t('about.build', { build: APP_BUILD })}
             </Paragraph>
           ) : null}
           <Paragraph theme="alt2" fontSize="$1">
-            Over-the-air updates only reach installs of this same version. The app looks for one
-            only when you tap More → Check for updates.
+            {t('about.ota')}
           </Paragraph>
           <Button
             size="$3"
             hitSlop={HIT_SLOP}
             onPress={() => setPolicyOpen((open) => !open)}
-            accessibilityLabel={policyOpen ? 'Hide the privacy policy' : 'Show the privacy policy'}
+            accessibilityLabel={policyOpen ? t('about.hidePolicyA11y') : t('about.showPolicyA11y')}
           >
-            {policyOpen ? 'Hide privacy policy' : 'Privacy policy'}
+            {policyOpen ? t('about.hidePolicy') : t('about.policy')}
           </Button>
           <Button
             size="$3"
             hitSlop={HIT_SLOP}
-            accessibilityLabel="Open the documentation on GitHub"
+            accessibilityLabel={t('about.docsA11y')}
             onPress={() =>
               Linking.openURL(DOCS_URL).catch((e: unknown) =>
                 logError({ source: 'settings/about', error: e, severity: 'warning' }),
               )
             }
           >
-            Documentation (GitHub)
+            {t('about.docs')}
           </Button>
           {policyOpen ? (
             <YStack gap="$2">
               <Paragraph theme="alt2" fontSize="$1">
-                Last updated {PRIVACY_POLICY_UPDATED}
+                {t('about.policyUpdated', { date: PRIVACY_POLICY_UPDATED })}
               </Paragraph>
+              {i18n.language !== 'en' ? (
+                <Paragraph theme="alt2" fontSize="$1">
+                  {t('about.policyEnglishOnly')}
+                </Paragraph>
+              ) : null}
               {PRIVACY_POLICY.map((section) => (
                 <YStack key={section.heading} gap="$1">
                   <Text fontWeight="700" fontSize="$3" role="heading" accessibilityRole="header">
@@ -532,22 +562,20 @@ function AboutSection() {
  *  (plan 13: import, imported packs, bundled packs as templates) and the security-access plugins
  *  (plan 23: import, installed plugins, test in simulator). */
 function DataSection() {
+  const { t } = useTranslation('settings');
   const router = useRouter();
   return (
     <YStack gap="$2">
-      <SectionLabel>Data</SectionLabel>
+      <SectionLabel>{t('data.title')}</SectionLabel>
       <SegGroup>
         <YStack gap="$2">
-          <Paragraph fontSize="$2">
-            Keep a copy of your garage, history, scans, trips and maintenance log, or move them to a
-            new phone. Nothing goes to the cloud; you choose where the file goes.
-          </Paragraph>
+          <Paragraph fontSize="$2">{t('data.help')}</Paragraph>
           <XStack gap="$2" flexWrap="wrap">
             <Button size="$3" hitSlop={HIT_SLOP} onPress={() => router.push('/backup')}>
-              Backup & restore
+              {t('data.backup')}
             </Button>
             <Button size="$3" hitSlop={HIT_SLOP} onPress={() => router.push('/backup')}>
-              Export data…
+              {t('data.export')}
             </Button>
           </XStack>
           <LabelPacksSection />
@@ -559,30 +587,48 @@ function DataSection() {
 }
 
 /** Warning for an adapter log that wrapped: the export would start mid-session. */
-function wrappedText(dropped: number): string {
-  return `the oldest ${dropped} lines were dropped, so the export starts mid-session. Clear the log and record a shorter flow.`;
+function wrappedText(t: TFunction, dropped: number): string {
+  return t('log.wrapped', { count: dropped });
 }
 
-/** **General**: the theme (a language picker joins it with plan 11). The app is metric only. */
+/** **General**: the theme and the UI language (plan 11). The app is metric only. */
 function GeneralSection() {
+  const { t } = useTranslation('settings');
   const theme = useSettingsStore((st) => st.theme);
   const setTheme = useSettingsStore((st) => st.setTheme);
+  const language = useSettingsStore((st) => st.language);
+  const setLanguagePref = useSettingsStore((st) => st.setLanguage);
+  const changeLanguage = (pref: LanguagePref) => {
+    setLanguagePref(pref);
+    // Applied at once (the root layout's useLanguageSync would follow the stored choice too).
+    void initI18n(pref);
+  };
   return (
     <YStack gap="$2">
-      <SectionLabel>General</SectionLabel>
+      <SectionLabel>{t('general.title')}</SectionLabel>
       <SegGroup>
         <YStack gap="$2">
           <Paragraph theme="alt2" fontSize="$2">
-            Theme
+            {t('general.theme')}
           </Paragraph>
           <SegmentedControl
-            label="Theme"
-            options={THEME_OPTIONS}
+            label={t('general.theme')}
+            options={themeOptions(t)}
             value={theme}
             onChange={setTheme}
           />
+          <Paragraph theme="alt2" fontSize="$2">
+            {t('general.language')}
+          </Paragraph>
+          <SegmentedControl
+            label={t('general.language')}
+            options={languageOptions(t)}
+            value={language}
+            onChange={changeLanguage}
+            testID="settings-language"
+          />
           <Paragraph theme="alt2" fontSize="$1">
-            Units are metric: km/h, °C, km, kPa and L/100 km.
+            {t('general.units')}
           </Paragraph>
         </YStack>
       </SegGroup>
@@ -598,6 +644,7 @@ export const CRASH_REPORTS_TEXT =
  *  on asks first. A build without a crash-service address (dev builds, forks) shows "Unavailable in
  *  this build" and keeps the switch disabled — nothing can be sent there. */
 function PrivacySection() {
+  const { t } = useTranslation('settings');
   const on = useSettingsStore((st) => st.crashReports);
   const setCrashReports = useSettingsStore((st) => st.setCrashReports);
   const available = isCrashReportingAvailable();
@@ -605,22 +652,22 @@ function PrivacySection() {
   // The guards matter: a disabled switch must never record consent.
   const turnOn = () => {
     if (on || !available) return;
-    appAlert('Send anonymous crash reports?', CRASH_REPORTS_TEXT, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Turn on', onPress: () => setCrashReports(true) },
+    appAlert(t('privacy.confirmTitle'), t('privacy.crashText'), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      { text: t('privacy.turnOn'), onPress: () => setCrashReports(true) },
     ]);
   };
 
   return (
     <YStack gap="$2">
-      <SectionLabel>Privacy</SectionLabel>
+      <SectionLabel>{t('privacy.title')}</SectionLabel>
       <SegGroup>
         <YStack gap="$2" testID="settings-privacy">
-          <SubLabel>Send anonymous crash reports</SubLabel>
+          <SubLabel>{t('privacy.crashReports')}</SubLabel>
           {/* Switching on only asks (the switch stays off until Turn on); off applies at once. */}
           <LabeledSwitch
-            label="Help fix crashes"
-            accessibilityLabel="Send anonymous crash reports"
+            label={t('privacy.helpFix')}
+            accessibilityLabel={t('privacy.crashReports')}
             checked={on}
             disabled={!available}
             onCheckedChange={(next) => {
@@ -630,25 +677,25 @@ function PrivacySection() {
             testID="settings-crash-reports"
           />
           <Paragraph theme="alt2" fontSize="$1">
-            {CRASH_REPORTS_TEXT}
+            {t('privacy.crashText')}
           </Paragraph>
           {!available ? (
             <Paragraph theme="alt2" fontSize="$1" opacity={0.7} testID="crash-reports-unavailable">
-              Unavailable in this build.
+              {t('privacy.unavailable')}
             </Paragraph>
           ) : null}
           <Button
             size="$3"
             hitSlop={HIT_SLOP}
             alignSelf="flex-start"
-            accessibilityLabel="Read the privacy policy on GitHub"
+            accessibilityLabel={t('privacy.readPolicyA11y')}
             onPress={() =>
               Linking.openURL(PRIVACY_POLICY_URL).catch((e: unknown) =>
                 logError({ source: 'settings/privacy', error: e, severity: 'warning' }),
               )
             }
           >
-            Read the privacy policy
+            {t('privacy.readPolicy')}
           </Button>
         </YStack>
       </SegGroup>
@@ -660,20 +707,19 @@ function PrivacySection() {
  *  carrying a sample VIN, adapter address and server address, so the received report shows the
  *  scrubbing (`***03398`, `<device-id>`, `<url>`). Disabled while reporting is off. */
 function TestCrashReportSection() {
+  const { t } = useTranslation('settings');
   const on = useSettingsStore((st) => st.crashReports);
   const usable = on && isCrashReportingAvailable();
   const send = async () => {
     await crashReportingReady();
     appAlert(
-      'Test crash report',
-      sendTestCrashReport()
-        ? 'Sent. It should appear in the crash service within a minute, with the sample VIN, adapter address and server address removed.'
-        : 'Not sent: crash reporting is off or not available in this build.',
+      t('dev.testCrashTitle'),
+      sendTestCrashReport() ? t('dev.testCrashSent') : t('dev.testCrashNotSent'),
     );
   };
   return (
     <YStack gap="$2">
-      <SubLabel>Crash reports</SubLabel>
+      <SubLabel>{t('dev.crashReports')}</SubLabel>
       <Button
         size="$3"
         hitSlop={HIT_SLOP}
@@ -684,12 +730,10 @@ function TestCrashReportSection() {
           if (usable) void send();
         }}
       >
-        Send test crash report
+        {t('dev.testCrash')}
       </Button>
       <Paragraph theme="alt2" fontSize="$1">
-        {usable
-          ? 'Sends one test report with a sample VIN and adapter address, to check they arrive removed.'
-          : 'Turn on Settings → Privacy → Send anonymous crash reports first (needs a build with a crash-reporting address).'}
+        {usable ? t('dev.testCrashHelp') : t('dev.testCrashOff')}
       </Paragraph>
     </YStack>
   );
@@ -697,54 +741,51 @@ function TestCrashReportSection() {
 
 /** **Connection**: auto-reconnect, the poll interval and VIN recognition of garage cars. */
 function ConnectionSection() {
+  const { t } = useTranslation('settings');
   const s = useSettingsStore();
   return (
     <YStack gap="$2">
-      <SectionLabel>Connection</SectionLabel>
+      <SectionLabel>{t('connection.title')}</SectionLabel>
       <SegGroup>
         <YStack gap="$4">
           <YStack gap="$2">
-            <SubLabel>Auto-reconnect</SubLabel>
+            <SubLabel>{t('connection.autoReconnect')}</SubLabel>
             <LabeledSwitch
-              label="Retry the last adapter after a dropped link"
-              accessibilityLabel="Auto-reconnect"
+              label={t('connection.autoReconnectLabel')}
+              accessibilityLabel={t('connection.autoReconnect')}
               checked={s.autoReconnect}
               onCheckedChange={s.setAutoReconnect}
               testID="settings-auto-reconnect"
             />
             <Paragraph theme="alt2" fontSize="$1">
-              On by default; pauses after 3 drops in a minute. When the connection drops
-              unexpectedly, reconnect to the same device with backoff (2 s, 5 s, 10 s — up to 3
-              attempts). Cancelled the moment you disconnect or connect manually.
+              {t('connection.autoReconnectHelp')}
             </Paragraph>
           </YStack>
 
           <YStack gap="$2">
-            <SubLabel>Poll interval</SubLabel>
+            <SubLabel>{t('connection.poll')}</SubLabel>
             <SegmentedControl
-              label="Poll interval"
-              options={POLL_OPTIONS}
+              label={t('connection.poll')}
+              options={pollOptions(t)}
               value={s.pollIntervalMs}
               onChange={s.setPollInterval}
             />
             <Paragraph theme="alt2" fontSize="$1">
-              How often live values are read. A slow K-line car sets its own pace.
+              {t('connection.pollHelp')}
             </Paragraph>
           </YStack>
 
           <YStack gap="$2">
-            <SubLabel>Recognise my cars by VIN</SubLabel>
+            <SubLabel>{t('connection.byVin')}</SubLabel>
             <LabeledSwitch
-              label="Select a garage car when its VIN connects"
-              accessibilityLabel="Recognise my cars by VIN"
+              label={t('connection.byVinLabel')}
+              accessibilityLabel={t('connection.byVin')}
               checked={s.autoSelectByVin}
               onCheckedChange={s.setAutoSelectByVin}
               testID="settings-auto-select-vin"
             />
             <Paragraph theme="alt2" fontSize="$1">
-              On by default. When the connected car's VIN (vehicle identification number) matches a
-              car you added from a connection, that car becomes the active vehicle. Built-in
-              profiles are only suggested on the Vehicle screen.
+              {t('connection.byVinHelp')}
             </Paragraph>
           </YStack>
         </YStack>
@@ -755,10 +796,11 @@ function ConnectionSection() {
 
 /** **Notifications**: the preferences live on their own screen. */
 function NotificationsSection() {
+  const { t } = useTranslation('settings');
   const router = useRouter();
   return (
     <YStack gap="$2">
-      <SectionLabel>Notifications</SectionLabel>
+      <SectionLabel>{t('notifications.title')}</SectionLabel>
       <XStack
         alignItems="center"
         gap="$3"
@@ -770,13 +812,13 @@ function NotificationsSection() {
         pressStyle={{ backgroundColor: '$color4' }}
         accessible
         accessibilityRole="button"
-        accessibilityLabel="Notification settings. Alerts, reminders and quiet mode"
+        accessibilityLabel={`${t('notifications.row')}. ${t('notifications.rowHelp')}`}
         onPress={() => router.push('/notifications')}
       >
         <YStack flex={1}>
-          <Paragraph fontWeight="700">Notification settings</Paragraph>
+          <Paragraph fontWeight="700">{t('notifications.row')}</Paragraph>
           <Paragraph theme="alt2" fontSize="$2">
-            Alerts, reminders and quiet mode
+            {t('notifications.rowHelp')}
           </Paragraph>
         </YStack>
         <Paragraph theme="alt2" accessibilityElementsHidden importantForAccessibility="no">
@@ -789,6 +831,7 @@ function NotificationsSection() {
 
 /** The adapter I/O log with **Clear** and **Export as replay fixture** (plan 02). */
 function AdapterLogSection() {
+  const { t } = useTranslation('settings');
   const { exportFixture, busy: exportingFixture } = useLogFixtureExport();
   const adapterSource = useSettingsStore((st) => st.adapterSource);
   const simulatedVehicle = useSettingsStore((st) => st.simulatedVehicleId);
@@ -827,10 +870,10 @@ function AdapterLogSection() {
     setExportStatus({
       dropped: logDropped,
       text: !saved
-        ? 'Could not save the replay fixture. See More → Error log for details.'
+        ? t('log.saveFailed')
         : logDropped > 0
-          ? `Saved ${saved}, but the log was full: ${wrappedText(logDropped)}`
-          : `Saved ${saved}. Clear the log before recording the next flow.`,
+          ? t('log.savedFull', { file: saved, wrapped: wrappedText(t, logDropped) })
+          : t('log.saved', { file: saved }),
     });
   };
   const onClearLog = () => {
@@ -843,14 +886,14 @@ function AdapterLogSection() {
   return (
     <YStack gap="$2">
       <XStack justifyContent="space-between" alignItems="center">
-        <SubLabel>Adapter log</SubLabel>
+        <SubLabel>{t('log.title')}</SubLabel>
         <Button
           size="$3"
           hitSlop={HIT_SLOP}
           onPress={onClearLog}
-          accessibilityLabel="Clear the adapter log"
+          accessibilityLabel={t('log.clearA11y')}
         >
-          Clear
+          {t('log.clear')}
         </Button>
       </XStack>
       <XStack gap="$2" alignItems="center">
@@ -862,7 +905,7 @@ function AdapterLogSection() {
           placeholder={DEFAULT_FLOW_NAME}
           autoCapitalize="none"
           autoCorrect={false}
-          accessibilityLabel="Flow name"
+          accessibilityLabel={t('log.flowName')}
         />
         <Button
           size="$3"
@@ -870,15 +913,15 @@ function AdapterLogSection() {
           disabled={exportingFixture || log.length === 0}
           onPress={() => void onExportFixture()}
         >
-          Export as replay fixture
+          {t('log.export')}
         </Button>
       </XStack>
       <Paragraph theme="alt2" fontSize="$1">
         {exportStatus && logDropped <= exportStatus.dropped
           ? exportStatus.text
           : logDropped > 0
-            ? `The log is full: ${wrappedText(logDropped)}`
-            : `Name the flow you just ran (connect, live, faults, clear…). The file records every command and the reply it got (the last ${ADAPTER_LOG_CAPACITY} log lines), so the session can be replayed in tests.`}
+            ? t('log.full', { wrapped: wrappedText(t, logDropped) })
+            : t('log.help', { capacity: ADAPTER_LOG_CAPACITY })}
       </Paragraph>
       <Card bordered padding="$2" height={220} backgroundColor="$backgroundStrong">
         <ScrollView>
@@ -899,7 +942,7 @@ function AdapterLogSection() {
             ))}
           {log.length === 0 ? (
             <Paragraph theme="alt2" fontSize="$2">
-              No adapter I/O yet.
+              {t('log.empty')}
             </Paragraph>
           ) : null}
         </ScrollView>
@@ -916,12 +959,13 @@ export type ResetAppData = () => Promise<{ problems: string[] }>;
 /** **Show hints again** and **Reset all app data** (plan 07), at the end of Developer & simulator.
  *  Without a `resetAppData` action the reset button is not shown. */
 function HintsAndResetSection({ resetAppData }: { resetAppData?: ResetAppData }) {
+  const { t } = useTranslation('settings');
   const [note, setNote] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
 
   const showHints = () => {
     useOnboardingStore.getState().reset();
-    setNote('Hints are back: the first-run card shows on the Connect tab again.');
+    setNote(t('reset.hintsBack'));
   };
 
   const runReset = async () => {
@@ -935,46 +979,38 @@ function HintsAndResetSection({ resetAppData }: { resetAppData?: ResetAppData })
       const outcome = await resetAppData();
       setNote(
         outcome.problems.length === 0
-          ? 'All app data was reset. The app is back to a fresh install: real adapter, no garage, no history.'
-          : `App data was reset, but: ${outcome.problems.join(' ')} See More → Error log.`,
+          ? t('reset.done')
+          : t('reset.doneWithProblems', { problems: outcome.problems.join(' ') }),
       );
     } catch (e) {
       logError({ source: 'settings/reset', error: e });
-      setNote('The reset did not finish. See More → Error log for details.');
+      setNote(t('reset.failed'));
     } finally {
       setResetting(false);
     }
   };
 
   const confirmReset = () => {
-    appAlert(
-      'Reset all app data?',
-      'This deletes everything the app keeps on this phone: settings, garage, history, scans, trips, maintenance log, alert rules, coding backups, backup files, label packs, security-access plugins, login codes, AI keys and the copies of exported files the app keeps. Copies you already shared or saved elsewhere are kept.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Continue',
-          style: 'destructive',
-          onPress: () =>
-            appAlert(
-              'Delete all app data?',
-              'This cannot be undone. Make a backup first (Settings → Data) if you may want it back.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Reset everything', style: 'destructive', onPress: () => void runReset() },
-              ],
-            ),
-        },
-      ],
-    );
+    appAlert(t('reset.confirmTitle'), t('reset.confirmBody'), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      {
+        text: t('reset.continue'),
+        style: 'destructive',
+        onPress: () =>
+          appAlert(t('reset.confirm2Title'), t('reset.confirm2Body'), [
+            { text: t('common:actions.cancel'), style: 'cancel' },
+            { text: t('reset.everything'), style: 'destructive', onPress: () => void runReset() },
+          ]),
+      },
+    ]);
   };
 
   return (
     <YStack gap="$2">
-      <SubLabel>Hints and app data</SubLabel>
+      <SubLabel>{t('reset.title')}</SubLabel>
       <XStack gap="$2" flexWrap="wrap">
         <Button size="$3" hitSlop={HIT_SLOP} onPress={showHints}>
-          Show hints again
+          {t('reset.showHints')}
         </Button>
         {resetAppData ? (
           <Button
@@ -985,30 +1021,30 @@ function HintsAndResetSection({ resetAppData }: { resetAppData?: ResetAppData })
             icon={resetting ? () => <Spinner /> : undefined}
             onPress={confirmReset}
           >
-            Reset all app data
+            {t('reset.resetAll')}
           </Button>
         ) : null}
       </XStack>
       <Paragraph theme="alt2" fontSize="$1">
-        {note ??
-          'Show hints again brings back the first-run card and every dismissed tip. Reset all app data returns the app to a fresh install (it asks twice).'}
+        {note ?? t('reset.help')}
       </Paragraph>
     </YStack>
   );
 }
 
 /** The adapter-source options; Wi-Fi and classic Bluetooth only where the platform supports them. */
-const ADAPTER_SOURCE_OPTIONS: SegmentOption<AdapterSource>[] = [
-  { value: 'ble', label: 'Real adapter (Bluetooth)' },
-  { value: 'wifi', label: 'Wi-Fi adapter' },
-  { value: 'spp', label: 'Classic Bluetooth' },
-  { value: 'mock', label: 'Simulator (no car)' },
+const adapterSourceOptions = (t: TFunction): SegmentOption<AdapterSource>[] => [
+  { value: 'ble', label: t('dev.source.ble') },
+  { value: 'wifi', label: t('dev.source.wifi') },
+  { value: 'spp', label: t('dev.source.spp') },
+  { value: 'mock', label: t('dev.source.mock') },
 ];
 
 /** The Wi-Fi adapter's address (plan 26), shown under the adapter-source segment while Wi-Fi is
  *  selected. Host and port are edited as text; a valid pair is saved at once, an invalid one shows
  *  why and leaves the saved address untouched. */
 function WifiEndpointSection() {
+  const { t } = useTranslation('settings');
   const wifi = useSettingsStore((st) => st.wifi);
   const setWifi = useSettingsStore((st) => st.setWifi);
   const [host, setHost] = useState(wifi.host);
@@ -1026,11 +1062,7 @@ function WifiEndpointSection() {
   }, [wifi]);
 
   const parsed = parseEndpoint(`${host.trim()}:${port.trim()}`);
-  const problem = parsed
-    ? null
-    : !isValidHost(host.trim())
-      ? 'Enter an IP address (like 192.168.0.10) or a host name.'
-      : 'Enter a port from 1 to 65535.';
+  const problem = parsed ? null : !isValidHost(host.trim()) ? t('wifi.badHost') : t('wifi.badPort');
 
   const edit = (nextHost: string, nextPort: string) => {
     setHost(nextHost);
@@ -1044,7 +1076,7 @@ function WifiEndpointSection() {
 
   return (
     <YStack gap="$2" testID="settings-wifi">
-      <SubLabel>Wi-Fi adapter address</SubLabel>
+      <SubLabel>{t('wifi.title')}</SubLabel>
       <XStack gap="$2" alignItems="center">
         <Input
           flex={3}
@@ -1054,7 +1086,7 @@ function WifiEndpointSection() {
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
-          accessibilityLabel="Wi-Fi adapter host"
+          accessibilityLabel={t('wifi.hostA11y')}
         />
         <Input
           flex={2}
@@ -1062,18 +1094,16 @@ function WifiEndpointSection() {
           onChangeText={(t) => edit(host, t)}
           placeholder={String(DEFAULT_WIFI_ENDPOINT.port)}
           keyboardType="number-pad"
-          accessibilityLabel="Wi-Fi adapter port"
+          accessibilityLabel={t('wifi.portA11y')}
         />
       </XStack>
       {problem ? (
         <Paragraph color="$statusError" fontSize="$2" testID="settings-wifi-error">
-          {problem} The app keeps using {formatEndpoint(wifi)}.
+          {problem} {t('wifi.keepsUsing', { endpoint: formatEndpoint(wifi) })}
         </Paragraph>
       ) : null}
       <Paragraph theme="alt2" fontSize="$1">
-        Most Wi-Fi OBD2 adapters (network “WiFi_OBDII”) listen on{' '}
-        {formatEndpoint(DEFAULT_WIFI_ENDPOINT)}. Join the adapter’s network in the phone’s Wi-Fi
-        settings before connecting.
+        {t('wifi.help', { endpoint: formatEndpoint(DEFAULT_WIFI_ENDPOINT) })}
       </Paragraph>
       {formatEndpoint(wifi) !== formatEndpoint(DEFAULT_WIFI_ENDPOINT) ? (
         <Button
@@ -1082,7 +1112,7 @@ function WifiEndpointSection() {
           alignSelf="flex-start"
           onPress={() => edit(DEFAULT_WIFI_ENDPOINT.host, String(DEFAULT_WIFI_ENDPOINT.port))}
         >
-          Use the default address
+          {t('wifi.useDefault')}
         </Button>
       ) : null}
     </YStack>
@@ -1093,6 +1123,7 @@ function WifiEndpointSection() {
  *  car, injected codes and link tests, the adapter log with the replay-fixture export, and the
  *  hints / reset controls. The simulator banner (plan 01) stays the always-on indicator. */
 function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
+  const { t } = useTranslation('settings');
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const s = useSettingsStore();
@@ -1105,31 +1136,30 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
         alignItems="center"
         accessible
         accessibilityRole="button"
-        accessibilityLabel={`Developer & simulator. ${open ? 'Hide' : 'Show'}`}
+        accessibilityLabel={`${t('dev.title')}. ${open ? t('dev.hide') : t('dev.show')}`}
         accessibilityState={{ expanded: open }}
         onPress={() => setOpen((o) => !o)}
       >
-        <SectionLabel>Developer & simulator</SectionLabel>
+        <SectionLabel>{t('dev.title')}</SectionLabel>
         <Text fontWeight="700" fontSize="$3" color="$accent">
-          {open ? 'Hide' : 'Show'}
+          {open ? t('dev.hide') : t('dev.show')}
         </Text>
       </XStack>
       {!open ? (
         <Paragraph theme="alt2" fontSize="$1">
-          Adapter source and simulator, adapter log and replay fixtures, feedback bundle preview,
-          test crash report, show hints again, reset all app data.
+          {t('dev.summary')}
         </Paragraph>
       ) : (
         <SegGroup>
           <YStack gap="$4" testID="settings-developer">
             <YStack gap="$2">
-              <SubLabel>Adapter source</SubLabel>
+              <SubLabel>{t('dev.adapterSource')}</SubLabel>
               {/* A browser cannot open a TCP socket to a Wi-Fi adapter (plan 28). Classic Bluetooth
                   (plan 27) is Android only: iOS opens classic accessories only through MFi, which
                   ELM327 clones are not. */}
               <SegmentedControl
-                label="Adapter source"
-                options={ADAPTER_SOURCE_OPTIONS.filter((o) =>
+                label={t('dev.adapterSource')}
+                options={adapterSourceOptions(t).filter((o) =>
                   isAdapterSourceSupported(o.value, Platform.OS),
                 )}
                 value={s.adapterSource}
@@ -1137,21 +1167,16 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
               />
               <Paragraph theme="alt2" fontSize="$1">
                 {Platform.OS === 'web'
-                  ? 'Bluetooth LE ELM327 adapters connect to a real car through the browser (Chrome or Edge)'
-                  : 'Bluetooth LE and Wi-Fi ELM327 adapters connect to a real car'}
-                {Platform.OS === 'android'
-                  ? ', and so do classic Bluetooth (“3.0”) ones paired in Android’s Bluetooth settings'
-                  : ''}
-                . The simulator emulates a real ECU so every screen works with no hardware; a banner
-                stays visible while it is on. Switching disconnects the current session.
+                  ? t('dev.sourceHelpWeb')
+                  : Platform.OS === 'android'
+                    ? t('dev.sourceHelpAndroid')
+                    : t('dev.sourceHelp')}
               </Paragraph>
             </YStack>
 
             {s.adapterSource === 'spp' ? (
               <Paragraph theme="alt2" fontSize="$1" testID="settings-spp">
-                Classic Bluetooth: pair the adapter in Android Settings → Bluetooth first (usually
-                “OBDII”, PIN 1234 or 0000), then pick it on the Connect tab. The bus sniffer is not
-                available over classic Bluetooth.
+                {t('dev.sppHelp')}
               </Paragraph>
             ) : null}
 
@@ -1160,9 +1185,9 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
             {s.adapterSource === 'mock' ? (
               <>
                 <YStack gap="$2">
-                  <SubLabel>Simulated vehicle</SubLabel>
+                  <SubLabel>{t('dev.simVehicle')}</SubLabel>
                   <SegmentedControl
-                    label="Simulated vehicle"
+                    label={t('dev.simVehicle')}
                     options={[
                       ...VEHICLE_PROFILES.map((p) => ({
                         value: p.id,
@@ -1176,8 +1201,7 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
                   />
                   {garage.length > 0 ? (
                     <Paragraph theme="alt2" fontSize="$1">
-                      A garage car is simulated from its base profile, with the VIN and supported
-                      PIDs learned from it.
+                      {t('dev.simGarage')}
                     </Paragraph>
                   ) : null}
                 </YStack>
@@ -1192,18 +1216,17 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
 
             {/* Plan 32: opens Report a problem with the bundle already built, so its size shows. */}
             <YStack gap="$2">
-              <SubLabel>Problem report</SubLabel>
+              <SubLabel>{t('dev.problemReport')}</SubLabel>
               <Button
                 size="$3"
                 hitSlop={HIT_SLOP}
                 alignSelf="flex-start"
                 onPress={() => router.push({ pathname: '/feedback', params: { preview: '1' } })}
               >
-                Preview feedback bundle
+                {t('dev.previewBundle')}
               </Button>
               <Paragraph theme="alt2" fontSize="$1">
-                Opens Report a problem with the bundle built and its size shown, so a size
-                regression is visible (the adapter log is capped at {ADAPTER_LOG_CAPACITY} lines).
+                {t('dev.previewBundleHelp', { capacity: ADAPTER_LOG_CAPACITY })}
               </Paragraph>
             </YStack>
 
@@ -1220,10 +1243,11 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
 /** `resetAppData` is the **Reset all app data** action; the route passes the backup slice's
  *  `resetAllAppData` (features never import each other). */
 export function SettingsScreen({ resetAppData }: { resetAppData?: ResetAppData } = {}) {
+  const { t } = useTranslation('settings');
   const status = useSessionStore((st) => st.status);
 
   return (
-    <Screen title="Settings">
+    <Screen title={t('title')}>
       <GeneralSection />
 
       <ConnectionSection />
@@ -1242,7 +1266,7 @@ export function SettingsScreen({ resetAppData }: { resetAppData?: ResetAppData }
 
       {status === 'connected' ? (
         <Button theme="red" onPress={() => connectionService.disconnect()}>
-          Disconnect
+          {t('disconnect')}
         </Button>
       ) : null}
     </Screen>

@@ -1,0 +1,25 @@
+{
+  "title": "Resetare interval service",
+  "unavailable": "Resetarea intervalului de service nu este disponibilă pentru această mașină / acest protocol. Este experimentală și depinde de profil — necesită o legătură CAN (UDS) sau K-line (KWP2000) pentru mașinile care o folosesc.",
+  "manual": "Procedură manuală",
+  "manualRecommended": "Procedură manuală (recomandată)",
+  "manualReliable": "Resetarea sigură pentru această mașină.",
+  "manualFallback": "Resetarea sigură pentru această mașină. Folosește-o dacă resetarea OBD de mai sus nu se finalizează.",
+  "tryAnyway": "Încearcă totuși resetarea OBD (nu e de așteptat să meargă)",
+  "reset": "Resetează intervalul de service",
+  "resetting": "Se resetează…",
+  "confirm": "Confirmă resetarea",
+  "subtitle": "⚠ Experimental — scrie în bordul de instrumente. Verifică pe bord după aceea.",
+  "method": "Metodă: {{method}}",
+  "routine": "rutina {{id}}",
+  "header": "header {{header}}",
+  "msg": {
+    "unavailable": "Resetarea service-ului nu este disponibilă pentru această mașină / acest protocol.",
+    "done": "Interval de service resetat — verifică pe bord.",
+    "incomplete": "Resetarea nu s-a finalizat.",
+    "useManual": "Folosește în schimb procedura manuală de mai jos.",
+    "noResponse": "{{module}} nu a răspuns ({{error}}).",
+    "unreachable": "Adaptorul nu a putut accesa acest modul prin legătura curentă.",
+    "failed": "Eșuat: {{error}}"
+  }
+}

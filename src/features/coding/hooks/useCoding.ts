@@ -26,6 +26,7 @@ import {
   useModuleScanStore,
 } from '@/features/module-scan/model/moduleScanStore';
 import { useCodingStore } from '../model/codingStore';
+import { translate } from '@/shared/i18n';
 
 /** SAFETY: read→backup→write→verify, gated on unlock + CAN. Never writes without a stored backup. */
 export function useCoding() {
@@ -116,7 +117,7 @@ export function useCoding() {
   const write = useCallback(
     async (mod: CodingModule, newData: number[]) => {
       if (!session || !unlocked) {
-        setLastResult('Locked — unlock coding first.');
+        setLastResult(translate('coding:locked'));
         return false;
       }
       // SecurityAccess (plan 23): only with an installed plugin for this module; otherwise refuse
@@ -155,7 +156,7 @@ export function useCoding() {
             context: { module: mod.module, did: mod.codingDid },
           });
         }
-        setLastResult(res.verified ? 'Write verified.' : 'Write sent but verification failed.');
+        setLastResult(res.verified ? translate('coding:verified') : translate('coding:unverified'));
         return res.verified;
       } catch (e) {
         logError({
@@ -163,7 +164,7 @@ export function useCoding() {
           error: e,
           context: { module: mod.module, did: mod.codingDid },
         });
-        setLastResult(`Failed: ${(e as Error).message}`);
+        setLastResult(translate('coding:failed', { error: (e as Error).message }));
         return false;
       } finally {
         await session.resetAddressing();
@@ -196,7 +197,7 @@ export function useCoding() {
       const mod = moduleForPreset(preset);
       if (!mod) return false;
       if (!session || !unlocked) {
-        setLastResult('Locked — unlock coding first.');
+        setLastResult(translate('coding:locked'));
         return false;
       }
       // Always start from the real, freshly-read coding so the tweak never overwrites unknown bits.
