@@ -332,3 +332,92 @@ describe('MockTransport extended DIDs belong to the engine (plan 25)', () => {
     );
   });
 });
+
+describe('MockTransport SecurityAccess model (plan 23)', () => {
+  // A test vector, not a routine: seed 12 34 is answered by key ED CB.
+  const secured = (): MockTransport =>
+    new MockTransport({
+      protocol: 'ISO_15765_4_CAN_11_500',
+      supportedPids: ['010C'],
+      coding: { '70E': { F1A0: [0x01, 0x00, 0x10, 0x00] } },
+      security: {
+        '70E': { level: 0x03, seed: [0x12, 0x34], key: [0xed, 0xcb], protects: ['2E', '31'] },
+      },
+    });
+  const one = async (t: MockTransport, cmd: string) => dataLines(await ask(t, cmd))[0];
+
+  async function addressed(): Promise<MockTransport> {
+    const t = secured();
+    await t.connect();
+    expect(await one(t, 'ATSH70E')).toBe('OK');
+    expect(await one(t, '1003')).toBe('5003');
+    return t;
+  }
+
+  it('refuses a protected 2E with 7F2E33 while locked; reads stay open', async () => {
+    const t = await addressed();
+    expect(await one(t, '2EF1A001001000')).toBe('7F2E33');
+    expect(await one(t, '3101F00D')).toBe('7F3133');
+    expect(await one(t, '22F1A0')).toBe('62F1A001001000');
+  });
+
+  it('answers the seed, rejects a wrong key with 7F2735, and accepts the right one', async () => {
+    const t = await addressed();
+    expect(await one(t, '2703')).toBe('67031234');
+    expect(await one(t, '27040000')).toBe('7F2735');
+    expect(await one(t, '2703')).toBe('67031234');
+    expect(await one(t, '2704EDCB')).toBe('6704');
+    expect(await one(t, '2EF1A001011000')).toBe('6EF1A0');
+    expect(await one(t, '22F1A0')).toBe('62F1A001011000');
+    // Already unlocked: the seed is all zeros.
+    expect(await one(t, '2703')).toBe('67030000');
+  });
+
+  it('locks out on the third wrong key (7F2736), even for the right key after', async () => {
+    const t = await addressed();
+    for (const expected of ['7F2735', '7F2735', '7F2736']) {
+      expect(await one(t, '2703')).toBe('67031234');
+      expect(await one(t, '27041111')).toBe(expected);
+    }
+    expect(await one(t, '2703')).toBe('7F2736');
+    expect(await one(t, '2704EDCB')).toBe('7F2736');
+    expect(await one(t, '2EF1A001011000')).toBe('7F2E33');
+  });
+
+  it('a key without a seed request is out of sequence; an unknown level is not supported', async () => {
+    const t = await addressed();
+    expect(await one(t, '2704EDCB')).toBe('7F2724');
+    expect(await one(t, '2701')).toBe('7F2712');
+  });
+
+  it('10 03 re-locks the module', async () => {
+    const t = await addressed();
+    expect(await one(t, '2703')).toBe('67031234');
+    expect(await one(t, '2704EDCB')).toBe('6704');
+    expect(await one(t, '1003')).toBe('5003');
+    expect(await one(t, '2EF1A001011000')).toBe('7F2E33');
+  });
+
+  it('leaves other headers and scenarios without security on the classic 27 stub', async () => {
+    const t = secured();
+    await t.connect();
+    expect(await one(t, 'ATSH7E0')).toBe('OK');
+    expect(await one(t, '2701')).toBe('67010000');
+    const plain = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+    await plain.connect();
+    expect(await one(plain, 'ATSH70E')).toBe('OK');
+    expect(await one(plain, '2703')).toBe('6702');
+    expect(await one(plain, '2EF1A001001000')).toBe('6EF1A0');
+  });
+
+  it('no default scenario declares security', () => {
+    for (const id of [
+      'golf-plus-2009-20tdi',
+      'passat-b55-19tdi',
+      'fiat-punto-2008-12',
+      'generic',
+    ]) {
+      expect(buildScenario(id).security).toBeUndefined();
+    }
+  });
+});

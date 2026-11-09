@@ -145,3 +145,55 @@ describe('writeChannel over KWP (simulated Passat)', () => {
     expect(res.loginRequired).toBeUndefined();
   });
 });
+
+describe('writeChannel with SecurityAccess (plan 23, simulated Golf)', () => {
+  // A deliberately trivial TEST VECTOR (seed XOR 0xFFFF), defined only in tests — not a routine.
+  const toyKey = (seed: number[]) => [seed[0] ^ 0xff, seed[1] ^ 0xff];
+  const golf = getVehicleProfile('golf-plus-2009-20tdi');
+  const base = (golf.adaptations ?? []).find((c) => c.did === '3001') as AdaptationChannel;
+  const secured: AdaptationChannel = { ...base, security: { level: 0x03 } };
+
+  async function securedGolf() {
+    const mock = new MockTransport(
+      buildScenario('golf-plus-2009-20tdi', {
+        security: {
+          '7E0': { level: 0x03, seed: [0x12, 0x34], key: [0xed, 0xcb], protects: ['2E'] },
+        },
+      }),
+    );
+    const sent: string[] = [];
+    const write = mock.write.bind(mock);
+    mock.write = async (bytes: Uint8Array) => {
+      sent.push(bytesToString(bytes).trim());
+      return write(bytes);
+    };
+    const session = new DiagnosticSession(mock);
+    await session.connect();
+    sent.splice(0);
+    return { session, sent };
+  }
+
+  it('refuses a security channel without a plugin routine before any bus traffic', async () => {
+    const { session, sent } = await securedGolf();
+    const res = await writeChannel(session, secured, [0x03, 0x84]);
+    expect(res).toMatchObject({ ok: false, securityLocked: true });
+    expect(res.message).toMatch(/no plugin is installed/);
+    expect(sent).toEqual([]);
+  });
+
+  it('unlocks with the supplied routine, writes and verifies', async () => {
+    const { session, sent } = await securedGolf();
+    const res = await writeChannel(session, secured, [0x03, 0x84], { seedToKey: toyKey });
+    expect(res).toMatchObject({ ok: true, backup: [0x03, 0x52] });
+    expect(sent).toEqual(expect.arrayContaining(['1003', '2703', '2704edcb', '2E30010384']));
+  });
+
+  it('a channel without security never sends 27, even with a routine supplied', async () => {
+    const { session, sent } = await securedGolf();
+    // The module protects 2E, so the unlocked write is refused by the module — not by the app.
+    const res = await writeChannel(session, base, [0x03, 0x84], { seedToKey: toyKey });
+    expect(res.ok).toBe(false);
+    expect(res.message).toMatch(/securityAccessDenied/);
+    expect(sent.some((c) => c.startsWith('27'))).toBe(false);
+  });
+});

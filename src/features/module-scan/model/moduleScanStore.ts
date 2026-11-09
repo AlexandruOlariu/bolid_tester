@@ -75,3 +75,13 @@ export const useModuleScanStore = create<ModuleScanState>((set) => ({
     set({ discovery, discoveryOwner: discovery && owner ? owner : null }),
   setDiscoveryProgress: (discoveryProgress) => set({ discoveryProgress }),
 }));
+
+/** The part number (F187) the last module scan read from the module at `reqHeader`, if any. A
+ *  security-access plugin scoped by part-number prefix (plan 23) matches only this live value —
+ *  never a profile's static, illustrative `partNumber` — so an unscanned module fails closed. */
+export function scannedPartNumber(
+  results: ModuleScanResult[],
+  reqHeader: string,
+): string | undefined {
+  return results.find((r) => r.module.reqHeader === reqHeader)?.ident?.partNumber ?? undefined;
+}

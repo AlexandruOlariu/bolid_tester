@@ -63,6 +63,17 @@ from a vehicle profile.
   any real module) replaced by any code the profile documents in `loginCodes` (`kwpLoginSeeds`;
   module addresses match trimmed and case-insensitive, like the app's `loginCodeFor`). Tests pin
   their own code with a `kwpLogins` override.
+- **SecurityAccess (plan 23):** `security` (header | `'*'` → `{ level, seed, key, protects }`).
+  When the addressed module has a model: `27 <level>` → `67 <level> <seed>` (all zeros once
+  unlocked); `27 <level+1> <key>` → `67 <level+1>` when the key equals `key`, `7F 27 35` when not,
+  and the **third** wrong key `7F 27 36` — after which every `27` on that header answers
+  `7F 27 36` (the counter survives a session change, like a real module's); a key without a seed
+  request → `7F 27 24`; any other level → `7F 27 12`. The `protects` services (`2E`, `31`, `2F`,
+  `3B`) answer `7F <svc> 33` until unlocked; reads stay open. A `10 xx` re-locks. `seed` / `key`
+  are **test vectors**: the simulator never derives a key. **No default scenario sets `security`**
+  (`buildScenario` leaves it out), so a module without a model keeps the classic `27` stub
+  (`27 01` → zero seed = "already unlocked"); tests add it with an override, and Settings → Test in
+  simulator builds a one-module scenario whose `key` is the plugin's own answer for the test seed.
 - **Bus monitor (`ATMA`):** streams the scenario's `monitorFrames` cyclically (one line per 30 ms,
   no prompt) until any byte interrupts it. The **Golf** streams 30 illustrative frames across 4 ids
   (TP2.0 channel setup `200`→`201`, tester session `7E0`→`7E8`) so a saved sniffer capture has real

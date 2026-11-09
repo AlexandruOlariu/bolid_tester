@@ -72,6 +72,8 @@ export interface CodingModule {
   byteCount: number;
   schema: { byte: number; bit?: number; mask?: number; name: string }[];
   sampleCoding: number[]; // simulator's stored coding
+  /** SecurityAccess the module needs before a write. Written only with an installed
+   *  security-access plugin for it (plan 23); otherwise the write is refused. */
   security?: { level: number };
   /** Optional module part number (F187) so the long-coding helper can resolve a matching label pack
    *  for extra bit names. Illustrative if set — confirm on the real car. */
@@ -97,10 +99,10 @@ export interface ServiceReset {
   routineId?: string;
   /** For method 'adaptation': DIDs whose service values are written back to default. */
   adaptations?: { did: string; defaultBytes: number[] }[];
-  /** SecurityAccess this reset needs. `level` alone documents the requirement; the ECU is only
-   *  actually unlocked when `seedToKey` is also supplied (the algorithm is per-ECU and not shipped
-   *  by default). Without it the reset is attempted unlocked and a real module that needs access
-   *  answers NRC 0x33 — the UI explains that. */
+  /** SecurityAccess this reset needs. The module is unlocked with an installed security-access
+   *  plugin (plan 23); without one the reset is refused before any bus traffic (the screen leads
+   *  with the manual procedure). `seedToKey` exists for tests and fakes only — no registry profile
+   *  sets it (`noSeedKeys.test.ts`). */
   security?: { level: number; seedToKey?: (seed: number[]) => number[] };
   /** Manual fallback steps (e.g. dash-stalk SRI reset) shown to the user. Surfaced always, and
    *  especially when the adapter cannot reach the target module (generic ELM327 K-line clusters). */
@@ -139,7 +141,8 @@ export interface LoginCodeEntry {
  *  with backup + verify. UDS channels (the default) read via 22 and write via 2E over CAN; KWP
  *  channels (`transport: 'kwp'`, K-line KWP2000) read via 21 and write via 3B, optionally after a
  *  `2B` login. Bounds are on the DISPLAY value (raw*scale+offset). Channels with `security` are
- *  read-only unless the profile supplies a seed/key algorithm. See docs/features/adaptations.md. */
+ *  read-only unless an installed security-access plugin unlocks their module (plan 23). See
+ *  docs/features/adaptations.md. */
 export interface AdaptationChannel {
   module: string;
   /** VAG module address as VCDS shows it ('01' engine, '17' cluster) — the code-book key for
@@ -200,10 +203,10 @@ export interface GuidedRoutine {
     requireIdle?: boolean;
     maxSpeedKmh?: number;
   };
-  /** SecurityAccess this routine needs. `level` alone documents the requirement; the ECU is only
-   *  actually unlocked when `seedToKey` is also supplied (the algorithm is per-ECU and not shipped
-   *  by default). Without it the routine is attempted unlocked and a real module that needs access
-   *  answers NRC 0x33 — the UI explains that. */
+  /** SecurityAccess this routine needs. The module is unlocked with an installed security-access
+   *  plugin (plan 23); without one the routine is attempted unlocked and a real module that needs
+   *  access answers NRC 0x33 — the UI explains that. `seedToKey` exists for tests and fakes only —
+   *  no registry profile sets it (`noSeedKeys.test.ts`). */
   security?: { level: number; seedToKey?: (seed: number[]) => number[] };
   /** Set when the routine is KNOWN not to be executable over the app's current transport on the real
    *  car (e.g. it is a VCDS measuring-block "Basic Settings" that rides on VW TP2.0 / KWP, which a

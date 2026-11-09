@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button, Switch } from 'tamagui';
-import { Screen, VerificationBadge } from '@/shared/ui';
+import { Screen, UnlockBadge, VerificationBadge } from '@/shared/ui';
+import { useUnlockStatus } from '@/shared/security';
 import type { GuidedRoutine } from '@/shared/vehicles';
 import { useRoutinesStore } from '../model/routinesStore';
 import { useRoutines } from '../hooks/useRoutines';
@@ -13,6 +14,7 @@ function RoutineRow({ routine }: { routine: GuidedRoutine }) {
   const liveValues = useRoutinesStore((s) => s.liveValues);
   const [confirming, setConfirming] = useState(false);
 
+  const unlock = useUnlockStatus(routine.security, { reqHeader: routine.reqHeader });
   const isActive = activeId === routine.id;
   const busy = activeId !== null;
 
@@ -26,6 +28,13 @@ function RoutineRow({ routine }: { routine: GuidedRoutine }) {
         {routine.vcdsGroup !== undefined ? ` · VCDS group ${routine.vcdsGroup}` : ''}
       </Paragraph>
       <VerificationBadge item={routine} testID={`verify-routine-${routine.id}`} />
+      <UnlockBadge status={unlock} testID={`unlock-routine-${routine.id}`} />
+      {unlock.state === 'locked' ? (
+        <Paragraph theme="alt2" size="$2">
+          This module asks for security access and no plugin is installed: the routine is attempted
+          unlocked and the module decides.
+        </Paragraph>
+      ) : null}
       <Paragraph size="$2">{routine.description}</Paragraph>
       {routine.unavailableReason ? (
         <Paragraph theme="alt1" size="$2">

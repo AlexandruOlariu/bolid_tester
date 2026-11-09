@@ -7,20 +7,21 @@ full guardrails — unlock gate, mandatory backup, bounds checking, verify-after
 
 > ⚠️ **DANGER / EXPERIMENTAL.** Channel DIDs, scaling and safe bounds are per-module and NOT
 > standardized. Shipped channels are **illustrative** and must be confirmed on the real car.
-> Channels that require SecurityAccess are **read-only** unless the profile supplies a real
-> seed/key algorithm (none ship). The app ships **no login codes**: the code book holds only what
+> Channels that require SecurityAccess are **read-only** unless the owner installed a
+> security-access plugin for that module (plan 23 — the app ships no seed/key routines). The app
+> ships **no login codes**: the code book holds only what
 > the owner enters (or a profile documents from the owner's own VCDS logs). K-line modules that
 > speak **KWP1281** (Passat cluster / comfort / HVAC) stay out of reach of a generic ELM327 — the
 > screen says so honestly.
 
 ## Transport map
 
-| Module class                                                    | Link                   | Unlock mechanism                       | Reachable with a generic ELM327?                                               |
-| --------------------------------------------------------------- | ---------------------- | -------------------------------------- | ------------------------------------------------------------------------------ |
-| UDS modules (Golf engine EDC17, newer PQ35 modules)             | CAN ISO-TP             | `27` SecurityAccess seed/key → plan 23 | Yes                                                                            |
-| Pre-UDS PQ35 modules (cluster `17`, comfort `46`, gateway `19`) | KWP2000 over **TP2.0** | `2B` login (this plan)                 | Only via the TP2.0 raw-CAN link (`tp20/`), timing-sensitive — deferred section |
-| K-line KWP2000 engine ECU (Passat B5.5 `01`)                    | ISO 14230 fast init    | `2B` login (this plan)                 | Yes — testable now                                                             |
-| K-line **KWP1281** modules (Passat cluster/comfort/HVAC)        | ISO 9141 byte-ACK      | —                                      | **No.** Hardware limit; stays honest in the UI                                 |
+| Module class                                                    | Link                   | Unlock mechanism                      | Reachable with a generic ELM327?                                               |
+| --------------------------------------------------------------- | ---------------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
+| UDS modules (Golf engine EDC17, newer PQ35 modules)             | CAN ISO-TP             | `27` SecurityAccess seed/key (plugin) | Yes                                                                            |
+| Pre-UDS PQ35 modules (cluster `17`, comfort `46`, gateway `19`) | KWP2000 over **TP2.0** | `2B` login (this plan)                | Only via the TP2.0 raw-CAN link (`tp20/`), timing-sensitive — deferred section |
+| K-line KWP2000 engine ECU (Passat B5.5 `01`)                    | ISO 14230 fast init    | `2B` login (this plan)                | Yes — testable now                                                             |
+| K-line **KWP1281** modules (Passat cluster/comfort/HVAC)        | ISO 9141 byte-ACK      | —                                     | **No.** Hardware limit; stays honest in the UI                                 |
 
 "This plan" is [plan 22](../plans/22-kwp-login-code-book.md). The TP2.0 row is its deferred part:
 `Tp20Channel.request` already carries KWP payloads, but no `transport: 'tp20'` channel is declared
@@ -30,7 +31,8 @@ until the TP2.0 link and the `2B` payload layout are confirmed on the Golf.
 
 - Profiles gain `adaptations?: AdaptationChannel[]` — module + headers, DID, `byteCount`,
   display scaling (`scale`/`offset`), display bounds (`min`/`max`), optional `defaultRaw`,
-  optional `security` (⇒ read-only), simulator `sampleValue`. Since plan 22 a channel may also set
+  optional `security` (⇒ writable only with an installed security-access plugin), simulator
+  `sampleValue`. Since plan 22 a channel may also set
   `transport: 'kwp'` (default `'uds'`; `did` is then the 1-byte KWP local identifier), `login:
 true` (a `2B` login is required before writing), `session` (KWP session byte, default `0x85`)
   and `address` (the VAG module address VCDS shows, e.g. `'01'` — the code-book key).
@@ -148,11 +150,24 @@ remembered (01 · Idle speed adaptation)" with **Forget**, or "Login: needed"; U
 none. On a K-line link the screen also states the KWP1281 limit and links to the Service reset
 screen's manual procedure.
 
+## Security access (plan 23)
+
+Each channel row carries an **unlock badge** (`UnlockBadge`): “No unlock needed”, “Unlockable ·
+<plugin>” or “Locked · needs security access” — it replaced the old “Security-locked (read-only)”
+text. A locked channel shows “Read-only until a security-access plugin for this module is installed
+(Settings → Data)” and offers no write; once a matching plugin is installed (scope: the channel's
+request header or VAG `address`, the level, optionally the module's scanned part number) the
+write and restore controls appear and the write unlocks the module first. See
+[coding → Security-access plugins](./coding.md#security-access-plugins-plan-23).
+
 ## api / hooks / UI
 
 - `adaptationService.readChannel/writeChannel` — header addressing + `codeModule` (backup →
-  write → verify) reuse for UDS; the KWP path above for `transport: 'kwp'`; security-locked
-  channels never attempt a write.
+  write → verify) reuse for UDS; the KWP path above for `transport: 'kwp'`. A `security` channel is
+  written only with `writeChannel(…, { seedToKey })` — the routine `useAdaptations.write/restore`
+  (and the backup restore panel) resolved from an installed plugin; the module is then unlocked
+  (`10 03` → `27` → `2E`). Without one the write is refused with `securityLocked` and the "no plugin
+  is installed" message **before any bus traffic** (plan 23).
 - `useAdaptations()` — link + profile gating (UDS on CAN, KWP on K-line), bounds validation,
   backup/restore, label enrichment, the code book (`loginInfo`, `forgetLogin`; `write` / `restore`
   take an optional `LoginInput`), the per-screen KWP session cache.

@@ -35,7 +35,7 @@ import {
   mergeNotifPrefs,
   DEFAULT_NOTIF_PREFS,
 } from '@/features/notifications/model/notificationsStore';
-import { STORE_NAMES, PERSISTED_STORES } from './registry';
+import { STORE_NAMES, PERSISTED_STORES, NOT_BACKED_UP } from './registry';
 
 const files = (legacyFs as unknown as { __files: Map<string, string> }).__files;
 const fileOf = (name: string) => `file:///docs/${name}.json`;
@@ -63,10 +63,15 @@ describe('persisted-store registry', () => {
     return [...new Set(out)].sort();
   }
 
-  it('lists every persisted store except the backup list itself', () => {
+  it('lists every persisted store except the backup list and the seed/key plugin index', () => {
     const inSource = persistedNamesInSource();
-    expect(inSource).toEqual(expect.arrayContaining(['bolid.history', 'bolid.settings']));
-    expect([...STORE_NAMES].sort()).toEqual(inSource.filter((n) => n !== 'bolid.backups'));
+    expect(inSource).toEqual(
+      expect.arrayContaining(['bolid.history', 'bolid.settings', 'bolid.seedKeys']),
+    );
+    expect([...NOT_BACKED_UP]).toEqual(['bolid.backups', 'bolid.seedKeys']);
+    expect([...STORE_NAMES].sort()).toEqual(
+      inSource.filter((n) => !(NOT_BACKED_UP as readonly string[]).includes(n)),
+    );
   });
 
   it('has a unique name and an explicit version for every store', () => {

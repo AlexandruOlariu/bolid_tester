@@ -30,10 +30,12 @@ A generic ELM327 is a CAN transceiver we can address freely, so the **transport*
 
 ## The real blockers (why this is "partial")
 
-- **Security access (`27`) is the wall.** The seed→key algorithm is **manufacturer/module-specific
+- **Security access (`27`) is the wall.** The seed→key routine is **manufacturer/module-specific
   and not public**. Without the correct key, write-protected modules will not accept `2E`. The app
-  ships **no** seed/key algorithms; a module is write-eligible only if its profile supplies one (or
-  the module needs none).
+  **never ships, fetches or derives** a seed→key routine. A module that declares `security` is
+  write-eligible only with a **security-access plugin** the owner installed for their own car (see
+  [Security-access plugins](#security-access-plugins-plan-23)); without one the write is refused
+  before anything is sent.
 - **DIDs and byte/bit meanings are not standardized.** Long-coding layouts are per-module and per
   software version. Wrong byte = wrong behaviour. Everything is profile data, **illustrative**, and
   must be confirmed on the actual car.
@@ -56,8 +58,9 @@ A generic ELM327 is a CAN transceiver we can address freely, so the **transport*
    (timestamped, exportable) and shows a one-tap **Restore original** action.
 4. **Dry-run preview:** show the exact bytes to be written and a human-readable before→after diff;
    require confirmation of the diff, not just the action.
-5. **Profile-gated:** a module is writable only if its profile entry supplies the module address, the
-   coding DID + layout, and (if required) the security routine. No profile data ⇒ read-only.
+5. **Profile-gated:** a module is writable only if its profile entry supplies the module address and
+   the coding DID + layout, and — when it declares `security` — an installed security-access plugin
+   unlocks it. No profile data ⇒ read-only; `security` without a plugin ⇒ refused, nothing sent.
 6. **Keep-alive + verify:** maintain TesterPresent during the edit; after writing, **re-read** and
    confirm the value took; surface any negative response (`7F`) verbatim.
 
@@ -74,6 +77,10 @@ What actually stands between a fresh install and a `2E` on a real module:
   **Confirm / Cancel** row — a second tap, not a typed string.
 - **Backup-first + verify**: the module editor writes only after **Read + backup**, and every write
   re-reads and verifies.
+- **Security access** (plan 23): a module with `security` is unlocked only with an installed plugin
+  that matches it; otherwise `useCoding.write` (and so every tweak) stops with “Locked — this module
+  needs security access and no plugin is installed for it.” before `ATSH`. The old identity
+  `seedToKey` fallback is gone — it could never unlock a real module and burned an attempt.
 
 Not built yet: the **Settings flag** and the **typed confirmation string** from rule 1. Until they
 land, a real CAN write on a coding-capable profile is one switch and two taps away.
@@ -176,8 +183,8 @@ bytes, hex} | null, adaptations: [{did, name, unit?, raw, value}] }] }`. Pure di
      **`no-snapshot-raw`** (“not in backup”); the snapshot bytes fail the shared bounds guard
      (`adaptationBoundsError`: wrong width, or outside `min`/`max`) → **`out-of-bounds`**, shown
      with the bounds message — refused, never clamped, because a later profile revision may have
-     tightened the bounds; `ch.security` and not unlockable → **`locked`** (no seed/key ships, so
-     every security channel is locked until plan 23's plugins land); current bytes equal the
+     tightened the bounds; `ch.security` and not unlockable → **`locked`** (unlockable = an
+     installed security-access plugin matches the channel's module, plan 23); current bytes equal the
      snapshot bytes → **`equal`** (greyed); otherwise **`restore`**. `summarizeRestorePlan` counts
      them.
   3. A header line from `restoreHeadline(snapshot, currentModuleFromReads(...), diff, items)`,
@@ -220,6 +227,58 @@ bytes, hex} | null, adaptations: [{did, name, unit?, raw, value}] }] }`. Pure di
   refused by the planner and by `writeChannel`) and on screen (`ui/CodingBackup.test.tsx`).
   **On-car pending:** the first real use on the Golf is a no-op restore (backup, Compare → all
   `equal`), then a one-step change restored and re-read — see plan 24's deferred section.
+
+## Security-access plugins (plan 23)
+
+A write that a UDS module protects with `27` SecurityAccess can be unlocked **only** with a
+seed→key routine the owner supplies for their own car, as a small data file the app validates and
+runs in a sandbox. **The app never ships, downloads or derives such a routine** — not in code, not
+in profiles, not in docs; owners supply their own for their own vehicle.
+
+- **File format** — `bolid.seedkey.v1` (a name, a scope `applies: { reqHeader?, address?, level,
+partNumberPrefix? }`, `seedBytes` / `keyBytes` of 2 or 4, and a `program`), specified with the
+  op reference in [exchange-formats.md](../exchange-formats.md#bolidseedkeyv1). Imported in
+  **Settings → Data → Security access plugins** (`settings/ui/SeedKeysSection.tsx`): pick → validate
+  → preview (name, scope, widths, steps written / run, “Only for this car” switch) → **Install**;
+  installed plugins are listed with **Test in simulator** and **Delete**.
+- **Sandbox** — the program is a bounded list of 32-bit accumulator operations interpreted by
+  `obd-core/coding/seedKeyDsl.ts` (`compileSeedKey`), **not JavaScript**: Hermes has no `eval`, a
+  data program cannot touch the file system, network, stores or session (seed in, key out), and its
+  exact step count is known before it runs (≤ 4096 steps, ≤ 256 ops, repeats ≤ 64 × ≤ 32 ops,
+  nested ≤ 2 deep). A file over the limits is refused at import with the reason.
+- **Storage** — the file is copied to `documentDirectory/seedkeys/<id>.json`; the persisted index
+  `bolid.seedKeys` (`shared/state/seedKeyStore.ts`) holds name, scope, widths, file URI, import time
+  and an optional `vehicleKey` pin — never the program, which is read, re-validated and compiled at
+  every unlock. Plugins are not in `bolid.settings`, not in a profile / label-pack export and not in
+  a backup (`NOT_BACKED_UP`); on a new phone, import the file again.
+- **Scope matching** (`shared/security/resolveSeedKey.ts`, `matchSeedKeyPlugin`) — among plugins
+  for the module's `level` (and, when pinned, for this car's `vin:` / `id:` key): first one naming the
+  module's request header or VAG address, else one naming only a part-number prefix that the
+  module's known part number starts with. A pinned plugin wins over an unpinned one, then the newest.
+  A plugin naming a prefix never matches a module whose part number is unknown or different — fail
+  closed, because each wrong key counts toward the module's lockout (NRC `0x36`). The part number is
+  always the one the **live module scan** read (F187, `scannedPartNumber` in
+  `module-scan/model/moduleScanStore.ts`) — never a profile's static `partNumber`, which is
+  illustrative — on every surface (coding cards, tweaks, adaptations, the backup restore panel), so
+  until a scan reads it a prefix-scoped plugin matches nothing.
+- **Every write surface** resolves through the same helpers (`decideSecurity`,
+  `securityDecisionForActiveCar`): **coding** and **tweaks** refuse without a plugin; **adaptations**
+  (`writeChannel(…, { seedToKey })`, also the backup restore panel, whose planner treats a security
+  channel as `locked` unless a plugin matches) refuse; **service reset** refuses (the screen leads with
+  the manual procedure); **routines** unlock with a plugin and otherwise still attempt the routine
+  unlocked (the module decides; NRC `0x33` is explained).
+- **Badges** — `shared/ui/UnlockBadge.tsx` (“No unlock needed” / “Unlockable · <plugin>” /
+  “Locked · needs security access”) on coding module cards, tweak rows (through their module),
+  adaptation channels (replacing “Security-locked (read-only)”), routine rows and the service-reset
+  card, via `useUnlockStatus`.
+- **Test in simulator** (`shared/security/simulatorCheck.ts`) — runs the plugin twice on a fixed
+  test seed, then drives the real `codeModule` flow (backup → `10 03` → `27` → `2E` → verify)
+  against a one-module simulator whose SecurityAccess model expects that key and protects `2E`
+  (after checking it refuses the write while locked). A pass proves the file works end to end in the
+  app; it cannot prove the routine is right for the car, and says so.
+- **Policy, tested** — `shared/vehicles/noSeedKeys.test.ts` fails if a registry profile sets
+  `seedToKey`, a vehicle file mentions one, or any production file falls back to an identity key.
+  The test vector used in tests (seed XOR `0xFFFF`) lives only in test files.
 
 ## Behavior
 

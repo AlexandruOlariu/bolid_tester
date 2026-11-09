@@ -27,6 +27,7 @@ import { connectionService } from '@/features/connection';
 import { APP_NAME, APP_VERSION } from '@/shared/lib/appInfo';
 import { PRIVACY_POLICY, PRIVACY_POLICY_UPDATED } from '../model/privacyPolicy';
 import { LabelPacksSection } from './LabelPacksSection';
+import { SeedKeysSection } from './SeedKeysSection';
 
 const ACCENT = '#2bb673';
 
@@ -449,7 +450,8 @@ function AboutSection() {
 
 /** **Data** (plan 18): the way to the Backup & restore screen — one file with every store and the
  *  trip recordings, restore from such a file, and per-store JSON / CSV export; then the label packs
- *  (plan 13: import, imported packs, bundled packs as templates). */
+ *  (plan 13: import, imported packs, bundled packs as templates) and the security-access plugins
+ *  (plan 23: import, installed plugins, test in simulator). */
 function DataSection() {
   const router = useRouter();
   return (
@@ -470,6 +472,7 @@ function DataSection() {
             </Button>
           </XStack>
           <LabelPacksSection />
+          <SeedKeysSection />
         </YStack>
       </SegGroup>
     </YStack>

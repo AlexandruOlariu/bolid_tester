@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { isCan } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
+import { securityDecisionForActiveCar } from '@/shared/security';
 import type { GuidedRoutine } from '@/shared/vehicles';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import {
@@ -69,7 +70,16 @@ export function useRoutines() {
           store.setActive(null, 'blocked');
           return;
         }
-        await startRoutine(session, routine);
+        // SecurityAccess (plan 23): unlock with an installed plugin when there is one; without
+        // one the routine is attempted unlocked and the module decides (NRC 0x33 is explained).
+        const decision = await securityDecisionForActiveCar(routine.security, {
+          reqHeader: routine.reqHeader,
+        });
+        await startRoutine(
+          session,
+          routine,
+          decision.kind === 'unlock' ? { seedToKey: decision.security.seedToKey } : {},
+        );
         store.setActive(routine.id, 'running');
         store.setMessage(
           routine.service === '2F'

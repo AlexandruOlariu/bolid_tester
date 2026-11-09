@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
 import type { CodingPreset, CodingPresetState } from '@/shared/obd-core';
-import { VerificationBadge } from '@/shared/ui';
+import { UnlockBadge, VerificationBadge } from '@/shared/ui';
+import { useUnlockStatus } from '@/shared/security';
 import { useCodingStore } from '../model/codingStore';
 import { useCoding } from '../hooks/useCoding';
 
@@ -13,7 +14,7 @@ const stateBadge: Record<CodingPresetState, { label: string; theme?: 'green' }> 
 
 /** One curated tweak: current on/off/unknown state + one-tap enable/revert behind the coding gate. */
 function TweakRow({ preset }: { preset: CodingPreset }) {
-  const { moduleForPreset, presetState, applyTweak, read } = useCoding();
+  const { moduleForPreset, presetState, applyTweak, read, partNumberFor } = useCoding();
   const unlocked = useCodingStore((s) => s.unlocked);
   const [pending, setPending] = useState<null | boolean>(null);
   const [busy, setBusy] = useState(false);
@@ -21,6 +22,11 @@ function TweakRow({ preset }: { preset: CodingPreset }) {
   const mod = moduleForPreset(preset);
   const state = presetState(preset);
   const badge = stateBadge[state];
+  // A tweak is a write to its module: it needs that module's unlock (plan 23).
+  const unlock = useUnlockStatus(mod?.security, {
+    reqHeader: mod?.reqHeader ?? preset.reqHeader,
+    partNumber: mod ? partNumberFor(mod) : undefined,
+  });
 
   if (!mod) return null;
 
@@ -56,6 +62,7 @@ function TweakRow({ preset }: { preset: CodingPreset }) {
         {preset.description}
       </Paragraph>
       <VerificationBadge item={preset} testID={`verify-tweak-${preset.id}`} />
+      <UnlockBadge status={unlock} testID={`unlock-tweak-${preset.id}`} />
 
       {pending === null ? (
         <XStack gap="$2">

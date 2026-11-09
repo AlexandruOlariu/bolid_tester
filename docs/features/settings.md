@@ -84,6 +84,15 @@ Developer and runtime settings.
       yet." — and **Bundled with the app** with **Export as template** (a starting point to edit and
       re-import). Exports go through `api/labelPackFile.ts` (`bolid-labelpack-<id>-<stamp>.json`, a
       `settings/label-packs` warning when nothing was written).
+    - **Security access plugins** (plan 23, `ui/SeedKeysSection.tsx`): what a seed / key unlock is
+      and that the app ships, downloads and derives no routine; **Import plugin** (file picker →
+      `parseSeedKeyFile`: a refused file shows "Can’t import this file", the reason, the first
+      three errors and "Nothing was changed."; a valid one a preview — name, file, scope, widths,
+      steps written / run, notes, an **Only for this car** switch that pins it to the active car's
+      key — with **Install** / **Cancel**); **Installed (_n_)** — one card per plugin (scope,
+      widths, any / this / another car, import date, **Test in simulator**, **Delete** after
+      "Delete this plugin?") or "No plugins installed. Writes to modules that need security
+      access are refused." See [coding → Security-access plugins](./coding.md#security-access-plugins-plan-23).
   - **About** (plan 08) — "Bolid Tester <version>" (`APP_NAME` / `APP_VERSION` from
     `shared/lib/appInfo.ts`, read from `app.json`; the version is also the OTA runtime version), a
     note that OTA updates only reach the same version and are checked only from **More → Check for
@@ -186,6 +195,9 @@ Developer and runtime settings.
 - **Data** → **Label packs**: importing the example pack (`docs/examples/label-pack.example.json`)
   lists it under Imported; Delete brings the bundled names back; a corrupted file shows its first
   three errors and stores nothing.
+- **Data** → **Security access plugins**: importing a valid plugin shows the preview, Install lists
+  it, **Test in simulator** reports "Passed in the simulator…"; a plugin over the DSL limits is
+  refused with the reason and nothing is installed.
 - **About** shows the app version from `app.json`; **Privacy policy** expands every section of
   `docs/privacy-policy.md` and collapses again.
 - Log shows every command/response pair.

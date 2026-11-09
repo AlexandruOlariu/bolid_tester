@@ -1,7 +1,8 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button, Switch, Input } from 'tamagui';
 import { useRouter } from 'expo-router';
-import { Screen, VerificationBadge } from '@/shared/ui';
+import { Screen, UnlockBadge, VerificationBadge } from '@/shared/ui';
+import { useUnlockStatus } from '@/shared/security';
 import type { AdaptationChannel } from '@/shared/vehicles';
 import { useAdaptationsStore } from '../model/adaptationsStore';
 import {
@@ -23,7 +24,8 @@ export const KWP1281_LIMIT =
 type PendingAction = { kind: 'write' } | { kind: 'restore'; raw: number[] };
 
 function ChannelRow({ ch }: { ch: AdaptationChannel }) {
-  const { describe, read, write, restore, display, loginInfo, forgetLogin } = useAdaptations();
+  const { describe, read, write, restore, display, loginInfo, forgetLogin, partNumberFor } =
+    useAdaptations();
   const unlocked = useAdaptationsStore((s) => s.unlocked);
   const running = useAdaptationsStore((s) => s.running);
   const raw = useAdaptationsStore((s) => s.values[ch.did]);
@@ -41,6 +43,13 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
   const [rejectedCode, setRejectedCode] = useState<number | null>(null);
 
   const current = display(ch, raw);
+  // Security-locked channels are writable only with an installed plugin (plan 23).
+  const unlock = useUnlockStatus(ch.security, {
+    reqHeader: ch.reqHeader,
+    address: ch.address,
+    partNumber: partNumberFor(ch),
+  });
+  const writable = !ch.security || unlock.state === 'unlockable';
   const description = describe(ch);
   const info = loginInfo(ch);
   const prefill = info?.entry && info.entry.code !== rejectedCode ? info.entry : null;
@@ -100,6 +109,7 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
         </Paragraph>
       ) : null}
       <VerificationBadge item={ch} testID={`verify-channel-${ch.did}`} />
+      <UnlockBadge status={unlock} testID={`unlock-channel-${ch.did}`} />
       {info ? (
         <XStack gap="$2" alignItems="center">
           <Paragraph theme="alt2" size="$2" flex={1}>
@@ -126,13 +136,13 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
         <Button size="$3" disabled={running} onPress={() => read(ch)}>
           Read
         </Button>
-        {ch.security ? (
-          <Paragraph theme="alt2" size="$2" alignSelf="center">
-            Security-locked (read-only)
+        {!writable ? (
+          <Paragraph theme="alt2" size="$2" alignSelf="center" flex={1}>
+            Read-only until a security-access plugin for this module is installed (Settings → Data).
           </Paragraph>
         ) : null}
       </XStack>
-      {unlocked && !ch.security ? (
+      {unlocked && writable ? (
         <YStack gap="$2">
           <XStack gap="$2" alignItems="center">
             <Input

@@ -48,6 +48,7 @@ export * from './coding/presets';
 export * from './coding/udsCoding';
 export * from './coding/kwpLogin';
 export * from './coding/adaptationValue';
+export * from './coding/seedKeyDsl';
 export * from './uds/udsModule';
 export * from './uds/guidedRoutine';
 export * from './uds/testerPresent';

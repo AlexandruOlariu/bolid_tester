@@ -185,6 +185,10 @@ list still works.
 - **Live state** — the connection, the live values, a trip still recording, active alerts, the
   notification permission.
 - **The list of backup files** (`bolid.backups`).
+- **Security-access plugins** (`bolid.seedKeys`, plan 23) — the index points at plugin files in
+  `documentDirectory/seedkeys/`, which belong to the phone and car they were imported for; on a new
+  phone, import the files again. Both are listed in `NOT_BACKED_UP` (`api/registry.ts`), which
+  `storeVersions.test.ts` checks.
 
 ## Plans that build on this
 

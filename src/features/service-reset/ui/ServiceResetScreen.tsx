@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
-import { Screen, VerificationBadge } from '@/shared/ui';
+import { Screen, UnlockBadge, VerificationBadge } from '@/shared/ui';
+import { useUnlockStatus } from '@/shared/security';
 import { useServiceResetStore } from '../model/serviceResetStore';
 import { useServiceReset } from '../hooks/useServiceReset';
 
@@ -9,6 +10,7 @@ export function ServiceResetScreen() {
   const running = useServiceResetStore((s) => s.running);
   const lastResult = useServiceResetStore((s) => s.lastResult);
   const [confirming, setConfirming] = useState(false);
+  const unlock = useUnlockStatus(descriptor?.security, { reqHeader: descriptor?.reqHeader ?? '' });
 
   if (!available || !descriptor) {
     return (
@@ -83,6 +85,7 @@ export function ServiceResetScreen() {
           {descriptor.reqHeader}
         </Paragraph>
         <VerificationBadge item={descriptor} testID="verify-service-reset" />
+        <UnlockBadge status={unlock} testID="unlock-service-reset" />
         {obdUnreachable ? (
           <Paragraph theme="alt1" size="$2">
             ⚠ {obdUnreachable}

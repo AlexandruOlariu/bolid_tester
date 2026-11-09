@@ -3,6 +3,7 @@ import { isCan } from '@/shared/obd-core';
 import type { AdaptationChannel } from '@/shared/vehicles';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
+import { hasSeedKeyPluginFor, securityDecisionForActiveCar } from '@/shared/security';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 // Adaptation writes go through the adaptations feature's own guarded service and unlock — the same
 // backup → write → verify path and bounds guard the Adaptations screen uses, never a second one.
@@ -12,13 +13,26 @@ import {
   type WriteOutcome,
 } from '@/features/adaptations/api/adaptationService';
 import { useAdaptationsStore } from '@/features/adaptations/model/adaptationsStore';
+import {
+  scannedPartNumber,
+  useModuleScanStore,
+} from '@/features/module-scan/model/moduleScanStore';
 import type { CarBackupModule } from '../api/carBackup';
 import { BACKUP_BUSY_MESSAGE, useBackupWorkStore } from '../model/backupWorkStore';
-import {
-  noSecurityUnlock,
-  planAdaptationRestore,
-  type RestorePlanItem,
-} from '../api/adaptationRestore';
+import { planAdaptationRestore, type RestorePlanItem } from '../api/adaptationRestore';
+
+/** The plugin target for a channel's module: header, VAG address and the part number the live
+ *  module scan read (as on the Adaptations screen), so a part-number-scoped plugin resolves the
+ *  same way on both surfaces — and an unscanned module fails closed on both. */
+const seedKeyTargetFor = (ch: AdaptationChannel) => ({
+  reqHeader: ch.reqHeader,
+  address: ch.address,
+  partNumber: scannedPartNumber(useModuleScanStore.getState().results, ch.reqHeader),
+});
+
+/** A security channel is restorable only when an installed plugin unlocks its module (plan 23). */
+const pluginUnlock = (ch: AdaptationChannel): boolean =>
+  !ch.security || hasSeedKeyPluginFor(ch.security, seedKeyTargetFor(ch));
 
 export interface RestoreAllResult {
   done: number;
@@ -99,8 +113,8 @@ export function useAdaptationRestore() {
 
   const plan = useCallback(
     (module: CarBackupModule, current: Record<string, number[] | undefined>) =>
-      // No security-access plugin ships, so channels demanding SecurityAccess stay locked.
-      planAdaptationRestore(module, channelsFor(module), current, { unlockable: noSecurityUnlock }),
+      // Channels demanding SecurityAccess stay locked unless an installed plugin unlocks them.
+      planAdaptationRestore(module, channelsFor(module), current, { unlockable: pluginUnlock }),
     [channelsFor],
   );
 
@@ -125,7 +139,16 @@ export function useAdaptationRestore() {
       const store = useAdaptationsStore.getState();
       let res: WriteOutcome;
       try {
-        res = await writeChannel(session, ch, raw);
+        const decision = await securityDecisionForActiveCar(ch.security, seedKeyTargetFor(ch));
+        res =
+          decision.kind === 'refuse'
+            ? { ok: false, securityLocked: true, message: decision.message }
+            : await writeChannel(
+                session,
+                ch,
+                raw,
+                decision.kind === 'unlock' ? { seedToKey: decision.security.seedToKey } : {},
+              );
       } catch (e) {
         // writeChannel reports its own failures; this only catches a dead link in its finally.
         res = { ok: false, message: `Failed: ${(e as Error).message}` };

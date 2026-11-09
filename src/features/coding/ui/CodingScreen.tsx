@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button, Switch } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { Screen, UnlockBadge } from '@/shared/ui';
+import { useUnlockStatus } from '@/shared/security';
 import { buildCodingView, type CodingByteView } from '@/shared/obd-core';
 import type { CodingModule } from '@/shared/vehicles';
 import { useCodingStore } from '../model/codingStore';
@@ -86,7 +87,9 @@ function ByteCard({
                 size="$1"
                 circular
                 disabled={f.value <= 0}
-                onPress={() => onSetField(byteView.index, f.mask!, Math.max(0, f.value - lowestBit(f.mask!)))}
+                onPress={() =>
+                  onSetField(byteView.index, f.mask!, Math.max(0, f.value - lowestBit(f.mask!)))
+                }
               >
                 −
               </Button>
@@ -98,7 +101,11 @@ function ByteCard({
                 circular
                 disabled={f.value >= f.mask}
                 onPress={() =>
-                  onSetField(byteView.index, f.mask!, Math.min(f.mask!, f.value + lowestBit(f.mask!)))
+                  onSetField(
+                    byteView.index,
+                    f.mask!,
+                    Math.min(f.mask!, f.value + lowestBit(f.mask!)),
+                  )
                 }
               >
                 +
@@ -127,7 +134,7 @@ function ByteCard({
 }
 
 function ModuleEditor({ mod }: { mod: CodingModule }) {
-  const { read, write, toggleBit, setField, fieldsFor, currentFor } = useCoding();
+  const { read, write, toggleBit, setField, fieldsFor, currentFor, partNumberFor } = useCoding();
   const unlocked = useCodingStore((s) => s.unlocked);
   const current = currentFor(mod);
   const [original, setOriginal] = useState<number[] | null>(null);
@@ -136,6 +143,11 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
   const fields = fieldsFor(mod);
   const view = buildCodingView(current, fields, original ?? undefined);
   const dirty = !!original && view.some((b) => b.changed);
+  // Plugin matching uses the scanned part number, as the write does (plan 23).
+  const unlock = useUnlockStatus(mod.security, {
+    reqHeader: mod.reqHeader,
+    partNumber: partNumberFor(mod),
+  });
 
   return (
     <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$4">
@@ -151,6 +163,7 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
           Read + backup
         </Button>
       </XStack>
+      <UnlockBadge status={unlock} testID={`unlock-coding-${mod.reqHeader}`} />
 
       {original ? (
         <YStack gap="$1">
@@ -184,7 +197,11 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
           disabled={!unlocked || !original || !dirty}
           onPress={() => setConfirming(true)}
         >
-          {!unlocked ? 'Unlock to write' : !dirty ? 'No changes to write' : 'Write coding (experimental)'}
+          {!unlocked
+            ? 'Unlock to write'
+            : !dirty
+              ? 'No changes to write'
+              : 'Write coding (experimental)'}
         </Button>
       ) : (
         <YStack gap="$2" backgroundColor="$color1" padding="$2" borderRadius="$3">
@@ -233,7 +250,10 @@ export function CodingScreen() {
   }
 
   return (
-    <Screen title="Coding" subtitle="⚠ Experimental — writes can disable functions. Your car, your risk.">
+    <Screen
+      title="Coding"
+      subtitle="⚠ Experimental — writes can disable functions. Your car, your risk."
+    >
       <XStack justifyContent="space-between" alignItems="center">
         <Paragraph flex={1}>Unlock writing</Paragraph>
         <Switch checked={unlocked} onCheckedChange={(v) => setUnlocked(!!v)}>

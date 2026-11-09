@@ -73,18 +73,31 @@ export async function checkInterlocksDuringRun(
   }
 }
 
+export interface StartRoutineOptions {
+  /** SecurityAccess routine from an installed plugin (plan 23) for a routine with `security`. */
+  seedToKey?: (seed: number[]) => number[];
+}
+
+/** Address the module and start the routine. With `security` and a resolved plugin routine the
+ *  module is unlocked first (`27`); with `security` and none the routine is still attempted
+ *  unlocked — routines are read-ish and the module decides (NRC 0x33 if it needed access, which
+ *  `describeRoutineFailure` explains). */
 export async function startRoutine(
   session: DiagnosticSession,
   routine: GuidedRoutine,
+  opts: StartRoutineOptions = {},
 ): Promise<void> {
   await session.setHeader(routine.reqHeader);
   await session.setRxFilter(routine.rxFilter);
+  const seedToKey = opts.seedToKey ?? routine.security?.seedToKey;
   await startGuidedRoutine((cmd) => session.send(cmd), {
     service: routine.service,
     id: routine.id,
     controlData: routine.controlData,
     session: routine.session,
-    security: routine.security,
+    security: routine.security
+      ? { level: routine.security.level, ...(seedToKey ? { seedToKey } : {}) }
+      : undefined,
   });
 }
 
@@ -99,11 +112,12 @@ export function describeRoutineFailure(err: unknown, routine: GuidedRoutine): st
         return (
           `The ${routine.module} refused this ${routine.kind === 'outputTest' ? 'output test' : 'basic setting'} ` +
           'without security access (NRC 0x33). VAG basic settings usually need the ECU unlocked ' +
-          '(UDS 0x27 seed/key), and this app does not carry the seed→key algorithm for your ECU. ' +
-          'The routine cannot run until that algorithm is supplied for this profile.'
+          '(UDS 0x27 seed/key), and the app ships no seed→key routines. The routine cannot run ' +
+          'until you install a security-access plugin for this module (Settings → Data → ' +
+          'Security access plugins).'
         );
       case 0x35: // invalidKey
-        return 'Security unlock was rejected (NRC 0x35 invalid key) — the seed→key algorithm is wrong for this ECU.';
+        return 'Security unlock was rejected (NRC 0x35 invalid key) — the installed plugin’s seed→key routine is wrong for this ECU. Each wrong key counts toward the module’s lockout.';
       case 0x36: // exceedNumberOfAttempts
       case 0x37: // requiredTimeDelayNotExpired
         return describeUnlockFailure(err) ?? err.message;

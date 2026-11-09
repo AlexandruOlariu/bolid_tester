@@ -20,9 +20,10 @@ excluded.
 
 - `startOutputControl` / `stopOutputControl` — `2F <did> 03 <data>` / `2F <did> 00`.
 - `startGuidedRoutine` — enter diagnostic session, **optionally `0x27` SecurityAccess**, then
-  `31 01 <id>` or `2F … 03`. Security runs only when the descriptor supplies a `seedToKey`
-  algorithm; a bare `level` (all a profile can declare today) is _not_ enough to unlock, so the
-  routine is attempted unlocked and the ECU decides (NRC `0x33` if it needed access).
+  `31 01 <id>` or `2F … 03`. Security runs only when the descriptor supplies a `seedToKey` — the
+  routine of an installed security-access plugin (plan 23); a bare `level` (all a profile declares)
+  is _not_ enough to unlock, so without a plugin the routine is attempted unlocked and the ECU
+  decides (NRC `0x33` if it needed access).
 - `stopGuidedRoutine` — best-effort `31 02` / `2F … 00`; never throws (stop must always be safe).
 - `guidedRoutineResults` — `31 03 <id>` (31-routines only).
 - Negative responses are named, not just numbered: `checkNegative` labels the NRC via `nrcName`
@@ -33,11 +34,18 @@ excluded.
 - `routineService` — fail-closed interlock checks from standard Mode 01 (RPM/speed — works on any
   car) plus `checkInterlocksDuringRun` (switches to the functional address and back around the
   reads); start/stop with `ATSH`/`ATCRA` addressing (**both** restored via
-  `session.resetAddressing()`), keep-alive, live-value reads of the routine's `liveDids`. Passes the
-  profile routine's `security` through to the core start.
+  `session.resetAddressing()`), keep-alive, live-value reads of the routine's `liveDids`.
+  `startRoutine(session, routine, { seedToKey? })` passes the routine's `security` level through
+  with the plugin routine `useRoutines` resolved (`securityDecisionForActiveCar`), if any.
+- **Security access (plan 23).** Each routine row shows an **unlock badge** (“No unlock needed” /
+  “Unlockable · <plugin>” / “Locked · needs security access”). Unlike coding, a locked routine is
+  **not refused**: routines are read-ish, so it is still attempted unlocked and the module decides;
+  the row says so, and an NRC `0x33` names the fix (install a plugin under Settings → Data). With a
+  plugin the module is unlocked (`27`) after the session and before the start.
 - `describeRoutineFailure(err, routine)` — turns a start NRC into on-car guidance, because routine
   IDs and security requirements in the shipped profiles are **unverified placeholders**: `0x33` →
-  "needs security access this app doesn't carry"; `0x11/0x12/0x31/0x7E/0x7F` → "this routine ID is
+  "needs security access — install a security-access plugin for this module"; `0x35` → "the
+  installed plugin's routine is wrong for this ECU (counts toward the lockout)"; `0x11/0x12/0x31/0x7E/0x7F` → "this routine ID is
   unverified for your car — confirm it from a VCDS Basic Settings session / UDS capture"; `0x22/0x24`
   → "conditions not correct — warm engine, steady idle, no active faults". Surfaced by `useRoutines`
   in place of the raw error.
@@ -69,7 +77,8 @@ so the Basic-Settings screen does **not** reveal the actual `31 01 <id>` / KWP s
 
 To capture the real sequence: run the in-app **Bus Sniffer** (`ATMA` monitor) while VCDS performs
 the Group 121 basic setting, read off the frames on `7E0→7E8` (or the TP2.0 channel), then set the
-profile routine's transport/`id` and — if the ECU demands it — a `security: { level, seedToKey }`.
+profile routine's transport/`id` and — if the ECU demands it — a `security: { level }`; the unlock
+itself then comes from the owner's own security-access plugin (never from the profile).
 The sniffer saves that run as a shareable CSV / raw dump with a note; the step-by-step
 Y-splitter procedure is in [can-sniffer § Record a VCDS session](./can-sniffer.md#record-a-vcds-session).
 Until then the app runs the flow in the simulator and, on the real car, reports exactly why the ECU

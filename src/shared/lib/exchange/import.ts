@@ -52,6 +52,13 @@ export function parseExchangeFile(text: string): ParsedExchange | ExchangeParseE
     data !== null && typeof data === 'object' && !Array.isArray(data)
       ? (data as { schema?: unknown }).schema
       : undefined;
+  if (typeof schema === 'string' && schema.startsWith('bolid.seedkey.')) {
+    return {
+      error:
+        'This is a security-access plugin. Import it under Settings → Data → Security access plugins.',
+      details: [],
+    };
+  }
   if (typeof schema !== 'string') {
     const kind = (data as { kind?: unknown } | null)?.kind;
     if (kind === 'bolid.garage') {

@@ -5,7 +5,8 @@
  *
  *  `features/backup` is a composition slice like `engine-host`: it may import other features'
  *  stores. `bolid.backups` (the list of backup files) is deliberately absent — a backup never
- *  contains the list of backups. See docs/features/backup.md. */
+ *  contains the list of backups — and so is `bolid.seedKeys` (security-access plugins, plan 23);
+ *  both are named in `NOT_BACKED_UP`. See docs/features/backup.md. */
 import type { PersistOptions } from 'zustand/middleware';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useGarageStore } from '@/shared/state/garageStore';
@@ -157,6 +158,12 @@ export const PERSISTED_STORES: PersistedStoreRef[] = [
 ];
 
 export const STORE_NAMES = PERSISTED_STORES.map((s) => s.name);
+
+/** Persisted stores a backup deliberately leaves out: the list of backups itself, and the
+ *  security-access plugin index (plan 23) — a plugin's program lives in its own file beside the
+ *  index and belongs to the phone and car it was imported for; on a new phone the owner imports
+ *  the file again. */
+export const NOT_BACKED_UP = ['bolid.backups', 'bolid.seedKeys'] as const;
 
 export function storeRef(name: string): PersistedStoreRef | undefined {
   return PERSISTED_STORES.find((s) => s.name === name);

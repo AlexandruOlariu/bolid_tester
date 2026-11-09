@@ -137,7 +137,9 @@ export async function writeDataByIdentifier(
   checkNegative(0x2e, await send('2E' + did + hex(data)));
 }
 
-/** 0x27 SecurityAccess seed/key. `seedToKey` is profile-supplied; none ship by default.
+/** 0x27 SecurityAccess seed/key. `seedToKey` comes from a security-access plugin the owner
+ *  installed (plan 23, `seedKeyDsl`); the app ships none and callers refuse a write instead of
+ *  calling this without one.
  *  NRC 0x37 (requiredTimeDelayNotExpired) — the post-boot / post-failed-attempt lockout most VAG
  *  modules enforce — is retried once after `retryDelayMs`. NRC 0x36 (exceedNumberOfAttempts) is
  *  NOT retried: hammering a locked module only extends the lockout. */

@@ -713,6 +713,30 @@
     ],
     "type": "concept"
   },
+  "concept:security-access-plugins": {
+    "path": null,
+    "summary": "Plan 23: UDS 27 SecurityAccess unlocks ONLY with an owner-supplied bolid.seedkey.v1 file (never shipped/fetched/derived; no identity fallback). The p\u2026",
+    "tokens": [
+      "27",
+      "access",
+      "badge",
+      "dsl",
+      "key",
+      "locked",
+      "lockout",
+      "nrc",
+      "plugin",
+      "plugins",
+      "sandbox",
+      "security",
+      "securityaccess",
+      "seed",
+      "seedkey",
+      "unlock",
+      "unlockable"
+    ],
+    "type": "concept"
+  },
   "concept:sensor-monitoring": {
     "path": null,
     "summary": "Watch individual sensors live (wiggle/actuation test) and read standardized Mode 06 on-board monitor test results. Standard tier (any OBD2) + experim\u2026",
@@ -1121,6 +1145,20 @@
     "tokens": [
       "coding",
       "presets"
+    ],
+    "type": "core"
+  },
+  "core:coding/seedKeyDsl": {
+    "path": "src/shared/obd-core/coding/seedKeyDsl.ts",
+    "summary": "Seed\u2192key plugins (plan 23): a tiny, bounded, data-only program over one 32-bit accumulator that turns a SecurityAccess (`27`) seed into a key.",
+    "tests": [
+      "src/shared/obd-core/coding/seedKeyDsl.test.ts"
+    ],
+    "tokens": [
+      "coding",
+      "dsl",
+      "key",
+      "seed"
     ],
     "type": "core"
   },
@@ -1829,14 +1867,17 @@
   },
   "doc:exchange-formats": {
     "path": "docs/exchange-formats.md",
-    "summary": "Exchange formats \u2014 profile and label-pack files",
+    "summary": "Exchange formats \u2014 profile, label-pack and security-access plugin files",
     "tokens": [
+      "access",
       "exchange",
       "files",
       "formats",
       "label",
       "pack",
-      "profile"
+      "plugin",
+      "profile",
+      "security"
     ],
     "type": "doc"
   },
@@ -2972,6 +3013,8 @@
       "src/features/coding/api/adaptationRestore.integration.test.ts",
       "src/features/coding/api/adaptationRestore.test.ts",
       "src/features/coding/api/carBackup.test.ts",
+      "src/features/coding/hooks/useAdaptationRestore.security.test.tsx",
+      "src/features/coding/hooks/useCoding.security.test.tsx",
       "src/features/coding/ui/CodingBackup.test.tsx",
       "src/features/coding/ui/CodingTweaks.test.tsx"
     ],
@@ -3225,6 +3268,7 @@
     "path": "src/features/service-reset",
     "summary": "Reset the **service interval / oil-service reminder** (\"SRI reset\" \u2014 the _service now / service in",
     "tests": [
+      "src/features/service-reset/hooks/useServiceReset.security.test.tsx",
       "src/features/service-reset/ui/ServiceResetScreen.test.tsx"
     ],
     "tokens": [
@@ -3241,6 +3285,7 @@
       "src/features/settings/model/privacyPolicy.test.ts",
       "src/features/settings/model/replayExport.test.ts",
       "src/features/settings/ui/LabelPacksSection.test.tsx",
+      "src/features/settings/ui/SeedKeysSection.test.tsx",
       "src/features/settings/ui/SettingsScreen.test.tsx"
     ],
     "tokens": [
@@ -3414,6 +3459,18 @@
     ],
     "tokens": [
       "schemas"
+    ],
+    "type": "lib"
+  },
+  "lib:seedKey": {
+    "path": "src/shared/lib/exchange/seedKey.ts",
+    "summary": "`bolid.seedkey.v1` \u2014 a user-supplied security-access plugin file (plan 23): validate an untrusted file with the plan-13 combinators, then compile its\u2026",
+    "tests": [
+      "src/shared/lib/exchange/seedKey.test.ts"
+    ],
+    "tokens": [
+      "key",
+      "seed"
     ],
     "type": "lib"
   },
@@ -3898,6 +3955,15 @@
     ],
     "type": "store"
   },
+  "store:seedKeyStore": {
+    "path": "src/shared/state/seedKeyStore.ts",
+    "summary": "Installed security-access plugins (plan 23): the **index** of the `bolid.seedkey.v1` files the owner imported \u2014 name, scope, widths, where the file l\u2026",
+    "tokens": [
+      "key",
+      "seed"
+    ],
+    "type": "store"
+  },
   "store:sessionStore": {
     "path": "src/shared/state/sessionStore.ts",
     "summary": "Cross-cutting connection lifecycle + the active DiagnosticSession.",
@@ -4014,6 +4080,18 @@
     "tokens": [
       "badge",
       "status"
+    ],
+    "type": "ui"
+  },
+  "ui:UnlockBadge": {
+    "path": "src/shared/ui/UnlockBadge.tsx",
+    "summary": "The text of an unlock badge (plan 23).",
+    "tests": [
+      "src/shared/ui/UnlockBadge.test.tsx"
+    ],
+    "tokens": [
+      "badge",
+      "unlock"
     ],
     "type": "ui"
   },

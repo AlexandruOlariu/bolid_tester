@@ -800,6 +800,41 @@
     "relates"
   ],
   [
+    "concept:security-access-plugins",
+    "concept:exchange-files",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "concept:mock-simulator",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "feature:adaptations",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "feature:coding",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "feature:routines",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "feature:service-reset",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "feature:settings",
+    "relates"
+  ],
+  [
     "concept:sensor-monitoring",
     "concept:live-data-charts",
     "relates"
@@ -1240,6 +1275,11 @@
     "named"
   ],
   [
+    "core:coding/seedKeyDsl",
+    "doc:plans/23-security-access-plugins",
+    "named"
+  ],
+  [
     "core:confirmation",
     "doc:plans/25-post-capture-confirmation",
     "named"
@@ -1532,6 +1572,11 @@
   [
     "core:public-api",
     "core:coding/presets",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:coding/seedKeyDsl",
     "imports"
   ],
   [
@@ -2711,6 +2756,11 @@
   ],
   [
     "feature:coding",
+    "feature:module-scan",
+    "imports"
+  ],
+  [
+    "feature:coding",
     "feature:vehicle-select",
     "imports"
   ],
@@ -3821,6 +3871,11 @@
   ],
   [
     "feature:settings",
+    "core:coding/seedKeyDsl",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "core:transport/logReplay",
     "imports"
   ],
@@ -3846,6 +3901,11 @@
   ],
   [
     "feature:settings",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "store:adapterLog",
     "imports"
   ],
@@ -3867,6 +3927,11 @@
   [
     "feature:settings",
     "store:labelPackStore",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "store:seedKeyStore",
     "imports"
   ],
   [
@@ -4252,6 +4317,26 @@
   [
     "lib:schemas",
     "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "lib:seedKey",
+    "core:coding/seedKeyDsl",
+    "imports"
+  ],
+  [
+    "lib:seedKey",
+    "doc:plans/23-security-access-plugins",
+    "named"
+  ],
+  [
+    "lib:seedKey",
+    "lib:backup",
+    "imports"
+  ],
+  [
+    "lib:seedKey",
+    "lib:validate",
     "imports"
   ],
   [
@@ -4876,12 +4961,32 @@
   ],
   [
     "store:secureApiKey",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "store:seedKeyStore",
+    "core:coding/seedKeyDsl",
+    "imports"
+  ],
+  [
+    "store:seedKeyStore",
     "doc:plans/23-security-access-plugins",
     "named"
   ],
   [
-    "store:secureApiKey",
-    "store:errorLogStore",
+    "store:seedKeyStore",
+    "lib:seedKey",
+    "imports"
+  ],
+  [
+    "store:seedKeyStore",
+    "lib:validate",
+    "imports"
+  ],
+  [
+    "store:seedKeyStore",
+    "store:persistStorage",
     "imports"
   ],
   [

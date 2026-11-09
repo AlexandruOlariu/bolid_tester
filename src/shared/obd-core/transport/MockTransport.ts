@@ -59,6 +59,18 @@ export interface SimScenario {
   /** Local identifiers whose `3B` write answers `7F 3B 33` until a matching `2B` login succeeded
    *  in the current diagnostic session (a `10 xx` restarts the session and drops the login). */
   kwpLoginRequired?: string[];
+  /** Per-header SecurityAccess model (plan 23), keyed by the ATSH request header (or '*' for
+   *  default addressing). When present for the addressed header: `27 <level>` answers the `seed`
+   *  (all zeros once unlocked), `27 <level+1> <key>` is compared with `key` — a match unlocks, a
+   *  mismatch answers `7F 27 35` and the third failure `7F 27 36` (after which every `27` on that
+   *  header answers `7F 27 36`), a key without a seed request answers `7F 27 24` — and the
+   *  `protects` services answer `7F <svc> 33` until unlocked. A `10 xx` re-locks. `seed` / `key`
+   *  are test vectors, not a routine: the simulator never derives a key. Absent ⇒ the classic
+   *  `27` stub (zero seed = "already unlocked"), so default scenarios are unchanged. */
+  security?: Record<
+    string,
+    { level: number; seed: number[]; key: number[]; protects: ('2E' | '31' | '2F' | '3B')[] }
+  >;
   latencyMs?: number;
   emitSearching?: boolean;
   /** Adapter auto-sleep: after this idle gap (ms since the last write or reply) the next non-empty command is
@@ -118,6 +130,11 @@ export class MockTransport implements Transport {
   /** KWP login state (plan 22): the headers (or '*') that passed a `2B` login in their current
    *  diagnostic session. */
   private loggedIn = new Set<string>();
+  /** SecurityAccess state (plan 23), per header key: unlocked modules, a pending seed request,
+   *  and failed key attempts (never reset by a session change, like a real module's counter). */
+  private secUnlocked = new Set<string>();
+  private secSeedSent = new Set<string>();
+  private secFailures = new Map<string, number>();
 
   constructor(public scenario: SimScenario) {}
 
@@ -347,6 +364,48 @@ export class MockTransport implements Transport {
     return locals?.[this.kwpKey()] ?? locals?.['*'];
   }
 
+  /** The SecurityAccess model for the addressed module (plan 23), or undefined. */
+  private securityModel(): NonNullable<SimScenario['security']>[string] | undefined {
+    return this.scenario.security?.[this.kwpKey()];
+  }
+
+  /** SecurityAccess `27` and the services it protects, for a module with a `security` model.
+   *  Null when the request is not one of them (or the module has no model). */
+  private respondSecurity(h: string): string | null {
+    const sec = this.securityModel();
+    if (!sec) return null;
+    const who = this.kwpKey();
+    const svc = h.slice(0, 2);
+    if (svc === '27' && h.length >= 4) {
+      if ((this.secFailures.get(who) ?? 0) >= 3) return '7F2736';
+      const sub = parseInt(h.slice(2, 4), 16);
+      if (sub === sec.level) {
+        if (this.secUnlocked.has(who)) return '67' + h.slice(2, 4) + toHex(sec.seed.map(() => 0));
+        this.secSeedSent.add(who);
+        return '67' + h.slice(2, 4) + toHex(sec.seed);
+      }
+      if (sub === sec.level + 1) {
+        if (!this.secSeedSent.has(who)) return '7F2724';
+        this.secSeedSent.delete(who);
+        const key = parseHexBytes(h.slice(4));
+        const match = key.length === sec.key.length && key.every((b, i) => b === sec.key[i]);
+        if (match) {
+          this.secUnlocked.add(who);
+          this.secFailures.delete(who);
+          return '67' + h.slice(2, 4);
+        }
+        const failures = (this.secFailures.get(who) ?? 0) + 1;
+        this.secFailures.set(who, failures);
+        return failures >= 3 ? '7F2736' : '7F2735';
+      }
+      return '7F2712';
+    }
+    if ((sec.protects as string[]).includes(svc) && !this.secUnlocked.has(who)) {
+      return '7F' + svc + '33';
+    }
+    return null;
+  }
+
   /** KWP2000 login (`2B`), ReadDataByLocalIdentifier (`21`) and WriteDataByLocalIdentifier (`3B`)
    *  — plan 22. Null when `h` is not one of them. */
   private respondKwp(h: string): string | null {
@@ -429,8 +488,12 @@ export class MockTransport implements Transport {
     if (h.startsWith('10') && h.length >= 4) {
       // (Start)DiagnosticSession. Like a real module, a session (re)start drops a KWP login.
       this.loggedIn.delete(this.kwpKey());
+      this.secUnlocked.delete(this.kwpKey());
+      this.secSeedSent.delete(this.kwpKey());
       return '50' + h.slice(2, 4);
     }
+    const secured = this.respondSecurity(h);
+    if (secured !== null) return secured;
     const kwp = this.respondKwp(h);
     if (kwp !== null) return kwp;
     if (h === '3E00') return '7E00'; // TesterPresent

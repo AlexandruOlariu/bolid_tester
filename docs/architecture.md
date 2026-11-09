@@ -140,12 +140,15 @@ Shared stores (`src/shared/state/`), used by several features:
   registry and the garage by `resolveProfile` (`getActiveProfile` / `useActiveProfile`, see
   [vehicle-select](./features/vehicle-select.md));
 - `dtcStore`, `historyStore` (`bolid.history`), `errorLogStore` (`bolid.errors`) and the
-  `adapterLog` ring buffer.
+  `adapterLog` ring buffer;
+- `seedKeyStore` — the index of the owner's security-access plugins (`bolid.seedKeys`, plan 23;
+  the programs stay in their own files and are resolved by `src/shared/security/`, see
+  [coding → Security-access plugins](./features/coding.md#security-access-plugins-plan-23)).
 
 Per-feature stores live in their slice's `model/`. Persisted stores use `fileStateStorage`, a
 `bolid.<area>` name, an explicit version and a `migrate` when the shape changes, and are listed in
 the backup registry (`src/features/backup/api/registry.ts`, see **Backup** above) so a backup
-holds them. Stores on `debouncedStorage` can be flushed at once with `flushPendingWrites()` (the
+holds them — except the ones it names in `NOT_BACKED_UP` (`bolid.backups`, `bolid.seedKeys`). Stores on `debouncedStorage` can be flushed at once with `flushPendingWrites()` (the
 backup reads complete files).
 
 ## Error handling & resilience

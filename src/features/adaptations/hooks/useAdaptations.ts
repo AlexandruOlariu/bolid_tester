@@ -5,6 +5,7 @@ import { useLabelPackFinder } from '@/shared/state/labelPackStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useGarageStore } from '@/shared/state/garageStore';
 import { logError } from '@/shared/state/errorLogStore';
+import { securityDecisionForActiveCar } from '@/shared/security';
 import type { AdaptationChannel, LoginCodeEntry } from '@/shared/vehicles';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import {
@@ -22,7 +23,10 @@ import {
 } from '../api/codeBook';
 import { useAdaptationsStore } from '../model/adaptationsStore';
 import { useLoginBookStore } from '../model/loginBookStore';
-import { useModuleScanStore } from '@/features/module-scan/model/moduleScanStore';
+import {
+  scannedPartNumber,
+  useModuleScanStore,
+} from '@/features/module-scan/model/moduleScanStore';
 
 /** A KWP login for one write: the code, the workshop code, and whether to remember it. */
 export interface LoginInput {
@@ -95,12 +99,14 @@ export function useAdaptations() {
 
   // The label-pack lookup re-resolves when the imported packs change (plan 13).
   const findLabelPack = useLabelPackFinder();
+  /** The live-scanned part number of the channel's module, when a module scan read one. */
+  const partNumberFor = useCallback(
+    (ch: AdaptationChannel): string | undefined => scannedPartNumber(scanResults, ch.reqHeader),
+    [scanResults],
+  );
   const packFor = useCallback(
-    (ch: AdaptationChannel) => {
-      const scanned = scanResults.find((r) => r.module.reqHeader === ch.reqHeader);
-      return findLabelPack(scanned?.ident?.partNumber);
-    },
-    [scanResults, findLabelPack],
+    (ch: AdaptationChannel) => findLabelPack(partNumberFor(ch)),
+    [partNumberFor, findLabelPack],
   );
 
   const describe = useCallback(
@@ -161,12 +167,20 @@ export function useAdaptations() {
   const runWrite = useCallback(
     async (ch: AdaptationChannel, raw: number[], login?: LoginInput): Promise<WriteOutcome> => {
       if (!session) return { ok: false, message: 'Not connected.' };
-      const res = await writeChannel(
-        session,
-        ch,
-        raw,
-        login ? { login: { code: login.code, wsc: login.wsc } } : {},
-      );
+      // SecurityAccess (plan 23): only with an installed plugin for this module; otherwise refuse
+      // before any bus traffic.
+      const decision = await securityDecisionForActiveCar(ch.security, {
+        reqHeader: ch.reqHeader,
+        address: ch.address,
+        partNumber: partNumberFor(ch),
+      });
+      if (decision.kind === 'refuse') {
+        return { ok: false, securityLocked: true, message: decision.message };
+      }
+      const res = await writeChannel(session, ch, raw, {
+        ...(login ? { login: { code: login.code, wsc: login.wsc } } : {}),
+        ...(decision.kind === 'unlock' ? { seedToKey: decision.security.seedToKey } : {}),
+      });
       if (login?.remember && res.loginAccepted) {
         rememberLoginCode(profile, vin, ch, login);
       } else if (login && res.loginRejected) {
@@ -175,7 +189,7 @@ export function useAdaptations() {
       }
       return res;
     },
-    [session, profile, vin],
+    [session, profile, vin, partNumberFor],
   );
 
   const write = useCallback(
@@ -251,6 +265,7 @@ export function useAdaptations() {
   return {
     available,
     channels,
+    partNumberFor,
     declaredCount: declared.length,
     kline: isKLine(proto),
     describe,

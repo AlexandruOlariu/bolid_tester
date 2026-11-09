@@ -1,4 +1,4 @@
-# Exchange formats — profile and label-pack files
+# Exchange formats — profile, label-pack and security-access plugin files
 
 A garage car ("profile") or a label pack can leave the phone as a **versioned JSON file** and be
 imported on another phone, or from a community repository, through the OS file picker
@@ -11,7 +11,8 @@ Code: `src/shared/lib/exchange/` (types, schemas, parse / plan / export — pure
 `src/shared/ui/ImportPreviewSheet.tsx` (the preview). Examples:
 [`examples/profile.example.json`](./examples/profile.example.json),
 [`examples/label-pack.example.json`](./examples/label-pack.example.json) (both double as test
-inputs).
+inputs). The third format, the owner-supplied **security-access plugin**
+([`bolid.seedkey.v1`](#bolidseedkeyv1), plan 23), is a separate flat file with its own import.
 
 ## Envelope
 
@@ -155,6 +156,84 @@ JSON-pointer paths (`/payload/vehicle/fuel: expected one of diesel|petrol|lpg|hy
 "coal"`). A validator reads only own properties, rebuilds the value from the schema (so nothing the
 schema does not name is stored), rejects the `__proto__` / `constructor` / `prototype` keys and caps
 every list, record and string. The imported-pack store re-validates its own file on every load.
+
+## `bolid.seedkey.v1`
+
+A **security-access plugin**: the seed→key routine for one of the owner's own modules, as data
+([plan 23](./plans/23-security-access-plugins.md)). The app **ships, downloads and derives none**,
+and this document deliberately contains no routine — only the format. Code:
+`src/shared/obd-core/coding/seedKeyDsl.ts` (types, limits, interpreter),
+`src/shared/lib/exchange/seedKey.ts` (`seedKeyPluginV1`, `parseSeedKeyFile`),
+`src/shared/security/` (files, matching, the simulator check),
+`src/shared/state/seedKeyStore.ts` (the index). Imported in **Settings → Data → Security access
+plugins**; the profile / label-pack importer refuses one with a pointer there. Not an envelope —
+one flat object (file limit 200 kB):
+
+```ts
+interface SeedKeyPluginV1 {
+  schema: 'bolid.seedkey.v1';
+  name: string; // 1–80 characters, e.g. 'My Golf BCM level 03'
+  applies: {
+    reqHeader?: string; // '70E' (11-bit) or '18DA40F1' (29-bit), uppercase
+    address?: string; // VAG address, 2 uppercase hex digits, e.g. '09'
+    level: number; // odd requestSeed level, 0x01–0x7D
+    partNumberPrefix?: string; // uppercase, 3–12 letters / digits
+  }; // at least one of reqHeader / address / partNumberPrefix
+  seedBytes: 2 | 4;
+  keyBytes: 2 | 4;
+  program: SeedKeyOp[]; // 1–256 ops
+  notes?: string; // up to 2000 characters
+}
+```
+
+Shape of a file (the routine itself is the owner's and is elided here):
+
+```json
+{
+  "schema": "bolid.seedkey.v1",
+  "name": "My Golf BCM level 03",
+  "applies": { "reqHeader": "70E", "level": 3 },
+  "seedBytes": 4,
+  "keyBytes": 4,
+  "program": [{ "op": "load", "from": "seed" }, "… your routine …", { "op": "store" }]
+}
+```
+
+**The program** runs over one unsigned 32-bit accumulator `acc`; every result wraps modulo 2³². It
+has no branches and no I/O: its only input is the seed and its only output is the key.
+
+| Op                                                            | Effect                                                                  |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `{ "op": "load", "from": "seed" }`                            | `acc` = the seed as a big-endian unsigned number                        |
+| `{ "op": "const", "value": n }`                               | `acc` = n (0–4294967295)                                                |
+| `add` / `sub` / `mul` `{ "value": n }`                        | `acc` = `acc` ± × n, modulo 2³²                                         |
+| `xor` / `and` / `or` `{ "value": n }`                         | bitwise with n                                                          |
+| `{ "op": "not" }`                                             | `acc` = ~`acc`                                                          |
+| `{ "op": "swap16" }`                                          | exchange the 16-bit halves (`AABBCCDD` → `CCDDAABB`)                    |
+| `{ "op": "bswap" }`                                           | reverse the four bytes (`AABBCCDD` → `DDCCBBAA`)                        |
+| `shl` / `shr` / `rol` / `ror` `{ "bits" }`                    | shift / rotate by 0–31 bits                                             |
+| `{ "op": "mask", "bits": 8 \| 16 \| 32 }`                     | keep the low bits                                                       |
+| `{ "op": "table", "values": [256 numbers], "index": "low8" }` | `acc` = `values[acc & 0xFF]`                                            |
+| `{ "op": "repeat", "count": n, "body": [ops] }`               | run `body` n times                                                      |
+| `{ "op": "store" }`                                           | key = `acc` truncated to `keyBytes`, big-endian (the last `store` wins) |
+
+**Limits** (`SEED_KEY_LIMITS`, checked when the file is imported and again before every use): at
+most 256 ops written (nested ones included), at most 4096 executed — the step count is exact and
+known before anything runs, because the program has no branches — a `repeat` at most 64 times
+over at most 32 ops, repeats nested at most 2 deep, a `table` exactly 256 entries. A program that
+never stores, a seed of the wrong width or any out-of-range operand is refused. A refused file
+shows the reason (“This plugin is over the safety limits for a seed→key program.”) and the first
+three validator errors; nothing is installed.
+
+**Matching** (which module a plugin unlocks): the requested `level`, a pinned car (set at import)
+only for that car, then the request header or VAG address; a plugin naming only a
+`partNumberPrefix` matches when the module's known part number starts with it, and a plugin
+naming a prefix never matches an unknown part number. See
+[coding → Security-access plugins](./features/coding.md#security-access-plugins-plan-23).
+
+**Storage** — the validated file is copied to `documentDirectory/seedkeys/<id>.json`; the index
+`bolid.seedKeys` never holds the program. A plugin is not part of a profile or label-pack export
+(a profile may at most name the plugin it expects in its notes) and not part of a backup.
 
 ## Versioning
 

@@ -1,7 +1,8 @@
 /** Adaptation-channel service: read / write-with-backup-and-verify one numeric channel.
  *  SAFETY mirrors coding (docs/features/coding.md): unlock gate upstream, mandatory backup, verify
- *  re-read, restore path. Channels demanding SecurityAccess stay read-only unless the profile
- *  supplies a real seed/key algorithm — none ship by default.
+ *  re-read, restore path. A channel demanding SecurityAccess is written only with a `seedToKey`
+ *  the caller resolved from an installed security-access plugin (plan 23); without one the write
+ *  is refused before any bus traffic. None ship.
  *
  *  Two transports (plan 22): UDS channels (the default) read `22` / write `2E` over CAN through
  *  `codeModule`; KWP channels (`transport: 'kwp'`, K-line KWP2000) enter the diagnostic session
@@ -18,10 +19,12 @@ import {
   kwpLogin,
   kwpReadLocal,
   kwpWriteLocal,
+  securityAccess,
   UdsError,
   type UdsSend,
 } from '@/shared/obd-core';
 import type { AdaptationChannel } from '@/shared/vehicles';
+import { NO_PLUGIN_MESSAGE } from '@/shared/security/messages';
 
 /** KWP2000 session a K-line adaptation channel runs in unless it says otherwise. */
 export const DEFAULT_KWP_SESSION = 0x85;
@@ -72,11 +75,16 @@ export interface WriteOutcome {
   /** KWP: the module answered the `2B` login positively (`6B`). Set even when a later step
    *  fails; the only outcome on which a code may be remembered. */
   loginAccepted?: boolean;
+  /** The channel needs SecurityAccess and no plugin routine was supplied — nothing was sent. */
+  securityLocked?: boolean;
 }
 
 export interface WriteChannelOptions {
   /** KWP login for channels with `login: true`. Used for this write only — never stored here. */
   login?: { code: number; wsc?: number };
+  /** SecurityAccess routine for a `security` channel, from an installed plugin (plan 23). Without
+   *  it a `security` channel is refused before any bus traffic. */
+  seedToKey?: (seed: number[]) => number[];
 }
 
 export async function writeChannel(
@@ -85,22 +93,25 @@ export async function writeChannel(
   newRaw: number[],
   opts: WriteChannelOptions = {},
 ): Promise<WriteOutcome> {
-  if (ch.security) {
-    return {
-      ok: false,
-      message:
-        'This channel requires SecurityAccess and no seed/key algorithm is available for this ' +
-        'module — read-only.',
-    };
+  if (ch.security && !opts.seedToKey) {
+    return { ok: false, securityLocked: true, message: `${NO_PLUGIN_MESSAGE} Nothing was sent.` };
   }
+  const security =
+    ch.security && opts.seedToKey
+      ? { level: ch.security.level, seedToKey: opts.seedToKey }
+      : undefined;
   // Enforce the channel's display bounds HERE, not only in the UI — every write path (including
   // future ones) must pass through the same guard.
   const outOfBounds = checkBounds(ch, newRaw);
   if (outOfBounds) return { ok: false, message: outOfBounds };
-  if (isKwpChannel(ch)) return writeKwpChannel(session, ch, newRaw, opts);
+  if (isKwpChannel(ch)) return writeKwpChannel(session, ch, newRaw, opts, security);
   try {
     await address(session, ch);
-    const res = await codeModule((cmd) => session.send(cmd), { did: ch.did, newData: newRaw });
+    const res = await codeModule((cmd) => session.send(cmd), {
+      did: ch.did,
+      newData: newRaw,
+      security,
+    });
     return verifiedOutcome(res.verified, res.backup);
   } catch (e) {
     return { ok: false, message: `Failed: ${(e as Error).message}` };
@@ -125,6 +136,7 @@ async function writeKwpChannel(
   ch: AdaptationChannel,
   newRaw: number[],
   opts: WriteChannelOptions,
+  security: { level: number; seedToKey: (seed: number[]) => number[] } | undefined,
 ): Promise<WriteOutcome> {
   if (ch.login && !opts.login) {
     return {
@@ -139,6 +151,7 @@ async function writeKwpChannel(
     await address(session, ch);
     const send: UdsSend = (cmd) => session.send(cmd);
     await enterSession(send, ch.session ?? DEFAULT_KWP_SESSION);
+    if (security) await securityAccess(send, security.level, security.seedToKey);
     if (ch.login && opts.login) {
       await kwpLogin(send, opts.login.code, opts.login.wsc ?? 0);
       loginAccepted = true;

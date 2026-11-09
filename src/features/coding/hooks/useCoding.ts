@@ -19,7 +19,12 @@ import { codingBitLabels } from '@/shared/labels';
 import { useLabelPackFinder } from '@/shared/state/labelPackStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
+import { activeSeedKeyVehicleKeys, decideSecurity, resolveSeedKey } from '@/shared/security';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
+import {
+  scannedPartNumber,
+  useModuleScanStore,
+} from '@/features/module-scan/model/moduleScanStore';
 import { useCodingStore } from '../model/codingStore';
 
 /** SAFETY: read→backup→write→verify, gated on unlock + CAN. Never writes without a stored backup. */
@@ -42,6 +47,15 @@ export function useCoding() {
   const currentFor = useCallback(
     (mod: CodingModule): number[] => current[mod.module] ?? mod.sampleCoding,
     [current],
+  );
+
+  /** The part number the live module scan read from `mod` — what security-access plugin matching
+   *  uses (plan 23). Never the profile's `mod.partNumber`, which is illustrative: a plugin scoped
+   *  by part-number prefix must not match a module whose real part number is unknown. */
+  const scanResults = useModuleScanStore((s) => s.results);
+  const partNumberFor = useCallback(
+    (mod: CodingModule): string | undefined => scannedPartNumber(scanResults, mod.reqHeader),
+    [scanResults],
   );
 
   /** Long-coding fields = the module's own schema merged additively with any label-pack coding-bit
@@ -105,13 +119,31 @@ export function useCoding() {
         setLastResult('Locked — unlock coding first.');
         return false;
       }
+      // SecurityAccess (plan 23): only with an installed plugin for this module; otherwise refuse
+      // before any bus traffic — never a made-up key (a wrong key burns one of few attempts).
+      const decision = decideSecurity(
+        mod.security,
+        mod.security
+          ? await resolveSeedKey({
+              reqHeader: mod.reqHeader,
+              level: mod.security.level,
+              // Read at write time from the live scan, never the profile's illustrative number.
+              partNumber: scannedPartNumber(useModuleScanStore.getState().results, mod.reqHeader),
+              vehicleKeys: activeSeedKeyVehicleKeys(),
+            })
+          : null,
+      );
+      if (decision.kind === 'refuse') {
+        setLastResult(decision.message);
+        return false;
+      }
       await session.setHeader(mod.reqHeader);
       await session.setRxFilter(mod.rxFilter);
       try {
         const res = await codeModule((cmd) => session.send(cmd), {
           did: mod.codingDid,
           newData,
-          security: mod.security ? { level: mod.security.level, seedToKey: (s) => s } : undefined,
+          security: decision.kind === 'unlock' ? decision.security : undefined,
         });
         addBackup({ module: mod.module, did: mod.codingDid, bytes: res.backup, at: Date.now() });
         if (res.verified) setCurrent(mod.module, newData);
@@ -189,5 +221,6 @@ export function useCoding() {
     moduleForPreset,
     presetState,
     applyTweak,
+    partNumberFor,
   };
 }

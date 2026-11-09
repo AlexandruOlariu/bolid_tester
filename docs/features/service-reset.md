@@ -22,8 +22,12 @@ in principle, be reset two ways — both defined per-profile:
   then write defaults.
 
 On **K-line/KWP2000** the same idea uses the KWP service IDs (`10` start session, `27` login, `31`
-StartRoutine, `3B`/`21` write/read local identifier). Either transport may sit behind **SecurityAccess `27`** (manufacturer-secret seed/key); the profile must supply
-the algorithm or the module must need none.
+StartRoutine, `3B`/`21` write/read local identifier). Either transport may sit behind **SecurityAccess `27`** (manufacturer-secret seed/key). The app ships no seed/key
+routine: a descriptor with `security` runs only when the owner installed a security-access plugin
+for the module (plan 23); otherwise the reset is **refused before any bus traffic** with “Locked —
+this module needs security access and no plugin is installed for it. Use the manual procedure below
+instead.” The card shows an **unlock badge** (“No unlock needed” / “Unlockable · <plugin>” /
+“Locked · needs security access”).
 
 ## The real limits (honest)
 
@@ -58,8 +62,10 @@ the algorithm or the module must need none.
 
 ## hooks
 
-- `useServiceReset()` — reads the profile's `serviceReset`, gates on CAN, runs the
-  `enterSession → (security) → routine|adaptation → verify` flow, exposes availability + result.
+- `useServiceReset()` — reads the profile's `serviceReset`, gates on CAN, resolves the security
+  plugin when the descriptor declares `security` (refusing without one — the identity `seedToKey`
+  fallback is gone), runs the `enterSession → (security) → routine|adaptation → verify` flow,
+  exposes availability + result.
 
 ## api (service layer)
 

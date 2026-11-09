@@ -5,6 +5,123 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 23 — Security-access plugins (2026-11-09)
+
+[Plan 23](./plans/23-security-access-plugins.md) landed: a write that a UDS module protects with
+`27` SecurityAccess is unlocked **only** with a seed→key routine the owner supplies for their own
+car, as a `bolid.seedkey.v1` data file the app validates and interprets in a sandbox. The app ships,
+fetches and derives **no** routine; both identity `seedToKey` fallbacks (`useCoding`,
+`useServiceReset`) are gone, so without a plugin a protected write is refused with “Locked — this
+module needs security access and no plugin is installed for it.” before any bus traffic. The plan's
+deferred section (an optional no-op write with the owner's own routine) needs the car.
+
+- **DSL (`obd-core/coding/seedKeyDsl.ts`, pure).** `SeedKeyOp` (load / const / add / sub / mul /
+  xor / and / or / not / swap16 / bswap / shl / shr / rol / ror / mask / table / repeat / store) over
+  one uint32 accumulator, `SeedKeyPluginV1`, `SEED_KEY_LIMITS` (256 ops, 4096 steps, repeat ≤ 64 ×
+  ≤ 32 ops, nesting ≤ 2), `compileSeedKey` — validates every operand and computes the **exact**
+  executed step count before anything runs (the program has no branches), snapshots the program,
+  refuses a seed of the wrong width; `countSeedKeyOps`; `SeedKeyError`.
+- **Schema (`shared/lib/exchange/seedKey.ts`).** `seedKeyPluginV1` with the plan-13 combinators
+  (recursive op validator, unknown fields stripped, scope must name a header / address / prefix,
+  odd level 1–0x7D, widths 2 / 4) refined by the compiler; `parseSeedKeyFile` (200 kB cap, BOM,
+  “over the safety limits” vs “not valid”, newer `v2+` and wrong files refused readably).
+  `parseExchangeFile` now points a plugin file to its own import.
+- **Store + files.** `shared/state/seedKeyStore.ts` (`bolid.seedKeys` v1: id, name, applies, widths,
+  `fileUri`, `importedAt`, optional `vehicleKey` pin; re-validated on load; at most 50; never the
+  program). `shared/security/seedKeyFiles.ts`: `loadSeedKeyModules` (variable-specifier imports),
+  `pickSeedKeyFile`, `installSeedKeyPlugin` (copies the validated file to
+  `documentDirectory/seedkeys/<id>.json`), `removeSeedKeyPlugin`, `readSeedKeyProgram` (re-reads,
+  re-validates, checks the scope still matches the index, compiles — a missing / edited file is a
+  problem, never a routine).
+- **Resolution (`shared/security/resolveSeedKey.ts`).** `matchSeedKeyPlugin` (level + pin, then
+  header or VAG address, then prefix-only; pinned beats unpinned, newest wins; a prefix never
+  matches an unknown part number), `seedKeyVehicleKeys` (the code book's `vin:` / `id:` keys),
+  `unlockStatusFor`, `resolveSeedKey` / `resolveSeedToKey`, `decideSecurity` (none / unlock /
+  refuse). `useUnlockStatus.ts`: `useUnlockStatus`, `useSeedKeyVehicleKeys`,
+  `activeSeedKeyVehicleKeys`, `securityDecisionForActiveCar`, `hasSeedKeyPluginFor`.
+- **Call sites.** `useCoding.write` (and so every tweak) refuses or unlocks; `writeChannel(…,
+{ seedToKey })` writes a `security` channel only with a routine (a `securityLocked` refusal
+  otherwise; the KWP path unlocks after the session too), resolved by `useAdaptations.write/restore`
+  and the backup restore panel (`useAdaptationRestore`: the planner's `unlockable` = a plugin
+  matches); `startRoutine(session, routine, { seedToKey })` unlocks with a plugin and otherwise still
+  attempts unlocked; `useServiceReset` refuses without one (a descriptor's own `seedToKey`, for tests
+  and fakes, still wins). `describeRoutineFailure` texts point at the plugin import.
+- **UI.** `shared/ui/UnlockBadge.tsx` (“No unlock needed” / “Unlockable · <plugin>” / “Locked ·
+  needs security access”) on coding module cards, tweak rows, adaptation channels (replacing
+  “Security-locked (read-only)”; a matching plugin now shows the write controls), routine rows (plus
+  a note that a locked routine is attempted unlocked) and the service-reset card. Settings → Data →
+  **Security access plugins** (`settings/ui/SeedKeysSection.tsx`): Import plugin → refusal card or
+  preview (name, scope, widths, steps written / run, notes, “Only for this car”) → Install; the
+  installed list with **Test in simulator** and Delete.
+- **Simulator.** `SimScenario.security` (header → `{ level, seed, key, protects }`): `27 <lvl>` →
+  the seed (zeros once unlocked), `27 <lvl+1>` checked → `67` / `7F 27 35`, the third failure
+  `7F 27 36` (then every `27`), a key without a seed `7F 27 24`, another level `7F 27 12`, protected
+  services `7F <svc> 33` until unlocked, `10 xx` re-locks. No default scenario sets it; the classic
+  stub is unchanged. **Test in simulator** (`shared/security/simulatorCheck.ts`) runs the plugin on a
+  fixed test seed twice, then the real `codeModule` flow against a one-module scenario whose `key`
+  is the plugin's own answer (after checking it refuses while locked); the message says the
+  simulator cannot prove the routine is right for the car.
+- **Docs.** [coding](./features/coding.md#security-access-plugins-plan-23) (plugin model, sandbox,
+  scope matching, badges, policy), [adaptations](./features/adaptations.md),
+  [routines](./features/routines.md), [service-reset](./features/service-reset.md),
+  [settings](./features/settings.md), [backup](./features/backup.md),
+  [exchange-formats](./exchange-formats.md#bolidseedkeyv1) (schema + DSL reference, no routine),
+  [simulator](./simulator.md), [architecture](./architecture.md); roadmap v0.6
+  “Security-access plugins” ✅. Context graph: concept `security-access-plugins`, rebuilt.
+- **Tests (+75 tests, +8 suites: 1479 tests / 173 suites).** `seedKeyDsl.test.ts` (every op
+  against hand-computed vectors, exact steps, nesting > 2, maxSteps / maxOps, bad operands, table
+  256, no store, widths, determinism, snapshot);
+  `seedKey.test.ts` (valid file, stripping, limits refused with a clear message, scope / level /
+  width errors, wrong / newer / non-JSON files, the exchange-import pointer); `MockTransport.test.ts`
+  (+7: locked `2E` → `7F2E33`, wrong key `7F2735`, third → `7F2736`, right key → `2E` accepted,
+  `10 03` re-locks, out-of-sequence / unknown level, the classic stub and no default scenario with
+  `security`); `securityAccess.integration.test.ts` (the Golf BCM behind `security['70E']`: the
+  plugin unlocks + verifies, no option → `UdsError` 0x33, a wrong routine → 0x35 and nothing
+  written); `resolveSeedKey.test.ts` (header beats prefix, address, pinning, prefix fails closed,
+  three badge states, `decideSecurity`, pick / install / resolve / edited / missing / delete, index
+  re-validation, the simulator check for 2- and 4-byte, 29-bit and over-limit plugins);
+  `adaptationService.test.ts` (+3) and `routineService.test.ts` (+2) on the wire;
+  `noSeedKeys.test.ts` (no registry profile sets `seedToKey`, no vehicle file mentions one, no
+  production identity fallback — fails on the previous code). UI: `useCoding.security.test.tsx`
+  (acceptance: refused with the no-plugin message and **nothing** in the adapter log, then after the
+  fixture plugin is imported the same write verifies with `2703` / `2704EDCB`),
+  `SeedKeysSection.test.tsx` (import → preview → Install → Test in simulator passes → Delete; pin;
+  over-limit refused, nothing installed), `UnlockBadge.test.tsx`. `storeVersions.test.ts` checks
+  `NOT_BACKED_UP`. The only seed→key program anywhere is the test vector seed XOR `0xFFFF`, in test
+  files.
+- **Review fixes.** Plugin matching takes the module's part number only from the live module scan
+  (`scannedPartNumber`, `module-scan/model/moduleScanStore.ts`), on every surface: `useCoding.write`
+  and the coding card / tweak badges (via `useCoding().partNumberFor`) no longer use the profile's
+  illustrative `mod.partNumber`, and the backup restore panel (`useAdaptationRestore`, planner and
+  write) now passes it like the Adaptations screen, so both agree on a prefix-scoped plugin.
+  Tests: `useServiceReset.security.test.tsx` (refused with the no-plugin message, plus the
+  manual-procedure hint when there is one, and nothing in the adapter log; with the fixture plugin
+  the reset unlocks with `2703` / `2704EDCB` and completes), `useCoding.security.test.tsx` (+1: a
+  prefix plugin matching the profile's number is refused until a scan reads a matching one),
+  `useAdaptationRestore.security.test.tsx` (a prefix plugin leaves the channel `locked` until the
+  scan reports a matching part number) — +6 tests, +2 suites: 1485 tests / 175 suites.
+- **Deviations.** (1) The plugin index is **not** in a backup (`NOT_BACKED_UP` in
+  `features/backup/api/registry.ts`, beside `bolid.backups`) instead of getting a `PERSISTED_STORES`
+  row: the programs live in separate files a backup does not carry, and a plugin belongs to the
+  phone and car it was imported for. (2) `SeedKeyTarget.vehicleKeys: string[]` (the car's VIN key
+  and its profile-id key, like the code book) instead of one `vehicleKey`. (3) The pure write
+  decision is `decideSecurity(security, resolved)`, shared by every surface (through
+  `securityDecisionForActiveCar`), not a coding-only `decideCodingWrite`; `resolveSeedKey` returns
+  `{ entry, seedToKey, problem }` so a broken file says so (`resolveSeedToKey` is the plan's reduced
+  form). (4) A plugin that names a part-number prefix never matches a module whose part number is
+  unknown (fail closed); the scope must name at least one of header / address / prefix; the level
+  must be odd. (5) **Test in simulator** cannot know the owner's routine, so the simulated module
+  expects the plugin's own answer for a fixed test seed: it proves the file runs end to end in the
+  app (limits, determinism, width, the `27` handshake, a verified write), not that it is right for
+  the car — and says so. (6) The simulator also answers `7F 27 24` / `7F 27 12`, keeps the attempt
+  counter across sessions, and an unlocked module's seed is all zeros. (7) The adaptations backup
+  restore (plan 24) and KWP channels resolve plugins too, beyond the plan's five call sites. (8)
+  `NO_PLUGIN_MESSAGE` lives in a dependency-free `shared/security/messages.ts`, so services import it
+  without the stores. (9) At most 50 plugins, files up to 200 kB. (10) The routines doc keeps a
+  profile's `security: { level }` only; the profile never carries the unlock itself.
+
+---
+
 ## Plan 13 — Profile and label-pack import / export (2026-11-09)
 
 [Plan 13](./plans/13-profile-labelpack-import-export.md) landed: a garage car, a built-in profile

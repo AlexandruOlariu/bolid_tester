@@ -8,6 +8,7 @@ import {
 } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
+import { activeSeedKeyVehicleKeys, decideSecurity, resolveSeedKey } from '@/shared/security';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { useServiceResetStore } from '../model/serviceResetStore';
 
@@ -33,6 +34,29 @@ export function useServiceReset() {
       setLastResult('Service reset is unavailable for this car / protocol.');
       return false;
     }
+    // SecurityAccess (plan 23): a `seedToKey` on the descriptor (tests / fakes only — no registry
+    // profile sets one), else an installed plugin for the module; otherwise refuse before any bus
+    // traffic. The screen leads with the manual procedure, which needs no unlock.
+    const security = descriptor.security;
+    const decision = decideSecurity(
+      security,
+      security
+        ? security.seedToKey
+          ? { entry: null, seedToKey: security.seedToKey }
+          : await resolveSeedKey({
+              reqHeader: descriptor.reqHeader,
+              level: security.level,
+              vehicleKeys: activeSeedKeyVehicleKeys(),
+            })
+        : null,
+    );
+    if (decision.kind === 'refuse') {
+      const manual = descriptor.manualProcedure?.length
+        ? ' Use the manual procedure below instead.'
+        : '';
+      setLastResult(decision.message + manual);
+      return false;
+    }
     setRunning(true);
     setLastResult(null);
     const transport = descriptor.transport ?? 'uds';
@@ -45,14 +69,7 @@ export function useServiceReset() {
         method: descriptor.method,
         routineId: descriptor.routineId,
         adaptations: descriptor.adaptations,
-        security: descriptor.security
-          ? {
-              level: descriptor.security.level,
-              // Use the profile's real seed→key algorithm when it ships one; never override a
-              // supplied algorithm with the identity fallback (which can't actually unlock a module).
-              seedToKey: descriptor.security.seedToKey ?? ((s) => s),
-            }
-          : undefined,
+        security: decision.kind === 'unlock' ? decision.security : undefined,
       });
       if (!res.ok) {
         logError({
