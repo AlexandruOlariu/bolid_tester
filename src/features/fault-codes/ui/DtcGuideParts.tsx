@@ -1,7 +1,7 @@
 import React from 'react';
 import { router } from 'expo-router';
 import { YStack, XStack, Text, Paragraph, Button } from 'tamagui';
-import { ValueCard } from '@/shared/ui';
+import { ValueCard, HIT_SLOP } from '@/shared/ui';
 import type { FaultGuide } from '@/shared/vehicles/faultGuides';
 import type { FreezeFrame } from '@/shared/obd-core/session/DiagnosticSession';
 
@@ -14,7 +14,8 @@ export function GuideLinks({ guide, onNavigate }: { guide: FaultGuide; onNavigat
     <XStack gap="$2" flexWrap="wrap">
       {dids.length > 0 ? (
         <Button
-          size="$2"
+          size="$3"
+          hitSlop={HIT_SLOP}
           theme="blue"
           onPress={() => {
             onNavigate?.();
@@ -26,7 +27,8 @@ export function GuideLinks({ guide, onNavigate }: { guide: FaultGuide; onNavigat
       ) : null}
       {guide.routineId ? (
         <Button
-          size="$2"
+          size="$3"
+          hitSlop={HIT_SLOP}
           theme="blue"
           onPress={() => {
             onNavigate?.();

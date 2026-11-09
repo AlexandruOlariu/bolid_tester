@@ -11,25 +11,26 @@ import {
   type DtcSeverity,
 } from '@/shared/obd-core/obd/dtc';
 
+/** `color` is a theme token (plan 20): the badge is that fill with `$onFill` text, AA in both themes. */
 export const SEVERITY_META: Record<DtcSeverity, { label: string; color: string; hint: string }> = {
   high: {
     label: 'High',
-    color: '#f85149',
+    color: '$statusError',
     hint: 'Can damage the engine or catalyst, or affect safety. Check it before driving far.',
   },
   moderate: {
     label: 'Moderate',
-    color: '#d29922',
+    color: '$statusWarn',
     hint: 'Needs attention soon (emissions, a control module or a lost connection between modules).',
   },
   info: {
     label: 'Info',
-    color: '#388bfd',
+    color: '$statusInfo',
     hint: 'A recorded fault with a known meaning. Check it, but it is rarely urgent on its own.',
   },
   unknown: {
     label: 'Unknown',
-    color: '#8B949E',
+    color: '$muted',
     hint: 'No local description for this code. Use the web search or the AI explanation.',
   },
 };

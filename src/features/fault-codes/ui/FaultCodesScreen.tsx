@@ -1,8 +1,16 @@
 import React, { useState } from 'react';
-import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Switch } from 'tamagui';
+import { YStack, XStack, Card, Text, Paragraph, Button, Spinner } from 'tamagui';
 import { useRouter } from 'expo-router';
 import { Share2, FileText, FileStack } from 'lucide-react-native';
-import { Screen, ValueCard, appAlert } from '@/shared/ui';
+import {
+  Screen,
+  ValueCard,
+  appAlert,
+  SectionTitle,
+  usePalette,
+  HIT_SLOP,
+  AccessibleSwitch,
+} from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { curatedProfileId, vehicleLabel } from '@/shared/vehicles';
@@ -51,14 +59,14 @@ function DtcRow({
           accessibilityRole="button"
           accessibilityLabel={`${code}: ${description}. Open details`}
         >
-          <Text fontWeight="800" color="$red10">
+          <Text fontWeight="800" color="$statusError">
             {code}
           </Text>
           <Paragraph theme="alt2" fontSize="$2">
             {description}
           </Paragraph>
         </YStack>
-        <Button size="$2" chromeless onPress={() => setOpen((v) => !v)}>
+        <Button size="$3" hitSlop={HIT_SLOP} chromeless onPress={() => setOpen((v) => !v)}>
           {open ? 'Hide guide' : 'Guide'}
         </Button>
       </XStack>
@@ -89,9 +97,9 @@ function Section({
 }) {
   return (
     <YStack gap="$2">
-      <Text fontWeight="800" fontSize="$5">
+      <SectionTitle>
         {title} ({codes.length})
-      </Text>
+      </SectionTitle>
       {codes.length === 0 ? (
         <Paragraph theme="alt2">None</Paragraph>
       ) : (
@@ -114,10 +122,20 @@ function ReadinessPanel({ readiness }: { readiness: MonitorStatus }) {
   const complete = supported.filter((m) => m.complete).length;
   const notReady = supported.filter((m) => !m.complete);
   return (
-    <Card bordered padding="$3" gap="$1">
+    // A polite live region (plan 20): a MIL that switches on, or a changed monitor count, is
+    // announced without moving focus. Not on the 1 Hz live values — they would never stop talking.
+    <Card
+      bordered
+      padding="$3"
+      gap="$1"
+      accessible
+      accessibilityLabel={`Readiness. Check-engine light (MIL) ${readiness.milOn ? 'on' : 'off'}. ${complete} of ${supported.length} monitors complete. ${readiness.dtcCount} stored fault codes.${notReady.length > 0 ? ` Not ready: ${notReady.map((m) => m.name).join(', ')}.` : ''}`}
+      accessibilityLiveRegion="polite"
+      testID="readiness-panel"
+    >
       <XStack justifyContent="space-between" alignItems="center">
         <Text fontWeight="800">Readiness</Text>
-        <Text fontWeight="800" color={readiness.milOn ? '$red10' : '$green10'}>
+        <Text fontWeight="800" color={readiness.milOn ? '$statusError' : '$statusOk'}>
           MIL {readiness.milOn ? 'ON' : 'off'}
         </Text>
       </XStack>
@@ -159,9 +177,11 @@ function CoachPanel({ readiness }: { readiness: MonitorStatus | null }) {
               : 'All monitors ready'}
           </Paragraph>
         </YStack>
-        <Switch checked={enabled} onCheckedChange={(v) => (v ? setEnabled(true) : reset())}>
-          <Switch.Thumb />
-        </Switch>
+        <AccessibleSwitch
+          checked={enabled}
+          onCheckedChange={(v) => (v ? setEnabled(true) : reset())}
+          accessibilityLabel="Drive-cycle coach"
+        />
       </XStack>
 
       {enabled ? (
@@ -192,7 +212,7 @@ function CoachPanel({ readiness }: { readiness: MonitorStatus | null }) {
           </Paragraph>
         </YStack>
       ) : enabled ? (
-        <Paragraph color="$green10" fontWeight="700">
+        <Paragraph color="$statusOk" fontWeight="700">
           All readiness monitors complete.
         </Paragraph>
       ) : null}
@@ -203,9 +223,7 @@ function CoachPanel({ readiness }: { readiness: MonitorStatus | null }) {
 function FreezeFrameView({ ff }: { ff: FreezeFrame }) {
   return (
     <YStack gap="$2">
-      <Text fontWeight="800" fontSize="$5">
-        Freeze frame
-      </Text>
+      <SectionTitle>Freeze frame</SectionTitle>
       <Paragraph theme="alt2" fontSize="$2">
         Captured when {ff.triggerDtc ?? 'a code'} set
       </Paragraph>
@@ -219,6 +237,7 @@ function FreezeFrameView({ ff }: { ff: FreezeFrame }) {
 }
 
 export function FaultCodesScreen() {
+  const palette = usePalette();
   const status = useSessionStore((s) => s.status);
   const info = useSessionStore((s) => s.info);
   const profile = useActiveProfile();
@@ -277,7 +296,7 @@ export function FaultCodesScreen() {
 
   return (
     <Screen title="Fault codes" onRefresh={refresh} refreshing={loading}>
-      {error ? <Paragraph color="$red10">{error}</Paragraph> : null}
+      {error ? <Paragraph color="$statusError">{error}</Paragraph> : null}
       {readiness ? <ReadinessPanel readiness={readiness} /> : null}
       <CoachPanel readiness={readiness} />
       <Section
@@ -318,7 +337,7 @@ export function FaultCodesScreen() {
           flex={1}
           onPress={onExport}
           disabled={exporting}
-          icon={exporting ? () => <Spinner /> : () => <Share2 size={18} color="#2bb673" />}
+          icon={exporting ? () => <Spinner /> : <Share2 size={18} color={palette.accent} />}
         >
           Export report
         </Button>
@@ -326,7 +345,7 @@ export function FaultCodesScreen() {
           flex={1}
           onPress={onShareReport}
           disabled={exporting}
-          icon={exporting ? () => <Spinner /> : () => <FileText size={18} color="#2bb673" />}
+          icon={exporting ? () => <Spinner /> : <FileText size={18} color={palette.accent} />}
         >
           Share report
         </Button>
@@ -334,7 +353,7 @@ export function FaultCodesScreen() {
       <Button
         marginTop="$2"
         onPress={() => router.push('/report')}
-        icon={() => <FileStack size={18} color="#2bb673" />}
+        icon={<FileStack size={18} color={palette.accent} />}
       >
         Full report
       </Button>

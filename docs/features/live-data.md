@@ -14,6 +14,18 @@ Stream and display live engine parameters (Mode 01 PIDs).
     L/h); there is no unit setting or conversion layer.
   - **All sensors** — every supported sensor grouped by system, see [All sensors](#all-sensors).
 
+### Accessibility (plan 20)
+
+See [accessibility](../accessibility.md). Each gauge is one `progressbar` element (label + value
+text) and each value card one `text` element ("Engine load: 22 %"); neither is a live region — at
+the 1 Hz poll rate a screen reader would never stop talking, so values are read when focused. The
+Customize icon buttons name their action and item (**Move RPM up**, **Move RPM down**, **Hide RPM**
+/ **Show RPM**), 36 dp with an 8 dp hit slop. The big numbers (gauge value, card value, fuel
+economy) are capped at 1.3× font scale; above an OS font scale of 1.5 (`LARGE_TEXT_FONT_SCALE`) the
+value cards go one per row — full width on a phone (in both the Dashboard and All sensors views,
+injection tiles included), one per row in the tablet card column. Arc and
+track colours are the theme's `$accent` / `$gaugeTrack`.
+
 ### Tablet and landscape layout (plan 21)
 
 The Dashboard segment follows the window's layout class (`useLayoutClass`, see
@@ -167,7 +179,9 @@ only while the segment is selected:
   (800 × 600 with a rail) gives a 302 dp gauge column and two 172 dp cards, a 290 dp card column one
   full-width card, a 454 dp one two per row on expanded and an 854 dp one three; with every gauge
   hidden and no fuel economy `live-left` is gone and the cards span the row; a 390 dp phone renders
-  neither. `model/twoPaneGrid.test.ts` covers the pure column / card-width maths.
+  neither. Plan 20: at font scale 2 a phone's cards are full width and a tablet's card column holds
+  one card (352 dp of a 672 dp row), at 1.3 the 150 dp minimum stays; the Customize icon buttons are
+  found by role and name (**Move RPM up** disabled, **Hide RPM** → **Show RPM**). `model/twoPaneGrid.test.ts` covers the pure column / card-width maths.
 - `ui/SensorGroups.test.tsx` — simulated Golf: the five injection DIDs are read once on mount
   (`readExtended` × 5) and live-data updates send no more; a read superseded by **Refresh**, or by
   leaving the view, sends nothing more; `22:<DID>` values never appear under "Other".

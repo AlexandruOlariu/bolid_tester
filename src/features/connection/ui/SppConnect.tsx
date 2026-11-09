@@ -50,7 +50,7 @@ export function SppConnect({
       </Panel>
 
       {error ? (
-        <Paragraph color="$red10" fontSize="$3" testID="connect-spp-error">
+        <Paragraph color="$statusError" fontSize="$3" testID="connect-spp-error">
           {error}
         </Paragraph>
       ) : null}

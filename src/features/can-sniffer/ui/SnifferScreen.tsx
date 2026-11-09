@@ -1,6 +1,6 @@
 import React from 'react';
 import { YStack, XStack, Paragraph, Button, Input } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { Screen, HIT_SLOP } from '@/shared/ui';
 import { MONITOR_UNAVAILABLE_MESSAGE } from '@/shared/obd-core';
 import { useSnifferStore } from '../model/snifferStore';
 import { useSniffer } from '../hooks/useSniffer';
@@ -84,6 +84,7 @@ export function SnifferScreen() {
             <Button
               flex={1}
               size="$3"
+              hitSlop={HIT_SLOP}
               disabled={!canShare}
               opacity={canShare ? 1 : 0.5}
               onPress={() => void exportCsv()}
@@ -93,6 +94,7 @@ export function SnifferScreen() {
             <Button
               flex={1}
               size="$3"
+              hitSlop={HIT_SLOP}
               disabled={!canShare}
               opacity={canShare ? 1 : 0.5}
               onPress={() => void exportRaw()}

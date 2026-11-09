@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useIsFocused, useLocalSearchParams, useNavigation } from 'expo-router';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Input } from 'tamagui';
 import { Stethoscope, Eraser, RefreshCw, Activity, MessageCircle, Send } from 'lucide-react-native';
-import { Screen, appAlert } from '@/shared/ui';
+import { Screen, appAlert, SectionTitle, HIT_SLOP, usePalette } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { describeDtc, followUpSuggestions } from '@/shared/obd-core';
 import type { AiChatMessage, AiReport, AiAction, DtcMake } from '@/shared/obd-core';
@@ -48,6 +48,7 @@ function FollowUpCard({
   onClear: () => void;
 }) {
   const [draft, setDraft] = useState('');
+  const palette = usePalette();
   const disabled = report.source === 'local';
   const send = (q: string) => {
     if (!q.trim() || asking || disabled) return;
@@ -57,13 +58,12 @@ function FollowUpCard({
   return (
     <Card bordered padding="$3" gap="$2">
       <XStack alignItems="center" gap="$2">
-        <MessageCircle size={18} color="#8B949E" />
-        <Text fontWeight="800" fontSize="$5" flex={1}>
-          Ask about this report
-        </Text>
+        <MessageCircle size={18} color={palette.muted} />
+        <SectionTitle flex={1}>Ask about this report</SectionTitle>
         {conversation.length > 0 ? (
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             chromeless
             onPress={onClear}
             accessibilityLabel="Clear the conversation"
@@ -81,7 +81,14 @@ function FollowUpCard({
         <>
           <XStack flexWrap="wrap" gap="$2">
             {followUpSuggestions(report, focusCode).map((q) => (
-              <Button key={q} size="$2" theme="blue" disabled={asking} onPress={() => send(q)}>
+              <Button
+                key={q}
+                size="$3"
+                hitSlop={HIT_SLOP}
+                theme="blue"
+                disabled={asking}
+                onPress={() => send(q)}
+              >
                 {q}
               </Button>
             ))}
@@ -98,7 +105,7 @@ function FollowUpCard({
             </XStack>
           ) : null}
           {askError ? (
-            <Paragraph color="$red10" fontSize="$2">
+            <Paragraph color="$statusError" fontSize="$2">
               {askError}
             </Paragraph>
           ) : null}
@@ -117,7 +124,7 @@ function FollowUpCard({
               theme="green"
               disabled={asking || !draft.trim()}
               onPress={() => send(draft)}
-              icon={() => <Send size={16} color="#fff" />}
+              icon={<Send size={16} />}
               accessibilityLabel="Send the question"
             />
           </XStack>
@@ -136,22 +143,16 @@ function ActionsView({
   onClear: () => void;
   onRecheck: () => void;
 }) {
+  const palette = usePalette();
   if (actions.length === 0) return null;
   return (
     <YStack gap="$2">
-      <Text fontWeight="800" fontSize="$5">
-        Recommended actions
-      </Text>
+      <SectionTitle>Recommended actions</SectionTitle>
       {actions.map((a, i) => {
         const Icon = ACTION_ICON[a.type] ?? Activity;
         if (a.type === 'clear_dtcs')
           return (
-            <Button
-              key={`a-${i}`}
-              theme="red"
-              onPress={onClear}
-              icon={() => <Eraser size={18} color="#fff" />}
-            >
+            <Button key={`a-${i}`} theme="red" onPress={onClear} icon={<Eraser size={18} />}>
               {a.label || 'Clear fault codes'}
             </Button>
           );
@@ -164,7 +165,7 @@ function ActionsView({
         return (
           <Card key={`a-${i}`} bordered padding="$3">
             <XStack alignItems="center" gap="$3">
-              <Icon size={18} color="#8B949E" />
+              <Icon size={18} color={palette.muted} />
               <YStack flex={1}>
                 <Text fontWeight="700">{a.label}</Text>
                 {a.detail ? (
@@ -203,16 +204,14 @@ function ReportView({
       <OverallBanner report={report} />
 
       {notice ? (
-        <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="#d29922">
+        <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="$statusWarn">
           <Paragraph fontSize="$2">{notice}</Paragraph>
         </Card>
       ) : null}
 
       {report.findings.length > 0 ? (
         <YStack gap="$2">
-          <Text fontWeight="800" fontSize="$5">
-            Findings ({report.findings.length})
-          </Text>
+          <SectionTitle>Findings ({report.findings.length})</SectionTitle>
           {report.findings.map((f, i) => (
             <FindingCard key={`f-${i}`} finding={f} profileId={profileId} />
           ))}
@@ -236,7 +235,7 @@ function ReportView({
 /** Shown when the run is focused on one fault code (fault-codes detail sheet → "Explain with AI"). */
 function FocusCard({ code, make }: { code: string; make?: DtcMake }) {
   return (
-    <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="#388bfd" gap="$1">
+    <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="$statusInfo" gap="$1">
       <Text fontWeight="800">Focused on fault code {code}</Text>
       <Paragraph theme="alt2" fontSize="$2">
         {describeDtc(code, make)}
@@ -313,7 +312,7 @@ export function AiDiagnoseScreen() {
   return (
     <Screen title="Diagnose (AI)" subtitle="One-tap health check of your car">
       {status !== 'connected' ? (
-        <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="#d29922">
+        <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="$statusWarn">
           <Paragraph fontSize="$3">
             Not connected. Pair your adapter on the Connect tab (or switch to the Simulator in
             Settings) to run a diagnosis.
@@ -328,7 +327,7 @@ export function AiDiagnoseScreen() {
         size="$5"
         onPress={runFull}
         disabled={busy || status !== 'connected'}
-        icon={busy ? () => <Spinner /> : () => <Stethoscope size={20} color="#fff" />}
+        icon={busy ? () => <Spinner /> : <Stethoscope size={20} />}
       >
         {shownFocus ? 'Run full diagnosis' : report ? 'Re-run diagnosis' : 'Run diagnosis'}
       </Button>
@@ -341,8 +340,8 @@ export function AiDiagnoseScreen() {
       ) : null}
 
       {error ? (
-        <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="#f85149">
-          <Paragraph color="$red10">{error}</Paragraph>
+        <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="$statusError">
+          <Paragraph color="$statusError">{error}</Paragraph>
         </Card>
       ) : null}
 

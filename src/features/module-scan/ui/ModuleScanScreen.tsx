@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
-import { Screen, VerificationBadge } from '@/shared/ui';
+import { Screen, VerificationBadge, HIT_SLOP } from '@/shared/ui';
 import { diagModuleKey } from '@/shared/vehicles';
 import { vagModuleName, vagNativeDtcText } from '@/shared/obd-core';
 import { useModuleScan, TP20_MONITOR_UNAVAILABLE } from '../hooks/useModuleScan';
@@ -48,7 +48,16 @@ function ModuleRow({
   const m = result.module;
   return (
     <YStack backgroundColor="$color2" borderRadius="$4" padding="$3" gap="$2">
-      <XStack alignItems="center" gap="$2" onPress={() => setExpanded((e) => !e)}>
+      <XStack
+        alignItems="center"
+        gap="$2"
+        onPress={() => setExpanded((e) => !e)}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={`${m.address} ${m.name}. ${stateBadge(result)}`}
+        accessibilityHint={expanded ? 'Hides the module details' : 'Shows the module details'}
+        accessibilityState={{ expanded }}
+      >
         <Paragraph fontFamily="$mono" theme="alt2">
           {m.address}
         </Paragraph>
@@ -102,6 +111,7 @@ function ModuleRow({
             !confirmingClear ? (
               <Button
                 size="$3"
+                hitSlop={HIT_SLOP}
                 disabled={running || !result.dtcs.length}
                 onPress={() => setConfirmingClear(true)}
               >
@@ -112,6 +122,7 @@ function ModuleRow({
                 <Button
                   flex={1}
                   size="$3"
+                  hitSlop={HIT_SLOP}
                   theme="red"
                   disabled={running}
                   onPress={() => {
@@ -121,7 +132,12 @@ function ModuleRow({
                 >
                   Confirm clear
                 </Button>
-                <Button flex={1} size="$3" onPress={() => setConfirmingClear(false)}>
+                <Button
+                  flex={1}
+                  size="$3"
+                  hitSlop={HIT_SLOP}
+                  onPress={() => setConfirmingClear(false)}
+                >
                   Cancel
                 </Button>
               </XStack>
@@ -220,7 +236,7 @@ export function ModuleScanScreen() {
             </Button>
           )}
           {tp20Error && tp20Error !== TP20_MONITOR_UNAVAILABLE ? (
-            <Paragraph color="$red10" size="$2">
+            <Paragraph color="$statusError" size="$2">
               ⚠ {tp20Error}
             </Paragraph>
           ) : null}
@@ -247,7 +263,7 @@ export function ModuleScanScreen() {
                     {m.dtcs ? (
                       m.dtcs.length ? (
                         m.dtcs.map((d) => (
-                          <Paragraph key={d.vag} size="$2" color="$red10" fontFamily="$mono">
+                          <Paragraph key={d.vag} size="$2" color="$statusError" fontFamily="$mono">
                             {kwpFaultLine(d.vag, d.status)}
                           </Paragraph>
                         ))

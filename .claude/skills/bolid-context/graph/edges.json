@@ -1,5 +1,40 @@
 [
   [
+    "concept:accessibility",
+    "doc:accessibility",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "lib:contrast",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "screen:_layout",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "ui:LabeledSwitch",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "ui:SegmentedControl",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "ui:usePalette",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "ui:useReducedMotion",
+    "relates"
+  ],
+  [
     "concept:adaptation-channels",
     "concept:ecu-coding",
     "relates"
@@ -5770,6 +5805,11 @@
     "imports"
   ],
   [
+    "ui:AlertDialog",
+    "ui:SegmentedControl",
+    "imports"
+  ],
+  [
     "ui:AppSplash",
     "feature:maintenance",
     "imports"
@@ -5800,6 +5840,11 @@
     "imports"
   ],
   [
+    "ui:AppSplash",
+    "ui:useReducedMotion",
+    "imports"
+  ],
+  [
     "ui:CardGrid",
     "ui:layoutClass",
     "imports"
@@ -5807,6 +5852,11 @@
   [
     "ui:CardGrid",
     "ui:useLayoutClass",
+    "imports"
+  ],
+  [
+    "ui:Gauge",
+    "ui:usePalette",
     "imports"
   ],
   [
@@ -5840,6 +5890,11 @@
     "imports"
   ],
   [
+    "ui:LabeledSwitch",
+    "ui:SegmentedControl",
+    "imports"
+  ],
+  [
     "ui:RootErrorBoundary",
     "store:errorLogStore",
     "imports"
@@ -5855,6 +5910,11 @@
     "imports"
   ],
   [
+    "ui:Screen",
+    "ui:usePalette",
+    "imports"
+  ],
+  [
     "ui:StatusBadge",
     "doc:vcds-parity-roadmap",
     "named"
@@ -5867,6 +5927,11 @@
   [
     "ui:Toast",
     "store:toastStore",
+    "imports"
+  ],
+  [
+    "ui:Toast",
+    "ui:SegmentedControl",
     "imports"
   ],
   [
@@ -5912,6 +5977,11 @@
   [
     "ui:useLayoutClass",
     "ui:layoutClass",
+    "imports"
+  ],
+  [
+    "ui:useReducedMotion",
+    "store:errorLogStore",
     "imports"
   ],
   [

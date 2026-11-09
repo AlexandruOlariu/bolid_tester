@@ -37,6 +37,7 @@ export function VinDecodeScreen() {
           placeholder={sessionVin ?? 'e.g. WVWZZZ1KZ9W903398'}
           autoCapitalize="characters"
           autoCorrect={false}
+          accessibilityLabel="Vehicle identification number (VIN)"
         />
       </YStack>
 
@@ -48,7 +49,10 @@ export function VinDecodeScreen() {
           <Separator />
           <Row label="Country" value={`${decoded.country} (${decoded.region})`} />
           <Separator />
-          <Row label="Model year" value={decoded.modelYear != null ? String(decoded.modelYear) : 'unknown'} />
+          <Row
+            label="Model year"
+            value={decoded.modelYear != null ? String(decoded.modelYear) : 'unknown'}
+          />
           <Separator />
           <Row label="WMI" value={decoded.wmi} />
           <Separator />
@@ -57,7 +61,9 @@ export function VinDecodeScreen() {
           <Row label="Check digit" value={checkDigit} />
         </Card>
       ) : decoded ? (
-        <Paragraph theme="alt2">Not a valid 17-character VIN (the letters I, O and Q are never used).</Paragraph>
+        <Paragraph theme="alt2">
+          Not a valid 17-character VIN (the letters I, O and Q are never used).
+        </Paragraph>
       ) : (
         <Paragraph theme="alt2">No VIN yet — connect to a car or type a VIN above.</Paragraph>
       )}

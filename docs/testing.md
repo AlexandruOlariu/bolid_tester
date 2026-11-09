@@ -127,9 +127,22 @@ upgrade stops rendering under Jest, the fallback from plan 10 is a `moduleNameMa
 
 Notes:
 
-- Tamagui `Button`s render a `role="button"` view without `accessible`, so Testing Library's
-  `getByRole` does not find them; tests press them by their text. Making every control a proper
-  accessibility element is plan 20.
+- Every Tamagui `Button` is an accessibility element (`accessible` from the config's
+  `defaultProps`, plan 20), so `getByRole('button', { name })` finds it; segments are
+  `getByRole('radio', { name })` with `toBeSelected()` / `toBeChecked()`, switches
+  `getByRole('switch', { name })`. Pressing by visible text still works.
+- **Accessibility sweep** (plan 20): `test/a11y/screens.a11y.test.tsx` renders every route in
+  `src/app` (disconnected and on the simulator, plus tap-only states) and fails on a pressable with
+  no name, role or `accessible`, an unlabelled input, or a switch / radio without a checked state —
+  the walker is `test/a11y.ts` (`a11yProblems`). See [accessibility](./accessibility.md). It loads
+  every route module once in a `beforeAll`, so the first case does not pay the ~9 s of module
+  loading against its timeout. `src/shared/ui/touchTargets.test.ts` (core) scans the source for a
+  Tamagui `Button` under 44 pt (`$1` / `$2`, or `$3` without `hitSlop`).
+- **Per-test timeout:** `jest.setup.ui.ts` sets 20 s for the `ui` project (Jest's default is 5 s).
+  The simulator walk-throughs run in real time and take a few seconds alone, more while `npm test`
+  runs every suite in parallel.
+- `screen.root` is the first host element: to run `a11yProblems` on a lone component, render it
+  inside a `View`.
 - `expo-modules-core` is nested under `node_modules/expo/` (not hoisted); the `ui` project adds that
   folder to `modulePaths` because jest-expo's setup requires the package by name.
 

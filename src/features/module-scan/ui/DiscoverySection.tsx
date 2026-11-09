@@ -4,6 +4,7 @@ import type { DiscoveredModule, UdsHeaderCandidate } from '@/shared/obd-core';
 import type { DiagModule } from '@/shared/vehicles';
 import { useModuleScanStore } from '../model/moduleScanStore';
 import { diagModuleLiteral, isInModuleList } from '../api/discovery';
+import { HIT_SLOP } from '@/shared/ui';
 
 /** `08/46` for a probe that covered a shared id pair, else the single address. */
 const addresses = (d: DiscoveredModule) =>
@@ -67,7 +68,12 @@ function AnsweredRow({
           {listed
             ? null
             : others.map((alt) => (
-                <Button key={alt.address} size="$2" onPress={() => setPicked(alt)}>
+                <Button
+                  key={alt.address}
+                  size="$3"
+                  hitSlop={HIT_SLOP}
+                  onPress={() => setPicked(alt)}
+                >
                   {`Record as ${alt.address} ${alt.name} instead`}
                 </Button>
               ))}
@@ -78,12 +84,12 @@ function AnsweredRow({
           Already in this car's module list.
         </Paragraph>
       ) : isGarageCar ? (
-        <Button size="$2" onPress={() => onAdd(effective)}>
+        <Button size="$3" hitSlop={HIT_SLOP} onPress={() => onAdd(effective)}>
           Add to this car's module list
         </Button>
       ) : (
         <YStack gap="$1">
-          <Button size="$2" onPress={() => setShowLiteral((v) => !v)}>
+          <Button size="$3" hitSlop={HIT_SLOP} onPress={() => setShowLiteral((v) => !v)}>
             {showLiteral ? 'Hide module entry' : "Add to this car's module list"}
           </Button>
           {showLiteral ? (
@@ -160,7 +166,7 @@ export function DiscoverySection({
           {errors.map((d) => (
             <Paragraph
               key={`${d.candidate.address}-${d.candidate.reqHeader}`}
-              color="$red10"
+              color="$statusError"
               size="$2"
             >
               ⚠ {addresses(d)} ({d.candidate.reqHeader}): {d.reason}

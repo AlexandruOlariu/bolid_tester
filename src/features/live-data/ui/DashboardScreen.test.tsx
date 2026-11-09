@@ -173,8 +173,8 @@ describe('DashboardScreen', () => {
     const cardWidthOf = (label: RegExp) => {
       let node = screen.getByLabelText(label);
       while (!node.props.accessibilityLabel) node = node.parent!;
-      const style = [node.props.style].flat(Infinity) as { width?: number }[];
-      return style.reduce<number | undefined>((w, s) => s?.width ?? w, undefined);
+      const style = [node.props.style].flat(Infinity) as { width?: number | string }[];
+      return style.reduce<number | string | undefined>((w, s) => s?.width ?? w, undefined);
     };
     const layoutRow = (width: number) =>
       fireEvent(screen.getByTestId('live-row'), 'layout', {
@@ -251,5 +251,41 @@ describe('DashboardScreen', () => {
       expect(screen.queryByTestId('live-right')).toBeNull();
       expect(screen.getByRole('progressbar', { name: 'RPM' })).toBeTruthy();
     });
+
+    // Plan 20: above 1.5× OS font scale two 150 dp tiles cannot hold the number and its unit.
+    it('large text on a phone: the value cards go full width, one per row', async () => {
+      setMockWindow({ width: 390, height: 844, fontScale: 2 });
+      await connectSimulator();
+      seed();
+      renderWithProviders(<DashboardScreen />);
+      expect(cardWidthOf(/^Calculated engine load: 22/)).toBe('100%');
+    });
+
+    it('large text on a tablet: one card per row in the card column', async () => {
+      setMockWindow({ width: 800, height: 600, fontScale: 2 });
+      await connectSimulator();
+      seed();
+      renderWithProviders(<DashboardScreen />);
+      layoutRow(672); // 672 − 302 − 18 = 352 dp, all of it for one card
+      expect(cardWidthOf(/^Calculated engine load: 22/)).toBe(352);
+    });
+
+    it('normal text on a phone keeps the wrapping 150 dp minimum', async () => {
+      setMockWindow({ width: 390, height: 844, fontScale: 1.3 });
+      await connectSimulator();
+      seed();
+      renderWithProviders(<DashboardScreen />);
+      expect(cardWidthOf(/^Calculated engine load: 22/)).toBeUndefined();
+    });
+  });
+
+  it('Customize: the icon-only reorder / hide buttons name their action and car item', async () => {
+    await connectSimulator();
+    renderWithProviders(<DashboardScreen />);
+    fireEvent.press(screen.getByText('Customize'));
+    expect(screen.getByRole('button', { name: 'Move RPM up' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Move RPM down' })).toBeTruthy();
+    fireEvent.press(screen.getByRole('button', { name: 'Hide RPM' }));
+    expect(screen.getByRole('button', { name: 'Show RPM' })).toBeTruthy();
   });
 });

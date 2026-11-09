@@ -1,6 +1,6 @@
 import React from 'react';
 import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { Screen, HIT_SLOP } from '@/shared/ui';
 import { usePerformanceStore } from '../model/performanceStore';
 import { usePerformanceTest } from '../hooks/usePerformanceTest';
 
@@ -16,7 +16,13 @@ export function PerformanceScreen() {
     <Screen title="Performance" subtitle="Closed-course use only — keep your eyes on the road">
       <XStack gap="$2">
         {(['accel', 'drag', 'brake'] as const).map((t) => (
-          <Button key={t} size="$2" theme={type === t ? 'green' : undefined} onPress={() => setType(t)}>
+          <Button
+            key={t}
+            size="$3"
+            hitSlop={HIT_SLOP}
+            theme={type === t ? 'green' : undefined}
+            onPress={() => setType(t)}
+          >
             {t === 'accel' ? '0–100' : t === 'drag' ? '¼ mile' : 'Braking'}
           </Button>
         ))}
@@ -34,7 +40,9 @@ export function PerformanceScreen() {
           </Button>
         )}
       </XStack>
-      {state === 'armed' ? <Paragraph theme="alt2">Armed — launch detected on first movement.</Paragraph> : null}
+      {state === 'armed' ? (
+        <Paragraph theme="alt2">Armed — launch detected on first movement.</Paragraph>
+      ) : null}
 
       <YStack gap="$2">
         <H4>Runs</H4>

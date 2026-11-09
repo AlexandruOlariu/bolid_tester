@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sheet, YStack, XStack, Text, Paragraph, Button, Input, TextArea } from 'tamagui';
 import { useGarageStore } from '@/shared/state/garageStore';
+import { SegmentedControl, HIT_SLOP } from '@/shared/ui';
 import { formatLoginCode } from '@/shared/obd-core';
 import {
   MASKED_LOGIN_CODE,
@@ -106,7 +107,7 @@ export function EditorBody({
 
   const err = (k: keyof VehicleDraft) =>
     showErrors && errors[k] ? (
-      <Paragraph color="$red10" fontSize="$2">
+      <Paragraph color="$statusError" fontSize="$2">
         {errors[k]}
       </Paragraph>
     ) : null;
@@ -143,18 +144,12 @@ export function EditorBody({
 
       <YStack gap="$1">
         <Paragraph fontWeight="700">Fuel</Paragraph>
-        <XStack gap="$2" flexWrap="wrap">
-          {FUELS.map((f) => (
-            <Button
-              key={f.value}
-              size="$2"
-              theme={draft.fuel === f.value ? 'green' : 'gray'}
-              onPress={() => set({ fuel: f.value })}
-            >
-              {f.label}
-            </Button>
-          ))}
-        </XStack>
+        <SegmentedControl
+          label="Fuel"
+          options={FUELS}
+          value={draft.fuel}
+          onChange={(fuel) => set({ fuel })}
+        />
       </YStack>
 
       <YStack gap="$1">
@@ -164,19 +159,13 @@ export function EditorBody({
           Generic works for any OBD2 car; a specific profile also brings its experimental,
           car-specific readings and tools — pick one only for that exact car.
         </Paragraph>
-        <YStack gap="$2">
-          {VEHICLE_PROFILES.map((p) => (
-            <Button
-              key={p.id}
-              size="$3"
-              justifyContent="flex-start"
-              theme={draft.baseProfileId === p.id ? 'green' : 'gray'}
-              onPress={() => set({ baseProfileId: p.id })}
-            >
-              {p.name}
-            </Button>
-          ))}
-        </YStack>
+        <SegmentedControl
+          label="Base profile"
+          vertical
+          options={VEHICLE_PROFILES.map((p) => ({ value: p.id, label: p.name }))}
+          value={draft.baseProfileId}
+          onChange={(baseProfileId) => set({ baseProfileId })}
+        />
         {err('baseProfileId')}
       </YStack>
 
@@ -223,14 +212,16 @@ export function EditorBody({
                   </Paragraph>
                 </YStack>
                 <Button
-                  size="$2"
+                  size="$3"
+                  hitSlop={HIT_SLOP}
                   onPress={() => setRevealed((r) => (r === e.address ? null : e.address))}
                   accessibilityLabel={`${revealed === e.address ? 'Hide' : 'Show'} login code for module ${e.address}`}
                 >
                   {revealed === e.address ? 'Hide' : 'Show'}
                 </Button>
                 <Button
-                  size="$2"
+                  size="$3"
+                  hitSlop={HIT_SLOP}
                   theme="red"
                   onPress={() => setLoginCodes((l) => removeLoginCode(l, e.address))}
                   accessibilityLabel={`Delete login code for module ${e.address}`}
@@ -252,7 +243,13 @@ export function EditorBody({
         </Button>
       </XStack>
 
-      <Button size="$3" theme="gray" onPress={() => void exportGarage()} disabled={busy}>
+      <Button
+        size="$3"
+        hitSlop={HIT_SLOP}
+        theme="gray"
+        onPress={() => void exportGarage()}
+        disabled={busy}
+      >
         Share garage as JSON
       </Button>
       <Paragraph theme="alt2" fontSize="$1">

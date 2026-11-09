@@ -23,12 +23,13 @@ import { GENERIC_GUIDE, matchFaultGuide, type FaultGuide } from '@/shared/vehicl
 // The fault guide's deep-link buttons, from the fault-codes public index (same buttons as on the
 // Faults screen).
 import { GuideLinks } from '@/features/fault-codes';
+import { usePalette, type Tone, SectionTitle } from '@/shared/ui';
 
-const SEV_COLOR: Record<DiagSeverity, string> = {
-  ok: '#2bb673',
-  info: '#388bfd',
-  warn: '#d29922',
-  critical: '#f85149',
+const SEV_TONE: Record<DiagSeverity, Tone> = {
+  ok: 'statusOk',
+  info: 'statusInfo',
+  warn: 'statusWarn',
+  critical: 'statusError',
 };
 
 const SEV_LABEL: Record<DiagSeverity, string> = {
@@ -38,31 +39,31 @@ const SEV_LABEL: Record<DiagSeverity, string> = {
   critical: 'CRITICAL',
 };
 
-const OVERALL_META: Record<
-  OverallHealth,
-  { color: string; Icon: typeof ShieldCheck; label: string }
-> = {
-  ok: { color: '#2bb673', Icon: ShieldCheck, label: 'Looks healthy' },
-  attention: { color: '#d29922', Icon: TriangleAlert, label: 'Needs attention' },
-  urgent: { color: '#f85149', Icon: CircleAlert, label: 'Urgent' },
-};
+const OVERALL_META: Record<OverallHealth, { tone: Tone; Icon: typeof ShieldCheck; label: string }> =
+  {
+    ok: { tone: 'statusOk', Icon: ShieldCheck, label: 'Looks healthy' },
+    attention: { tone: 'statusWarn', Icon: TriangleAlert, label: 'Needs attention' },
+    urgent: { tone: 'statusError', Icon: CircleAlert, label: 'Urgent' },
+  };
 
 export function OverallBanner({ report }: { report: AiReport }) {
+  const palette = usePalette();
   const meta = OVERALL_META[report.overall];
+  const color = palette[meta.tone];
   const { Icon } = meta;
   return (
-    <Card bordered padding="$4" borderLeftWidth={4} borderLeftColor={meta.color} gap="$2">
+    <Card bordered padding="$4" borderLeftWidth={4} borderLeftColor={color} gap="$2">
       <XStack alignItems="center" gap="$3">
-        <Icon size={28} color={meta.color} />
+        <Icon size={28} color={color} />
         <YStack flex={1}>
-          <Text fontWeight="900" fontSize="$7" color={meta.color}>
+          <Text fontWeight="900" fontSize="$7" color={color} accessibilityRole="header">
             {meta.label}
           </Text>
           <XStack alignItems="center" gap="$2">
             {report.source === 'ai' ? (
-              <Sparkles size={13} color="#8B949E" />
+              <Sparkles size={13} color={palette.muted} />
             ) : (
-              <Shield size={13} color="#8B949E" />
+              <Shield size={13} color={palette.muted} />
             )}
             <Paragraph theme="alt2" fontSize="$1">
               {report.source === 'ai' ? 'AI analysis' : 'On-device rule-based analysis'}
@@ -95,7 +96,7 @@ export function FindingCard({
   /** Called before a fault-guide button navigates away (a sheet closes itself with it). */
   onNavigate?: () => void;
 }) {
-  const color = SEV_COLOR[finding.severity];
+  const color = usePalette()[SEV_TONE[finding.severity]];
   const guides = findingGuides(profileId, finding.codes);
   return (
     <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor={color} gap="$1">
@@ -178,14 +179,13 @@ export function AiReportView({
   ranAt: number | null;
   onNavigate?: () => void;
 }) {
+  const palette = usePalette();
   return (
     <YStack gap="$3">
       <OverallBanner report={report} />
       {report.findings.length > 0 ? (
         <YStack gap="$2">
-          <Text fontWeight="800" fontSize="$5">
-            Findings ({report.findings.length})
-          </Text>
+          <SectionTitle>Findings ({report.findings.length})</SectionTitle>
           {report.findings.map((f, i) => (
             <FindingCard key={`f-${i}`} finding={f} profileId={profileId} onNavigate={onNavigate} />
           ))}
@@ -195,14 +195,12 @@ export function AiReportView({
       )}
       {report.actions.length > 0 ? (
         <YStack gap="$2">
-          <Text fontWeight="800" fontSize="$5">
-            Recommended actions
-          </Text>
+          <SectionTitle>Recommended actions</SectionTitle>
           {report.actions.map((a, i) => {
             const Icon = ACTION_ICON[a.type] ?? Activity;
             return (
               <XStack key={`a-${i}`} alignItems="center" gap="$3">
-                <Icon size={16} color="#8B949E" />
+                <Icon size={16} color={palette.muted} />
                 <YStack flex={1}>
                   <Text fontWeight="700">{a.label}</Text>
                   {a.detail ? (

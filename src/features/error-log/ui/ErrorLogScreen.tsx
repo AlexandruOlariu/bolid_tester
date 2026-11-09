@@ -10,15 +10,24 @@ import {
   Bug,
   MessageSquareWarning,
 } from 'lucide-react-native';
-import { Screen, appAlert, monoFontFamily } from '@/shared/ui';
+import {
+  Screen,
+  appAlert,
+  monoFontFamily,
+  SegmentedControl,
+  HIT_SLOP,
+  usePalette,
+  type SegmentOption,
+} from '@/shared/ui';
 import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import type { ErrorSeverity, LoggedError } from '@/shared/lib/errorLog';
 import { useErrorLogExport } from '../hooks/useErrorLogExport';
 
+/** Severity colour tokens (plan 20): AA in both themes. */
 const SEVERITY_COLOR: Record<ErrorSeverity, string> = {
-  warning: '#d29922',
-  error: '#f85149',
-  fatal: '#a371f7',
+  warning: '$statusWarn',
+  error: '$statusError',
+  fatal: '$statusFatal',
 };
 
 type SeverityFilter = 'all' | ErrorSeverity;
@@ -31,15 +40,8 @@ function fmtTime(ts: number): string {
   }
 }
 
-function Chip({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
-  return (
-    <Button size="$2" theme={active ? 'green' : 'gray'} onPress={onPress}>
-      {label}
-    </Button>
-  );
-}
-
 function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => void }) {
+  const palette = usePalette();
   const [open, setOpen] = useState(false);
   const color = SEVERITY_COLOR[e.severity];
   const monoFont = monoFontFamily(Platform.OS);
@@ -55,10 +57,12 @@ function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => 
           {e.source}
         </Text>
         <Button
-          size="$1"
+          size="$3"
           circular
           chromeless
-          icon={() => <Trash2 size={14} color="#8B949E" />}
+          hitSlop={HIT_SLOP}
+          icon={<Trash2 size={16} color={palette.muted} />}
+          accessibilityLabel={`Delete error: ${e.source}`}
           onPress={() => onRemove(e.id)}
         />
       </XStack>
@@ -69,20 +73,22 @@ function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => 
 
       {hasDetail ? (
         <Button
-          size="$1"
+          size="$3"
           chromeless
+          hitSlop={HIT_SLOP}
           alignSelf="flex-start"
           paddingHorizontal="$0"
-          icon={() =>
+          icon={
             open ? (
-              <ChevronDown size={14} color="#8B949E" />
+              <ChevronDown size={14} color={palette.muted} />
             ) : (
-              <ChevronRight size={14} color="#8B949E" />
+              <ChevronRight size={14} color={palette.muted} />
             )
           }
+          accessibilityState={{ expanded: open }}
           onPress={() => setOpen((v) => !v)}
         >
-          <Text fontSize="$1" color="#8B949E">
+          <Text fontSize="$1" color="$muted">
             {open ? 'Hide details' : 'Details'}
           </Text>
         </Button>
@@ -110,6 +116,7 @@ function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => 
 }
 
 export function ErrorLogScreen() {
+  const palette = usePalette();
   const router = useRouter();
   const errors = useErrorLogStore((s) => s.errors);
   const remove = useErrorLogStore((s) => s.remove);
@@ -127,6 +134,13 @@ export function ErrorLogScreen() {
     () => (filter === 'all' ? errors : errors.filter((e) => e.severity === filter)),
     [errors, filter],
   );
+
+  const filterOptions: SegmentOption<SeverityFilter>[] = [
+    { value: 'all', label: `All (${errors.length})` },
+    { value: 'fatal', label: `Fatal (${counts.fatal})` },
+    { value: 'error', label: `Errors (${counts.error})` },
+    { value: 'warning', label: `Warnings (${counts.warning})` },
+  ];
 
   const confirmClear = () =>
     appAlert('Clear error log?', 'This permanently deletes every saved error.', [
@@ -146,35 +160,20 @@ export function ErrorLogScreen() {
       {/* Plan 32: the one-tap problem report bundles this log with the adapter log and device info. */}
       <Button
         size="$3"
+        hitSlop={HIT_SLOP}
         alignSelf="flex-start"
         onPress={() => router.push('/feedback')}
-        icon={() => <MessageSquareWarning size={16} color="#2bb673" />}
+        icon={<MessageSquareWarning size={16} color={palette.accent} />}
         accessibilityLabel="Report a problem"
       >
         Report
       </Button>
-      <XStack gap="$2" alignItems="center" flexWrap="wrap">
-        <Chip
-          active={filter === 'all'}
-          label={`All (${errors.length})`}
-          onPress={() => setFilter('all')}
-        />
-        <Chip
-          active={filter === 'fatal'}
-          label={`Fatal (${counts.fatal})`}
-          onPress={() => setFilter('fatal')}
-        />
-        <Chip
-          active={filter === 'error'}
-          label={`Errors (${counts.error})`}
-          onPress={() => setFilter('error')}
-        />
-        <Chip
-          active={filter === 'warning'}
-          label={`Warnings (${counts.warning})`}
-          onPress={() => setFilter('warning')}
-        />
-      </XStack>
+      <SegmentedControl
+        label="Show errors by severity"
+        options={filterOptions}
+        value={filter}
+        onChange={setFilter}
+      />
 
       {errors.length > 0 ? (
         <XStack gap="$2" alignItems="center">
@@ -183,11 +182,11 @@ export function ErrorLogScreen() {
             theme="green"
             disabled={busy || shown.length === 0}
             onPress={onExport}
-            icon={busy ? () => <Spinner /> : () => <Download size={16} color="#fff" />}
+            icon={busy ? () => <Spinner /> : <Download size={16} />}
           >
             Export
           </Button>
-          <Button theme="red" onPress={confirmClear} icon={() => <Trash2 size={16} color="#fff" />}>
+          <Button theme="red" onPress={confirmClear} icon={<Trash2 size={16} />}>
             Clear
           </Button>
         </XStack>
@@ -195,7 +194,7 @@ export function ErrorLogScreen() {
 
       {shown.length === 0 ? (
         <YStack alignItems="center" gap="$2" paddingVertical="$6">
-          <Bug size={28} color="#2bb673" />
+          <Bug size={28} color={palette.accent} />
           <Paragraph theme="alt2" textAlign="center">
             {errors.length === 0
               ? 'No errors logged. When something goes wrong it’ll be saved here so you can export and fix it later.'

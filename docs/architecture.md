@@ -178,6 +178,18 @@ the default `adjustResize` still shrinks the window there is **unverified** — 
 the plan 21 entry in the implementation log). Foldables, multi-window
 and a web target are out of scope.
 
+**Colour and accessibility (plan 20).** `src/shared/ui/palette.json` is the **only colour
+source** for on-screen UI: `tamagui.config.ts` merges its semantic tokens (`$accent`, `$muted`,
+`$statusOk|Warn|Error|Info|Fatal`, `$placeholderColor`, `$gaugeTrack`, `$onFill`) into every light
+and dark theme, components use the tokens (or `usePalette()` for raw strings: icons, SVG, chart
+series), and `npm run check:contrast` holds every pair to WCAG AA in both themes. No component
+hard-codes a hex colour (the HTML / PDF exports' inline CSS excepted). Controls follow
+[accessibility.md](./accessibility.md): every `Button` is one accessibility element (config
+`defaultProps`), single choices are `SegmentedControl` radios, on / off settings are
+`LabeledSwitch` / `AccessibleSwitch`, targets are ≥ 44 pt, display numbers cap font scaling at
+1.3×, and decorative motion follows `useReducedMotion()`. `test/a11y/screens.a11y.test.tsx` sweeps
+every route for unnamed controls.
+
 **Specs.** Every slice has a spec in `docs/features/<slug>.md` (see [docs/README](./README.md));
 `src/shared/lib/featureDocsSync.test.ts` enforces it.
 

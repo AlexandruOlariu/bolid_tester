@@ -14,6 +14,7 @@ import { useBackupWorkStore } from '../model/backupWorkStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { AdaptationRestorePanel } from './AdaptationRestorePanel';
+import { HIT_SLOP } from '@/shared/ui';
 
 const fmtDate = (ts: number) => new Date(ts).toLocaleString();
 
@@ -76,7 +77,8 @@ function BackupModuleBlock({ m, blocked }: { m: CarBackupModule; blocked: string
       {canRestoreCoding ? (
         !confirming ? (
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             disabled={!unlocked || busy || !!blocked}
             onPress={() => unlocked && !busy && !blocked && setConfirming(true)}
           >
@@ -89,10 +91,23 @@ function BackupModuleBlock({ m, blocked }: { m: CarBackupModule; blocked: string
               value is backed up and re-verified.
             </Paragraph>
             <XStack gap="$2">
-              <Button flex={1} size="$3" theme="red" disabled={busy || !!blocked} onPress={restore}>
+              <Button
+                flex={1}
+                size="$3"
+                hitSlop={HIT_SLOP}
+                theme="red"
+                disabled={busy || !!blocked}
+                onPress={restore}
+              >
                 {busy ? 'Writing…' : 'Confirm restore'}
               </Button>
-              <Button flex={1} size="$3" disabled={busy} onPress={() => setConfirming(false)}>
+              <Button
+                flex={1}
+                size="$3"
+                hitSlop={HIT_SLOP}
+                disabled={busy}
+                onPress={() => setConfirming(false)}
+              >
                 Cancel
               </Button>
             </XStack>
@@ -123,7 +138,16 @@ function BackupRow({
 
   return (
     <YStack gap="$2" backgroundColor="$color1" borderRadius="$3" padding="$2">
-      <XStack gap="$2" alignItems="center" onPress={() => setExpanded((e) => !e)}>
+      <XStack
+        gap="$2"
+        alignItems="center"
+        onPress={() => setExpanded((e) => !e)}
+        accessible
+        accessibilityRole="button"
+        accessibilityLabel={`Car backup ${fmtDate(backup.ts)}. ${s.modules} modules, ${s.codedModules} coded, ${s.adaptations} adaptations`}
+        accessibilityHint={expanded ? 'Hides the backup' : 'Shows the backup'}
+        accessibilityState={{ expanded }}
+      >
         <YStack flex={1}>
           <Paragraph>{fmtDate(backup.ts)}</Paragraph>
           <Paragraph theme="alt2" size="$2">
@@ -137,7 +161,7 @@ function BackupRow({
       {expanded ? (
         <YStack gap="$2">
           {blocked ? (
-            <Paragraph size="$2" color="$red10" testID="backup-vehicle-mismatch">
+            <Paragraph size="$2" color="$statusError" testID="backup-vehicle-mismatch">
               {blocked}
             </Paragraph>
           ) : null}
@@ -147,7 +171,8 @@ function BackupRow({
           <XStack gap="$2">
             <Button
               flex={1}
-              size="$2"
+              size="$3"
+              hitSlop={HIT_SLOP}
               disabled={exporting}
               onPress={async () => {
                 setExporting(true);
@@ -160,7 +185,13 @@ function BackupRow({
             >
               {exporting ? 'Exporting…' : 'Export .json'}
             </Button>
-            <Button flex={1} size="$2" theme="red" onPress={() => onRemove(backup.id)}>
+            <Button
+              flex={1}
+              size="$3"
+              hitSlop={HIT_SLOP}
+              theme="red"
+              onPress={() => onRemove(backup.id)}
+            >
               Delete
             </Button>
           </XStack>

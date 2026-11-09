@@ -74,7 +74,7 @@ function Row({ label, value }: { label: string; value: string }) {
 
 function Warning({ children }: { children: string }) {
   return (
-    <Paragraph fontSize="$2" color="#d97706">
+    <Paragraph fontSize="$2" color="$statusWarn">
       {children}
     </Paragraph>
   );

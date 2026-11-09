@@ -5,10 +5,10 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { useBatteryHealth } from '../hooks/useBatteryHealth';
 
 const VERDICT_COLOR: Record<string, string> = {
-  good: '#2bb673',
-  fair: '#d29922',
-  weak: '#f85149',
-  unknown: '#8B949E',
+  good: '$statusOk',
+  fair: '$statusWarn',
+  weak: '$statusError',
+  unknown: '$muted',
 };
 
 function volts(v: number | null): string | null {
@@ -32,7 +32,9 @@ export function BatteryScreen() {
       <Card bordered padding="$3">
         <XStack justifyContent="space-between" alignItems="center">
           <Paragraph theme="alt2">Live voltage</Paragraph>
-          <Text fontSize="$7" fontWeight="800">{liveV != null ? `${liveV.toFixed(1)} V` : '—'}</Text>
+          <Text fontSize="$7" fontWeight="800">
+            {liveV != null ? `${liveV.toFixed(1)} V` : '—'}
+          </Text>
         </XStack>
       </Card>
 
@@ -44,7 +46,9 @@ export function BatteryScreen() {
         <YStack gap="$3">
           <XStack alignItems="center" gap="$2">
             <H3 color={VERDICT_COLOR[report.verdict]}>{report.verdict.toUpperCase()}</H3>
-            {report.socPct != null ? <Paragraph theme="alt2">· {report.socPct}% charge</Paragraph> : null}
+            {report.socPct != null ? (
+              <Paragraph theme="alt2">· {report.socPct}% charge</Paragraph>
+            ) : null}
           </XStack>
           <XStack flexWrap="wrap" gap="$2">
             <ValueCard name="Resting" value={volts(report.restingV)} unit="V" />

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { YStack, XStack, Text, Paragraph, Button, Card, Switch } from 'tamagui';
+import { YStack, XStack, Text, Paragraph, Button, Card } from 'tamagui';
 import type { SeedKeyPluginV1 } from '@/shared/obd-core';
 import { useSeedKeyStore, type SeedKeyIndexEntry } from '@/shared/state/seedKeyStore';
 import { useActiveProfile } from '@/shared/state/activeProfile';
@@ -13,7 +13,7 @@ import {
 } from '@/shared/security/seedKeyFiles';
 import { testSeedKeyPluginInSimulator } from '@/shared/security/simulatorCheck';
 import { useSeedKeyVehicleKeys } from '@/shared/security/useUnlockStatus';
-import { appAlert } from '@/shared/ui';
+import { appAlert, HIT_SLOP, AccessibleSwitch } from '@/shared/ui';
 
 const hex2 = (n: number) => `0x${n.toString(16).toUpperCase().padStart(2, '0')}`;
 
@@ -68,7 +68,8 @@ function PluginRow({
         </Paragraph>
         <XStack gap="$2" marginTop="$1">
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             disabled={busy}
             onPress={onTest}
             accessibilityLabel={`Test in simulator: ${entry.name}`}
@@ -76,7 +77,8 @@ function PluginRow({
             Test in simulator
           </Button>
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             theme="red"
             onPress={onDelete}
             accessibilityLabel={`Delete ${entry.name}`}
@@ -208,6 +210,7 @@ export function SeedKeysSection() {
       </Paragraph>
       <Button
         size="$3"
+        hitSlop={HIT_SLOP}
         disabled={busy}
         onPress={() => void startImport()}
         accessibilityLabel="Import a security access plugin from a file"
@@ -232,7 +235,7 @@ export function SeedKeysSection() {
             <Paragraph theme="alt2" fontSize="$1">
               Nothing was changed.
             </Paragraph>
-            <Button size="$2" onPress={() => setRefusal(null)}>
+            <Button size="$3" hitSlop={HIT_SLOP} onPress={() => setRefusal(null)}>
               OK
             </Button>
           </YStack>
@@ -259,14 +262,11 @@ export function SeedKeysSection() {
               <Paragraph flex={1} fontSize="$2">
                 Only for this car ({vehicleLabel(profile)})
               </Paragraph>
-              <Switch
-                size="$2"
+              <AccessibleSwitch
                 checked={pin}
-                onCheckedChange={(v) => setPin(!!v)}
+                onCheckedChange={setPin}
                 accessibilityLabel="Only for this car"
-              >
-                <Switch.Thumb />
-              </Switch>
+              />
             </XStack>
             <Paragraph theme="alt2" fontSize="$1">
               Install only a routine for your own car. A wrong key counts toward the module’s
@@ -276,13 +276,14 @@ export function SeedKeysSection() {
               <Button
                 flex={1}
                 size="$3"
+                hitSlop={HIT_SLOP}
                 theme="green"
                 disabled={busy}
                 onPress={() => void install()}
               >
                 Install
               </Button>
-              <Button flex={1} size="$3" onPress={() => setPreview(null)}>
+              <Button flex={1} size="$3" hitSlop={HIT_SLOP} onPress={() => setPreview(null)}>
                 Cancel
               </Button>
             </XStack>

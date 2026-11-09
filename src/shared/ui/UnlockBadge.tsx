@@ -2,10 +2,12 @@ import React from 'react';
 import { Stack, Text } from 'tamagui';
 import type { UnlockStatus } from '../security/resolveSeedKey';
 
+/** Status pills use the semantic fills with `$onFill` text (plan 20), as StatusBadge does; the
+ *  neutral one keeps the theme's own text on a light grey. */
 const COLORS: Record<UnlockStatus['state'], { bg: string; fg: string }> = {
   'none-required': { bg: '$gray6', fg: '$color' },
-  unlockable: { bg: '$green8', fg: 'white' },
-  locked: { bg: '$red8', fg: 'white' },
+  unlockable: { bg: '$statusOk', fg: '$onFill' },
+  locked: { bg: '$statusError', fg: '$onFill' },
 };
 
 /** The text of an unlock badge (plan 23). */

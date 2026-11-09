@@ -6,7 +6,8 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, type GestureResponderEvent, type LayoutChangeEvent } from 'react-native';
 import Svg, { Circle, Line } from 'react-native-svg';
-import { Button, Card, Paragraph, Text, XStack, YStack } from 'tamagui';
+import { Card, Paragraph, Text, XStack, YStack } from 'tamagui';
+import { SegmentedControl, usePalette } from '@/shared/ui';
 import {
   alignSamplesToTrack,
   colourSegments,
@@ -24,14 +25,12 @@ import {
 const PAD = 16;
 /** Map width before the first layout pass (and in tests). */
 const DEFAULT_WIDTH = 320;
-const START_COLOUR = '#2bb673';
-const END_COLOUR = '#f85149';
 
-const CHANNELS: { key: OverlayChannel; label: string }[] = [
-  { key: 'speed', label: 'Speed' },
-  { key: 'rpm', label: 'RPM' },
-  { key: 'fuelRate', label: 'Fuel' },
-  { key: 'none', label: 'None' },
+const CHANNELS: { value: OverlayChannel; label: string; accessibilityLabel?: string }[] = [
+  { value: 'speed', label: 'Speed' },
+  { value: 'rpm', label: 'RPM' },
+  { value: 'fuelRate', label: 'Fuel', accessibilityLabel: 'Fuel rate' },
+  { value: 'none', label: 'None', accessibilityLabel: 'No colouring' },
 ];
 
 /** "+1:05" — elapsed time since the first fix. */
@@ -49,6 +48,7 @@ interface TrackMapProps {
 }
 
 export function TrackMap({ track, samples }: TrackMapProps) {
+  const palette = usePalette();
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const height = Math.round((width * 2) / 3);
   const [channel, setChannel] = useState<OverlayChannel>('speed');
@@ -94,20 +94,12 @@ export function TrackMap({ track, samples }: TrackMapProps) {
 
   return (
     <YStack gap="$2">
-      <XStack gap="$2" flexWrap="wrap" accessibilityRole="tablist">
-        {CHANNELS.map((c) => (
-          <Button
-            key={c.key}
-            size="$2"
-            theme={channel === c.key ? 'green' : 'gray'}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: channel === c.key }}
-            onPress={() => setChannel(c.key)}
-          >
-            {c.label}
-          </Button>
-        ))}
-      </XStack>
+      <SegmentedControl
+        label="Colour the track by"
+        options={CHANNELS}
+        value={channel}
+        onChange={setChannel}
+      />
 
       <YStack
         onLayout={onLayout}
@@ -137,10 +129,22 @@ export function TrackMap({ track, samples }: TrackMapProps) {
               />
             ))}
             {start ? (
-              <Circle cx={start.x} cy={start.y} r={6} fill={START_COLOUR} stroke="#ffffff" />
+              <Circle
+                cx={start.x}
+                cy={start.y}
+                r={6}
+                fill={palette.statusOk}
+                stroke={palette.background}
+              />
             ) : null}
             {end && points.length > 1 ? (
-              <Circle cx={end.x} cy={end.y} r={6} fill={END_COLOUR} stroke="#ffffff" />
+              <Circle
+                cx={end.x}
+                cy={end.y}
+                r={6}
+                fill={palette.statusError}
+                stroke={palette.background}
+              />
             ) : null}
             {selPoint ? (
               <Circle
@@ -148,7 +152,7 @@ export function TrackMap({ track, samples }: TrackMapProps) {
                 cy={selPoint.y}
                 r={8}
                 fill="none"
-                stroke="#ffffff"
+                stroke={palette.color}
                 strokeWidth={2}
               />
             ) : null}
@@ -158,7 +162,7 @@ export function TrackMap({ track, samples }: TrackMapProps) {
                 y1={height - 10}
                 x2={PAD + bar.barPx}
                 y2={height - 10}
-                stroke="#8b949e"
+                stroke={palette.muted}
                 strokeWidth={3}
               />
             ) : null}

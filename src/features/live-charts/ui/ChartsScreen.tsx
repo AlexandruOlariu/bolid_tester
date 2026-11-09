@@ -2,7 +2,14 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { PanResponder, View, type LayoutChangeEvent } from 'react-native';
 import { YStack, XStack, Paragraph, H4, Button, Text } from 'tamagui';
 import Svg, { Polyline, Line, Circle } from 'react-native-svg';
-import { Screen, useLayoutClass, isTwoPane } from '@/shared/ui';
+import {
+  Screen,
+  useLayoutClass,
+  isTwoPane,
+  usePalette,
+  type PaletteColors,
+  HIT_SLOP,
+} from '@/shared/ui';
 import { HintCard } from '@/features/onboarding';
 import { isCan } from '@/shared/obd-core';
 import { livePidFilter } from '@/shared/vehicles';
@@ -22,7 +29,8 @@ import {
 
 const MIN_WINDOW = 10_000; //  10 s — most zoomed-in
 const MAX_WINDOW = 600_000; // 10 min — most zoomed-out
-const COLORS = ['#2bb673', '#4c9df3', '#d29922', '#f85149'];
+/** Series colours, from the theme (plan 20): each ≥ 3:1 on the chart background in both themes. */
+const seriesColours = (p: PaletteColors) => [p.accent, p.statusInfo, p.statusWarn, p.statusError];
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -36,6 +44,7 @@ interface Inspect {
 
 function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
   const profile = useActiveProfile();
+  const palette = usePalette();
   const removePanel = useChartsStore((s) => s.removePanel);
   // Human labels for every key (Mode 01 name + unit, or `name (unit) · DID` for an extended key).
   const labels = useMemo(() => panelLabels(pids, profile.extendedPids ?? []), [pids, profile]);
@@ -139,9 +148,10 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
   ).current;
 
   // Rebuild the screen-space geometry each render for both drawing and tap-inspect.
+  const colours = seriesColours(palette);
   const plotted = pids.map((pid, i) => {
     const { screen, polyline } = toScreen(series[pid] ?? [], width, height);
-    return { pid, color: COLORS[i % COLORS.length], screen, polyline };
+    return { pid, color: colours[i % colours.length], screen, polyline };
   });
   screenRef.current = plotted.map((p) => ({ pid: p.pid, pts: p.screen }));
 
@@ -160,10 +170,19 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
         testID={`chart-plot-${id}`}
         onLayout={onPlotLayout}
         {...responder.panHandlers}
+        accessible
+        accessibilityRole="image"
         accessibilityLabel={`Chart for ${pids.map((k) => labels[k]).join(', ')}. Pinch to zoom, drag to pan, tap to inspect a sample.`}
       >
         <Svg width={width} height={height}>
-          <Line x1={0} y1={height} x2={width} y2={height} stroke="#30363D" strokeWidth={1} />
+          <Line
+            x1={0}
+            y1={height}
+            x2={width}
+            y2={height}
+            stroke={palette.borderColor}
+            strokeWidth={1}
+          />
           {plotted.map((p) => (
             <Polyline
               key={p.pid}
@@ -180,10 +199,10 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
                 y1={0}
                 x2={inspect.x}
                 y2={height}
-                stroke="#8B949E"
+                stroke={palette.muted}
                 strokeWidth={1}
               />
-              <Circle cx={inspect.x} cy={inspect.y} r={4} fill="#E6EDF3" />
+              <Circle cx={inspect.x} cy={inspect.y} r={4} fill={palette.color} />
             </>
           ) : null}
         </Svg>
@@ -210,24 +229,25 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
 
       <XStack gap="$2" marginTop="$1" flexWrap="wrap">
         {panned ? (
-          <Button size="$2" theme="alt2" onPress={() => setPanOffsetMs(0)}>
+          <Button size="$3" hitSlop={HIT_SLOP} theme="alt2" onPress={() => setPanOffsetMs(0)}>
             Back to live
           </Button>
         ) : null}
         {inspect ? (
-          <Button size="$2" theme="alt2" onPress={() => setInspect(null)}>
+          <Button size="$3" hitSlop={HIT_SLOP} theme="alt2" onPress={() => setInspect(null)}>
             Clear
           </Button>
         ) : null}
         <Button
-          size="$2"
+          size="$3"
+          hitSlop={HIT_SLOP}
           theme="blue"
           disabled={busy}
           onPress={() => shareCsv(`chart-${id}`, series, labels)}
         >
           Share window (CSV)
         </Button>
-        <Button size="$2" theme="red" onPress={() => removePanel(id)}>
+        <Button size="$3" hitSlop={HIT_SLOP} theme="red" onPress={() => removePanel(id)}>
           Remove
         </Button>
       </XStack>
@@ -272,10 +292,13 @@ function PanelPicker({
           return (
             <Button
               key={o.key}
-              size="$2"
+              size="$3"
+              hitSlop={HIT_SLOP}
               theme={on ? 'blue' : o.extended ? 'yellow' : 'alt2'}
               onPress={() => toggle(o.key)}
-              accessibilityState={{ selected: on }}
+              role="checkbox"
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: on, selected: on }}
             >
               {o.label}
             </Button>

@@ -43,6 +43,9 @@ jobs:
       # plugins/withReleaseSigning.js against the generated-gradle fixture + one version everywhere.
       - name: Release config (signing plugin, version sync)
         run: npm run check:release
+      # Every palette token meets WCAG AA in both themes (plan 20, docs/accessibility.md).
+      - name: Palette contrast
+        run: npm run check:contrast
       # The capture analyzer CLI runs the TypeScript analyzer through Node's type stripping (plan 25);
       # exercise that path on the committed synthetic capture.
       - name: Capture analyzer CLI smoke

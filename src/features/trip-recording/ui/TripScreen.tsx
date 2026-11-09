@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { Screen, SegmentedControl, HIT_SLOP } from '@/shared/ui';
 import { useGarageStore } from '@/shared/state/garageStore';
 import { isUserVehicleId, vehicleLabel } from '@/shared/vehicles';
 import { resolveProfile } from '@/shared/vehicles/resolve';
@@ -75,25 +75,15 @@ export function TripScreen() {
         <H4>Saved trips</H4>
         {trips.length === 0 ? <Paragraph theme="alt2">No trips yet.</Paragraph> : null}
         {cars.length > 1 ? (
-          <XStack gap="$2" flexWrap="wrap">
-            <Button
-              size="$2"
-              theme={activeKey === 'all' ? 'green' : 'gray'}
-              onPress={() => setCarKey('all')}
-            >
-              {`All cars (${trips.length})`}
-            </Button>
-            {cars.map((c) => (
-              <Button
-                key={c.key}
-                size="$2"
-                theme={activeKey === c.key ? 'green' : 'gray'}
-                onPress={() => setCarKey(c.key)}
-              >
-                {`${c.label} (${c.count})`}
-              </Button>
-            ))}
-          </XStack>
+          <SegmentedControl
+            label="Show trips for"
+            options={[
+              { value: 'all', label: `All cars (${trips.length})` },
+              ...cars.map((c) => ({ value: c.key, label: `${c.label} (${c.count})` })),
+            ]}
+            value={activeKey}
+            onChange={setCarKey}
+          />
         ) : null}
         {shown.map(({ header, stats, markerCount }) => (
           <YStack
@@ -112,15 +102,21 @@ export function TripScreen() {
             </Paragraph>
             <XStack gap="$2" alignItems="center">
               <Button
-                size="$2"
+                size="$3"
+                hitSlop={HIT_SLOP}
                 onPress={() => router.push({ pathname: '/trip-detail', params: { id: header.id } })}
               >
                 Open
               </Button>
-              <Button size="$2" onPress={() => void shareTrip(header)}>
+              <Button size="$3" hitSlop={HIT_SLOP} onPress={() => void shareTrip(header)}>
                 Share CSV
               </Button>
-              <Button size="$2" theme="red" onPress={() => void deleteTrip(header.id)}>
+              <Button
+                size="$3"
+                hitSlop={HIT_SLOP}
+                theme="red"
+                onPress={() => void deleteTrip(header.id)}
+              >
                 Delete
               </Button>
             </XStack>

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Text, Button, Card, Input } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { Screen, HIT_SLOP } from '@/shared/ui';
 import type { DueInfo } from '@/shared/obd-core';
 import { useMaintenance } from '../hooks/useMaintenance';
 
 const STATUS_COLOR: Record<string, string> = {
-  overdue: '#f85149',
-  soon: '#d29922',
-  ok: '#2bb673',
-  unknown: '#8B949E',
+  overdue: '$statusError',
+  soon: '$statusWarn',
+  ok: '$statusOk',
+  unknown: '$muted',
 };
 
 function dueText(d: DueInfo): string {
@@ -63,6 +63,7 @@ function MaintenanceBody({
             onChangeText={setOdoText}
             keyboardType="numeric"
             placeholder="e.g. 215000"
+            accessibilityLabel="Current odometer in kilometres"
           />
           <Button onPress={saveOdo}>Save</Button>
         </XStack>
@@ -97,7 +98,8 @@ function MaintenanceBody({
           {items.map((it) => (
             <Button
               key={it.id}
-              size="$2"
+              size="$3"
+              hitSlop={HIT_SLOP}
               theme={selected === it.id ? 'blue' : undefined}
               onPress={() => setSelected(it.id)}
             >

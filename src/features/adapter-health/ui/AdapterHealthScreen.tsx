@@ -6,9 +6,9 @@ import { communitySummary, matchKnownAdapter } from '@/shared/adapters';
 import { useAdapterHealth } from '../hooks/useAdapterHealth';
 
 const GRADE_COLOR: Record<string, string> = {
-  good: '#2bb673',
-  ok: '#d29922',
-  poor: '#f85149',
+  good: '$statusOk',
+  ok: '$statusWarn',
+  poor: '$statusError',
 };
 
 export function AdapterHealthScreen() {

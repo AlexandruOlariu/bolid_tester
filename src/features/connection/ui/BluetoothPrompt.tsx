@@ -4,14 +4,14 @@ import { YStack, XStack, Button, Paragraph, Text, Spinner } from 'tamagui';
 import { BluetoothOff } from 'lucide-react-native';
 import { enableBluetooth } from '@/shared/transports/ble/manager';
 import type { BluetoothState } from '../hooks/useBluetoothState';
+import { usePalette, HIT_SLOP } from '@/shared/ui';
 import { Panel } from '../styles/connection.styles';
-
-const ACCENT = '#E3B341'; // amber, matching the connecting/initializing status color
 
 /** Banner shown on the Connect screen when the phone's Bluetooth radio isn't ready. Guides the user
  *  to fix it — with a one-tap "Turn on Bluetooth" (Android) or "Open settings" action where the OS
  *  allows it. Renders nothing while ready or still settling. */
 export function BluetoothPrompt({ bt }: { bt: BluetoothState }) {
+  const palette = usePalette();
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
 
@@ -44,7 +44,7 @@ export function BluetoothPrompt({ bt }: { bt: BluetoothState }) {
         ? 'Allow Bluetooth for Bolid Tester in Settings, then return here.'
         : 'Allow “Nearby devices” for Bolid Tester in system settings, then return here.';
     action = (
-      <Button size="$3" theme="yellow" onPress={() => Linking.openSettings()}>
+      <Button size="$3" hitSlop={HIT_SLOP} theme="yellow" onPress={() => Linking.openSettings()}>
         Open settings
       </Button>
     );
@@ -56,6 +56,7 @@ export function BluetoothPrompt({ bt }: { bt: BluetoothState }) {
       action = (
         <Button
           size="$3"
+          hitSlop={HIT_SLOP}
           theme="yellow"
           disabled={busy}
           icon={busy ? () => <Spinner /> : undefined}
@@ -70,9 +71,9 @@ export function BluetoothPrompt({ bt }: { bt: BluetoothState }) {
   }
 
   return (
-    <Panel backgroundColor="$yellow2" borderColor={ACCENT}>
+    <Panel backgroundColor="$yellow2" borderColor={palette.statusWarn}>
       <XStack gap="$3" alignItems="flex-start">
-        <BluetoothOff size={24} color={ACCENT} />
+        <BluetoothOff size={24} color={palette.statusWarn} />
         <YStack flex={1} gap="$2">
           <Text fontWeight="800" fontSize="$4" color="$yellow11">
             {title}

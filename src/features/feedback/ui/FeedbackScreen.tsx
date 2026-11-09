@@ -14,7 +14,7 @@ import {
   H4,
 } from 'tamagui';
 import { Braces, ExternalLink, FileText, Mail } from 'lucide-react-native';
-import { Screen } from '@/shared/ui';
+import { Screen, HIT_SLOP, usePalette } from '@/shared/ui';
 import { APP_VERSION, PRIVACY_POLICY_URL } from '@/shared/lib/appInfo';
 import { FEEDBACK_DESCRIPTION_MAX, formatBytes, platformLabel } from '@/shared/lib/feedbackBundle';
 import { useAdapterLogStore } from '@/shared/state/adapterLog';
@@ -30,7 +30,12 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 function Item({ children, testID }: { children: string; testID?: string }) {
   return (
     <XStack gap="$2" alignItems="flex-start" testID={testID}>
-      <Text color="#2bb673" fontWeight="800">
+      <Text
+        color="$accent"
+        fontWeight="800"
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+      >
         ✓
       </Text>
       <Paragraph flex={1} fontSize="$3">
@@ -128,6 +133,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
 
   const disabled = fb.busy;
   const spinner = fb.busy ? () => <Spinner /> : undefined;
+  const palette = usePalette();
 
   return (
     <Screen
@@ -184,7 +190,12 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
         <Switch
           checked={keep}
           onCheckedChange={(v) => setKeep(!!v)}
+          hitSlop={HIT_SLOP}
+          accessible
+          role="switch"
+          accessibilityRole="switch"
           accessibilityLabel="Keep VIN and adapter address"
+          accessibilityState={{ checked: keep }}
           testID="feedback-keep"
         >
           <Switch.Thumb />
@@ -196,7 +207,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
           theme="green"
           disabled={disabled}
           onPress={onShareJson}
-          icon={spinner ?? (() => <Braces size={16} color="#fff" />)}
+          icon={spinner ?? <Braces size={16} />}
           testID="feedback-share-json"
         >
           Share bundle (JSON)
@@ -204,7 +215,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
         <Button
           disabled={disabled}
           onPress={onShareMarkdown}
-          icon={spinner ?? (() => <FileText size={16} color="#8B949E" />)}
+          icon={spinner ?? <FileText size={16} color={palette.muted} />}
           testID="feedback-share-md"
         >
           Share summary (Markdown)
@@ -212,7 +223,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
         <Button
           disabled={disabled}
           onPress={onIssue}
-          icon={spinner ?? (() => <ExternalLink size={16} color="#8B949E" />)}
+          icon={spinner ?? <ExternalLink size={16} color={palette.muted} />}
           testID="feedback-issue"
         >
           Open GitHub issue
@@ -221,7 +232,7 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
           <Button
             disabled={disabled}
             onPress={onEmail}
-            icon={spinner ?? (() => <Mail size={16} color="#8B949E" />)}
+            icon={spinner ?? <Mail size={16} color={palette.muted} />}
             testID="feedback-email"
           >
             Email
@@ -240,14 +251,15 @@ export function FeedbackScreen({ getLastScanReport, hasScan = false }: FeedbackS
           Nothing is sent until you choose where to share it.
         </Paragraph>
         <Button
-          size="$2"
+          size="$3"
+          hitSlop={HIT_SLOP}
           chromeless
           alignSelf="flex-start"
           paddingHorizontal="$0"
           onPress={openPolicy}
           accessibilityRole="link"
         >
-          <Text fontSize="$2" color="#2bb673" textDecorationLine="underline">
+          <Text fontSize="$2" color="$accent" textDecorationLine="underline">
             Privacy policy
           </Text>
         </Button>

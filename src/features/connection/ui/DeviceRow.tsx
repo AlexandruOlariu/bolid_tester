@@ -1,5 +1,6 @@
 import React from 'react';
 import { XStack, YStack, Text, Button, Paragraph, Stack } from 'tamagui';
+import { HIT_SLOP } from '@/shared/ui';
 import {
   communitySummary,
   knownAdapterChip,
@@ -15,20 +16,20 @@ interface DeviceRowProps {
   disabled?: boolean;
 }
 
-const CHIP_COLORS: Record<KnownAdapter['typicalGrade'], { bg: string; fg: string }> = {
-  good: { bg: '$green8', fg: 'white' },
-  ok: { bg: '$yellow8', fg: 'black' },
-  poor: { bg: '$red8', fg: 'white' },
+/** Semantic fills with `$onFill` text (plan 20, the StatusBadge pattern). */
+const CHIP_COLORS: Record<KnownAdapter['typicalGrade'], string> = {
+  good: '$statusOk',
+  ok: '$statusWarn',
+  poor: '$statusError',
 };
 
 /** "known good" / "known ok" / "known poor" — the community compatibility matrix's typical grade for
  *  this advertised name (plan 29, `@/shared/adapters`). */
 function KnownAdapterChip({ known }: { known: KnownAdapter }) {
-  const c = CHIP_COLORS[known.typicalGrade];
   return (
     <Stack
       testID="known-adapter-chip"
-      backgroundColor={c.bg}
+      backgroundColor={CHIP_COLORS[known.typicalGrade]}
       borderRadius="$10"
       paddingHorizontal="$2"
       paddingVertical={2}
@@ -37,7 +38,7 @@ function KnownAdapterChip({ known }: { known: KnownAdapter }) {
       accessibilityRole="text"
       accessibilityLabel={`Known adapter: ${communitySummary(known)}`}
     >
-      <Text fontSize="$1" color={c.fg} fontWeight="700">
+      <Text fontSize="$1" color="$onFill" fontWeight="700">
         {knownAdapterChip(known)}
       </Text>
     </Stack>
@@ -62,6 +63,7 @@ export function DeviceRow({ device, onConnect, disabled }: DeviceRowProps) {
         </YStack>
         <Button
           size="$3"
+          hitSlop={HIT_SLOP}
           theme="green"
           onPress={onConnect}
           disabled={disabled}

@@ -5,16 +5,16 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { useInspection } from '../hooks/useInspection';
 
 const VERDICT: Record<string, { color: string; label: string }> = {
-  pass: { color: '#2bb673', label: 'PASS' },
-  caution: { color: '#d29922', label: 'CAUTION' },
-  fail: { color: '#f85149', label: 'FAIL' },
+  pass: { color: '$statusOk', label: 'PASS' },
+  caution: { color: '$statusWarn', label: 'CAUTION' },
+  fail: { color: '$statusError', label: 'FAIL' },
 };
 
 const CHECK_COLOR: Record<string, string> = {
-  pass: '#2bb673',
-  warn: '#d29922',
-  fail: '#f85149',
-  info: '#8B949E',
+  pass: '$statusOk',
+  warn: '$statusWarn',
+  fail: '$statusError',
+  info: '$muted',
 };
 
 export function InspectionScreen() {
@@ -24,7 +24,9 @@ export function InspectionScreen() {
   if (status !== 'connected') {
     return (
       <Screen title="Used-car inspection">
-        <Paragraph theme="alt2">Connect to the car (or the simulator) to run an inspection.</Paragraph>
+        <Paragraph theme="alt2">
+          Connect to the car (or the simulator) to run an inspection.
+        </Paragraph>
       </Screen>
     );
   }

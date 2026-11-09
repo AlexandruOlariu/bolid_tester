@@ -1,6 +1,6 @@
 import React from 'react';
 import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { Screen, HIT_SLOP, AccessibleSwitch } from '@/shared/ui';
 import { useAlerts } from '../hooks/useAlerts';
 import { useAlertsStore } from '../model/alertsStore';
 
@@ -33,10 +33,18 @@ export function AlertsScreen() {
             <Paragraph flex={1} opacity={r.enabled === false ? 0.4 : 1}>
               {r.label ?? r.pid} ({r.pid} {OP_LABEL[r.op]} {r.value}) · {r.severity}
             </Paragraph>
-            <Button size="$2" onPress={() => toggleRule(r.id)}>
-              {r.enabled === false ? 'On' : 'Off'}
-            </Button>
-            <Button size="$2" theme="red" onPress={() => removeRule(r.id)}>
+            <AccessibleSwitch
+              checked={r.enabled !== false}
+              onCheckedChange={() => toggleRule(r.id)}
+              accessibilityLabel={`Alert ${r.label ?? r.pid}`}
+            />
+            <Button
+              size="$3"
+              hitSlop={HIT_SLOP}
+              theme="red"
+              onPress={() => removeRule(r.id)}
+              accessibilityLabel={`Delete alert ${r.label ?? r.pid}`}
+            >
               Delete
             </Button>
           </XStack>

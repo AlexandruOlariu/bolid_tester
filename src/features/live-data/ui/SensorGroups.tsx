@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useWindowDimensions } from 'react-native';
 import { YStack, XStack, Text, Paragraph, Card, Button, Spinner, H4 } from 'tamagui';
-import { ValueCard } from '@/shared/ui';
+import { ValueCard, SectionTitle, HIT_SLOP, LARGE_TEXT_FONT_SCALE } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { isCan, isExtendedKey } from '@/shared/obd-core';
 import { logError } from '@/shared/state/errorLogStore';
@@ -39,6 +40,9 @@ export function SensorGroups() {
   const session = useSessionStore((s) => s.session);
   const profile = useActiveProfile();
   const { values, polling } = useLiveData();
+  // The value cards go one per row by themselves above this scale (ValueCard); the injection tiles
+  // below follow suit (plan 20).
+  const largeText = useWindowDimensions().fontScale > LARGE_TEXT_FONT_SCALE;
 
   // Memoised so `readInjection` keeps its identity across renders: the mount effect below must
   // run once per session / profile, not after every live-data update (each run is five Mode 22
@@ -108,9 +112,7 @@ export function SensorGroups() {
         if (items.length === 0) return null;
         return (
           <YStack key={g.title} gap="$2">
-            <Text fontWeight="800" fontSize="$5">
-              {g.title}
-            </Text>
+            <SectionTitle>{g.title}</SectionTitle>
             <XStack flexWrap="wrap" gap="$2">
               {items.map((v) => (
                 <ValueCard key={v.pid} name={v.name} value={v.value} unit={v.unit} />
@@ -122,9 +124,7 @@ export function SensorGroups() {
 
       {ungrouped.length > 0 ? (
         <YStack gap="$2">
-          <Text fontWeight="800" fontSize="$5">
-            Other
-          </Text>
+          <SectionTitle>Other</SectionTitle>
           <XStack flexWrap="wrap" gap="$2">
             {ungrouped.map((v) => (
               <ValueCard key={v.pid} name={v.name} value={v.value} unit={v.unit} />
@@ -135,12 +135,11 @@ export function SensorGroups() {
 
       <YStack gap="$2">
         <XStack justifyContent="space-between" alignItems="center">
-          <Text fontWeight="800" fontSize="$5">
-            Injection
-          </Text>
+          <SectionTitle>Injection</SectionTitle>
           {canInjection ? (
             <Button
-              size="$2"
+              size="$3"
+              hitSlop={HIT_SLOP}
               onPress={readInjection}
               icon={injLoading ? () => <Spinner /> : undefined}
             >
@@ -152,11 +151,16 @@ export function SensorGroups() {
         {canInjection ? (
           <XStack flexWrap="wrap" gap="$2">
             {injection.map((r) => (
-              <Card key={r.did} bordered padding="$3" minWidth={150}>
+              <Card
+                key={r.did}
+                bordered
+                padding="$3"
+                {...(largeText ? { width: '100%' as const } : { minWidth: 150 })}
+              >
                 <Paragraph theme="alt2" fontSize="$2">
                   {r.name}
                 </Paragraph>
-                <Text fontWeight="800" fontSize="$6">
+                <Text fontWeight="800" fontSize="$6" maxFontSizeMultiplier={1.3}>
                   {r.value != null ? r.value.toFixed(2) : '—'}{' '}
                   <Text fontSize="$2" theme="alt2">
                     {r.unit}

@@ -30,6 +30,7 @@ and the code is written to match. When something changes, the docs change first 
 | [`adapters/README.md`](./adapters/README.md)                   | Adapter compatibility matrix: contribute a report; the generated `matrix.md`.                         |
 | [`simulator.md`](./simulator.md)                               | The virtual ELM327 used for hardware-free development & tests.                                        |
 | [`testing.md`](./testing.md)                                   | Automated tests + per-car on-vehicle manual checklists.                                               |
+| [`accessibility.md`](./accessibility.md)                       | Palette tokens + contrast check, control names / roles / states, touch targets, dynamic type, motion. |
 | [`exchange-formats.md`](./exchange-formats.md)                 | Profile and label-pack JSON files: schemas, validation, import conflicts, versioning, licensing.      |
 | [`vehicles/`](./vehicles/)                                     | The vehicle registry. The three example cars + how to add more.                                       |
 | [`contributing/`](./contributing/README.md)                    | Community data guides: vehicle profile, label pack, DTC texts, coding tweak (with `CONTRIBUTING.md`). |

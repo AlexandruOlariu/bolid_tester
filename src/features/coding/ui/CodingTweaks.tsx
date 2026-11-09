@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
 import type { CodingPreset, CodingPresetState } from '@/shared/obd-core';
-import { UnlockBadge, VerificationBadge } from '@/shared/ui';
+import { UnlockBadge, VerificationBadge, HIT_SLOP } from '@/shared/ui';
 import { useUnlockStatus } from '@/shared/security';
 import { useCodingStore } from '../model/codingStore';
 import { useCoding } from '../hooks/useCoding';
@@ -53,7 +53,7 @@ function TweakRow({ preset }: { preset: CodingPreset }) {
           size="$2"
           fontFamily="$mono"
           theme={badge.theme ? undefined : 'alt2'}
-          color={badge.theme ? '$green10' : undefined}
+          color={badge.theme ? '$statusOk' : undefined}
         >
           {badge.label}
         </Paragraph>
@@ -68,7 +68,8 @@ function TweakRow({ preset }: { preset: CodingPreset }) {
         <XStack gap="$2">
           <Button
             flex={1}
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             theme="green"
             disabled={!unlocked || busy || state === 'on'}
             onPress={() => setPending(true)}
@@ -77,13 +78,14 @@ function TweakRow({ preset }: { preset: CodingPreset }) {
           </Button>
           <Button
             flex={1}
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             disabled={!unlocked || busy || state === 'off'}
             onPress={() => setPending(false)}
           >
             {state === 'off' ? 'Disabled' : 'Revert'}
           </Button>
-          <Button size="$2" disabled={busy} onPress={() => read(mod)}>
+          <Button size="$3" hitSlop={HIT_SLOP} disabled={busy} onPress={() => read(mod)}>
             Refresh
           </Button>
         </XStack>
@@ -94,10 +96,23 @@ function TweakRow({ preset }: { preset: CodingPreset }) {
             read + backed up, then written and re-verified.
           </Paragraph>
           <XStack gap="$2">
-            <Button flex={1} size="$3" theme="red" disabled={busy} onPress={() => run(pending)}>
+            <Button
+              flex={1}
+              size="$3"
+              hitSlop={HIT_SLOP}
+              theme="red"
+              disabled={busy}
+              onPress={() => run(pending)}
+            >
               {busy ? 'Writing…' : 'Confirm'}
             </Button>
-            <Button flex={1} size="$3" disabled={busy} onPress={() => setPending(null)}>
+            <Button
+              flex={1}
+              size="$3"
+              hitSlop={HIT_SLOP}
+              disabled={busy}
+              onPress={() => setPending(null)}
+            >
               Cancel
             </Button>
           </XStack>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { YStack, XStack, Paragraph, H4, Button, Switch } from 'tamagui';
-import { Screen, UnlockBadge, VerificationBadge } from '@/shared/ui';
+import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
+import { Screen, UnlockBadge, VerificationBadge, AccessibleSwitch } from '@/shared/ui';
 import { useUnlockStatus } from '@/shared/security';
 import type { GuidedRoutine } from '@/shared/vehicles';
 import { useRoutinesStore } from '../model/routinesStore';
@@ -132,9 +132,11 @@ export function RoutinesScreen() {
             Off = browse only. Interlocks are enforced live before every start.
           </Paragraph>
         </YStack>
-        <Switch checked={unlocked} onCheckedChange={(v) => setUnlocked(!!v)}>
-          <Switch.Thumb />
-        </Switch>
+        <AccessibleSwitch
+          checked={unlocked}
+          onCheckedChange={setUnlocked}
+          accessibilityLabel="Unlock routines"
+        />
       </XStack>
 
       {message ? <Paragraph>{message}</Paragraph> : null}

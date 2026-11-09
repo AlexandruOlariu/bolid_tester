@@ -2,11 +2,19 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Linking, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScrollView, YStack, XStack, Text, Paragraph, Button, Card, Input, Spinner } from 'tamagui';
-import { Screen, appAlert } from '@/shared/ui';
+import {
+  Screen,
+  appAlert,
+  SegmentedControl,
+  LabeledSwitch,
+  HIT_SLOP,
+  type SegmentOption,
+} from '@/shared/ui';
 import {
   useSettingsStore,
   parseDtcList,
   isAdapterSourceSupported,
+  type AdapterSource,
 } from '@/shared/state/settingsStore';
 import {
   useAdapterLogStore,
@@ -51,16 +59,17 @@ import {
   parseEndpoint,
 } from '@/shared/transports/tcp/endpoint';
 
-const ACCENT = '#2bb673';
-
+/** A section heading (announced as a heading, plan 20) in the theme's accent colour. */
 function SectionLabel({ children }: { children: string }) {
   return (
     <Text
       fontWeight="800"
       fontSize="$2"
-      color={ACCENT}
+      color="$accent"
       letterSpacing={0.8}
       textTransform="uppercase"
+      role="heading"
+      accessibilityRole="header"
     >
       {children}
     </Text>
@@ -70,37 +79,9 @@ function SectionLabel({ children }: { children: string }) {
 /** A heading inside a section (e.g. the parts of Developer & simulator). */
 function SubLabel({ children }: { children: string }) {
   return (
-    <Text fontWeight="700" fontSize="$3">
+    <Text fontWeight="700" fontSize="$3" role="heading" accessibilityRole="header">
       {children}
     </Text>
-  );
-}
-
-function Seg({
-  active,
-  label,
-  onPress,
-  disabled,
-  accessibilityLabel,
-}: {
-  active: boolean;
-  label: string;
-  onPress: () => void;
-  disabled?: boolean;
-  accessibilityLabel?: string;
-}) {
-  return (
-    <Button
-      size="$2"
-      theme={active ? 'green' : 'gray'}
-      onPress={onPress}
-      disabled={disabled}
-      opacity={disabled ? 0.5 : 1}
-      accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled: !!disabled, selected: active }}
-    >
-      {label}
-    </Button>
   );
 }
 
@@ -175,26 +156,27 @@ function AiSection() {
       <SectionLabel>AI assistant (auto-diagnose)</SectionLabel>
       <SegGroup>
         <YStack gap="$3">
-          <XStack gap="$2" alignItems="center">
-            <Paragraph flex={1}>Enabled</Paragraph>
-            <Seg active={ai.enabled} label="On" onPress={() => setAi({ enabled: true })} />
-            <Seg active={!ai.enabled} label="Off" onPress={() => setAi({ enabled: false })} />
-          </XStack>
+          <LabeledSwitch
+            label="Enabled"
+            accessibilityLabel="AI assistant enabled"
+            checked={ai.enabled}
+            onCheckedChange={(enabled) => setAi({ enabled })}
+            testID="settings-ai-enabled"
+          />
 
           <YStack gap="$1">
             <Paragraph theme="alt2" fontSize="$2">
               Provider
             </Paragraph>
-            <XStack gap="$2" flexWrap="wrap">
-              {AI_PROVIDER_IDS.map((id) => (
-                <Seg
-                  key={id}
-                  active={ai.provider === id}
-                  label={AI_PROVIDER_PRESETS[id].label}
-                  onPress={() => switchProvider(id)}
-                />
-              ))}
-            </XStack>
+            <SegmentedControl
+              label="AI provider"
+              options={AI_PROVIDER_IDS.map((id) => ({
+                value: id,
+                label: AI_PROVIDER_PRESETS[id].label,
+              }))}
+              value={ai.provider}
+              onChange={switchProvider}
+            />
             <Paragraph theme="alt2" fontSize="$1">
               {preset.hint}
             </Paragraph>
@@ -210,7 +192,8 @@ function AiSection() {
                   {ai.baseUrl}
                 </Paragraph>
                 <Button
-                  size="$2"
+                  size="$3"
+                  hitSlop={HIT_SLOP}
                   chromeless
                   accessibilityLabel="Edit the server address (switches to Custom)"
                   onPress={() =>
@@ -228,6 +211,7 @@ function AiSection() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="url"
+                accessibilityLabel="AI server URL"
               />
             )}
             {ai.baseUrl ? (
@@ -275,29 +259,19 @@ function AiSection() {
               placeholder={preset.defaultModel || 'e.g. qwen2.5-7b-instruct'}
               autoCapitalize="none"
               autoCorrect={false}
+              accessibilityLabel="AI model"
             />
           </YStack>
 
           {anthropic ? null : (
             <YStack gap="$1" testID="ai-structured-output">
-              <XStack gap="$2" alignItems="center" flexWrap="wrap">
-                <Paragraph flex={1}>Structured output</Paragraph>
-                <Seg
-                  active={ai.jsonMode === 'schema'}
-                  label="Schema"
-                  onPress={() => setAi({ jsonMode: 'schema' })}
-                />
-                <Seg
-                  active={ai.jsonMode === 'object'}
-                  label="JSON"
-                  onPress={() => setAi({ jsonMode: 'object' })}
-                />
-                <Seg
-                  active={ai.jsonMode === 'off'}
-                  label="Off"
-                  onPress={() => setAi({ jsonMode: 'off' })}
-                />
-              </XStack>
+              <Paragraph>Structured output</Paragraph>
+              <SegmentedControl
+                label="Structured output"
+                options={JSON_MODE_OPTIONS}
+                value={ai.jsonMode}
+                onChange={(jsonMode) => setAi({ jsonMode })}
+              />
               <Paragraph theme="alt2" fontSize="$1">
                 Schema = json_schema (LM Studio / current OpenAI). JSON = json_object (older
                 OpenAI). Off = plain text. The app auto-falls back to text if the server rejects the
@@ -306,17 +280,15 @@ function AiSection() {
             </YStack>
           )}
 
-          <XStack gap="$2" alignItems="center" flexWrap="wrap">
+          <YStack gap="$1">
             <Paragraph>Timeout</Paragraph>
-            {[15000, 30000, 60000].map((ms) => (
-              <Seg
-                key={ms}
-                active={ai.timeoutMs === ms}
-                label={`${ms / 1000}s`}
-                onPress={() => setAi({ timeoutMs: ms })}
-              />
-            ))}
-          </XStack>
+            <SegmentedControl
+              label="AI request timeout"
+              options={TIMEOUT_OPTIONS}
+              value={ai.timeoutMs}
+              onChange={(timeoutMs) => setAi({ timeoutMs })}
+            />
+          </YStack>
 
           <XStack gap="$2">
             <Button
@@ -341,6 +313,33 @@ function AiSection() {
     </YStack>
   );
 }
+
+const JSON_MODE_OPTIONS: SegmentOption<'schema' | 'object' | 'off'>[] = [
+  { value: 'schema', label: 'Schema' },
+  { value: 'object', label: 'JSON' },
+  { value: 'off', label: 'Off', accessibilityLabel: 'Off (plain text)' },
+];
+
+const TIMEOUT_OPTIONS: SegmentOption<number>[] = [15000, 30000, 60000].map((ms) => ({
+  value: ms,
+  label: `${ms / 1000}s`,
+  accessibilityLabel: `${ms / 1000} seconds`,
+}));
+
+const POLL_OPTIONS: SegmentOption<number>[] = [250, 500, 1000, 2000].map((ms) => ({
+  value: ms,
+  label: `${ms} ms`,
+  accessibilityLabel: `${ms} milliseconds`,
+}));
+
+const THEME_OPTIONS: SegmentOption<'system' | 'light' | 'dark'>[] = [
+  { value: 'system', label: 'system', accessibilityLabel: 'System' },
+  { value: 'light', label: 'light', accessibilityLabel: 'Light' },
+  { value: 'dark', label: 'dark', accessibilityLabel: 'Dark' },
+];
+
+/** The value of the Custom… option in the injected-DTC row. */
+const CUSTOM_DTCS = 'custom';
 
 const DTC_PRESETS: { label: string; codes: string[] }[] = [
   { label: 'None', codes: [] },
@@ -371,24 +370,27 @@ function InjectedDtcsSection() {
       <SubLabel>Injected DTCs</SubLabel>
       <YStack>
         <YStack gap="$2">
-          <XStack flexWrap="wrap" gap="$2">
-            {DTC_PRESETS.map((p) => (
-              <Seg
-                key={p.label}
-                active={!customOpen && injected.join() === p.codes.join()}
-                label={p.label}
-                onPress={() => pickPreset(p.codes)}
-              />
-            ))}
-            <Seg
-              active={customOpen}
-              label="Custom…"
-              onPress={() => {
-                setCustomOpen(true);
-                setInjectedDtcs(parseDtcList(customText));
-              }}
-            />
-          </XStack>
+          <SegmentedControl
+            label="Injected fault codes"
+            options={[
+              ...DTC_PRESETS.map((p) => ({ value: p.label, label: p.label })),
+              { value: CUSTOM_DTCS, label: 'Custom…', accessibilityLabel: 'Custom codes' },
+            ]}
+            value={
+              customOpen
+                ? CUSTOM_DTCS
+                : (DTC_PRESETS.find((p) => p.codes.join() === injected.join())?.label ?? null)
+            }
+            onChange={(v) => {
+              const preset = DTC_PRESETS.find((p) => p.label === v);
+              if (preset) {
+                pickPreset(preset.codes);
+                return;
+              }
+              setCustomOpen(true);
+              setInjectedDtcs(parseDtcList(customText));
+            }}
+          />
           {customOpen ? (
             <YStack gap="$1">
               <Input
@@ -440,10 +442,10 @@ function SimulatorDeveloperSection() {
       <YStack>
         <YStack gap="$2">
           <XStack gap="$2" flexWrap="wrap">
-            <Button size="$2" disabled={status !== 'connected'} onPress={drop}>
+            <Button size="$3" hitSlop={HIT_SLOP} disabled={status !== 'connected'} onPress={drop}>
               Simulate a link drop
             </Button>
-            <Button size="$2" onPress={failNext}>
+            <Button size="$3" hitSlop={HIT_SLOP} onPress={failNext}>
               Fail next connect: no reply to ATZ
             </Button>
           </XStack>
@@ -481,14 +483,16 @@ function AboutSection() {
             only when you tap More → Check for updates.
           </Paragraph>
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             onPress={() => setPolicyOpen((open) => !open)}
             accessibilityLabel={policyOpen ? 'Hide the privacy policy' : 'Show the privacy policy'}
           >
             {policyOpen ? 'Hide privacy policy' : 'Privacy policy'}
           </Button>
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             accessibilityLabel="Open the documentation on GitHub"
             onPress={() =>
               Linking.openURL(DOCS_URL).catch((e: unknown) =>
@@ -505,7 +509,7 @@ function AboutSection() {
               </Paragraph>
               {PRIVACY_POLICY.map((section) => (
                 <YStack key={section.heading} gap="$1">
-                  <Text fontWeight="700" fontSize="$3">
+                  <Text fontWeight="700" fontSize="$3" role="heading" accessibilityRole="header">
                     {section.heading}
                   </Text>
                   {section.paragraphs.map((p) => (
@@ -539,10 +543,10 @@ function DataSection() {
             new phone. Nothing goes to the cloud; you choose where the file goes.
           </Paragraph>
           <XStack gap="$2" flexWrap="wrap">
-            <Button size="$3" onPress={() => router.push('/backup')}>
+            <Button size="$3" hitSlop={HIT_SLOP} onPress={() => router.push('/backup')}>
               Backup & restore
             </Button>
-            <Button size="$3" onPress={() => router.push('/backup')}>
+            <Button size="$3" hitSlop={HIT_SLOP} onPress={() => router.push('/backup')}>
               Export data…
             </Button>
           </XStack>
@@ -571,11 +575,12 @@ function GeneralSection() {
           <Paragraph theme="alt2" fontSize="$2">
             Theme
           </Paragraph>
-          <XStack gap="$2">
-            {(['system', 'light', 'dark'] as const).map((t) => (
-              <Seg key={t} active={theme === t} label={t} onPress={() => setTheme(t)} />
-            ))}
-          </XStack>
+          <SegmentedControl
+            label="Theme"
+            options={THEME_OPTIONS}
+            value={theme}
+            onChange={setTheme}
+          />
           <Paragraph theme="alt2" fontSize="$1">
             Units are metric: km/h, °C, km, kPa and L/100 km.
           </Paragraph>
@@ -597,7 +602,7 @@ function PrivacySection() {
   const setCrashReports = useSettingsStore((st) => st.setCrashReports);
   const available = isCrashReportingAvailable();
 
-  // The guards matter: a disabled button must never record consent.
+  // The guards matter: a disabled switch must never record consent.
   const turnOn = () => {
     if (on || !available) return;
     appAlert('Send anonymous crash reports?', CRASH_REPORTS_TEXT, [
@@ -612,23 +617,18 @@ function PrivacySection() {
       <SegGroup>
         <YStack gap="$2" testID="settings-privacy">
           <SubLabel>Send anonymous crash reports</SubLabel>
-          <XStack gap="$2" alignItems="center">
-            <Paragraph flex={1}>Help fix crashes</Paragraph>
-            <Seg
-              active={on}
-              label="On"
-              onPress={turnOn}
-              disabled={!available}
-              accessibilityLabel="Send anonymous crash reports: on"
-            />
-            <Seg
-              active={!on}
-              label="Off"
-              onPress={() => available && setCrashReports(false)}
-              disabled={!available}
-              accessibilityLabel="Send anonymous crash reports: off"
-            />
-          </XStack>
+          {/* Switching on only asks (the switch stays off until Turn on); off applies at once. */}
+          <LabeledSwitch
+            label="Help fix crashes"
+            accessibilityLabel="Send anonymous crash reports"
+            checked={on}
+            disabled={!available}
+            onCheckedChange={(next) => {
+              if (next) turnOn();
+              else if (available) setCrashReports(false);
+            }}
+            testID="settings-crash-reports"
+          />
           <Paragraph theme="alt2" fontSize="$1">
             {CRASH_REPORTS_TEXT}
           </Paragraph>
@@ -638,7 +638,8 @@ function PrivacySection() {
             </Paragraph>
           ) : null}
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             alignSelf="flex-start"
             accessibilityLabel="Read the privacy policy on GitHub"
             onPress={() =>
@@ -675,6 +676,7 @@ function TestCrashReportSection() {
       <SubLabel>Crash reports</SubLabel>
       <Button
         size="$3"
+        hitSlop={HIT_SLOP}
         alignSelf="flex-start"
         disabled={!usable}
         opacity={usable ? 1 : 0.5}
@@ -703,15 +705,13 @@ function ConnectionSection() {
         <YStack gap="$4">
           <YStack gap="$2">
             <SubLabel>Auto-reconnect</SubLabel>
-            <XStack gap="$2" alignItems="center">
-              <Paragraph flex={1}>Retry the last adapter after a dropped link</Paragraph>
-              <Seg active={s.autoReconnect} label="On" onPress={() => s.setAutoReconnect(true)} />
-              <Seg
-                active={!s.autoReconnect}
-                label="Off"
-                onPress={() => s.setAutoReconnect(false)}
-              />
-            </XStack>
+            <LabeledSwitch
+              label="Retry the last adapter after a dropped link"
+              accessibilityLabel="Auto-reconnect"
+              checked={s.autoReconnect}
+              onCheckedChange={s.setAutoReconnect}
+              testID="settings-auto-reconnect"
+            />
             <Paragraph theme="alt2" fontSize="$1">
               On by default; pauses after 3 drops in a minute. When the connection drops
               unexpectedly, reconnect to the same device with backoff (2 s, 5 s, 10 s — up to 3
@@ -721,16 +721,12 @@ function ConnectionSection() {
 
           <YStack gap="$2">
             <SubLabel>Poll interval</SubLabel>
-            <XStack gap="$2" flexWrap="wrap">
-              {[250, 500, 1000, 2000].map((ms) => (
-                <Seg
-                  key={ms}
-                  active={s.pollIntervalMs === ms}
-                  label={`${ms} ms`}
-                  onPress={() => s.setPollInterval(ms)}
-                />
-              ))}
-            </XStack>
+            <SegmentedControl
+              label="Poll interval"
+              options={POLL_OPTIONS}
+              value={s.pollIntervalMs}
+              onChange={s.setPollInterval}
+            />
             <Paragraph theme="alt2" fontSize="$1">
               How often live values are read. A slow K-line car sets its own pace.
             </Paragraph>
@@ -738,19 +734,13 @@ function ConnectionSection() {
 
           <YStack gap="$2">
             <SubLabel>Recognise my cars by VIN</SubLabel>
-            <XStack gap="$2" alignItems="center">
-              <Paragraph flex={1}>Select a garage car when its VIN connects</Paragraph>
-              <Seg
-                active={s.autoSelectByVin}
-                label="On"
-                onPress={() => s.setAutoSelectByVin(true)}
-              />
-              <Seg
-                active={!s.autoSelectByVin}
-                label="Off"
-                onPress={() => s.setAutoSelectByVin(false)}
-              />
-            </XStack>
+            <LabeledSwitch
+              label="Select a garage car when its VIN connects"
+              accessibilityLabel="Recognise my cars by VIN"
+              checked={s.autoSelectByVin}
+              onCheckedChange={s.setAutoSelectByVin}
+              testID="settings-auto-select-vin"
+            />
             <Paragraph theme="alt2" fontSize="$1">
               On by default. When the connected car's VIN (vehicle identification number) matches a
               car you added from a connection, that car becomes the active vehicle. Built-in
@@ -789,7 +779,9 @@ function NotificationsSection() {
             Alerts, reminders and quiet mode
           </Paragraph>
         </YStack>
-        <Paragraph theme="alt2">›</Paragraph>
+        <Paragraph theme="alt2" accessibilityElementsHidden importantForAccessibility="no">
+          ›
+        </Paragraph>
       </XStack>
     </YStack>
   );
@@ -852,7 +844,12 @@ function AdapterLogSection() {
     <YStack gap="$2">
       <XStack justifyContent="space-between" alignItems="center">
         <SubLabel>Adapter log</SubLabel>
-        <Button size="$2" onPress={onClearLog}>
+        <Button
+          size="$3"
+          hitSlop={HIT_SLOP}
+          onPress={onClearLog}
+          accessibilityLabel="Clear the adapter log"
+        >
           Clear
         </Button>
       </XStack>
@@ -869,6 +866,7 @@ function AdapterLogSection() {
         />
         <Button
           size="$3"
+          hitSlop={HIT_SLOP}
           disabled={exportingFixture || log.length === 0}
           onPress={() => void onExportFixture()}
         >
@@ -892,7 +890,7 @@ function AdapterLogSection() {
                 key={i}
                 fontSize="$1"
                 fontFamily={monoFont}
-                color={e.dir === 'tx' ? '$blue10' : '$green10'}
+                color={e.dir === 'tx' ? '$statusInfo' : '$statusOk'}
                 numberOfLines={1}
               >
                 {e.dir === 'tx' ? '» ' : '« '}
@@ -975,12 +973,13 @@ function HintsAndResetSection({ resetAppData }: { resetAppData?: ResetAppData })
     <YStack gap="$2">
       <SubLabel>Hints and app data</SubLabel>
       <XStack gap="$2" flexWrap="wrap">
-        <Button size="$3" onPress={showHints}>
+        <Button size="$3" hitSlop={HIT_SLOP} onPress={showHints}>
           Show hints again
         </Button>
         {resetAppData ? (
           <Button
             size="$3"
+            hitSlop={HIT_SLOP}
             theme="red"
             disabled={resetting}
             icon={resetting ? () => <Spinner /> : undefined}
@@ -997,6 +996,14 @@ function HintsAndResetSection({ resetAppData }: { resetAppData?: ResetAppData })
     </YStack>
   );
 }
+
+/** The adapter-source options; Wi-Fi and classic Bluetooth only where the platform supports them. */
+const ADAPTER_SOURCE_OPTIONS: SegmentOption<AdapterSource>[] = [
+  { value: 'ble', label: 'Real adapter (Bluetooth)' },
+  { value: 'wifi', label: 'Wi-Fi adapter' },
+  { value: 'spp', label: 'Classic Bluetooth' },
+  { value: 'mock', label: 'Simulator (no car)' },
+];
 
 /** The Wi-Fi adapter's address (plan 26), shown under the adapter-source segment while Wi-Fi is
  *  selected. Host and port are edited as text; a valid pair is saved at once, an invalid one shows
@@ -1059,7 +1066,7 @@ function WifiEndpointSection() {
         />
       </XStack>
       {problem ? (
-        <Paragraph color="$red10" fontSize="$2" testID="settings-wifi-error">
+        <Paragraph color="$statusError" fontSize="$2" testID="settings-wifi-error">
           {problem} The app keeps using {formatEndpoint(wifi)}.
         </Paragraph>
       ) : null}
@@ -1070,7 +1077,8 @@ function WifiEndpointSection() {
       </Paragraph>
       {formatEndpoint(wifi) !== formatEndpoint(DEFAULT_WIFI_ENDPOINT) ? (
         <Button
-          size="$2"
+          size="$3"
+          hitSlop={HIT_SLOP}
           alignSelf="flex-start"
           onPress={() => edit(DEFAULT_WIFI_ENDPOINT.host, String(DEFAULT_WIFI_ENDPOINT.port))}
         >
@@ -1102,7 +1110,7 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
         onPress={() => setOpen((o) => !o)}
       >
         <SectionLabel>Developer & simulator</SectionLabel>
-        <Text fontWeight="700" fontSize="$3" color={ACCENT}>
+        <Text fontWeight="700" fontSize="$3" color="$accent">
           {open ? 'Hide' : 'Show'}
         </Text>
       </XStack>
@@ -1116,35 +1124,17 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
           <YStack gap="$4" testID="settings-developer">
             <YStack gap="$2">
               <SubLabel>Adapter source</SubLabel>
-              <XStack gap="$2" flexWrap="wrap">
-                <Seg
-                  active={s.adapterSource === 'ble'}
-                  label="Real adapter (Bluetooth)"
-                  onPress={() => void connectionService.switchAdapterSource('ble')}
-                />
-                {/* A browser cannot open a TCP socket to a Wi-Fi adapter (plan 28). */}
-                {isAdapterSourceSupported('wifi', Platform.OS) ? (
-                  <Seg
-                    active={s.adapterSource === 'wifi'}
-                    label="Wi-Fi adapter"
-                    onPress={() => void connectionService.switchAdapterSource('wifi')}
-                  />
-                ) : null}
-                {/* Classic Bluetooth (plan 27) is Android only: iOS opens classic accessories only
-                    through MFi, which ELM327 clones are not. */}
-                {isAdapterSourceSupported('spp', Platform.OS) ? (
-                  <Seg
-                    active={s.adapterSource === 'spp'}
-                    label="Classic Bluetooth"
-                    onPress={() => void connectionService.switchAdapterSource('spp')}
-                  />
-                ) : null}
-                <Seg
-                  active={s.adapterSource === 'mock'}
-                  label="Simulator (no car)"
-                  onPress={() => void connectionService.switchAdapterSource('mock')}
-                />
-              </XStack>
+              {/* A browser cannot open a TCP socket to a Wi-Fi adapter (plan 28). Classic Bluetooth
+                  (plan 27) is Android only: iOS opens classic accessories only through MFi, which
+                  ELM327 clones are not. */}
+              <SegmentedControl
+                label="Adapter source"
+                options={ADAPTER_SOURCE_OPTIONS.filter((o) =>
+                  isAdapterSourceSupported(o.value, Platform.OS),
+                )}
+                value={s.adapterSource}
+                onChange={(source) => void connectionService.switchAdapterSource(source)}
+              />
               <Paragraph theme="alt2" fontSize="$1">
                 {Platform.OS === 'web'
                   ? 'Bluetooth LE ELM327 adapters connect to a real car through the browser (Chrome or Edge)'
@@ -1171,24 +1161,19 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
               <>
                 <YStack gap="$2">
                   <SubLabel>Simulated vehicle</SubLabel>
-                  <XStack flexWrap="wrap" gap="$2">
-                    {VEHICLE_PROFILES.map((p) => (
-                      <Seg
-                        key={p.id}
-                        active={s.simulatedVehicleId === p.id}
-                        label={p.id}
-                        onPress={() => s.setSimulatedVehicle(p.id)}
-                      />
-                    ))}
-                    {garage.map((v) => (
-                      <Seg
-                        key={v.id}
-                        active={s.simulatedVehicleId === v.id}
-                        label={v.name}
-                        onPress={() => s.setSimulatedVehicle(v.id)}
-                      />
-                    ))}
-                  </XStack>
+                  <SegmentedControl
+                    label="Simulated vehicle"
+                    options={[
+                      ...VEHICLE_PROFILES.map((p) => ({
+                        value: p.id,
+                        label: p.id,
+                        accessibilityLabel: p.name,
+                      })),
+                      ...garage.map((v) => ({ value: v.id, label: v.name })),
+                    ]}
+                    value={s.simulatedVehicleId}
+                    onChange={s.setSimulatedVehicle}
+                  />
                   {garage.length > 0 ? (
                     <Paragraph theme="alt2" fontSize="$1">
                       A garage car is simulated from its base profile, with the VIN and supported
@@ -1210,6 +1195,7 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
               <SubLabel>Problem report</SubLabel>
               <Button
                 size="$3"
+                hitSlop={HIT_SLOP}
                 alignSelf="flex-start"
                 onPress={() => router.push({ pathname: '/feedback', params: { preview: '1' } })}
               >

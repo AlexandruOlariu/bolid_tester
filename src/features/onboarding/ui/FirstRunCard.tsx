@@ -13,9 +13,7 @@ import {
   firstRunSteps,
   type FirstRunInput,
 } from '../model/firstRun';
-
-const DONE = '#2bb673';
-const TODO = '#8B949E';
+import { HIT_SLOP, usePalette } from '@/shared/ui';
 
 /** Three-step first-run guide on the Connect tab: pick car → connect → read faults. Dismissible like a
  *  `HintCard` (id `first-run`) and dismisses itself when it sees the last open step get done, so it
@@ -47,6 +45,10 @@ export function FirstRunCard() {
     wasComplete.current = complete;
   }, [complete, hidden, dismiss]);
 
+  const palette = usePalette();
+  const doneColour = palette.accent;
+  const todoColour = palette.muted;
+
   if (hidden) return null;
   const steps = firstRunSteps(input);
 
@@ -58,13 +60,15 @@ export function FirstRunCard() {
             Getting started
           </Text>
           <XStack
-            padding="$1"
+            padding="$2"
+            hitSlop={HIT_SLOP}
             pressStyle={{ opacity: 0.6 }}
+            accessible
             accessibilityRole="button"
             accessibilityLabel="Dismiss the getting started guide"
             onPress={() => dismiss(FIRST_RUN_HINT_ID)}
           >
-            <X size={18} color={TODO} />
+            <X size={18} color={todoColour} />
           </XStack>
         </XStack>
         {steps.map((step, n) => (
@@ -72,15 +76,17 @@ export function FirstRunCard() {
             <XStack
               gap="$2"
               alignItems="center"
+              minHeight={44}
               pressStyle={{ opacity: 0.6 }}
+              accessible
               accessibilityRole="button"
               accessibilityLabel={`Step ${n + 1}: ${step.title}${step.done ? ', done' : ''}`}
               onPress={() => router.push(step.route)}
             >
               {step.done ? (
-                <CheckCircle2 size={20} color={DONE} />
+                <CheckCircle2 size={20} color={doneColour} />
               ) : (
-                <Circle size={20} color={TODO} />
+                <Circle size={20} color={todoColour} />
               )}
               <YStack flex={1}>
                 <Text
@@ -96,11 +102,16 @@ export function FirstRunCard() {
                   </Paragraph>
                 ) : null}
               </YStack>
-              <ChevronRight size={18} color={TODO} />
+              <ChevronRight size={18} color={todoColour} />
             </XStack>
             {step.id === 'vehicle' && !step.done ? (
               <XStack paddingLeft="$6">
-                <Button size="$2" chromeless onPress={() => dismiss(FIRST_RUN_GENERIC_OK_ID)}>
+                <Button
+                  size="$3"
+                  hitSlop={HIT_SLOP}
+                  chromeless
+                  onPress={() => dismiss(FIRST_RUN_GENERIC_OK_ID)}
+                >
                   Use Auto / Generic
                 </Button>
               </XStack>

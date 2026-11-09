@@ -28,7 +28,7 @@ import {
   Archive,
   MessageSquareWarning,
 } from 'lucide-react-native';
-import { CardGrid, Screen, appAlert } from '@/shared/ui';
+import { CardGrid, Screen, appAlert, usePalette } from '@/shared/ui';
 import { checkForUpdate, fetchAndReload } from '../api/updates';
 import {
   MORE_SECTIONS,
@@ -37,8 +37,6 @@ import {
   type IconName,
   type MoreEntry,
 } from '../model/sections';
-
-const ACCENT = '#2bb673';
 
 /** The lucide icon for each `IconName` (kept here so the model stays icon-free and node-testable). */
 const ICONS: Record<IconName, typeof LineChart> = {
@@ -74,7 +72,7 @@ function SectionHeader({ title, workshop }: { title: string; workshop: boolean }
     <Text
       fontWeight="800"
       fontSize="$2"
-      color={ACCENT}
+      color="$accent"
       letterSpacing={0.8}
       textTransform="uppercase"
       accessibilityRole="header"
@@ -112,6 +110,7 @@ function EntryRow({
   onPress: (() => void) | undefined;
 }) {
   const Icon = ICONS[entry.icon];
+  const palette = usePalette();
   const subtitle = busy ? 'Checking…' : entry.subtitle;
   return (
     <XStack
@@ -126,7 +125,7 @@ function EntryRow({
       accessibilityLabel={`${entry.title}. ${entry.subtitle}${entry.experimental ? '. Experimental' : ''}`}
       onPress={onPress}
     >
-      {busy ? <Spinner /> : <Icon size={22} color={ACCENT} />}
+      {busy ? <Spinner /> : <Icon size={22} color={palette.accent} />}
       <YStack flex={1} gap="$1">
         <XStack alignItems="center" gap="$2" flexWrap="wrap">
           <H4>{entry.title}</H4>
@@ -136,7 +135,9 @@ function EntryRow({
           {subtitle}
         </Paragraph>
       </YStack>
-      <Paragraph theme="alt2">›</Paragraph>
+      <Paragraph theme="alt2" accessibilityElementsHidden importantForAccessibility="no">
+        ›
+      </Paragraph>
     </XStack>
   );
 }

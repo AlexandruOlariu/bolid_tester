@@ -129,7 +129,9 @@ hex edit:
   part number so the `vag-bcm-pq35` pack contributes extra bit names.
 - **Live old→new preview.** `CodingScreen`'s editor renders the breakdown: a `Switch` per named bit,
   a stepper per masked field (e.g. the comfort-blink nibble), and a raw 8-bit editor for any
-  undocumented bit. Toggling a bit / choosing a value updates a `before → after` hex preview with the
+  undocumented bit. For screen readers each raw bit is a switch named `Byte <n> bit <b>` with its
+  on / off state and the steppers are `Decrease` / `Increase <field>`; the bits are 44 dp targets
+  (36 dp + 4 dp slop, 8 dp apart) whose slops never overlap (plan 20). Toggling a bit / choosing a value updates a `before → after` hex preview with the
   changed bytes highlighted. The write still goes through the **existing gated path** (`useCoding.write`
   → `codeModule`: backup → write → verify); the helper only shapes the edit.
 

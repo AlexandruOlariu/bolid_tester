@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { YStack, XStack, Paragraph, H4, Button, Switch, Input } from 'tamagui';
+import { YStack, XStack, Paragraph, H4, Button, Input } from 'tamagui';
 import { useRouter } from 'expo-router';
-import { Screen, UnlockBadge, VerificationBadge } from '@/shared/ui';
+import { Screen, UnlockBadge, VerificationBadge, HIT_SLOP, AccessibleSwitch } from '@/shared/ui';
 import { useUnlockStatus } from '@/shared/security';
 import type { AdaptationChannel } from '@/shared/vehicles';
 import { useAdaptationsStore } from '../model/adaptationsStore';
@@ -123,7 +123,8 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
           </Paragraph>
           {info.remembered ? (
             <Button
-              size="$2"
+              size="$3"
+              hitSlop={HIT_SLOP}
               onPress={() => forgetLogin(ch)}
               accessibilityLabel="Forget login code"
             >
@@ -133,7 +134,7 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
         </XStack>
       ) : null}
       <XStack gap="$2">
-        <Button size="$3" disabled={running} onPress={() => read(ch)}>
+        <Button size="$3" hitSlop={HIT_SLOP} disabled={running} onPress={() => read(ch)}>
           Read
         </Button>
         {!writable ? (
@@ -157,6 +158,7 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
             {!confirming ? (
               <Button
                 size="$3"
+                hitSlop={HIT_SLOP}
                 theme="red"
                 disabled={running || raw === undefined || draft.trim() === ''}
                 onPress={startWrite}
@@ -178,12 +180,20 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
                 {ch.unit ?? ''})? The old value is backed up and re-verified after writing.
               </Paragraph>
               <XStack gap="$2">
-                <Button flex={1} size="$3" theme="red" disabled={running} onPress={confirmWrite}>
+                <Button
+                  flex={1}
+                  size="$3"
+                  hitSlop={HIT_SLOP}
+                  theme="red"
+                  disabled={running}
+                  onPress={confirmWrite}
+                >
                   Confirm write
                 </Button>
                 <Button
                   flex={1}
                   size="$3"
+                  hitSlop={HIT_SLOP}
                   onPress={() => {
                     setConfirming(false);
                     setLogin(null);
@@ -195,12 +205,22 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
             </YStack>
           ) : null}
           {backups.length ? (
-            <Button size="$3" disabled={running} onPress={() => startRestore(backups[0].raw)}>
+            <Button
+              size="$3"
+              hitSlop={HIT_SLOP}
+              disabled={running}
+              onPress={() => startRestore(backups[0].raw)}
+            >
               Restore backup ({new Date(backups[0].at).toLocaleTimeString()})
             </Button>
           ) : null}
           {ch.defaultRaw ? (
-            <Button size="$3" disabled={running} onPress={() => startRestore(ch.defaultRaw!)}>
+            <Button
+              size="$3"
+              hitSlop={HIT_SLOP}
+              disabled={running}
+              onPress={() => startRestore(ch.defaultRaw!)}
+            >
               Restore known default
             </Button>
           ) : null}
@@ -241,7 +261,7 @@ export function AdaptationsScreen() {
       <Paragraph theme="alt2" size="$2">
         {KWP1281_LIMIT}
       </Paragraph>
-      <Button size="$3" onPress={() => router.push('/service-reset')}>
+      <Button size="$3" hitSlop={HIT_SLOP} onPress={() => router.push('/service-reset')}>
         Open Service reset
       </Button>
     </YStack>
@@ -279,13 +299,11 @@ export function AdaptationsScreen() {
             Off = read-only. Writes back up the old value and verify after writing.
           </Paragraph>
         </YStack>
-        <Switch
+        <AccessibleSwitch
           checked={unlocked}
-          onCheckedChange={(v) => setUnlocked(!!v)}
+          onCheckedChange={setUnlocked}
           accessibilityLabel="Unlock writes"
-        >
-          <Switch.Thumb />
-        </Switch>
+        />
       </XStack>
       {kwp1281}
       {lastResult ? <Paragraph>{lastResult}</Paragraph> : null}

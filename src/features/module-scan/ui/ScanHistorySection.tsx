@@ -6,12 +6,20 @@ import { searchScan } from '../api/scanSearch';
 import { diffScans, type ModuleDiff } from '../api/scanDiff';
 import { historyVehicleKey } from '@/shared/state/historyStore';
 import { useScanHistoryStore, type SavedScan } from '../model/scanHistoryStore';
+import { HIT_SLOP } from '@/shared/ui';
 
 const fmtDate = (ts: number) => new Date(ts).toLocaleString();
 
-/** Coloured pill for a diff/badge count. */
-function Badge({ label, tone }: { label: string; tone: 'red' | 'green' | 'yellow' | 'alt2' }) {
-  const color = tone === 'alt2' ? undefined : `$${tone}10`;
+/** Coloured pill for a diff/badge count. Semantic tokens only (plan 20): the scale's `$red10` /
+ *  `$green10` / `$yellow10` miss 4.5:1 on the light background. */
+function Badge({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: 'statusError' | 'statusOk' | 'statusWarn' | 'alt2';
+}) {
+  const color = tone === 'alt2' ? undefined : `$${tone}`;
   return (
     <Paragraph
       size="$2"
@@ -35,7 +43,7 @@ function ShareRow({ latest }: { latest: SavedScan }) {
           {latest.modules.length} modules · {latest.vehicle.label}
         </Paragraph>
       </YStack>
-      <Button size="$3" disabled={busy} onPress={() => shareReport(latest)}>
+      <Button size="$3" hitSlop={HIT_SLOP} disabled={busy} onPress={() => shareReport(latest)}>
         {busy ? 'Sharing…' : 'Share report'}
       </Button>
     </XStack>
@@ -56,6 +64,7 @@ function SearchSection({ latest }: { latest: SavedScan }) {
         value={query}
         onChangeText={setQuery}
         autoCapitalize="none"
+        accessibilityLabel="Search the scan's fault codes"
       />
       {trimmed && !hits.length ? (
         <Paragraph theme="alt2" size="$2">
@@ -98,22 +107,22 @@ function DiffRow({ m }: { m: ModuleDiff }) {
           {m.address}
         </Paragraph>
         <Paragraph flex={1}>{m.name}</Paragraph>
-        {m.status === 'added' ? <Badge label="new module" tone="yellow" /> : null}
+        {m.status === 'added' ? <Badge label="new module" tone="statusWarn" /> : null}
         {m.status === 'removed' ? <Badge label="gone" tone="alt2" /> : null}
         {m.faultsAppeared.length ? (
-          <Badge label={`+${m.faultsAppeared.length}`} tone="red" />
+          <Badge label={`+${m.faultsAppeared.length}`} tone="statusError" />
         ) : null}
         {m.faultsCleared.length ? (
-          <Badge label={`−${m.faultsCleared.length}`} tone="green" />
+          <Badge label={`−${m.faultsCleared.length}`} tone="statusOk" />
         ) : null}
       </XStack>
       {m.faultsAppeared.map((d) => (
-        <Paragraph key={`a-${d.display}`} size="$2" color="$red10">
+        <Paragraph key={`a-${d.display}`} size="$2" color="$statusError">
           appeared · {d.display} {d.vagCode ? `(VAG ${d.vagCode})` : ''} — {d.description}
         </Paragraph>
       ))}
       {m.faultsCleared.map((d) => (
-        <Paragraph key={`c-${d.display}`} size="$2" color="$green10">
+        <Paragraph key={`c-${d.display}`} size="$2" color="$statusOk">
           cleared · {d.display} {d.vagCode ? `(VAG ${d.vagCode})` : ''} — {d.description}
         </Paragraph>
       ))}
@@ -197,7 +206,8 @@ export function CompareSection({
         {scans.map((s) => (
           <Button
             key={s.id}
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             theme={s.id === selectedId ? 'green' : undefined}
             onPress={() => onSelect(s.id)}
           >

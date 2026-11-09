@@ -111,6 +111,11 @@ jest.mock(
   () => require('react-native-safe-area-context/jest/mock').default,
 );
 
+// Component tests render real screens and drive the simulator in real time. Alone they finish in a
+// few seconds, but `npm test` runs every suite in parallel (the plan-20 screen sweep alone renders
+// all routes twice), and under that load Jest's default 5 s timeout made the slow walk-throughs flaky.
+jest.setTimeout(20000);
+
 // Store/file reset between tests — see test/resetStores.ts. `afterAll` cancels the debounced
 // persist writes the file's last test scheduled, so no timer is left open when the file ends.
 beforeEach(() => resetStores());

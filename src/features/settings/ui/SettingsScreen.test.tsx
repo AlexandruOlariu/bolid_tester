@@ -141,6 +141,26 @@ describe('SettingsScreen', () => {
     expect(useSettingsStore.getState().theme).toBe('light');
   });
 
+  it('segments are radio groups announcing the selected option; on / off settings are switches (plan 20)', () => {
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    expect(screen.getByRole('radio', { name: 'Dark' })).toBeSelected();
+    expect(screen.getByRole('radio', { name: 'Light' })).not.toBeSelected();
+    expect(screen.getByRole('radio', { name: '1000 milliseconds' })).toBeChecked();
+    fireEvent.press(screen.getByRole('radio', { name: '500 milliseconds' }));
+    expect(useSettingsStore.getState().pollIntervalMs).toBe(500);
+    expect(screen.getByRole('radio', { name: '500 milliseconds' })).toBeSelected();
+
+    const reconnect = screen.getByRole('switch', { name: 'Auto-reconnect' });
+    expect(reconnect).toBeChecked();
+    fireEvent.press(reconnect);
+    expect(useSettingsStore.getState().autoReconnect).toBe(false);
+    expect(screen.getByRole('switch', { name: 'Auto-reconnect' })).not.toBeChecked();
+    expect(screen.getByRole('switch', { name: 'Recognise my cars by VIN' })).toBeChecked();
+    expect(screen.getByRole('switch', { name: 'AI assistant enabled' })).toBeTruthy();
+    expect(screen.getByLabelText('AI server URL')).toBeTruthy();
+    expect(screen.getByLabelText('AI model')).toBeTruthy();
+  });
+
   it('a simulator fault preset sets the injected codes', () => {
     useSettingsStore.setState({ adapterSource: 'mock' });
     renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
@@ -720,7 +740,7 @@ describe('Settings → Privacy: crash reports (plan 31)', () => {
     expect(screen.getByTestId('crash-reports-unavailable')).toHaveTextContent(
       'Unavailable in this build.',
     );
-    fireEvent.press(screen.getByLabelText('Send anonymous crash reports: on'));
+    fireEvent.press(screen.getByLabelText('Send anonymous crash reports'));
     expect(alert).not.toHaveBeenCalled();
     expect(useSettingsStore.getState().crashReports).toBe(false);
   });
@@ -748,7 +768,7 @@ describe('Settings → Privacy: crash reports (plan 31)', () => {
     renderWithProviders(<SettingsScreen />);
     expect(screen.queryByTestId('crash-reports-unavailable')).toBeNull();
 
-    fireEvent.press(screen.getByLabelText('Send anonymous crash reports: on'));
+    fireEvent.press(screen.getByLabelText('Send anonymous crash reports'));
     expect(alert).toHaveBeenCalledTimes(1);
     expect(alert.mock.calls[0][0]).toBe('Send anonymous crash reports?');
     expect(alert.mock.calls[0][1]).toMatch(/the app removes your VIN/);
@@ -758,11 +778,11 @@ describe('Settings → Privacy: crash reports (plan 31)', () => {
     expect(buttons[0].onPress).toBeUndefined();
     expect(useSettingsStore.getState().crashReports).toBe(false);
 
-    fireEvent.press(screen.getByLabelText('Send anonymous crash reports: on'));
+    fireEvent.press(screen.getByLabelText('Send anonymous crash reports'));
     act(() => pressAlertButton(alert, 1, 'Turn on'));
     expect(useSettingsStore.getState().crashReports).toBe(true);
 
-    fireEvent.press(screen.getByLabelText('Send anonymous crash reports: off'));
+    fireEvent.press(screen.getByLabelText('Send anonymous crash reports'));
     expect(useSettingsStore.getState().crashReports).toBe(false);
   });
 

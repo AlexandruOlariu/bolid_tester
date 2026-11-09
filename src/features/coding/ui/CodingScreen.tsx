@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { YStack, XStack, Paragraph, H4, Button, Switch } from 'tamagui';
-import { Screen, UnlockBadge } from '@/shared/ui';
+import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
+import { Screen, UnlockBadge, HIT_SLOP, AccessibleSwitch } from '@/shared/ui';
 import { useUnlockStatus } from '@/shared/security';
 import { buildCodingView, type CodingByteView } from '@/shared/obd-core';
 import type { CodingModule } from '@/shared/vehicles';
@@ -12,6 +12,13 @@ import { CodingBackup } from './CodingBackup';
 const hex2 = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
 const lowestBit = (mask: number) => mask & -mask;
 
+/** Raw bit editor geometry (plan 20): 36 dp square bits 8 dp apart, each with a 4 dp hit slop, so
+ *  every bit is a 44 dp target and neighbouring slops meet without overlapping — a tap near an edge
+ *  never flips the next bit (React Native hit-tests the later sibling first). */
+const BIT_SIZE = 36;
+const BIT_GAP = 8;
+const BIT_SLOP = BIT_GAP / 2;
+
 /** Old→new coding preview: each byte in hex, changed bytes highlighted. */
 function CodingPreview({ view }: { view: CodingByteView[] }) {
   return (
@@ -21,7 +28,7 @@ function CodingPreview({ view }: { view: CodingByteView[] }) {
           key={b.index}
           fontFamily="$mono"
           size="$3"
-          color={b.changed ? '$yellow10' : undefined}
+          color={b.changed ? '$statusWarn' : undefined}
           theme={b.changed ? undefined : 'alt2'}
         >
           {b.hex}
@@ -48,7 +55,7 @@ function ByteCard({
       borderRadius="$3"
       padding="$2"
       borderLeftWidth={byteView.changed ? 3 : 0}
-      borderLeftColor="$yellow10"
+      borderLeftColor="$statusWarn"
     >
       <XStack alignItems="center" gap="$2">
         <Paragraph fontFamily="$mono" theme="alt2" size="$2">
@@ -66,13 +73,11 @@ function ByteCard({
                 {'  '}bit {f.bit}
               </Paragraph>
             </Paragraph>
-            <Switch
-              size="$2"
+            <AccessibleSwitch
               checked={f.value === 1}
               onCheckedChange={() => onToggleBit(byteView.index, f.bit!)}
-            >
-              <Switch.Thumb />
-            </Switch>
+              accessibilityLabel={`${f.name} (bit ${f.bit})`}
+            />
           </XStack>
         ) : f.mask !== undefined ? (
           <XStack key={f.name} justifyContent="space-between" alignItems="center" gap="$2">
@@ -84,8 +89,10 @@ function ByteCard({
             </Paragraph>
             <XStack alignItems="center" gap="$2">
               <Button
-                size="$1"
+                size="$3"
+                hitSlop={HIT_SLOP}
                 circular
+                accessibilityLabel={`Decrease ${f.name}`}
                 disabled={f.value <= 0}
                 onPress={() =>
                   onSetField(byteView.index, f.mask!, Math.max(0, f.value - lowestBit(f.mask!)))
@@ -93,12 +100,19 @@ function ByteCard({
               >
                 −
               </Button>
-              <Paragraph fontFamily="$mono" minWidth={28} textAlign="center">
+              <Paragraph
+                fontFamily="$mono"
+                minWidth={28}
+                textAlign="center"
+                accessibilityLabel={`${f.name}: ${f.value / lowestBit(f.mask)}`}
+              >
                 {f.value / lowestBit(f.mask)}
               </Paragraph>
               <Button
-                size="$1"
+                size="$3"
+                hitSlop={HIT_SLOP}
                 circular
+                accessibilityLabel={`Increase ${f.name}`}
                 disabled={f.value >= f.mask}
                 onPress={() =>
                   onSetField(
@@ -115,14 +129,21 @@ function ByteCard({
         ) : null,
       )}
 
-      {/* Raw bit editor — flip any bit (incl. undocumented ones), msb first. */}
-      <XStack gap="$1" flexWrap="wrap">
+      {/* Raw bit editor — flip any bit (incl. undocumented ones), msb first. Each bit is a named
+          switch with its on / off state. */}
+      <XStack gap={BIT_GAP} flexWrap="wrap">
         {byteView.bits.map((b) => (
           <Button
             key={b.bit}
-            size="$1"
-            paddingHorizontal="$2"
+            size="$3"
+            hitSlop={BIT_SLOP}
+            width={BIT_SIZE}
+            paddingHorizontal={0}
             theme={b.value ? 'green' : undefined}
+            role="switch"
+            accessibilityRole="switch"
+            accessibilityLabel={`Byte ${byteView.index} bit ${b.bit}`}
+            accessibilityState={{ checked: b.value === 1 }}
             onPress={() => onToggleBit(byteView.index, b.bit)}
           >
             {b.value}
@@ -159,7 +180,11 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
             {mod.partNumber ? ` · ${mod.partNumber}` : ''}
           </Paragraph>
         </YStack>
-        <Button size="$2" onPress={async () => setOriginal((await read(mod)) ?? current)}>
+        <Button
+          size="$3"
+          hitSlop={HIT_SLOP}
+          onPress={async () => setOriginal((await read(mod)) ?? current)}
+        >
           Read + backup
         </Button>
       </XStack>
@@ -213,6 +238,7 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
             <Button
               flex={1}
               size="$3"
+              hitSlop={HIT_SLOP}
               theme="red"
               onPress={async () => {
                 setConfirming(false);
@@ -222,7 +248,7 @@ function ModuleEditor({ mod }: { mod: CodingModule }) {
             >
               Confirm write
             </Button>
-            <Button flex={1} size="$3" onPress={() => setConfirming(false)}>
+            <Button flex={1} size="$3" hitSlop={HIT_SLOP} onPress={() => setConfirming(false)}>
               Cancel
             </Button>
           </XStack>
@@ -256,9 +282,11 @@ export function CodingScreen() {
     >
       <XStack justifyContent="space-between" alignItems="center">
         <Paragraph flex={1}>Unlock writing</Paragraph>
-        <Switch checked={unlocked} onCheckedChange={(v) => setUnlocked(!!v)}>
-          <Switch.Thumb />
-        </Switch>
+        <AccessibleSwitch
+          checked={unlocked}
+          onCheckedChange={setUnlocked}
+          accessibilityLabel="Unlock writing"
+        />
       </XStack>
       {lastResult ? <Paragraph theme="alt2">{lastResult}</Paragraph> : null}
 

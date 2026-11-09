@@ -20,7 +20,7 @@ import {
   Car,
   Share2,
 } from 'lucide-react-native';
-import { Screen, appAlert } from '@/shared/ui';
+import { Screen, appAlert, SegmentedControl, HIT_SLOP, usePalette, type Tone } from '@/shared/ui';
 import {
   useHistoryStore,
   type AiHistoryEntry,
@@ -64,11 +64,11 @@ export const KIND_LABEL: Record<TimelineKind, string> = {
   report: 'Reports',
 };
 
-const TONE_COLOR: Record<TimelineTone, string> = {
-  ok: '#2bb673',
-  warn: '#d29922',
-  bad: '#f85149',
-  neutral: '#58a6ff',
+const TONE: Record<TimelineTone, Tone> = {
+  ok: 'statusOk',
+  warn: 'statusWarn',
+  bad: 'statusError',
+  neutral: 'statusInfo',
 };
 
 function fmtTime(ts: number): string {
@@ -89,14 +89,25 @@ function fmtDay(day: string): string {
   }
 }
 
-function Chip({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
+/** One kind filter: several can be on at once, so each is a checkbox (plan 20). */
+function KindChip({
+  active,
+  label,
+  onPress,
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+}) {
   return (
     <Button
-      size="$2"
+      size="$3"
+      hitSlop={HIT_SLOP}
       theme={active ? 'green' : 'gray'}
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
+      role="checkbox"
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: active, selected: active }}
     >
       {label}
     </Button>
@@ -113,7 +124,8 @@ function TimelineRow({
   onPress: (() => void) | undefined;
 }) {
   const Icon = KIND_ICON[item.kind];
-  const color = TONE_COLOR[item.tone];
+  const palette = usePalette();
+  const color = palette[TONE[item.tone]];
   const meta = `${fmtTime(item.ts)}${showCar ? ` · ${item.vehicleLabel}` : ''}`;
   const label = [item.title, item.subtitle, meta].filter(Boolean).join('. ');
   return (
@@ -142,7 +154,7 @@ function TimelineRow({
             {meta}
           </Paragraph>
         </YStack>
-        {onPress ? <ChevronRight size={18} color="#8B949E" /> : null}
+        {onPress ? <ChevronRight size={18} color={palette.muted} /> : null}
       </XStack>
     </Card>
   );
@@ -222,6 +234,7 @@ function emptyText(
 
 export function HistoryScreen() {
   const router = useRouter();
+  const palette = usePalette();
   const { items, entriesById, historyCount } = useTimeline();
   const clear = useHistoryStore((s) => s.clear);
   const [carKey, setCarKey] = useState<string>('all');
@@ -331,33 +344,27 @@ export function HistoryScreen() {
       {cars.length > 1 ? (
         <YStack gap="$1">
           <XStack alignItems="center" gap="$2">
-            <Car size={14} color="#8B949E" />
+            <Car size={14} color={palette.muted} />
             <Paragraph theme="alt2" fontSize="$2">
               Car
             </Paragraph>
           </XStack>
-          <XStack gap="$2" flexWrap="wrap">
-            <Chip
-              active={activeCar === 'all'}
-              label={`All cars (${items.length})`}
-              onPress={() => setCarKey('all')}
-            />
-            {cars.map((c) => (
-              <Chip
-                key={c.key}
-                active={activeCar === c.key}
-                label={`${c.label} (${c.count})`}
-                onPress={() => setCarKey(c.key)}
-              />
-            ))}
-          </XStack>
+          <SegmentedControl
+            label="Show history for"
+            options={[
+              { value: 'all', label: `All cars (${items.length})` },
+              ...cars.map((c) => ({ value: c.key, label: `${c.label} (${c.count})` })),
+            ]}
+            value={activeCar}
+            onChange={setCarKey}
+          />
         </YStack>
       ) : null}
 
-      <XStack gap="$2" flexWrap="wrap">
-        <Chip active={kinds.length === 0} label="All" onPress={() => setKinds([])} />
+      <XStack gap="$2" flexWrap="wrap" accessibilityLabel="Show kinds of events">
+        <KindChip active={kinds.length === 0} label="All" onPress={() => setKinds([])} />
         {TIMELINE_KINDS.map((k) => (
-          <Chip
+          <KindChip
             key={k}
             active={kinds.includes(k)}
             label={counts[k] > 0 ? `${KIND_LABEL[k]} (${counts[k]})` : KIND_LABEL[k]}
@@ -380,10 +387,11 @@ export function HistoryScreen() {
         <XStack gap="$2" justifyContent="flex-end">
           {dtcShown.length > 0 ? (
             <Button
-              size="$2"
+              size="$3"
+              hitSlop={HIT_SLOP}
               onPress={onExport}
               disabled={exporting}
-              icon={() => <Share2 size={15} color="#2bb673" />}
+              icon={<Share2 size={15} color={palette.accent} />}
               accessibilityLabel="Export the listed fault-code checks"
             >
               Export
@@ -391,10 +399,11 @@ export function HistoryScreen() {
           ) : null}
           {historyCount > 0 ? (
             <Button
-              size="$2"
+              size="$3"
+              hitSlop={HIT_SLOP}
               theme="red"
               onPress={confirmClear}
-              icon={() => <Trash2 size={15} color="#fff" />}
+              icon={<Trash2 size={15} />}
               accessibilityLabel="Clear the diagnosis, fault-code and report history"
             >
               Clear

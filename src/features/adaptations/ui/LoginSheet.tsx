@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Sheet, YStack, XStack, Text, Paragraph, Button, Input } from 'tamagui';
+import { HIT_SLOP } from '@/shared/ui';
 import { Check } from 'lucide-react-native';
 import { formatLoginCode, parseLoginCode, parseWorkshopCode } from '@/shared/obd-core';
 import type { AdaptationChannel, LoginCodeEntry } from '@/shared/vehicles';
@@ -120,6 +121,7 @@ export function LoginForm({
           />
           <Button
             size="$3"
+            hitSlop={HIT_SLOP}
             onPress={() => setReveal((r) => !r)}
             accessibilityLabel={reveal ? 'Hide login code' : 'Show login code'}
           >
@@ -127,7 +129,7 @@ export function LoginForm({
           </Button>
         </XStack>
         {showErrors && parsedCode === null ? (
-          <Paragraph color="$red10" fontSize="$2">
+          <Paragraph color="$statusError" fontSize="$2">
             {LOGIN_CODE_ERROR}
           </Paragraph>
         ) : null}
@@ -144,7 +146,7 @@ export function LoginForm({
           accessibilityLabel="Workshop code"
         />
         {showErrors && parsedWsc === null ? (
-          <Paragraph color="$red10" fontSize="$2">
+          <Paragraph color="$statusError" fontSize="$2">
             {WSC_ERROR}
           </Paragraph>
         ) : null}
@@ -152,6 +154,7 @@ export function LoginForm({
 
       <Button
         size="$3"
+        hitSlop={HIT_SLOP}
         justifyContent="flex-start"
         theme={remember ? 'green' : 'gray'}
         icon={remember ? <Check size={16} /> : undefined}

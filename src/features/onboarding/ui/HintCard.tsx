@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, XStack, YStack, Text, Paragraph } from 'tamagui';
 import { Lightbulb, X } from 'lucide-react-native';
 import { useOnboardingStore } from '@/shared/state/onboardingStore';
+import { HIT_SLOP, usePalette } from '@/shared/ui';
 
 interface HintCardProps {
   /** Stable id for this hint; once dismissed it stays hidden across launches. */
@@ -14,12 +15,13 @@ interface HintCardProps {
 export function HintCard({ id, title, children }: HintCardProps) {
   const dismissed = useOnboardingStore((s) => s.dismissed);
   const dismiss = useOnboardingStore((s) => s.dismiss);
+  const palette = usePalette();
   if (dismissed.includes(id)) return null;
 
   return (
     <Card bordered padding="$3" backgroundColor="$blue2" borderColor="$blue7">
       <XStack gap="$2" alignItems="flex-start">
-        <Lightbulb size={20} color="#4c9df3" />
+        <Lightbulb size={20} color={palette.statusInfo} />
         <YStack flex={1} gap="$1">
           <Text fontWeight="800" fontSize="$4">
             {title}
@@ -29,13 +31,15 @@ export function HintCard({ id, title, children }: HintCardProps) {
           </Paragraph>
         </YStack>
         <XStack
-          padding="$1"
+          padding="$2"
+          hitSlop={HIT_SLOP}
           pressStyle={{ opacity: 0.6 }}
+          accessible
           accessibilityRole="button"
           accessibilityLabel={`Dismiss hint: ${title}`}
           onPress={() => dismiss(id)}
         >
-          <X size={18} color="#8B949E" />
+          <X size={18} color={palette.muted} />
         </XStack>
       </XStack>
     </Card>

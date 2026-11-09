@@ -8,6 +8,7 @@ import { render, screen, within } from '@testing-library/react-native';
 import RootLayout from '@/app/_layout';
 import { lastTabsScreenOptions } from '@test/mocks/router';
 import { setMockWindow, TABLET_WINDOW } from '@test/mocks/window';
+import { renderWithProviders } from '@test/renderWithProviders';
 
 jest.mock('@/features/engine-host', () => ({ EngineHost: () => null }));
 jest.mock('@/shared/ui/AppSplash', () => ({ AppSplash: () => null }));
@@ -93,5 +94,32 @@ describe('RootLayout', () => {
     setMockWindow({ width: 760, height: 1100 });
     render(<RootLayout />);
     expect(lastTabsScreenOptions.tabBarPosition).toBe('bottom');
+  });
+  // Plan 20: the custom label (for the 1.5× font-scale cap) replaces React Navigation's styled one,
+  // so it must bring the spacing from the icon itself when the label sits beside it.
+  it('the tab label scales up to 1.5× and keeps its gap from the icon when beside it', () => {
+    render(<RootLayout />);
+    type LabelFn = (p: {
+      children: string;
+      color: string;
+      position: string;
+      focused: boolean;
+    }) => React.ReactElement;
+    const label = lastTabsScreenOptions.tabBarLabel as LabelFn;
+    const styleOf = (position: string) => {
+      const view = renderWithProviders(
+        label({ children: 'Live', color: 'black', position, focused: true }),
+      );
+      const text = view.getByText('Live');
+      const style = Object.assign({}, ...[text.props.style].flat(Infinity)) as Record<
+        string,
+        unknown
+      >;
+      expect(text.props.maxFontSizeMultiplier).toBe(1.5);
+      view.unmount();
+      return style;
+    };
+    expect(styleOf('beside-icon')).toMatchObject({ marginStart: 5 });
+    expect(styleOf('below-icon').marginStart).toBeUndefined();
   });
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
+import { setMockWindow } from '@test/mocks/window';
 import { connectSimulator } from '@test/simulator';
 import type { LiveValue } from '@/shared/obd-core/session/DiagnosticSession';
 import { useSessionStore } from '@/shared/state/sessionStore';
@@ -100,5 +101,35 @@ describe('SensorGroups', () => {
     unmount();
     await act(async () => release(null));
     expect(readExtended).toHaveBeenCalledTimes(1);
+  });
+  // Plan 20: above 1.5× OS font scale two 150 dp tiles cannot hold the number and its unit.
+  describe('large text', () => {
+    const widthOf = (label: RegExp) => {
+      let node = screen.getByLabelText(label);
+      while (!node.props.accessibilityLabel) node = node.parent!;
+      const style = [node.props.style].flat(Infinity) as { width?: number | string }[];
+      return style.reduce<number | string | undefined>((w, s) => s?.width ?? w, undefined);
+    };
+    const renderWithVoltage = async () => {
+      await connectSimulator();
+      renderWithProviders(<SensorGroups />);
+      await act(async () => {
+        useLiveDataStore.setState({
+          values: { '0142': live('0142', 'Control module voltage', 'V', 14.1) },
+        });
+      });
+    };
+
+    it('the sensor cards go full width, one per row', async () => {
+      setMockWindow({ fontScale: 2 });
+      await renderWithVoltage();
+      expect(widthOf(/^Control module voltage: 14 V/)).toBe('100%');
+    });
+
+    it('normal text keeps the wrapping 150 dp minimum', async () => {
+      setMockWindow({ fontScale: 1.3 });
+      await renderWithVoltage();
+      expect(widthOf(/^Control module voltage: 14 V/)).toBeUndefined();
+    });
   });
 });

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Platform } from 'react-native';
 import { YStack, XStack, Button, Paragraph, Spinner, Text, Card, Input } from 'tamagui';
 import { CheckCircle2, XCircle, Loader, CircleDashed } from 'lucide-react-native';
-import { Screen } from '@/shared/ui';
+import { Screen, SectionTitle, usePalette, type Tone, HIT_SLOP } from '@/shared/ui';
 import { FirstRunCard } from '@/features/onboarding';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
@@ -19,26 +19,36 @@ import { SppConnect } from './SppConnect';
 import { WebBluetoothConnect } from './WebBluetoothConnect';
 import { Panel } from '../styles/connection.styles';
 
-const STATUS_CONFIG: Record<ConnState, { icon: React.ElementType; color: string; label: string }> =
-  {
-    disconnected: { icon: CircleDashed, color: '#8B949E', label: 'Disconnected' },
-    connecting: { icon: Loader, color: '#E3B341', label: 'Connecting…' },
-    initializing: { icon: Loader, color: '#E3B341', label: 'Initializing…' },
-    connected: { icon: CheckCircle2, color: '#2bb673', label: 'Connected' },
-    error: { icon: XCircle, color: '#F85149', label: 'Error' },
-  };
+const STATUS_CONFIG: Record<ConnState, { icon: React.ElementType; tone: Tone; label: string }> = {
+  disconnected: { icon: CircleDashed, tone: 'muted', label: 'Disconnected' },
+  connecting: { icon: Loader, tone: 'statusWarn', label: 'Connecting…' },
+  initializing: { icon: Loader, tone: 'statusWarn', label: 'Initializing…' },
+  connected: { icon: CheckCircle2, tone: 'accent', label: 'Connected' },
+  error: { icon: XCircle, tone: 'statusError', label: 'Error' },
+};
 
+/** The connection state. A polite live region (plan 20): TalkBack / VoiceOver announce
+ *  "Connecting…", "Connected" or "Error" as it changes, without the user moving focus. */
 function StatusHero({ status }: { status: ConnState }) {
   const cfg = STATUS_CONFIG[status];
+  const colour = usePalette()[cfg.tone];
   const Icon = cfg.icon;
   return (
-    <Card bordered padding="$4" borderColor={cfg.color} borderWidth={1.5}>
+    <Card
+      bordered
+      padding="$4"
+      borderColor={colour}
+      borderWidth={1.5}
+      accessible
+      accessibilityRole="summary"
+      accessibilityLabel={`OBD2 adapter: ${cfg.label}`}
+      accessibilityLiveRegion="polite"
+      testID="connection-status"
+    >
       <XStack alignItems="center" gap="$3">
-        <Icon size={32} color={cfg.color} />
+        <Icon size={32} color={colour} />
         <YStack>
-          <Text fontWeight="800" fontSize="$5" color={cfg.color}>
-            {cfg.label}
-          </Text>
+          <SectionTitle color={colour}>{cfg.label}</SectionTitle>
           <Text fontSize="$2" color="$placeholderColor">
             OBD2 adapter
           </Text>
@@ -132,7 +142,7 @@ export function ConnectionScreen() {
       {sourceNotice ? (
         <Panel testID="adapter-source-notice">
           <Paragraph fontSize="$3">{sourceNotice}</Paragraph>
-          <Button size="$3" alignSelf="flex-start" onPress={dismissSourceNotice}>
+          <Button size="$3" hitSlop={HIT_SLOP} alignSelf="flex-start" onPress={dismissSourceNotice}>
             OK
           </Button>
         </Panel>
@@ -140,7 +150,7 @@ export function ConnectionScreen() {
 
       {error ? (
         <Panel backgroundColor="$red2">
-          <Paragraph color="$red10">{error}</Paragraph>
+          <Paragraph color="$statusError">{error}</Paragraph>
         </Panel>
       ) : null}
 
@@ -235,6 +245,7 @@ export function ConnectionScreen() {
                     placeholder="AA:BB:CC:DD:EE:FF"
                     autoCapitalize="characters"
                     autoCorrect={false}
+                    accessibilityLabel="Adapter Bluetooth MAC address"
                   />
                   <Button
                     theme="green"
@@ -250,6 +261,7 @@ export function ConnectionScreen() {
 
           <Button
             size="$3"
+            hitSlop={HIT_SLOP}
             chromeless
             alignSelf="flex-start"
             disabled={busy}
@@ -261,6 +273,7 @@ export function ConnectionScreen() {
           {Platform.OS === 'android' ? (
             <Button
               size="$3"
+              hitSlop={HIT_SLOP}
               chromeless
               alignSelf="flex-start"
               disabled={busy}

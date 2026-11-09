@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Pressable, View } from 'react-native';
 import { XStack, YStack, Text, Paragraph, Button } from 'tamagui';
+import { HIT_SLOP } from './SegmentedControl';
 import { dismissDialog, pressDialogButton, useDialogStore } from '@/shared/state/dialogStore';
 
 type KeyListener = (e: { key?: string }) => void;
@@ -79,6 +80,7 @@ export function AlertDialog() {
             <Button
               key={`${i}-${b.text ?? ''}`}
               size="$3"
+              hitSlop={HIT_SLOP}
               theme={b.style === 'destructive' ? 'red' : b.style === 'cancel' ? undefined : 'blue'}
               chromeless={b.style === 'cancel'}
               onPress={() => pressDialogButton(dialog.id, i)}

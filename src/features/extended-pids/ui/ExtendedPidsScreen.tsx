@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Stack, Switch, H4 } from 'tamagui';
-import { Screen, ValueCard, VerificationBadge } from '@/shared/ui';
+import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Stack, H4 } from 'tamagui';
+import { Screen, ValueCard, VerificationBadge, HIT_SLOP, AccessibleSwitch } from '@/shared/ui';
 import { toHex } from '@/shared/lib/hex';
 import { extendedKey } from '@/shared/obd-core/obd/liveKeys';
 import type { LiveValue } from '@/shared/obd-core/session/DiagnosticSession';
@@ -35,8 +35,8 @@ function GroupCard({
         <Text fontWeight="800" flexShrink={1}>
           Group {group.no} · {group.name}
         </Text>
-        <Stack backgroundColor="$yellow8" borderRadius="$10" paddingHorizontal="$2">
-          <Text fontSize="$1" color="black" fontWeight="700">
+        <Stack backgroundColor="$statusWarn" borderRadius="$10" paddingHorizontal="$2">
+          <Text fontSize="$1" color="$onFill" fontWeight="700">
             ILLUSTRATIVE
           </Text>
         </Stack>
@@ -65,6 +65,7 @@ function GroupCard({
       <XStack gap="$2">
         <Button
           size="$3"
+          hitSlop={HIT_SLOP}
           flex={1}
           theme="green"
           disabled={!readable || log.recording}
@@ -74,6 +75,7 @@ function GroupCard({
         </Button>
         <Button
           size="$3"
+          hitSlop={HIT_SLOP}
           flex={1}
           theme="blue"
           disabled={!readable}
@@ -211,7 +213,7 @@ export function ExtendedPidsScreen() {
             {log.recording ? (
               <XStack gap="$2" alignItems="center">
                 <Spinner size="small" />
-                <Text fontSize="$2" color="$red10" fontWeight="700">
+                <Text fontSize="$2" color="$statusError" fontWeight="700">
                   REC · {log.sampleCount} sweeps
                 </Text>
               </XStack>
@@ -250,14 +252,12 @@ export function ExtendedPidsScreen() {
             >
               <XStack justifyContent="space-between" alignItems="center">
                 <XStack gap="$2" alignItems="center" flex={1}>
-                  <Switch
-                    size="$2"
+                  <AccessibleSwitch
                     checked={selected.has(p.did)}
                     disabled={log.recording}
                     onCheckedChange={() => toggle(p.did)}
-                  >
-                    <Switch.Thumb />
-                  </Switch>
+                    accessibilityLabel={`Log ${p.name}`}
+                  />
                   <Text fontWeight="800" flexShrink={1}>
                     {p.name}
                   </Text>
@@ -272,7 +272,7 @@ export function ExtendedPidsScreen() {
                   DID 22{p.did} · raw {r?.raw ? toHex(r.raw, ' ') : '—'}
                   {highlighted ? ' · from guide' : ''}
                 </Paragraph>
-                <Button size="$2" theme="alt2" onPress={() => chart([p])}>
+                <Button size="$3" hitSlop={HIT_SLOP} theme="alt2" onPress={() => chart([p])}>
                   Chart this
                 </Button>
               </XStack>

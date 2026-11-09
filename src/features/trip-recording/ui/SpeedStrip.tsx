@@ -4,12 +4,12 @@ import React, { useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import Svg, { Line, Polyline } from 'react-native-svg';
 import { Paragraph, Text, XStack, YStack } from 'tamagui';
+import { usePalette } from '@/shared/ui';
 
 const HEIGHT = 90;
 const PAD_X = 4;
 const PAD_Y = 6;
 const DEFAULT_WIDTH = 320;
-const LINE_COLOUR = '#2bb673';
 
 /** Axis top: the max speed rounded up to the next 10 km/h (at least 10). */
 export function speedAxisMax(kmh: number[]): number {
@@ -27,6 +27,7 @@ export function formatSpan(ms: number): string {
 
 export function SpeedStrip({ profile }: { profile: { t: number; kmh: number }[] }) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
+  const palette = usePalette();
   if (profile.length < 2) {
     return (
       <Paragraph theme="alt2" fontSize="$2">
@@ -73,14 +74,14 @@ export function SpeedStrip({ profile }: { profile: { t: number; kmh: number }[] 
             y1={HEIGHT - PAD_Y}
             x2={width - PAD_X}
             y2={HEIGHT - PAD_Y}
-            stroke="#8b949e"
+            stroke={palette.muted}
             strokeWidth={1}
           />
           <Polyline
             testID="speed-strip-line"
             points={pts}
             fill="none"
-            stroke={LINE_COLOUR}
+            stroke={palette.accent}
             strokeWidth={2}
           />
         </Svg>

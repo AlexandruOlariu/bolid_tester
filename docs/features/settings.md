@@ -28,12 +28,27 @@ User preferences first, then the developer and simulator controls in their own c
    banner (plan 01) stays the always-on indicator that the simulator is selected.
 8. **About** — version, build, privacy policy, documentation link.
 
-Then **Disconnect** while a session is connected. The parts in detail:
+Then **Disconnect** while a session is connected.
+
+**Controls (plan 20, [accessibility](../accessibility.md)).** Every single-choice row (theme, poll
+interval, AI provider, structured output, timeout, adapter source, simulated vehicle, injected
+DTCs) is the shared `SegmentedControl`: a named `radiogroup` ("Theme", "Poll interval", "Adapter
+source", …) of `radio` options that report `selected` / `checked`, 36 dp with an 8 dp hit slop;
+terse options carry a spoken name (`15s` → "15 seconds", `250 ms` → "250 milliseconds", theme
+`light` → "Light"). Every on / off setting is a `LabeledSwitch` (visible label + a `switch` that
+reports `checked`): AI **Enabled** ("AI assistant enabled"), **Send anonymous crash reports**,
+**Auto-reconnect** and **Recognise my cars by VIN**. Section labels are headings; the inputs are
+labelled (**AI server URL**, **AI model**, **<provider> API key**, **Flow name**, **Wi-Fi adapter
+host / port**, custom DTCs).
+
+The parts in detail:
 
 ### Privacy: crash reports (plan 31)
 
 [Plan 31](../plans/31-opt-in-crash-reporting.md). One switch, **Send anonymous crash reports**
-(**On** / **Off** segments, `testID="settings-privacy"`), **off by default**, with this text under it
+(a `LabeledSwitch` "Help fix crashes", spoken name "Send anonymous crash reports",
+`testID="settings-crash-reports"`, inside `testID="settings-privacy"`), **off by default**, with this
+text under it
 (`CRASH_REPORTS_TEXT`):
 
 > Off by default. When on, crashes and unexpected errors are sent to a crash-reporting service in
@@ -43,12 +58,13 @@ Then **Disconnect** while a session is connected. The parts in detail:
 > clean-up and could, rarely, include a Bluetooth adapter's address. Reports never contain trip
 > data or location. You can turn this off any time.
 
-- **On** opens a confirmation (`appAlert`, same text, **Cancel** / **Turn on**); only **Turn on**
-  stores `crashReports: true`. **Off** switches it off at once, no question.
+- Switching **on** opens a confirmation (`appAlert`, same text, **Cancel** / **Turn on**) and the
+  switch stays off; only **Turn on** stores `crashReports: true`. Switching **off** applies at once,
+  no question.
 - **Read the privacy policy** opens `docs/privacy-policy.md` on GitHub (`PRIVACY_POLICY_URL`); its
   section "Crash reports (optional)" says what is sent, where, for how long and on what legal basis.
 - A build without a crash-service address (`EXPO_PUBLIC_SENTRY_DSN` empty: dev builds, forks, the
-  tests) shows **Unavailable in this build** (`crash-reports-unavailable`) and both segments are
+  tests) shows **Unavailable in this build** (`crash-reports-unavailable`) and the switch is
   disabled: the reporter is a no-op there whatever is stored.
 - **Developer & simulator → Crash reports → Send test crash report** hands the crash service one
   event whose message carries a sample VIN, adapter address and server address
@@ -193,10 +209,10 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
     named in the note and logged (`settings/reset`); the stores are reset anyway. `resetAppData.test.ts` scans the source for
     every `persist(` store named `bolid.*` and fails when one is missing from the reset.
 - **User preferences**:
-  - **Auto-reconnect** On / Off (Connection) — copy: "On by default; pauses after 3 drops in a minute", then the
+  - **Auto-reconnect** switch (Connection) — copy: "On by default; pauses after 3 drops in a minute", then the
     backoff (2 s, 5 s, 10 s — up to 3 attempts) and that a manual disconnect / connect cancels it.
     See [connection](./connection.md#auto-reconnect-on-by-default-with-a-flap-guard).
-  - **Recognise my cars by VIN** On / Off (plan 06, Connection) — copy: "Select a garage car when its VIN
+  - **Recognise my cars by VIN** switch (plan 06, Connection) — copy: "Select a garage car when its VIN
     connects", "On by default. When the connected car's VIN (vehicle identification number) matches
     a car you added from a connection, that car becomes the active vehicle. Built-in profiles are
     only suggested on the Vehicle screen." See

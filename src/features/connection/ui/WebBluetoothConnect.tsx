@@ -1,5 +1,6 @@
 import React from 'react';
 import { YStack, Button, Paragraph, Spinner, Text } from 'tamagui';
+import { HIT_SLOP } from '@/shared/ui';
 import { WEB_BLUETOOTH_UNSUPPORTED } from '@/shared/transports/web-ble/WebBluetoothTransport';
 import { isWebBluetoothSupported, switchAdapterSource } from '../api/connectionService';
 import { Panel } from '../styles/connection.styles';
@@ -53,6 +54,7 @@ export function WebBluetoothConnect({ busy, onChoose }: { busy: boolean; onChoos
       </Button>
       <Button
         size="$3"
+        hitSlop={HIT_SLOP}
         chromeless
         alignSelf="flex-start"
         disabled={busy}

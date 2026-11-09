@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Card, YStack, XStack, Text, Paragraph, Button, H4 } from 'tamagui';
 import { CheckCircle2 } from 'lucide-react-native';
-import { CardGrid, Screen, appAlert } from '@/shared/ui';
+import { CardGrid, Screen, appAlert, HIT_SLOP, usePalette, useReducedMotion } from '@/shared/ui';
 import { ImportPreviewSheet } from '@/shared/ui/ImportPreviewSheet';
 import { useExchangeImport } from '@/shared/ui/useExchangeImport';
 import {
@@ -24,7 +24,6 @@ import { EXCHANGE_SOURCE, shareProfileSeedFile, shareVehicleFile } from '../api/
 import { isWebRuntime } from '@/shared/lib/webRuntime';
 import { VehicleEditorSheet } from './VehicleEditorSheet';
 
-const GREEN = '#2bb673';
 export const GARAGE_COPY =
   'Cars you add here are remembered on this phone. Built-in profiles are curated and documented.';
 
@@ -44,6 +43,19 @@ function Chip({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** The buttons inside a garage card, also offered as the card's screen-reader actions (plan 20). */
+const GARAGE_CARD_ACTIONS = [
+  { name: 'edit', label: 'Edit' },
+  { name: 'export', label: 'Export' },
+  { name: 'delete', label: 'Delete' },
+];
+const PROFILE_CARD_ACTIONS = [{ name: 'share', label: 'Share as starting profile' }];
+
+/** Press feedback for a selectable card: a slight shrink, left out under Reduce motion (plan 20). */
+function cardPressStyle(reduceMotion: boolean) {
+  return reduceMotion ? { opacity: 0.85 } : { opacity: 0.85, scale: 0.99 };
+}
+
 function GarageCard({
   v,
   active,
@@ -60,6 +72,9 @@ function GarageCard({
   const suffix = vinSuffix(v.learned?.vin);
   const fuel = FUELS.find((f) => f.value === v.fuel)?.label ?? v.fuel;
   const base = getVehicleProfile(v.baseProfileId);
+  const palette = usePalette();
+  const reduceMotion = useReducedMotion();
+  const protocol = v.learned ? PROTOCOL_LABELS[v.learned.protocol] : 'added by hand';
   const confirmDelete = () =>
     appAlert(
       'Delete this car?',
@@ -74,11 +89,25 @@ function GarageCard({
       bordered
       padding="$4"
       backgroundColor="$backgroundHover"
-      borderColor={active ? GREEN : '$borderColor'}
+      borderColor={active ? '$accent' : '$borderColor'}
       borderWidth={active ? 2 : 1}
       borderLeftWidth={active ? 4 : 1}
-      borderLeftColor={active ? GREEN : '$borderColor'}
-      pressStyle={{ opacity: 0.85, scale: 0.99 }}
+      borderLeftColor={active ? '$accent' : '$borderColor'}
+      pressStyle={cardPressStyle(reduceMotion)}
+      // One element for the screen reader (plan 20); the Edit / Export / Delete buttons inside are
+      // also offered as its actions, since VoiceOver does not reach controls inside an element.
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={`${v.name}. ${protocol}. ${active ? 'Selected' : 'Not selected'}`}
+      accessibilityHint="Selects this car."
+      accessibilityState={{ selected: active }}
+      accessibilityActions={GARAGE_CARD_ACTIONS}
+      onAccessibilityAction={(e) => {
+        const action = e.nativeEvent.actionName;
+        if (action === 'edit' || action === 'longpress') onEdit();
+        else if (action === 'export') onExport();
+        else if (action === 'delete') confirmDelete();
+      }}
       onPress={onSelect}
       onLongPress={onEdit}
     >
@@ -88,7 +117,7 @@ function GarageCard({
             {v.name}
             {suffix ? ` ·${suffix}` : ''}
           </Text>
-          {active ? <CheckCircle2 size={20} color={GREEN} /> : null}
+          {active ? <CheckCircle2 size={20} color={palette.accent} /> : null}
         </XStack>
         <XStack gap="$2" flexWrap="wrap">
           {v.year ? <Chip>{v.year}</Chip> : null}
@@ -110,14 +139,25 @@ function GarageCard({
           </Paragraph>
         ) : null}
         <XStack gap="$2">
-          <Button size="$2" onPress={onEdit} accessibilityLabel={`Edit ${v.name}`}>
+          <Button
+            size="$3"
+            hitSlop={HIT_SLOP}
+            onPress={onEdit}
+            accessibilityLabel={`Edit ${v.name}`}
+          >
             Edit
           </Button>
-          <Button size="$2" onPress={onExport} accessibilityLabel={`Export ${v.name}`}>
+          <Button
+            size="$3"
+            hitSlop={HIT_SLOP}
+            onPress={onExport}
+            accessibilityLabel={`Export ${v.name}`}
+          >
             Export
           </Button>
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             theme="red"
             onPress={confirmDelete}
             accessibilityLabel={`Delete ${v.name}`}
@@ -132,6 +172,8 @@ function GarageCard({
 
 export function VehicleSelectScreen() {
   const router = useRouter();
+  const palette = usePalette();
+  const reduceMotion = useReducedMotion();
   const selectedProfileId = useVehicleStore((s) => s.selectedProfileId);
   const select = useVehicleStore((s) => s.select);
   const garage = useGarageStore((s) => s.vehicles);
@@ -179,8 +221,11 @@ export function VehicleSelectScreen() {
           <Card
             bordered
             padding="$3"
-            borderColor={GREEN}
+            borderColor="$accent"
             pressStyle={{ opacity: 0.85 }}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={`The connected car is ${garageMatch.name} from your garage. Switch to it.`}
             onPress={() => pick(garageMatch.id)}
           >
             <Paragraph size="$2">
@@ -193,8 +238,11 @@ export function VehicleSelectScreen() {
           <Card
             bordered
             padding="$3"
-            borderColor={GREEN}
+            borderColor="$accent"
             pressStyle={{ opacity: 0.85 }}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={`The connected car's VIN matches ${suggestion.profile.name}. Switch to that profile.`}
             onPress={() => pick(suggestion.profile.id)}
           >
             <Paragraph size="$2">
@@ -283,11 +331,19 @@ export function VehicleSelectScreen() {
                 bordered
                 padding="$4"
                 backgroundColor="$backgroundHover"
-                borderColor={active ? GREEN : '$borderColor'}
+                borderColor={active ? '$accent' : '$borderColor'}
                 borderWidth={active ? 2 : 1}
                 borderLeftWidth={active ? 4 : 1}
-                borderLeftColor={active ? GREEN : '$borderColor'}
-                pressStyle={{ opacity: 0.85, scale: 0.99 }}
+                borderLeftColor={active ? '$accent' : '$borderColor'}
+                pressStyle={cardPressStyle(reduceMotion)}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel={`${p.name}. ${PROTOCOL_LABELS[p.expectedProtocol]}. ${active ? 'Selected' : 'Not selected'}`}
+                accessibilityState={{ selected: active }}
+                accessibilityActions={p.id === 'generic' ? undefined : PROFILE_CARD_ACTIONS}
+                onAccessibilityAction={(e) => {
+                  if (e.nativeEvent.actionName === 'share') void exportSeed(p);
+                }}
                 onPress={() => pick(p.id)}
               >
                 <YStack gap="$2">
@@ -295,7 +351,7 @@ export function VehicleSelectScreen() {
                     <Text fontWeight="800" fontSize="$5" flex={1}>
                       {p.name}
                     </Text>
-                    {active ? <CheckCircle2 size={20} color={GREEN} /> : null}
+                    {active ? <CheckCircle2 size={20} color={palette.accent} /> : null}
                   </XStack>
                   <Chip>
                     {PROTOCOL_LABELS[p.expectedProtocol]}
@@ -309,7 +365,8 @@ export function VehicleSelectScreen() {
                   {p.id !== 'generic' ? (
                     <XStack>
                       <Button
-                        size="$2"
+                        size="$3"
+                        hitSlop={HIT_SLOP}
                         onPress={() => void exportSeed(p)}
                         accessibilityLabel={`Share ${p.name} as a starting profile`}
                       >

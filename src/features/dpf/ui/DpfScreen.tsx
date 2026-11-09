@@ -5,12 +5,12 @@ import { allConfirmed } from '@/shared/vehicles';
 import { useDpf } from '../hooks/useDpf';
 
 const STATUS: Record<string, { color: string; label: string }> = {
-  ok: { color: '#2bb673', label: 'Filter healthy' },
-  filling: { color: '#3fb950', label: 'Soot building (normal)' },
-  'regen-due': { color: '#d29922', label: 'Regeneration due' },
-  regenerating: { color: '#58a6ff', label: 'Regenerating now' },
-  high: { color: '#f85149', label: 'Soot load high' },
-  unknown: { color: '#8B949E', label: 'No reading' },
+  ok: { color: '$accent', label: 'Filter healthy' },
+  filling: { color: '$statusOk', label: 'Soot building (normal)' },
+  'regen-due': { color: '$statusWarn', label: 'Regeneration due' },
+  regenerating: { color: '$statusInfo', label: 'Regenerating now' },
+  high: { color: '$statusError', label: 'Soot load high' },
+  unknown: { color: '$muted', label: 'No reading' },
 };
 
 export function DpfScreen() {

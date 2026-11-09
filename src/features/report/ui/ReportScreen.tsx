@@ -2,14 +2,14 @@ import React, { useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner } from 'tamagui';
 import { SquareCheck, Square, FileText, FileCode, FileType } from 'lucide-react-native';
-import { Screen, appAlert } from '@/shared/ui';
+import { Screen, appAlert, usePalette, HIT_SLOP, type Tone } from '@/shared/ui';
 import {
   REPORT_SECTIONS,
   REPORT_SECTION_TITLES,
-  SEVERITY_COLOR,
   reportHeadline,
   reportSeverity,
   type ReportSectionId,
+  type ReportSeverity,
   type VehicleReportModel,
 } from '@/shared/lib/vehicleReport';
 import { useVehicleReport } from '../hooks/useVehicleReport';
@@ -36,6 +36,13 @@ const SECTION_HINT: Record<ReportSectionId, string> = {
 };
 
 const SEVERITY_TEXT = { ok: 'OK', attention: 'Attention', urgent: 'Urgent' } as const;
+/** On-screen severity colours (plan 20): a semantic tone per severity, resolved for the current
+ *  theme. `SEVERITY_COLOR` in `vehicleReport.ts` is the HTML export's fixed palette, not for UI. */
+const SEVERITY_TONE: Record<ReportSeverity, Tone> = {
+  ok: 'statusOk',
+  attention: 'statusWarn',
+  urgent: 'statusError',
+};
 
 function SectionRow({
   id,
@@ -52,6 +59,7 @@ function SectionRow({
 }) {
   const title = REPORT_SECTION_TITLES[id];
   const Icon = checked ? SquareCheck : Square;
+  const palette = usePalette();
   return (
     <XStack alignItems="center" gap="$3" paddingVertical="$2">
       <XStack
@@ -65,7 +73,7 @@ function SectionRow({
         accessibilityLabel={title}
         accessibilityState={{ checked, disabled: !available }}
       >
-        <Icon size={20} color={available ? '#2bb673' : '#8B949E'} />
+        <Icon size={20} color={available ? palette.accent : palette.muted} />
         <YStack flex={1}>
           <Text fontWeight="700">{title}</Text>
           <Paragraph theme="alt2" fontSize="$2">
@@ -74,7 +82,13 @@ function SectionRow({
         </YStack>
       </XStack>
       {available ? null : (
-        <Button size="$2" chromeless onPress={onRun} accessibilityLabel={`Run now: ${title}`}>
+        <Button
+          size="$3"
+          hitSlop={HIT_SLOP}
+          chromeless
+          onPress={onRun}
+          accessibilityLabel={`Run now: ${title}`}
+        >
           Run now
         </Button>
       )}
@@ -84,7 +98,7 @@ function SectionRow({
 
 function Preview({ model }: { model: VehicleReportModel }) {
   const sev = reportSeverity(model);
-  const color = SEVERITY_COLOR[sev];
+  const color = usePalette()[SEVERITY_TONE[sev]];
   return (
     <Card bordered padding="$3" gap="$1" borderLeftWidth={3} borderLeftColor={color}>
       <XStack alignItems="center" gap="$2">
@@ -112,6 +126,7 @@ function Preview({ model }: { model: VehicleReportModel }) {
  *  one PDF, HTML or Markdown document. Works offline from stored data. See docs/features/report.md. */
 export function ReportScreen() {
   const router = useRouter();
+  const palette = usePalette();
   const { available, build } = useVehicleReport();
   const { sharePdf, shareHtml, shareMarkdown, busy } = useReportExport();
   const [unchecked, setUnchecked] = useState<ReadonlySet<ReportSectionId>>(new Set());
@@ -179,7 +194,7 @@ export function ReportScreen() {
           theme="green"
           onPress={onPdf}
           disabled={busy}
-          icon={busy ? spinner : () => <FileText size={18} color="#fff" />}
+          icon={busy ? spinner : <FileText size={18} />}
         >
           Share PDF
         </Button>
@@ -188,7 +203,7 @@ export function ReportScreen() {
             flex={1}
             onPress={onHtml}
             disabled={busy}
-            icon={busy ? spinner : () => <FileCode size={18} color="#2bb673" />}
+            icon={busy ? spinner : <FileCode size={18} color={palette.accent} />}
           >
             Share HTML
           </Button>
@@ -196,7 +211,7 @@ export function ReportScreen() {
             flex={1}
             onPress={onMarkdown}
             disabled={busy}
-            icon={busy ? spinner : () => <FileType size={18} color="#2bb673" />}
+            icon={busy ? spinner : <FileType size={18} color={palette.accent} />}
           >
             Share Markdown
           </Button>

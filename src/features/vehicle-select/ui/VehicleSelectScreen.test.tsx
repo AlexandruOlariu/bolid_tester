@@ -324,6 +324,62 @@ describe('VehicleSelectScreen — profile import / export (plan 13)', () => {
     load.mockRestore();
   });
 
+  describe('screen reader (plan 20)', () => {
+    it('each profile card is a button naming the car, its protocol and whether it is selected', () => {
+      renderWithProviders(<VehicleSelectScreen />);
+      const golf = screen.getByRole('button', {
+        name: `${GOLF}. ISO 15765-4 CAN (11-bit, 500 kbps). Not selected`,
+      });
+      expect(golf).not.toBeSelected();
+      expect(
+        screen.getByRole('button', { name: /^Auto \/ Generic OBD2\. .*\. Selected$/ }),
+      ).toBeSelected();
+      fireEvent.press(golf);
+      expect(useVehicleStore.getState().selectedProfileId).toBe('golf-plus-2009-20tdi');
+      expect(
+        screen.getByRole('button', {
+          name: `${GOLF}. ISO 15765-4 CAN (11-bit, 500 kbps). Selected`,
+        }),
+      ).toBeSelected();
+    });
+
+    it("a card's inner buttons are also its screen-reader actions", async () => {
+      const share = jest.spyOn(exchangeApi, 'shareProfileSeedFile').mockResolvedValue(null);
+      const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+      useGarageStore.setState({
+        vehicles: [
+          {
+            id: 'user:a',
+            name: 'Car A',
+            fuel: 'petrol',
+            baseProfileId: 'generic',
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        ],
+      });
+      renderWithProviders(<VehicleSelectScreen />);
+      const car = screen.getByRole('button', { name: /^Car A\. added by hand\. Not selected$/ });
+      expect(car.props.accessibilityActions.map((a: { label: string }) => a.label)).toEqual([
+        'Edit',
+        'Export',
+        'Delete',
+      ]);
+      fireEvent(car, 'accessibilityAction', { nativeEvent: { actionName: 'delete' } });
+      expect(alert).toHaveBeenCalledWith('Delete this car?', expect.any(String), expect.any(Array));
+
+      const golf = screen.getByRole('button', {
+        name: `${GOLF}. ISO 15765-4 CAN (11-bit, 500 kbps). Not selected`,
+      });
+      await act(async () => {
+        fireEvent(golf, 'accessibilityAction', { nativeEvent: { actionName: 'share' } });
+      });
+      expect(share).toHaveBeenCalledWith(expect.objectContaining({ id: 'golf-plus-2009-20tdi' }));
+      share.mockRestore();
+      alert.mockRestore();
+    });
+  });
+
   describe('tablet layout (plan 21)', () => {
     it('shows the built-in profiles and the garage in two columns', () => {
       useGarageStore.setState({

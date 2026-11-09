@@ -5,6 +5,140 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 20 — Accessibility pass (2026-11-09)
+
+[Plan 20](./plans/20-accessibility-pass.md) landed: one colour palette that passes WCAG AA in both
+themes (checked in CI), a name, role and state on every control, ≥ 44 pt touch targets, text that
+scales without breaking the tiles, Reduce motion respected, and a test that sweeps every route for
+unnamed controls. Roadmap ✅ (the plan has no deferred / owner part; the TalkBack / largest-font
+emulator pass is a manual check, listed in [accessibility.md](./accessibility.md)). Picked up from
+an interrupted first attempt: its palette, config, contrast script, splash, logo and first screens
+were reviewed and kept, with the fixes noted below.
+
+- **Palette (`src/shared/ui/palette.json`, the only colour source).** Per theme: `surfaces`,
+  `text` tokens (`accent`, `muted`, `statusOk|Warn|Error|Info|Fatal`, `placeholderColor`),
+  `graphic` (`gaugeTrack`), `onFill`, and the React Navigation `chrome`; plus the fixed `brand`
+  artwork. `tamagui.config.ts` merges them into **every** light / dark theme (sub-themes and
+  component themes too; `*_alt2` text becomes `muted`, since the stock greys were 3.1 / 3.9:1) and
+  sets `defaultProps: { Button: { accessible: true } }`. `usePalette()` gives raw strings for
+  icons, SVG and chart series; `Tone` types the feature maps. Light accent `#1E7F52` (4.98:1),
+  dark placeholder `#7D8590` (5.07:1, was 2.28).
+- **Contrast check.** `src/shared/lib/contrast.ts` (`contrastRatio`, `checkPalette`, `failures`):
+  text ≥ 4.5 on every surface, graphics ≥ 3, `onFill` ≥ 4.5 on each fillable token, header text
+  and tab tints on the bar, splash ink on brand green. `scripts/contrast-check.mjs` transpiles that
+  file and checks `palette.json` (`--verbose`, `--palette <file>`): `npm run check:contrast`, in
+  `npm run ci` and CI `verify` ("Palette contrast"). 57 pairs pass; the light accent set back to
+  `#2bb673` fails four.
+- **Hex → tokens.** No `#RRGGBB` left in any `.tsx` under `src/` (was 23 values in 22 files):
+  `_layout.tsx` (`ACCENT` / `INACTIVE` / `NAV` → the palette per scheme), `Gauge`, `Screen`,
+  `StatusBadge` (semantic fill + `$onFill` text; white on `$green8` was 2.6:1), `AppSplash` (ink
+  on green), `AppLogo`, `ImportPreviewSheet`, and the screens Connection (+ `BluetoothPrompt`,
+  `ConnectionDiagnostics`, `SimulatorBanner`), AI diagnose / report view, Adapter health, Battery,
+  DPF, Inspection, Maintenance, Backup, Error log, Fault codes (+ `SEVERITY_META` tokens, detail
+  sheet badge in `$onFill`), Feedback, History, Charts (series = accent / info / warn / error),
+  Report, More, onboarding cards, Vehicle select, Trips (`TrackMap`, `SpeedStrip`). Tamagui scale
+  text colours under 4.5:1 on white (`$red10` 4.4, `$green10` 3.7, `$orange10` 3.4, `$blue10`,
+  `$yellow10`) → semantic tokens in 17 files, plus the scan-diff `Badge` (built its token as
+  `` `$${tone}10` ``, now a `statusWarn | statusError | statusOk` tone). Every status pill is a
+  semantic fill with `$onFill` text: `StatusBadge`, `VerificationBadge` (ok / info / warn; white on
+  `$green8` / `$blue8` was 2.4:1), `UnlockBadge` (ok / error), the connection list's known-adapter
+  chip (ok / warn / error; black on dark `$yellow8` was 3.3:1) and the fault-code detail badge. The
+  Report preview's severity text and border map the severity to a `Tone` through `usePalette()`
+  (it read the HTML export's `SEVERITY_COLOR`, `#d29922` 2.5:1 on white). Themed-button icons are elements without a colour (they take the
+  button's text colour) instead of `() => <X color="#fff" />`.
+- **Controls.** New shared `SegmentedControl` (named `radiogroup`, `radio` options with
+  `selected` / `checked`, 36 dp + `HIT_SLOP` 8, spoken labels, `vertical`), `SectionTitle`
+  (`header`), `LabeledSwitch` / `AccessibleSwitch` (adds `accessible`, the `switch` role, a
+  required name and the `checked` / `disabled` state; Tamagui's native Switch sets none).
+  Settings: 13 `Seg` rows → `SegmentedControl`; the four On / Off pairs → switches (crash reports
+  still confirm first). Error-log severity chips, History / Trips car filters, trip-map colouring,
+  vehicle editor fuel / base profile → `SegmentedControl`; History kinds and the Charts picker →
+  `checkbox` buttons. Every remaining raw `Switch` (Notifications, Coding ×2, Adaptations,
+  Routines, Extended PIDs, drive-cycle coach, seed keys, feedback) → `AccessibleSwitch` or labelled.
+  The Alerts rule toggle (an On / Off button) → `AccessibleSwitch` named `Alert <rule>`.
+- **Names.** Dashboard Customize `Move <item> up` / `down`, `Hide` / `Show <item>`; error-log
+  `Delete error: <source>`; vehicle cards `<name>. <protocol>. Selected | Not selected` with the
+  `selected` state, `accessible`, and their inner buttons as `accessibilityActions` (Edit /
+  Export / Delete, Share as starting profile); VIN-match cards; hint / first-run dismiss; inputs
+  (AI server URL, AI model, MAC address, odometer, VIN, scan search). `Screen` titles and section
+  labels are headings; decorative chevrons and the logo are hidden. The expand / collapse rows that
+  only render with data (Module scan result rows, Coding car-backup rows) are named `button`s with
+  `accessibilityState.expanded`. The Coding raw bit editor's bits are `switch`es named
+  `Byte <n> bit <b>` with their `checked` state, and the mask steppers are `Decrease` / `Increase
+<field>`; the bits are 36 dp squares 8 dp apart with a 4 dp slop (44 dp targets whose slops meet
+  without overlapping, so a tap near an edge never flips the neighbouring bit). Live regions only on the
+  connection `StatusHero` and the Faults readiness / MIL panel (one element, one sentence).
+- **Touch targets.** Every `Button size="$1" | "$2"` (61) → `size="$3"` + `hitSlop={HIT_SLOP}`,
+  the dashboard / error-log icon buttons included, and every `Button` already at `size="$3"` (53
+  in 23 files) gets the slop too; dismiss icons pad `$2` + slop; first-run steps are at least 44 dp
+  tall. `src/shared/ui/touchTargets.test.ts` parses every non-test `.tsx` under `src/` and fails on
+  a Tamagui `Button` at `$1` / `$2`, or at `$3` without `hitSlop`.
+- **Dynamic type.** `maxFontSizeMultiplier={1.3}` on the gauge value / unit, the `ValueCard` value
+  (+ `numberOfLines={1}`), the fuel-economy number and the splash; tab labels scale (11 pt, ≤ 1.5×)
+  and the header title is capped at 1.5×; the custom tab label keeps React Navigation's spacing
+  from the icon when it sits beside it (a function label replaces the navigator's styled one, so
+  the dead `tabBarLabelStyle` / `tabBarAllowFontScaling` options are gone). Above font scale 1.5
+  (`LARGE_TEXT_FONT_SCALE`, now in `ValueCard.tsx`) every `ValueCard` goes full width by itself —
+  Live's Dashboard and All sensors views, Faults, Battery, DPF … — as do All sensors' injection
+  tiles; the tablet's Live card column computes one card per row.
+- **Reduced motion.** `useReducedMotion()`; the splash skips the logo pulse and fades in 150 ms;
+  vehicle cards drop the press scale. The splash subtitle no longer pulses its opacity at all: ink
+  at 0.45 over the brand green was about 2.4:1, so it stays fully opaque (7.25:1).
+- **Inventory after (src, non-test `.tsx`).** `accessibilityLabel` 7 → 136, `accessibilityRole`
+  7 → 49 (plus `role=`), `accessibilityState` 0 → 17, `maxFontSizeMultiplier` 0 → 9, `hitSlop`
+  0 → 136, `accessibilityLiveRegion` 0 → 3, hex colours 23 values → 0.
+- **Tests (+6 suites).** `src/shared/lib/contrast.test.ts` (reference ratios, the shipped palette
+  passes, a flipped light token / gauge track / splash ink fails, onFill never on the placeholder);
+  the `test/a11y.ts` walker + `test/a11y/a11yWalker.test.tsx` (each rule fires: unnamed icon
+  button, row without a role or `accessible`, placeholder-only input, bare Tamagui Switch, radio
+  without state, an unnamed icon button inside a pressable card — the walker merges a composite
+  with the wrappers it passes `onPress` through, but checks every pressable below another
+  pressable's native view as its own control); `test/a11y/screens.a11y.test.tsx` (every `src/app` route, disconnected and on the
+  simulator with codes, plus Live → Customize, Settings → Developer & simulator, the Coding editor
+  on the Golf profile and an error-log entry; proved to fail with a dashboard label removed); `src/shared/ui/SegmentedControl.test.tsx`
+  (radios, selection, `onChange`, size / slop, null value, disabled; switches toggle, stay
+  controlled, disabled); `src/shared/ui/useReducedMotion.test.tsx` (the hook follows the setting;
+  the splash pulses vs. holds still); `src/shared/ui/touchTargets.test.ts` (the source scan above,
+  and that it flags a small button). The sweep loads every route module once in a `beforeAll`, so
+  its first case no longer pays ~9 s of module loading against the per-test timeout, and
+  `jest.setup.ui.ts` raises the `ui` project's per-test timeout from Jest's 5 s to 20 s: the
+  simulator walk-throughs (Backup's back up → clear → restore) ran past 5 s while the 100 s sweep
+  shared the machine. The Settings (radios / switches / input labels), Live (large
+  text on phone and tablet, Customize names) and Vehicle (card names, selection, actions) tests
+  are extended; the crash-report tests press the switch.
+- **Docs.** New `docs/accessibility.md` (rules 1–6, token table, contrast check and ratios, review
+  checklist line, manual TalkBack / large-text check); `docs/features/settings.md` (controls,
+  crash-report switch), `docs/features/live-data.md` (accessibility section, tests),
+  `docs/architecture.md` (§ UI: colour and accessibility), `docs/testing.md` (roles, sweep),
+  `docs/README.md` (index row), roadmap ✅.
+- **Deviations.**
+  - The palette lives in `palette.json` (`themes.<scheme>.text / graphic / onFill / chrome`,
+    `brand`), not the plan's `brand` / `semanticDark` / `semanticLight` objects; light tokens are
+    checked on `#FFFFFF` **and** `#F8F8F8` (cards), dark on `#0D1117` and `#161B22`. Values differ
+    from the plan's sketch where the check needed it: dark placeholder `#7D8590` (the plan's
+    `#6E7681` is 4.0:1 on `#161B22`), light placeholder `#656D76`, plus `gaugeTrack`, `onFill` and
+    `chrome` tokens the plan did not list.
+  - `_layout.tsx` reads the palette for the active scheme instead of `useTheme()`: React
+    Navigation's options are built in `RootLayout`, above the Tamagui theme.
+  - Every Tamagui `Button` gets `accessible` from the config's `defaultProps` (not in the plan):
+    without it a button is not an accessibility element (Testing Library could not find it by role,
+    plan 10's note), and the walker now requires it.
+  - `useReducedMotion` is in `src/shared/ui/` (it imports React Native), not `src/shared/lib/`.
+  - The sweep is `test/a11y/screens.a11y.test.tsx` over **every route** (33), not
+    `src/features/__a11y__/tabScreens.a11y.test.tsx` over the seven tabs: the generic sweep picks
+    up new screens, and the walker lives next to the other shared test helpers in `test/`.
+  - The Live view switch (Dashboard | All sensors) stays a `tablist` of `tab`s (it switches
+    views); `TrackMap`'s colouring row, a tablist before, became a radio group.
+  - Garage / built-in vehicle cards are `accessible` and expose their inner buttons as
+    `accessibilityActions`, since VoiceOver does not reach controls inside an accessibility element.
+  - Out of scope, unchanged: obd-core's map colour ramp `TRACK_PALETTE` (`analysis/track.ts`, a
+    pure data ramp explained by the legend) and the HTML / PDF exports' inline CSS
+    (`dtcReport.ts`, `reportHtml.ts`, `vehicleReport.ts`).
+  - The TalkBack / largest-font / Remove-animations acceptance items need an emulator run by hand;
+    the procedure is in `docs/accessibility.md` § Manual check.
+
+---
+
 ## Plan 33 — Community contribution flow (2026-11-09)
 
 [Plan 33](./plans/33-community-contribution.md) landed: anyone can contribute a vehicle profile, a

@@ -7,7 +7,7 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useAdapterLogStore } from '@/shared/state/adapterLog';
 import { logError } from '@/shared/state/errorLogStore';
-import { monoFontFamily } from '@/shared/ui';
+import { monoFontFamily, usePalette, HIT_SLOP } from '@/shared/ui';
 import type { BluetoothState } from '../hooks/useBluetoothState';
 import {
   diagnoseFailure,
@@ -19,7 +19,6 @@ import {
 import { useLinkStore } from '@/shared/state/linkStore';
 import { Panel } from '../styles/connection.styles';
 
-const ACCENT = '#F85149'; // matches the error status color
 const LOG_TAIL = 20;
 
 function radioState(bt: BluetoothState): BtRadioState {
@@ -36,6 +35,7 @@ function radioState(bt: BluetoothState): BtRadioState {
  *  Bluetooth serial port) and the device, with **Copy details** (OS share sheet) and **Open error
  *  log**. The rules live in the pure `diagnoseFailure`. */
 export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
+  const palette = usePalette();
   const router = useRouter();
   const status = useSessionStore((s) => s.status);
   const error = useSessionStore((s) => s.error);
@@ -86,9 +86,9 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
   const Chevron = open ? ChevronDown : ChevronRight;
 
   return (
-    <Panel borderColor={ACCENT} accessibilityLabel="Connection diagnostics">
+    <Panel borderColor={palette.statusError} accessibilityLabel="Connection diagnostics">
       <XStack gap="$3" alignItems="flex-start">
-        <Stethoscope size={22} color={ACCENT} />
+        <Stethoscope size={22} color={palette.statusError} />
         <YStack flex={1} gap="$2">
           <XStack>
             <Card
@@ -120,7 +120,8 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
           </YStack>
 
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             chromeless
             alignSelf="flex-start"
             icon={<Chevron size={16} />}
@@ -170,7 +171,7 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
                       key={i}
                       fontSize="$1"
                       fontFamily={monoFont}
-                      color={e.dir === 'tx' ? '$blue10' : '$green10'}
+                      color={e.dir === 'tx' ? '$statusInfo' : '$statusOk'}
                       numberOfLines={2}
                     >
                       {formatLogLine(e)}
@@ -179,10 +180,10 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
                 )}
               </Card>
               <XStack gap="$2" flexWrap="wrap">
-                <Button size="$3" onPress={() => void copy()}>
+                <Button size="$3" hitSlop={HIT_SLOP} onPress={() => void copy()}>
                   Copy details
                 </Button>
-                <Button size="$3" onPress={() => router.push('/error-log')}>
+                <Button size="$3" hitSlop={HIT_SLOP} onPress={() => router.push('/error-log')}>
                   Open error log
                 </Button>
               </XStack>

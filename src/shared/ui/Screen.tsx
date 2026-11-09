@@ -1,8 +1,9 @@
 import React from 'react';
 import { ScrollView, RefreshControl, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme, YStack, H2, Paragraph } from 'tamagui';
+import { YStack, H2, Paragraph } from 'tamagui';
 import { useLayoutClass } from './useLayoutClass';
+import { usePalette } from './usePalette';
 import { CONTENT_MAX_WIDTH, isTwoPane } from './layoutClass';
 
 interface ScreenProps {
@@ -20,8 +21,8 @@ interface ScreenProps {
  *  windows (plan 21) the padding grows to 24 and the content is a centred column capped at
  *  `CONTENT_MAX_WIDTH` unless `wide`. */
 export function Screen({ title, subtitle, onRefresh, refreshing, wide, children }: ScreenProps) {
-  const theme = useTheme();
-  const bg = (theme.background?.val ?? '#0D1117') as string;
+  const palette = usePalette();
+  const bg = palette.background;
   const layout = useLayoutClass();
   const roomy = isTwoPane(layout);
 
@@ -51,11 +52,14 @@ export function Screen({ title, subtitle, onRefresh, refreshing, wide, children 
               <View
                 style={{
                   borderLeftWidth: 3,
-                  borderLeftColor: '#2bb673',
+                  borderLeftColor: palette.accent,
                   paddingLeft: 10,
                 }}
               >
-                <H2 fontWeight="800">{title}</H2>
+                {/* The screen title is a heading (plan 20): screen readers can jump to it. */}
+                <H2 fontWeight="800" role="heading" accessibilityRole="header">
+                  {title}
+                </H2>
                 {subtitle ? (
                   <Paragraph theme="alt2" fontSize="$3">
                     {subtitle}

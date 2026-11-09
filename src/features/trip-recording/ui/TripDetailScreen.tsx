@@ -6,7 +6,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Card, H4, Paragraph, Spinner, Text, XStack, YStack } from 'tamagui';
-import { Screen, ValueCard } from '@/shared/ui';
+import { Screen, ValueCard, HIT_SLOP } from '@/shared/ui';
 import { gpsVsObd, speedProfile, type GpsObdCheck } from '@/shared/obd-core';
 import { useTripStore } from '../model/tripStore';
 import { loadTrip, shareTrip, type LoadedTrip } from '../hooks/useTripRecorder';
@@ -14,10 +14,10 @@ import { TrackMap } from './TrackMap';
 import { SpeedStrip, formatSpan } from './SpeedStrip';
 
 const VERDICT: Record<GpsObdCheck['verdict'], { label: string; colour: string }> = {
-  ok: { label: 'Distances agree', colour: '$green10' },
-  check: { label: 'Worth a check', colour: '$yellow10' },
-  mismatch: { label: 'Mismatch', colour: '$red10' },
-  unknown: { label: 'Not enough data', colour: '$gray10' },
+  ok: { label: 'Distances agree', colour: '$statusOk' },
+  check: { label: 'Worth a check', colour: '$statusWarn' },
+  mismatch: { label: 'Mismatch', colour: '$statusError' },
+  unknown: { label: 'Not enough data', colour: '$muted' },
 };
 
 const km = (v: number | null | undefined) => (v == null ? null : v.toFixed(2));
@@ -119,8 +119,8 @@ export function TripDetailScreen() {
               <H4 flex={1}>GPS track</H4>
               {summary.syntheticTrack && track.length > 0 ? (
                 <Text
-                  backgroundColor="$yellow8"
-                  color="white"
+                  backgroundColor="$statusWarn"
+                  color="$onFill"
                   fontSize="$2"
                   fontWeight="700"
                   paddingHorizontal="$2"
@@ -150,10 +150,10 @@ export function TripDetailScreen() {
       )}
 
       <XStack gap="$2">
-        <Button size="$3" onPress={() => void shareTrip(header)}>
+        <Button size="$3" hitSlop={HIT_SLOP} onPress={() => void shareTrip(header)}>
           Share CSV
         </Button>
-        <Button size="$3" onPress={() => router.push('/trips')}>
+        <Button size="$3" hitSlop={HIT_SLOP} onPress={() => router.push('/trips')}>
           All trips
         </Button>
       </XStack>

@@ -14,6 +14,9 @@
 // Find exact node ids with:  python3 scripts/graph.py find <term>
 {
   "concepts": [
+    { "id": "accessibility",
+      "summary": "Accessibility rules (plan 20): palette.json is the only colour source (semantic tokens in both themes, WCAG AA enforced by npm run check:contrast); every control has a name, role and state (SegmentedControl radios, LabeledSwitch / AccessibleSwitch, labelled icon buttons and inputs, every Button accessible via config defaultProps); >= 44 pt targets (size $3 + HIT_SLOP); display numbers capped at 1.3x font scale; Reduce motion respected; test/a11y sweeps every route.",
+      "tokens": ["accessibility","a11y","talkback","voiceover","contrast","wcag","palette","colour","color","token","theme","label","screen-reader","font","scale","motion"] },
     { "id": "module-scan",
       "summary": "VCDS-style auto-scan: per-module ident + fault codes over UDS (19 02 read / 14 clear / 19 04 snapshot), VAG code numbers. CAN-only; engine pair is standard, other addresses illustrative.",
       "tokens": ["module","scan","autoscan","auto-scan","vcds","clear","ident","dtc","fault"] },
@@ -187,6 +190,13 @@
       "tokens": ["web","browser","chrome","edge","pwa","web-bluetooth","navigator","gatt","requestdevice","gesture","localstorage","download","pages","export","safari","react-native-web"] }
   ],
   "links": [
+    ["concept:accessibility", "doc:accessibility", "relates"],
+    ["concept:accessibility", "lib:contrast", "relates"],
+    ["concept:accessibility", "ui:usePalette", "relates"],
+    ["concept:accessibility", "ui:SegmentedControl", "relates"],
+    ["concept:accessibility", "ui:LabeledSwitch", "relates"],
+    ["concept:accessibility", "ui:useReducedMotion", "relates"],
+    ["concept:accessibility", "screen:_layout", "relates"],
     ["concept:wifi-adapter", "transport:TcpTransport", "relates"],
     ["concept:wifi-adapter", "transport:endpoint", "relates"],
     ["concept:wifi-adapter", "core:transport/testing/bridge", "relates"],
@@ -473,5 +483,8 @@
     ["concept:documentation-driven", "doc:README", "relates"],
     ["concept:documentation-driven", "doc:architecture", "relates"]
   ],
-  "summaries": {}
+  "summaries": {
+    "ui:SegmentedControl": "Single-choice row (plan 20): a named radiogroup of radio options reporting selected / checked, 36 dp + HIT_SLOP 8, spoken labels, optional vertical list. Replaces ad-hoc Seg / Chip rows.",
+    "ui:LabeledSwitch": "On / off controls (plan 20): AccessibleSwitch adds accessible, the switch role, a required name and checked / disabled state to Tamagui's Switch; LabeledSwitch pairs it with a visible label."
+  }
 }

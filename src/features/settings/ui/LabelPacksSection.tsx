@@ -6,7 +6,7 @@ import { useLabelPackStore } from '@/shared/state/labelPackStore';
 import { ImportPreviewSheet } from '@/shared/ui/ImportPreviewSheet';
 import { useExchangeImport } from '@/shared/ui/useExchangeImport';
 import { LABEL_PACKS_SOURCE, shareLabelPackFile } from '../api/labelPackFile';
-import { appAlert } from '@/shared/ui';
+import { appAlert, HIT_SLOP } from '@/shared/ui';
 import { isWebRuntime } from '@/shared/lib/webRuntime';
 
 function countsText(pack: LabelPack): string {
@@ -45,7 +45,8 @@ function PackRow({
         </Paragraph>
         <XStack gap="$2" marginTop="$1">
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             onPress={onExport}
             accessibilityLabel={`${exportLabel}: ${pack.module}`}
           >
@@ -53,7 +54,8 @@ function PackRow({
           </Button>
           {onDelete ? (
             <Button
-              size="$2"
+              size="$3"
+              hitSlop={HIT_SLOP}
               theme="red"
               onPress={onDelete}
               accessibilityLabel={`Delete ${pack.module}`}
@@ -106,6 +108,7 @@ export function LabelPacksSection() {
       </Paragraph>
       <Button
         size="$3"
+        hitSlop={HIT_SLOP}
         disabled={importer.busy}
         onPress={() => void importer.startImport()}
         accessibilityLabel="Import a label pack from a file"

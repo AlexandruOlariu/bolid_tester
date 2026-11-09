@@ -2,7 +2,15 @@ import React, { useCallback, useMemo, useState } from 'react';
 import type { LayoutChangeEvent } from 'react-native';
 import { YStack, XStack, Paragraph, Button, Text, Card } from 'tamagui';
 import { ArrowUp, ArrowDown, Eye, EyeOff, Sliders, Check, RotateCcw } from 'lucide-react-native';
-import { Screen, Gauge, ValueCard, useLayoutClass, isTwoPane } from '@/shared/ui';
+import {
+  Screen,
+  Gauge,
+  ValueCard,
+  useLayoutClass,
+  isTwoPane,
+  HIT_SLOP,
+  LARGE_TEXT_FONT_SCALE,
+} from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { livePidFilter } from '@/shared/vehicles';
 import { useActiveProfile } from '@/shared/state/activeProfile';
@@ -61,7 +69,7 @@ function FuelEconomyCard({ result }: { result: FuelEconomyResult }) {
         <XStack alignItems="baseline" gap="$2" flexWrap="wrap">
           {econ !== null ? (
             <>
-              <Text fontSize="$9" fontWeight="800">
+              <Text fontSize="$9" fontWeight="800" maxFontSizeMultiplier={1.3}>
                 {econ}
               </Text>
               <Text fontSize="$4" theme="alt2">
@@ -108,9 +116,11 @@ function ViewSwitch({ view, onChange }: { view: LiveView; onChange: (v: LiveView
           key={o.id}
           flex={1}
           size="$3"
+          hitSlop={HIT_SLOP}
           theme={view === o.id ? 'green' : 'gray'}
           accessible
           role="tab"
+          accessibilityRole="tab"
           accessibilityLabel={o.label}
           accessibilityState={{ selected: view === o.id }}
           onPress={() => onChange(o.id)}
@@ -211,6 +221,7 @@ export function DashboardScreen() {
   }
 
   const gaugeSize = win.cls === 'expanded' ? 180 : undefined;
+  const largeText = win.fontScale > LARGE_TEXT_FONT_SCALE;
   const gauges = (
     <XStack flexWrap="wrap" justifyContent="space-around" gap="$2">
       {visible
@@ -226,9 +237,9 @@ export function DashboardScreen() {
   const hasLeft = visibleGauges || fuelCard !== null;
   const rowWidth = measuredRow ?? Math.max(0, win.width - 2 * ROOMY_PADDING);
   // Up to three cards per row on expanded, two on medium — fewer when they would drop under 150 dp
-  // — each sized so the row is filled exactly.
+  // — each sized so the row is filled exactly. With large text, one card per row (plan 20).
   const cardW = twoPane
-    ? cardWidth(rightColumnWidth(rowWidth, hasLeft), win.cls === 'expanded' ? 3 : 2)
+    ? cardWidth(rightColumnWidth(rowWidth, hasLeft), largeText ? 1 : win.cls === 'expanded' ? 3 : 2)
     : undefined;
   const cardItems = visible.filter((i) => i.kind === 'card');
   const cards = (
@@ -278,25 +289,34 @@ export function DashboardScreen() {
                 {item.kind === 'gauge' ? 'gauge' : item.pid}
               </Text>
             </Text>
+            {/* Icon-only buttons: each names its action (plan 20), 36 dp + 8 dp slop. */}
             <Button
-              size="$2"
+              size="$3"
               circular
+              hitSlop={HIT_SLOP}
               disabled={idx === 0}
               icon={<ArrowUp size={16} />}
+              accessibilityLabel={`Move ${label} up`}
+              accessibilityState={{ disabled: idx === 0 }}
               onPress={() => move(selectedId, orderedIds, item.id, -1)}
             />
             <Button
-              size="$2"
+              size="$3"
               circular
+              hitSlop={HIT_SLOP}
               disabled={idx === ordered.length - 1}
               icon={<ArrowDown size={16} />}
+              accessibilityLabel={`Move ${label} down`}
+              accessibilityState={{ disabled: idx === ordered.length - 1 }}
               onPress={() => move(selectedId, orderedIds, item.id, 1)}
             />
             <Button
-              size="$2"
+              size="$3"
               circular
+              hitSlop={HIT_SLOP}
               theme={hidden ? 'gray' : 'green'}
               icon={hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+              accessibilityLabel={hidden ? `Show ${label}` : `Hide ${label}`}
               onPress={() => toggleHidden(selectedId, item.id, layout)}
             />
           </XStack>
@@ -317,7 +337,8 @@ export function DashboardScreen() {
       <XStack justifyContent="flex-end" gap="$2">
         {editing ? (
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             theme="gray"
             icon={<RotateCcw size={16} />}
             onPress={() => reset(selectedId)}
@@ -326,7 +347,8 @@ export function DashboardScreen() {
           </Button>
         ) : null}
         <Button
-          size="$2"
+          size="$3"
+          hitSlop={HIT_SLOP}
           theme={editing ? 'green' : 'gray'}
           icon={editing ? <Check size={16} /> : <Sliders size={16} />}
           onPress={() => setEditing((e) => !e)}

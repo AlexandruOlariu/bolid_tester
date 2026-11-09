@@ -101,7 +101,7 @@ function DtcDetailBody({
     <YStack gap="$3" paddingBottom="$6">
       <XStack alignItems="center" justifyContent="space-between" gap="$2">
         <YStack>
-          <Text fontWeight="900" fontSize="$9" color="$red10">
+          <Text fontWeight="900" fontSize="$9" color="$statusError">
             {info.code}
           </Text>
           {detail.vagCode ? (
@@ -113,7 +113,7 @@ function DtcDetailBody({
         <Text
           fontWeight="800"
           fontSize="$2"
-          color="white"
+          color="$onFill"
           backgroundColor={sev.color}
           paddingHorizontal="$3"
           paddingVertical="$1.5"
@@ -139,8 +139,8 @@ function DtcDetailBody({
             alignSelf="flex-start"
             fontSize="$1"
             fontWeight="800"
-            color="#d29922"
-            borderColor="#d29922"
+            color="$statusWarn"
+            borderColor="$statusWarn"
             borderWidth={1}
             borderRadius="$10"
             paddingHorizontal="$2"
@@ -160,11 +160,7 @@ function DtcDetailBody({
       </YStack>
 
       <XStack gap="$2" flexWrap="wrap">
-        <Button
-          theme="green"
-          onPress={explainWithAi}
-          icon={() => <Sparkles size={16} color="#fff" />}
-        >
+        <Button theme="green" onPress={explainWithAi} icon={<Sparkles size={16} />}>
           Explain with AI
         </Button>
         <Button onPress={searchWeb} icon={() => <Search size={16} />}>

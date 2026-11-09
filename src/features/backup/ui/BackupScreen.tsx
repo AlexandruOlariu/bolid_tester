@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner } from 'tamagui';
 import { SquareCheck, Square } from 'lucide-react-native';
-import { Screen, appAlert } from '@/shared/ui';
+import { Screen, appAlert, usePalette, HIT_SLOP } from '@/shared/ui';
 import {
   LARGE_BACKUP_BYTES,
   formatBytes,
@@ -14,7 +14,6 @@ import { MAX_BACKUP_RECORDS, type BackupRecord } from '../model/backupStore';
 import { useBackup } from '../hooks/useBackup';
 import { isWebRuntime } from '@/shared/lib/webRuntime';
 
-const ACCENT = '#2bb673';
 const fmtDate = (ts: number) => (ts > 0 ? new Date(ts).toLocaleString() : 'unknown date');
 const labelOf = (name: string) => storeRef(name)?.label ?? name;
 
@@ -23,9 +22,11 @@ function SectionLabel({ children }: { children: string }) {
     <Text
       fontWeight="800"
       fontSize="$2"
-      color={ACCENT}
+      color="$accent"
       letterSpacing={0.8}
       textTransform="uppercase"
+      role="heading"
+      accessibilityRole="header"
     >
       {children}
     </Text>
@@ -46,6 +47,7 @@ function CheckRow({
   onToggle: () => void;
 }) {
   const Icon = checked ? SquareCheck : Square;
+  const palette = usePalette();
   return (
     <XStack
       alignItems="center"
@@ -58,7 +60,7 @@ function CheckRow({
       accessibilityLabel={label}
       accessibilityState={{ checked, disabled: !!disabled }}
     >
-      <Icon size={20} color={disabled ? '#8B949E' : ACCENT} />
+      <Icon size={20} color={disabled ? palette.muted : palette.accent} />
       <YStack flex={1}>
         <Text fontWeight="700">{label}</Text>
         {hint ? (
@@ -114,14 +116,14 @@ function RestoreCard({
   const blobOf = (name: string) => bundle.stores.find((s) => s.name === name);
 
   return (
-    <Card bordered padding="$3" gap="$2" borderLeftWidth={3} borderLeftColor={ACCENT}>
+    <Card bordered padding="$3" gap="$2" borderLeftWidth={3} borderLeftColor="$accent">
       <Text fontWeight="800">{pending.name || 'Backup file'}</Text>
       <Paragraph theme="alt2" fontSize="$2">
         Made {fmtDate(bundle.createdAt)} by app version {bundle.app.version ?? 'unknown'} (
         {bundle.app.platform}).
       </Paragraph>
       {pending.warnings.map((w) => (
-        <Paragraph key={w} fontSize="$2" color="$orange10">
+        <Paragraph key={w} fontSize="$2" color="$statusWarn">
           {w}
         </Paragraph>
       ))}
@@ -177,17 +179,17 @@ function RestoreCard({
 function ResultCard({ result, onDone }: { result: RestoreResult; onDone: () => void }) {
   if (!result.ok) {
     return (
-      <Card bordered padding="$3" gap="$2" borderLeftWidth={3} borderLeftColor="#e5534b">
+      <Card bordered padding="$3" gap="$2" borderLeftWidth={3} borderLeftColor="$statusError">
         <Text fontWeight="800">Nothing was restored</Text>
         <Paragraph fontSize="$2">{result.reason}</Paragraph>
-        <Button size="$2" onPress={onDone}>
+        <Button size="$3" hitSlop={HIT_SLOP} onPress={onDone}>
           OK
         </Button>
       </Card>
     );
   }
   return (
-    <Card bordered padding="$3" gap="$2" borderLeftWidth={3} borderLeftColor={ACCENT}>
+    <Card bordered padding="$3" gap="$2" borderLeftWidth={3} borderLeftColor="$accent">
       <Text fontWeight="800">Restore finished</Text>
       {result.restored.length > 0 ? (
         <Paragraph fontSize="$2">Restored: {result.restored.map(labelOf).join(', ')}.</Paragraph>
@@ -198,7 +200,7 @@ function ResultCard({ result, onDone }: { result: RestoreResult; onDone: () => v
         <Paragraph fontSize="$2">Trip recordings restored: {result.tripFilesWritten}.</Paragraph>
       ) : null}
       {result.skipped.map((s) => (
-        <Paragraph key={s.name} fontSize="$2" color="$orange10">
+        <Paragraph key={s.name} fontSize="$2" color="$statusWarn">
           Skipped {labelOf(s.name)}: {s.reason}
         </Paragraph>
       ))}
@@ -206,7 +208,7 @@ function ResultCard({ result, onDone }: { result: RestoreResult; onDone: () => v
         Your data from before the restore was saved as {result.snapshot.fileName}. Restore that file
         from the list below to undo.
       </Paragraph>
-      <Button size="$2" onPress={onDone}>
+      <Button size="$3" hitSlop={HIT_SLOP} onPress={onDone}>
         OK
       </Button>
     </Card>
@@ -238,7 +240,8 @@ function RecordRow({
       </Paragraph>
       <XStack gap="$2">
         <Button
-          size="$2"
+          size="$3"
+          hitSlop={HIT_SLOP}
           disabled={busy}
           onPress={onShare}
           accessibilityLabel={`Share ${record.fileName}`}
@@ -246,7 +249,8 @@ function RecordRow({
           Share
         </Button>
         <Button
-          size="$2"
+          size="$3"
+          hitSlop={HIT_SLOP}
           disabled={busy}
           onPress={onRestore}
           accessibilityLabel={`Restore ${record.fileName}`}
@@ -254,7 +258,8 @@ function RecordRow({
           Restore
         </Button>
         <Button
-          size="$2"
+          size="$3"
+          hitSlop={HIT_SLOP}
           theme="red"
           disabled={busy}
           onPress={onDelete}
@@ -406,7 +411,7 @@ export function BackupScreen() {
             </Paragraph>
           ) : null}
           {estimate > LARGE_BACKUP_BYTES ? (
-            <Paragraph fontSize="$2" color="$orange10">
+            <Paragraph fontSize="$2" color="$statusWarn">
               This backup is large (about {formatBytes(estimate)}). Sharing a file this big can fail
               {tripsIncluded ? '; leave the trip recordings out to make a small backup.' : '.'}
             </Paragraph>
@@ -448,7 +453,7 @@ export function BackupScreen() {
               Choose a backup file…
             </Button>
             {pickError ? (
-              <Paragraph fontSize="$2" color="$red10">
+              <Paragraph fontSize="$2" color="$statusError">
                 {pickError}
               </Paragraph>
             ) : null}
@@ -498,7 +503,8 @@ export function BackupScreen() {
                 {s.label}
               </Paragraph>
               <Button
-                size="$2"
+                size="$3"
+                hitSlop={HIT_SLOP}
                 disabled={busy !== null}
                 onPress={() => void onExport(s.name, 'json')}
                 accessibilityLabel={`Export ${s.label} as JSON`}
@@ -507,7 +513,8 @@ export function BackupScreen() {
               </Button>
               {s.csv ? (
                 <Button
-                  size="$2"
+                  size="$3"
+                  hitSlop={HIT_SLOP}
                   disabled={busy !== null}
                   onPress={() => void onExport(s.name, 'csv')}
                   accessibilityLabel={`Export ${s.label} as CSV`}

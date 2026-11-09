@@ -224,7 +224,7 @@ const SEVERITY_LABEL: Record<ReportSeverity, string> = {
   urgent: 'URGENT',
 };
 
-/** Badge colours (also exported for the screen's preview card). */
+/** HTML / PDF export badge colours; the on-screen preview uses palette tones (plan 20). */
 export const SEVERITY_COLOR: Record<ReportSeverity, string> = {
   ok: '#2bb673',
   attention: '#d29922',

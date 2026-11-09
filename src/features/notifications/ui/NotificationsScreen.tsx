@@ -1,6 +1,6 @@
 import React from 'react';
-import { YStack, XStack, Paragraph, H4, Switch, Button } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { YStack, Paragraph, H4, Button } from 'tamagui';
+import { Screen, LabeledSwitch } from '@/shared/ui';
 import { useNotificationsStore } from '../model/notificationsStore';
 import { useNotifications } from '../hooks/useNotifications';
 import { useNotificationPermission } from '../hooks/useNotificationPermission';
@@ -51,12 +51,12 @@ export function NotificationsScreen() {
       <YStack gap="$2">
         <H4>Categories</H4>
         {CATEGORIES.map((c) => (
-          <XStack key={c.key} justifyContent="space-between" alignItems="center">
-            <Paragraph flex={1}>{c.label}</Paragraph>
-            <Switch checked={prefs.categories[c.key]} onCheckedChange={() => toggleCategory(c.key)}>
-              <Switch.Thumb />
-            </Switch>
-          </XStack>
+          <LabeledSwitch
+            key={c.key}
+            label={c.label}
+            checked={prefs.categories[c.key]}
+            onCheckedChange={() => toggleCategory(c.key)}
+          />
         ))}
       </YStack>
 

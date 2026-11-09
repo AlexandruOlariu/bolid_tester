@@ -12,6 +12,7 @@ import {
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { logError } from '@/shared/state/errorLogStore';
 import { BACKUP_BUSY_MESSAGE } from '../model/backupWorkStore';
+import { HIT_SLOP } from '@/shared/ui';
 
 const SKIP_LABEL: Record<RestoreSkip, string> = {
   equal: 'equal',
@@ -78,7 +79,8 @@ function PlanRow({
       {item.action === 'restore' ? (
         !confirming ? (
           <Button
-            size="$2"
+            size="$3"
+            hitSlop={HIT_SLOP}
             disabled={!canWrite || busy}
             // Fail closed even if a disabled button still delivers a press.
             onPress={() => canWrite && !busy && setConfirming(true)}
@@ -95,6 +97,7 @@ function PlanRow({
               <Button
                 flex={1}
                 size="$3"
+                hitSlop={HIT_SLOP}
                 theme="red"
                 disabled={!canWrite || busy}
                 onPress={async () => {
@@ -108,7 +111,13 @@ function PlanRow({
               >
                 {busy ? 'Writing…' : 'Confirm restore'}
               </Button>
-              <Button flex={1} size="$3" disabled={busy} onPress={() => setConfirming(false)}>
+              <Button
+                flex={1}
+                size="$3"
+                hitSlop={HIT_SLOP}
+                disabled={busy}
+                onPress={() => setConfirming(false)}
+              >
                 Cancel
               </Button>
             </XStack>
@@ -216,7 +225,8 @@ export function AdaptationRestorePanel({
   return (
     <YStack gap="$2" testID={`adaptation-restore-${m.reqHeader}`}>
       <Button
-        size="$2"
+        size="$3"
+        hitSlop={HIT_SLOP}
         disabled={!available || busy}
         // Fail closed even if a disabled button still delivers a press.
         onPress={() => (available && !busy ? compare() : undefined)}
@@ -243,7 +253,8 @@ export function AdaptationRestorePanel({
           {summary && summary.restore > 0 ? (
             !confirmAll ? (
               <Button
-                size="$2"
+                size="$3"
+                hitSlop={HIT_SLOP}
                 theme="red"
                 disabled={!canWrite || busy}
                 onPress={() => canWrite && !busy && setConfirmAll(true)}
@@ -267,13 +278,20 @@ export function AdaptationRestorePanel({
                   <Button
                     flex={1}
                     size="$3"
+                    hitSlop={HIT_SLOP}
                     theme="red"
                     disabled={!canWrite || busy}
                     onPress={() => (canWrite && !busy ? all(compared.items) : undefined)}
                   >
                     {busy ? 'Writing…' : 'Confirm restore all'}
                   </Button>
-                  <Button flex={1} size="$3" disabled={busy} onPress={() => setConfirmAll(false)}>
+                  <Button
+                    flex={1}
+                    size="$3"
+                    hitSlop={HIT_SLOP}
+                    disabled={busy}
+                    onPress={() => setConfirmAll(false)}
+                  >
                     Cancel
                   </Button>
                 </XStack>

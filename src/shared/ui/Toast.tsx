@@ -2,6 +2,7 @@ import React from 'react';
 import { View } from 'react-native';
 import { XStack, Text, Button } from 'tamagui';
 import { hideToast, useToastStore } from '@/shared/state/toastStore';
+import { HIT_SLOP } from './SegmentedControl';
 
 /** The app's one toast (plan 28): a short message pinned above the tab bar, from `showToast()`.
  *  Mounted once in the root layout; renders nothing while no toast is up. Announced to screen
@@ -31,7 +32,8 @@ export function Toast() {
           {toast.message}
         </Text>
         <Button
-          size="$2"
+          size="$3"
+          hitSlop={HIT_SLOP}
           chromeless
           color="$color1"
           onPress={hideToast}

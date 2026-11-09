@@ -13,6 +13,7 @@ import {
   LayoutGrid,
 } from 'lucide-react-native';
 import config from '../../tamagui.config';
+import palette from '@/shared/ui/palette.json';
 import { setSettingsPlatform, useSettingsStore } from '@/shared/state/settingsStore';
 import { installGlobalErrorHandlers } from '@/shared/state/errorLogStore';
 import { CrashReportingHost } from '@/shared/telemetry/useCrashReporting';
@@ -35,20 +36,26 @@ installGlobalErrorHandlers();
 // before or after the settings file hydrates.
 setSettingsPlatform(Platform.OS);
 
-const ACCENT = '#2bb673';
-const INACTIVE = '#8B949E';
-
-const NAV = {
-  dark: { bg: '#0D1117', border: '#30363D', tint: '#E6EDF3' },
-  light: { bg: '#FFFFFF', border: '#E2E8F0', tint: '#1A1A1A' },
-};
+/** Header and tab-bar colours per scheme, from palette.json (plan 20): React Navigation sits
+ *  outside the Tamagui theme, so it reads the palette directly. The tab tints are the theme's accent
+ *  (active) and muted (inactive) tokens — both AA on the bar in light and dark. */
+function navColours(scheme: 'light' | 'dark') {
+  const t = palette.themes[scheme];
+  return {
+    bg: t.chrome.background,
+    border: t.chrome.border,
+    tint: t.chrome.text,
+    active: t.text.accent,
+    inactive: t.text.muted,
+  };
+}
 
 export default function RootLayout() {
   const system = useColorScheme();
   const pref = useSettingsStore((s) => s.theme);
   const scheme: 'light' | 'dark' =
     pref === 'system' ? (system === 'light' ? 'light' : 'dark') : pref;
-  const nav = NAV[scheme];
+  const nav = navColours(scheme);
   // Plan 21: on a tablet (expanded, or medium + landscape) tall enough for all seven rail items the
   // tab bar becomes a left side rail ('material' variant, labels under the icons); the header stays on
   // top. A phone on its side is too short for the non-scrolling rail and keeps the bottom bar.
@@ -84,7 +91,14 @@ export default function RootLayout() {
                 headerTitle: ({ children }) => (
                   <XStack alignItems="center" gap="$2" maxWidth={240}>
                     <AppLogo size={28} />
-                    <Text color={nav.tint} fontWeight="800" fontSize={17} numberOfLines={1}>
+                    <Text
+                      color={nav.tint}
+                      fontWeight="800"
+                      fontSize={17}
+                      numberOfLines={1}
+                      maxFontSizeMultiplier={1.5}
+                      accessibilityRole="header"
+                    >
                       {children}
                     </Text>
                   </XStack>
@@ -104,12 +118,31 @@ export default function RootLayout() {
                       borderTopColor: nav.border,
                       borderTopWidth: 1,
                     },
-                tabBarActiveTintColor: ACCENT,
-                tabBarInactiveTintColor: INACTIVE,
+                tabBarActiveTintColor: nav.active,
+                tabBarInactiveTintColor: nav.inactive,
                 tabBarShowLabel: true,
                 // Labels under the icons on the rail; the phone bar keeps the platform default.
                 ...(rail ? { tabBarLabelPosition: 'below-icon' as const } : null),
-                tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+                // Labels follow the OS font size (plan 20), capped at 1.5× so the bar keeps its height.
+                // React Navigation's own label takes no `maxFontSizeMultiplier`, so the label is
+                // rendered here. A function label replaces the navigator's styled one entirely
+                // (`tabBarLabelStyle` / `tabBarAllowFontScaling` no longer apply), so this one also
+                // carries its layout: the spacing from the icon when it sits beside it (iPad, a
+                // landscape phone) — React Navigation's `labelBeside*` margins — and none beneath.
+                tabBarLabel: ({ children, color, position }) => (
+                  <Text
+                    color={color}
+                    fontSize={11}
+                    fontWeight="600"
+                    numberOfLines={1}
+                    maxFontSizeMultiplier={1.5}
+                    {...(position === 'beside-icon'
+                      ? { marginStart: rail ? 12 : 5, marginEnd: 12, lineHeight: 24 }
+                      : null)}
+                  >
+                    {children}
+                  </Text>
+                ),
               }}
             >
               <Tabs.Screen

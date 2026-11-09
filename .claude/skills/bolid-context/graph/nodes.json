@@ -1,4 +1,27 @@
 {
+  "concept:accessibility": {
+    "path": null,
+    "summary": "Accessibility rules (plan 20): palette.json is the only colour source (semantic tokens in both themes, WCAG AA enforced by npm run check:contrast); e\u2026",
+    "tokens": [
+      "a11y",
+      "accessibility",
+      "color",
+      "colour",
+      "contrast",
+      "font",
+      "label",
+      "motion",
+      "palette",
+      "scale",
+      "screen-reader",
+      "talkback",
+      "theme",
+      "token",
+      "voiceover",
+      "wcag"
+    ],
+    "type": "concept"
+  },
   "concept:adaptation-channels": {
     "path": null,
     "summary": "VCDS-style adaptation channels: numeric module values read via 22, written via 2E with backup+verify; one bounds guard (core adaptationBoundsError: w\u2026",
@@ -1929,6 +1952,14 @@
     ],
     "type": "doc"
   },
+  "doc:accessibility": {
+    "path": "docs/accessibility.md",
+    "summary": "Accessibility",
+    "tokens": [
+      "accessibility"
+    ],
+    "type": "doc"
+  },
   "doc:adapter-vgate-icar-pro": {
     "path": "docs/adapter-vgate-icar-pro.md",
     "summary": "Adapter \u2014 Vgate iCar Pro Bluetooth 4.0 (BLE)",
@@ -3607,6 +3638,17 @@
     ],
     "type": "lib"
   },
+  "lib:contrast": {
+    "path": "src/shared/lib/contrast.ts",
+    "summary": "WCAG 2.1 contrast ratios and the palette check behind `npm run check:contrast` (plan 20, docs/accessibility.md).",
+    "tests": [
+      "src/shared/lib/contrast.test.ts"
+    ],
+    "tokens": [
+      "contrast"
+    ],
+    "type": "lib"
+  },
   "lib:contribChecks": {
     "path": "src/shared/lib/contribChecks.ts",
     "summary": "Community contribution checks (plan 33): the pure rules behind `scripts/validate-contrib.mjs`, which CI runs in `verify` (`npm run validate:contrib`).",
@@ -3793,7 +3835,7 @@
   },
   "screen:_layout": {
     "path": "src/app/_layout.tsx",
-    "summary": "exports RootLayout",
+    "summary": "Header and tab-bar colours per scheme, from palette.json (plan 20): React Navigation sits outside the Tamagui theme, so it reads the palette directly.",
     "tokens": [
       "layout"
     ],
@@ -4429,7 +4471,7 @@
   },
   "ui:AppLogo": {
     "path": "src/shared/ui/AppLogo.tsx",
-    "summary": "exports AppLogo",
+    "summary": "The brand mark.",
     "tokens": [
       "app",
       "logo"
@@ -4438,7 +4480,7 @@
   },
   "ui:AppSplash": {
     "path": "src/shared/ui/AppSplash.tsx",
-    "summary": "Keep the splash up at least this long so the animation is actually seen, never a one-frame flash.",
+    "summary": "Brand green screen with the title and subtitle in ink: 7.3:1 (white on the green was 2.6:1, plan 20).",
     "tokens": [
       "app",
       "splash"
@@ -4475,6 +4517,15 @@
     ],
     "type": "ui"
   },
+  "ui:LabeledSwitch": {
+    "path": "src/shared/ui/LabeledSwitch.tsx",
+    "summary": "On / off controls (plan 20): AccessibleSwitch adds accessible, the switch role, a required name and checked / disabled state to Tamagui's Switch; Lab\u2026",
+    "tokens": [
+      "labeled",
+      "switch"
+    ],
+    "type": "ui"
+  },
   "ui:RootErrorBoundary": {
     "path": "src/shared/ui/RootErrorBoundary.tsx",
     "summary": "App-wide React render error boundary (finding F9).",
@@ -4497,9 +4548,30 @@
     "tokens": [],
     "type": "ui"
   },
+  "ui:SectionTitle": {
+    "path": "src/shared/ui/SectionTitle.tsx",
+    "summary": "A section heading inside a screen (plan 20): announced as a heading, so screen-reader users can jump between sections.",
+    "tokens": [
+      "section",
+      "title"
+    ],
+    "type": "ui"
+  },
+  "ui:SegmentedControl": {
+    "path": "src/shared/ui/SegmentedControl.tsx",
+    "summary": "Single-choice row (plan 20): a named radiogroup of radio options reporting selected / checked, 36 dp + HIT_SLOP 8, spoken labels, optional vertical l\u2026",
+    "tests": [
+      "src/shared/ui/SegmentedControl.test.tsx"
+    ],
+    "tokens": [
+      "control",
+      "segmented"
+    ],
+    "type": "ui"
+  },
   "ui:StatusBadge": {
     "path": "src/shared/ui/StatusBadge.tsx",
-    "summary": "exports StatusBadge",
+    "summary": "Fill tokens (plan 20): the semantic colours, with `$onFill` text on them \u2014 ink on the dark theme's bright fills, white on the light theme's deep ones\u2026",
     "tokens": [
       "badge",
       "status"
@@ -4519,7 +4591,7 @@
   },
   "ui:UnlockBadge": {
     "path": "src/shared/ui/UnlockBadge.tsx",
-    "summary": "The text of an unlock badge (plan 23).",
+    "summary": "Status pills use the semantic fills with `$onFill` text (plan 20), as StatusBadge does; the neutral one keeps the theme's own text on a light grey.",
     "tests": [
       "src/shared/ui/UnlockBadge.test.tsx"
     ],
@@ -4531,7 +4603,7 @@
   },
   "ui:ValueCard": {
     "path": "src/shared/ui/ValueCard.tsx",
-    "summary": "Fixed width in dp instead of growing to fill the row (plan 21: the two-pane Live grid computes it from the measured column so the cards fill each row\u2026",
+    "summary": "Above this OS font scale a value card takes the whole row (plan 20): two 150 dp tiles side by side cannot hold a 2\u00d7 number and its unit.",
     "tokens": [
       "card",
       "value"
@@ -4540,7 +4612,7 @@
   },
   "ui:VerificationBadge": {
     "path": "src/shared/ui/VerificationBadge.tsx",
-    "summary": "Verification pill for one per-car profile item (plan 25): green \"Standard OBD2\", blue \"Confirmed <date> (<source>)\", amber \"Illustrative \u2014 not yet co\u2026",
+    "summary": "Semantic fills with `$onFill` text (plan 20), the StatusBadge pattern: every pair is held to 4.5:1 in both themes by `npm run check:contrast` (white\u2026",
     "tests": [
       "src/shared/ui/VerificationBadge.test.tsx"
     ],
@@ -4595,6 +4667,26 @@
     "tokens": [
       "class",
       "layout"
+    ],
+    "type": "ui"
+  },
+  "ui:usePalette": {
+    "path": "src/shared/ui/usePalette.ts",
+    "summary": "A semantic colour (plan 20): the meaning, not the hex.",
+    "tokens": [
+      "palette"
+    ],
+    "type": "ui"
+  },
+  "ui:useReducedMotion": {
+    "path": "src/shared/ui/useReducedMotion.ts",
+    "summary": "True while the OS \"Reduce motion\" / \"Remove animations\" setting is on (plan 20).",
+    "tests": [
+      "src/shared/ui/useReducedMotion.test.tsx"
+    ],
+    "tokens": [
+      "motion",
+      "reduced"
     ],
     "type": "ui"
   },
