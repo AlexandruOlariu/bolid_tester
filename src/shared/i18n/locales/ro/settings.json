@@ -113,7 +113,13 @@
     "docsA11y": "Deschide documentația pe GitHub",
     "docs": "Documentație (GitHub)",
     "policyUpdated": "Ultima actualizare {{date}}",
-    "policyEnglishOnly": "Politica de confidențialitate este publicată în limba engleză."
+    "policyEnglishOnly": "Politica de confidențialitate este publicată în limba engleză.",
+    "rate": "Evaluează aplicația",
+    "rateA11y": "Evaluează aplicația în magazin",
+    "report": "Raportează o problemă",
+    "reportA11y": "Raportează o problemă: creează un pachet de jurnale fără date personale, de trimis",
+    "licenses": "Licențe",
+    "licensesA11y": "Deschide licențele componentelor terțe"
   },
   "log": {
     "wrapped_one": "cea mai veche {{count}} linie a fost eliminată, deci exportul începe la mijlocul sesiunii. Golește jurnalul și înregistrează un flux mai scurt.",
@@ -266,5 +272,21 @@
     "install": "Instalează",
     "installedCount": "Instalate ({{count}})",
     "none": "Niciun plugin instalat. Scrierile în modulele care necesită acces de securitate sunt refuzate."
+  },
+  "licenses": {
+    "title": "Licențe",
+    "intro_one": "Bolid Tester este open source (licență MIT) și folosește {{count}} pachet open source. Atinge un pachet pentru nota de copyright și textul licenței.",
+    "intro_few": "Bolid Tester este open source (licență MIT) și folosește {{count}} pachete open source. Atinge un pachet pentru nota de copyright și textul licenței.",
+    "intro_other": "Bolid Tester este open source (licență MIT) și folosește {{count}} de pachete open source. Atinge un pachet pentru nota de copyright și textul licenței.",
+    "filterPlaceholder": "Filtrează după pachet sau licență",
+    "filterA11y": "Filtrează pachetele după nume sau licență",
+    "noMatch": "Niciun pachet nu se potrivește.",
+    "rowA11y": "{{name}} {{version}}, {{license}}",
+    "noText": "Acest pachet nu include un fișier de licență; este publicat sub {{license}}, așa cum a declarat autorul.",
+    "showMore_one": "Arată încă {{count}}",
+    "showMore_few": "Arată încă {{count}}",
+    "showMore_other": "Arată încă {{count}}",
+    "online": "Lista completă pe GitHub",
+    "onlineA11y": "Deschide lista completă de licențe pe GitHub"
   }
 }

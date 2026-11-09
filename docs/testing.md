@@ -174,6 +174,19 @@ app's real labels; when a screen's copy changes, update the flow in the same cha
   it. The first run is an owner action with a step-by-step procedure in
   [plan 10 → Owner actions](./plans/10-component-e2e-tests.md#owner-actions).
 
+### Store screenshots (plan 30)
+
+`.maestro/screenshots.yaml` reuses the same harness to capture the eight store screenshots in
+simulator mode: fresh install → app language (Settings → General → Language) → Connect tab with
+the first-run card → simulator, Golf, injected `P2183, P2015` → connect → each screen by deep link
+(`bolidtester://dashboard`, `faults`, `inspection`, `charts`, `module-scan`, `battery`,
+`maintenance`). Run it through `scripts/screenshots.sh [en|ro]`: it puts the emulator status bar
+in demo mode, passes the labels of the chosen language (`scripts/screenshot-labels.mjs` reads
+them from the locale files) and finishes with `npm run store:assets` (resize to 1080 × 2400) and
+`npm run store:release-check`. Same prerequisites and status as the smoke flow above: written,
+YAML-valid, labels read from the source, not yet run (the Maestro CLI is not installed). Details in
+[store/README.md](../store/README.md).
+
 ## On-car manual checklists
 
 Perform with the real adapter; each car's steps live in its profile doc and are mirrored into the

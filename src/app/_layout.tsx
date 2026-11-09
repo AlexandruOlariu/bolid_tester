@@ -245,6 +245,7 @@ export default function RootLayout() {
               />
               <Tabs.Screen name="error-log" options={{ href: null, title: t('nav.errorLog') }} />
               <Tabs.Screen name="feedback" options={{ href: null, title: t('nav.feedback') }} />
+              <Tabs.Screen name="licenses" options={{ href: null, title: t('nav.licenses') }} />
               <Tabs.Screen name="backup" options={{ href: null, title: t('nav.backup') }} />
               <Tabs.Screen
                 name="module-scan"

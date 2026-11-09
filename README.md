@@ -12,6 +12,18 @@ service-interval reset — for any OBD2-compliant car.
 > **Will my adapter work?** See the community [adapter compatibility matrix](./docs/adapters/matrix.md)
 > ([how to add a report](./docs/adapters/README.md)).
 
+## Get the app
+
+| Where       | Status                                                                                                                                             |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Google Play | _Badge placeholder — coming with v1.0_ (`com.bolidtester.app`; listing in [`store/`](./store/README.md))                                           |
+| App Store   | _Badge placeholder — coming with v1.0_                                                                                                             |
+| Android APK | Signed APK + AAB on every tagged [GitHub Release](https://github.com/AlexandruOlariu/bolid_tester/releases) ([docs/release.md](./docs/release.md)) |
+| Browser     | [Web Bluetooth build](#try-it-in-the-browser) (Chrome / Edge)                                                                                      |
+
+The store badges link to the listings once they are live
+([store/README.md → Badges](./store/README.md#badges-readme-get-the-app)).
+
 ## Status
 
 - ✅ **Phase 0** — docs foundation + scaffolding.

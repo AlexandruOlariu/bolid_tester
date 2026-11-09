@@ -3074,6 +3074,17 @@
     ],
     "type": "doc"
   },
+  "doc:third-party-licenses": {
+    "path": "docs/third-party-licenses.md",
+    "summary": "Third-party licences",
+    "tokens": [
+      "licences",
+      "licenses",
+      "party",
+      "third"
+    ],
+    "type": "doc"
+  },
   "doc:vcds-parity-roadmap": {
     "path": "docs/vcds-parity-roadmap.md",
     "summary": "VCDS parity & nice-to-haves (roadmap + status)",
@@ -3544,9 +3555,11 @@
     "summary": "User preferences first, then the developer and simulator controls in their own collapsed section.",
     "tests": [
       "src/features/settings/api/replayFixtureFile.test.ts",
+      "src/features/settings/model/licenses.test.ts",
       "src/features/settings/model/privacyPolicy.test.ts",
       "src/features/settings/model/replayExport.test.ts",
       "src/features/settings/ui/LabelPacksSection.test.tsx",
+      "src/features/settings/ui/LicensesScreen.test.tsx",
       "src/features/settings/ui/SeedKeysSection.test.tsx",
       "src/features/settings/ui/SettingsScreen.test.tsx"
     ],
@@ -3829,6 +3842,28 @@
     ],
     "type": "lib"
   },
+  "lib:storeAssets": {
+    "path": "src/shared/lib/storeAssets.ts",
+    "summary": "Store listing rules (plan 30, store/README.md): the size of every graphic and screenshot set, the character limits of the listing text, and the check\u2026",
+    "tests": [
+      "src/shared/lib/storeAssets.test.ts"
+    ],
+    "tokens": [
+      "assets"
+    ],
+    "type": "lib"
+  },
+  "lib:storeLinks": {
+    "path": "src/shared/lib/storeLinks.ts",
+    "summary": "Store links (plan 30): where **Settings \u2192 About \u2192 Rate this app** sends the user, and the public listing URLs the README badges point at.",
+    "tests": [
+      "src/shared/lib/storeLinks.test.ts"
+    ],
+    "tokens": [
+      "links"
+    ],
+    "type": "lib"
+  },
   "lib:timeline": {
     "path": "src/shared/lib/timeline.ts",
     "summary": "The per-car timeline (plan 16): one chronological list that merges every source of \"what happened to this car\" \u2014 AI runs, fault-code checks, saved mo\u2026",
@@ -4030,6 +4065,14 @@
     "summary": "Route screen 'inspection' (expo-router).",
     "tokens": [
       "inspection"
+    ],
+    "type": "screen"
+  },
+  "screen:licenses": {
+    "path": "src/app/licenses.tsx",
+    "summary": "Settings \u2192 About \u2192 **Licences** (plan 30): the third-party notices.",
+    "tokens": [
+      "licenses"
     ],
     "type": "screen"
   },

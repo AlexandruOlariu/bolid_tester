@@ -32,7 +32,8 @@
     "adaptations": "Adaptări",
     "routines": "Rutine și teste de actuatori",
     "sniffer": "Monitor magistrală (sniffer)",
-    "adapterHealth": "Starea adaptorului"
+    "adapterHealth": "Starea adaptorului",
+    "licenses": "Licențe"
   },
   "actions": {
     "ok": "OK",

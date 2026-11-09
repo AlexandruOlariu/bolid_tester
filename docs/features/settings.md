@@ -26,7 +26,8 @@ User preferences first, then the developer and simulator controls in their own c
    export, **Problem report** (**Preview feedback bundle**), **Crash reports** (**Send test crash
    report**), and **Hints and app data** (**Show hints again**, **Reset all app data**). The simulator
    banner (plan 01) stays the always-on indicator that the simulator is selected.
-8. **About** — version, build, privacy policy, documentation link.
+8. **About** — version, build, Rate this app, privacy policy, Report a problem, Licences,
+   documentation link.
 
 Then **Disconnect** while a session is connected.
 
@@ -279,6 +280,21 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
     paragraph differs between the two. **Documentation (GitHub)** opens `DOCS_URL` (the repo's
     `docs/` folder) with `Linking.openURL`; a failure logs `settings/about`. See
     [release.md](../release.md).
+    Store items (plan 30): **Rate this app** (`rateAppLinks` in `shared/lib/storeLinks.ts`) opens
+    `market://details?id=com.bolidtester.app` on Android, falling back to the Play web page when
+    the store app is missing, and the App Store review page on iOS once `expo.extra.appStoreId` is
+    set (`APP_STORE_ID`); it is hidden on the web and on iOS before that. **Report a problem**
+    opens `/feedback` ([feedback](./feedback.md), plan 32). **Licences** opens `/licenses`.
+  - **Licences** (`/licenses`, `ui/LicensesScreen.tsx`, plan 30) — the third-party notices for the
+    production dependency tree: the package count, a per-licence summary ("MIT 552 · ISC 27 · …"),
+    a filter by package or licence, 40 packages at a time with **Show _n_ more**, and per package
+    (tap to expand, one at a time) its copyright lines, repository and licence text, or "ships no
+    licence file; published under _X_" when the package has none. **Full list on GitHub** opens
+    [docs/third-party-licenses.md](../third-party-licenses.md). The data is
+    `model/thirdPartyLicenses.json`, generated with the Markdown page by `npm run licenses`
+    (`scripts/licenses.mjs`: walks `dependencies` recursively from `node_modules`, skips one-platform
+    binary packages so the output is the same on every OS, stores each distinct licence text once);
+    `model/licenses.test.ts` fails when a `package.json` dependency is missing from it.
 
 ## hooks
 
@@ -424,4 +440,8 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
   refused with the reason and nothing is installed.
 - **About** shows the app version from `app.json`; **Privacy policy** expands every section of
   `docs/privacy-policy.md` and collapses again.
+- **About** (plan 30): **Rate this app** opens the Play Store app (web page if the store app is
+  missing) on Android and is hidden on iOS without an App Store id and on the web; **Report a
+  problem** opens `/feedback`; **Licences** opens `/licenses`, which lists every package with its
+  licence, filters, and shows a package's copyright and licence text on tap.
 - Log shows every command/response pair.

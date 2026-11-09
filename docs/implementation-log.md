@@ -5,6 +5,116 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 30 — Store release prep (2026-11-10)
+
+[Plan 30](./plans/30-store-release-prep.md) landed: everything a Google Play / App Store listing
+needs is in the repository and checked by CI, the data-safety and privacy-label answers are derived
+from the code (each row cites it), the rollout ladder with go / no-go criteria and the stability KPI
+are written down, and Settings → About gained **Rate this app**, **Report a problem** and
+**Licences**. Roadmap: Stability targets ✅ (measurement pending); Play Store + App Store 🔄,
+because one acceptance item is open — the ≥ 6 phone screenshots per language are not generated
+(see Deviations) — and the owner part is pending (store accounts, uploads, approvals, the BLE screen
+recording for App Review). Guide:
+[store/README.md](../store/README.md), [release.md → Store rollout](./release.md#store-rollout).
+
+- **`store/` tree.** `listing/{en,ro}/` — `title.txt` (`Bolid Tester – OBD2 Scanner`, ≤ 30),
+  `subtitle.txt` (App Store, ≤ 30), `short.txt` (≤ 80), `full.txt` (≤ 4000: what it does, the
+  experimental VAG workshop tools, what it is not, local-first privacy, supported adapters, reusing
+  the README "Is / Is not"), `keywords.txt` (≤ 100), `whats-new/1.0.0.txt` (five bullets from
+  v0.3–v0.7, ≤ 500); Romanian follows the [glossary](./i18n.md#romanian-glossary-keep-consistent).
+  `graphics/feature-graphic.svg` (hand-made source: brand green `#2bb673`, the `AppLogo` drawing
+  scaled 5×, "OBD2 diagnostics for any car") → `feature-graphic.png` 1024 × 500;
+  `graphics/icon-512.png` from `assets/icon.png`. `compliance/play-data-safety.md` and
+  `compliance/apple-privacy.md`. `store/README.md`: how each file is produced, the screenshot order,
+  console settings (Auto & Vehicles / Utilities, IARC Everyone / 4+, target audience 18+), review
+  notes with the simulator path, badge URLs.
+- **Scripts.** `scripts/store-assets.mjs` — check (default, `npm run check:store`, in `npm run ci`
+  and CI `verify`): listing limits in code points, EN = RO file set, graphic sizes, every
+  screenshot at its set's size (PNG IHDR only — no image library); `--release`
+  (`npm run store:release-check`) also needs ≥ 6 phone screenshots per language; `--generate`
+  (`npm run store:assets`, `sharp` devDependency) renders the feature graphic from the SVG, the 512
+  icon, and resizes screenshots in place. The rules live in `src/shared/lib/storeAssets.ts`
+  (imported by the script through Node type stripping, like the capture analyzer). `sharp` added
+  with `npm install --legacy-peer-deps` (dev only).
+- **Screenshots.** `.maestro/screenshots.yaml` (fresh install → app language → Connect tab with the
+  first-run card → simulator, Golf, `P2183, P2015` → connect → eight screens by deep link
+  `bolidtester://<route>`) and `scripts/screenshots.sh [en|ro]` (status-bar demo mode, labels per
+  language from `scripts/screenshot-labels.mjs` reading the locale files, then resize + release
+  check).
+- **In-app.** Settings → About: **Rate this app** (`rateAppLinks` in `shared/lib/storeLinks.ts`:
+  `market://details?id=com.bolidtester.app`, web fallback when the store app is missing; iOS
+  `itms-apps://…?action=write-review` once `expo.extra.appStoreId` is set; hidden on the web),
+  **Report a problem** (`/feedback`), **Licences** (`/licenses`, new hidden route): package count,
+  per-licence summary, filter, 40 at a time with Show more, tap for copyright + licence text, link
+  to the published list. `appInfo.ts` gains `ANDROID_PACKAGE`, `APP_STORE_ID`, `LICENSES_URL`.
+  Strings in `settings` / `common` (EN + RO).
+- **Third-party notices.** `scripts/licenses.mjs` (`npm run licenses`) walks the production tree
+  from `node_modules` (no network) and writes `docs/third-party-licenses.md` +
+  `src/features/settings/model/thirdPartyLicenses.json` (718 packages, 86 distinct texts stored
+  once, ~350 KB); one-platform binary packages (`os` / `cpu`) are skipped so the output is the same
+  on every OS; a package without a declared licence stops the script unless listed in its
+  `OVERRIDES` (Tamagui's sub-packages → MIT, checked against the monorepo). Both files are in
+  `.prettierignore`.
+- **Config.** `app.json`: `description`, `githubUrl`. `eas.json` `submit.production.android`:
+  `serviceAccountKeyPath: ./secrets/play-service-account.json`, `track: internal`,
+  `releaseStatus: draft`; `ios` stays empty (Apple ids are passed at submit time). `.gitignore`:
+  `secrets/`.
+- **Docs.** [release.md](./release.md): Store submission (target SDK 36 / compile 36 / min 24 from
+  RN 0.85's catalog — Play's 2026 minimum is 35), Store rollout (internal → closed ≥ 12 testers ×
+  14 days with crash-free ≥ 99.5 % → production 10 / 50 / 100 % with 48 h steps and the halt rule
+  → hotfix path), Stability (KPI + per-release table with empty v1.0 rows), Store checklist
+  (includes "re-read the compliance sheets"), owner setup step 5. [privacy-policy.md](./privacy-policy.md)
+  (both copies, date 2026-11-10): the hosted-copy note now points at the stores and
+  `store/compliance/`, plus a **Rate this app** line. Root README "Get the app" (badge
+  placeholders), [settings](./features/settings.md), [testing](./testing.md) (store screenshots),
+  docs index.
+- **Tests (+6 suites).** `storeAssets.test.ts` (PNG header parsing, every limit, parity, sizes,
+  release minimum, and the committed `store/` tree — fails without the listing / graphics, or with
+  an imperial unit in any listing text), `storeLinks.test.ts`, `storeConfig.test.ts` (submit
+  profile + gitignored key path, no committed Apple ids, app.json metadata, every compliance row
+  cites a code path that exists, every Android permission justified, agreement with the privacy
+  policy), `licenses.test.ts` (every `package.json` dependency listed, no dev tools, no unknown
+  licence, text references resolve), `LicensesScreen.test.tsx`; `SettingsScreen.test.tsx` (About
+  items, the Play web fallback, Rate hidden on iOS without an id and on the web); the More test's
+  route lists gained `/licenses` (reached from About, not the hub).
+
+**Deviations.** Screenshots are **not generated yet**: the flow and script are written and
+YAML-valid with labels read from the source, but the Maestro CLI is not installed on the dev
+workstation and the plan 10 harness has never run (its first run is a plan 10 owner action), so
+`store/screenshots/` is empty and the "≥ 6 per language" acceptance item waits for that run
+(`npm run check:store` passes with none; `store:release-check` enforces the minimum). That
+acceptance checkbox stays **unticked**, and the roadmap row stays 🔄 until the run is done and the
+PNGs are committed under `store/screenshots/android/phone/{en,ro}/`. The feature
+graphic is a committed SVG source rendered by the script rather than a one-off export. Listing
+copy: the plan's short description (91 characters) exceeded Play's 80, so it was shortened;
+`subtitle.txt` added for the App Store. `expo.privacy` was not added — the key is no longer in
+Expo SDK 56's config schema. Third-party notices come from an in-repo walker instead of
+`npx license-checker` (no extra download, deterministic across OSes, deduplicated texts). Screenshot
+paths are `store/screenshots/<set>/<lang>/` (the plan's tree had no language level). The CI step
+runs on every push instead of behind a `store/` path filter (it reads PNG headers only and takes
+well under a second). Data-safety answers follow the code and Play's / Apple's definitions where
+they differ from the plan's draft table: precise location is **not collected** (GPS never leaves
+the phone except in a user export), crash logs are collected but **not shared** (Sentry is a
+service provider), and **Device or other IDs** is declared (the crash library's and the update
+library's random installation ids); the plan's more conservative answers are recorded as the
+fallback in each sheet. The Play pre-launch "no high accessibility error" criterion was left out of
+the exit criteria (not measurable before the first upload). Slot 6 is Battery (the trip map needs
+a recorded GPS trip).
+
+**Review fixes.** The compliance sheets now match `app.json` (`updates.checkAutomatically:
+ON_ERROR_RECOVERY`) and the privacy policy: the update library's installation id goes with every
+update check, including the automatic one after a start-up crash, so Play's **Device or other IDs**
+row is no longer marked Optional and Apple's Device ID row is no longer "optional"
+(`storeConfig.test.ts` pins the agreement). The listing's "what it is not" paragraph (EN + RO) no
+longer claims there is no ABS / cluster diagnosis at all — the experimental VAG module scan reads
+identification and fault codes from such modules (screenshot 05) — it says there is no _full_ one
+and that the module list is illustrative (`storeAssets.test.ts` guards the wording).
+`checkScreenshotPlacement` in `storeAssets.ts` reports any file under `store/screenshots/` that is
+not a `.png` directly in a known `<set>/<lang>/` folder (a PNG dropped into `android/phone/` or
+`en-US/` used to pass unchecked); `check:store` and the tree test run it, and `--generate` resizes
+only files in those folders. `scripts/screenshots.sh` no longer uses `mapfile` (bash 4) and runs on
+macOS's bash 3.2; a failing label script now aborts the run.
+
 ## Plan 11 — Localization: English and Romanian (2026-11-10)
 
 [Plan 11](./plans/11-i18n.md) landed: every user-visible string of every screen (the seven tabs,

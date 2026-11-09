@@ -1,0 +1,1 @@
+obd2,obd,elm327,eobd,diagnoza auto,tester auto,coduri eroare,dtc,check engine,readiness,itp,vin

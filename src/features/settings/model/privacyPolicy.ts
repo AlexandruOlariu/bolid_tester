@@ -8,7 +8,7 @@ export interface PolicySection {
 }
 
 /** Date of the current wording (YYYY-MM-DD). Bump it with any change to the text. */
-export const PRIVACY_POLICY_UPDATED = '2026-11-09';
+export const PRIVACY_POLICY_UPDATED = '2026-11-10';
 
 export const PRIVACY_POLICY: PolicySection[] = [
   {
@@ -24,6 +24,7 @@ export const PRIVACY_POLICY: PolicySection[] = [
       'AI assistant: off until you set up a provider. When you pick one (your own local server, OpenAI, Anthropic or another server you enter), each diagnosis and each follow-up question sends that provider a summary of the scan: fault codes, readiness monitors, the freeze frame, a few live values, the vehicle make, model and engine, the VIN and the car’s known checks for those codes, plus your question and the earlier answers. It goes only to the provider you chose. A local server stays on your network; a cloud provider (OpenAI or Anthropic) receives it over the internet and handles it under its own privacy policy and terms. API keys are kept in the phone’s secure storage, one per provider, never in backups, and each is sent only to its own provider.',
       'App updates: when you tap More → Check for updates, the app asks the Expo update server (run by Expo, expo.dev) whether a newer version exists and downloads it only if you accept. The request carries the app version, the update channel, the platform and a random installation ID created by the update library; like any web request, the server also sees your IP address. The app does not check on its own at launch; the only automatic check happens when the app restarts after crashing during start-up, to recover with a working version.',
       'Web search: on a fault code’s detail sheet, Search the web opens your browser with a search for that code and, when a car is selected, its name. From there the browser and the search engine apply their own privacy policies.',
+      'Rate this app: Settings → About → Rate this app opens the app’s page in Google Play or the App Store. The app sends nothing itself; the store applies its own privacy policy.',
     ],
   },
   {

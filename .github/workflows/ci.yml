@@ -46,6 +46,11 @@ jobs:
       # Every palette token meets WCAG AA in both themes (plan 20, docs/accessibility.md).
       - name: Palette contrast
         run: npm run check:contrast
+      # Store listing text within the console limits, EN = RO file set, graphic and screenshot sizes
+      # (plan 30, store/README.md). Reads PNG headers only, so it needs no image library and runs in
+      # well under a second; it runs on every push instead of behind a store/ path filter.
+      - name: Store assets
+        run: npm run check:store
       # The capture analyzer CLI runs the TypeScript analyzer through Node's type stripping (plan 25);
       # exercise that path on the committed synthetic capture.
       - name: Capture analyzer CLI smoke

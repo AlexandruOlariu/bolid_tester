@@ -38,12 +38,15 @@ import { useVehicleStore } from '@/shared/state/vehicleStore';
 import { connectionService } from '@/features/connection';
 import { useOnboardingStore } from '@/shared/state/onboardingStore';
 import {
+  ANDROID_PACKAGE,
   APP_BUILD,
   APP_NAME,
+  APP_STORE_ID,
   APP_VERSION,
   DOCS_URL,
   PRIVACY_POLICY_URL,
 } from '@/shared/lib/appInfo';
+import { rateAppLinks } from '@/shared/lib/storeLinks';
 import {
   crashReportingReady,
   isCrashReportingAvailable,
@@ -484,12 +487,30 @@ function SimulatorDeveloperSection() {
   );
 }
 
-/** Settings → About (plan 08, plan 07): the app version (= the OTA runtime version), the build when
- *  `app.json` carries one, the privacy policy (its text lives in `model/privacyPolicy.ts` and is
- *  published as docs/privacy-policy.md) and a link to the documentation. */
+/** Open the store's review page in the store app, falling back to its web page when the store app
+ *  is missing (an emulator without Play, a de-Googled phone). */
+function openRatePage(links: { primary: string; fallback: string }) {
+  Linking.openURL(links.primary).catch(() =>
+    Linking.openURL(links.fallback).catch((e: unknown) =>
+      logError({ source: 'settings/about', error: e, severity: 'warning' }),
+    ),
+  );
+}
+
+/** Settings → About (plan 08, plan 07, plan 30): the app version (= the OTA runtime version), the
+ *  build when `app.json` carries one, **Rate this app** (Play / App Store; hidden on the web and on
+ *  iOS until the App Store id exists), the privacy policy (its text lives in
+ *  `model/privacyPolicy.ts` and is published as docs/privacy-policy.md), **Report a problem**
+ *  (`/feedback`, plan 32), **Licences** (`/licenses`, the third-party notices) and a link to the
+ *  documentation. */
 function AboutSection() {
   const { t } = useTranslation('settings');
+  const router = useRouter();
   const [policyOpen, setPolicyOpen] = useState(false);
+  const rate = rateAppLinks(Platform.OS, {
+    androidPackage: ANDROID_PACKAGE,
+    appStoreId: APP_STORE_ID,
+  });
 
   return (
     <YStack gap="$2">
@@ -507,6 +528,16 @@ function AboutSection() {
           <Paragraph theme="alt2" fontSize="$1">
             {t('about.ota')}
           </Paragraph>
+          {rate ? (
+            <Button
+              size="$3"
+              hitSlop={HIT_SLOP}
+              accessibilityLabel={t('about.rateA11y')}
+              onPress={() => openRatePage(rate)}
+            >
+              {t('about.rate')}
+            </Button>
+          ) : null}
           <Button
             size="$3"
             hitSlop={HIT_SLOP}
@@ -514,6 +545,22 @@ function AboutSection() {
             accessibilityLabel={policyOpen ? t('about.hidePolicyA11y') : t('about.showPolicyA11y')}
           >
             {policyOpen ? t('about.hidePolicy') : t('about.policy')}
+          </Button>
+          <Button
+            size="$3"
+            hitSlop={HIT_SLOP}
+            accessibilityLabel={t('about.reportA11y')}
+            onPress={() => router.push('/feedback')}
+          >
+            {t('about.report')}
+          </Button>
+          <Button
+            size="$3"
+            hitSlop={HIT_SLOP}
+            accessibilityLabel={t('about.licensesA11y')}
+            onPress={() => router.push('/licenses')}
+          >
+            {t('about.licenses')}
           </Button>
           <Button
             size="$3"

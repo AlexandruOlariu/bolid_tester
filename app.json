@@ -2,6 +2,8 @@
   "expo": {
     "name": "Bolid Tester",
     "slug": "bolid-tester",
+    "description": "Generic OBD2 / EOBD diagnostics for any car over an ELM327 Bluetooth LE, Wi-Fi or classic Bluetooth adapter: live data, fault codes, readiness, VIN, trips and reports. Local-first: no account, no tracking.",
+    "githubUrl": "https://github.com/AlexandruOlariu/bolid_tester",
     "version": "0.1.0",
     "orientation": "default",
     "scheme": "bolidtester",
@@ -18,7 +20,7 @@
       "requestHeaders": {
         "expo-channel-name": "production"
       },
-      "_comment": "EAS Update / OTA (docs/release.md). The owner runs `eas init` + `eas update:configure` once, which replaces the placeholder URL with `https://u.expo.dev/<projectId>` and fills `extra.eas.projectId`. checkAutomatically ON_ERROR_RECOVERY: the app never checks silently at launch, only when the user taps More > Check for updates (docs/privacy-policy.md). The channel header is for the Gradle-built CI APK; EAS Build overrides it per eas.json profile."
+      "_comment": "EAS Update / OTA (docs/release.md). The owner runs `eas init` + `eas update:configure` once, which replaces the placeholder URL with `https://u.expo.dev/<projectId>` and fills `extra.eas.projectId`. checkAutomatically ON_ERROR_RECOVERY: the app never checks silently at launch, only when the user taps More > Check for updates or when it restarts after crashing during start-up (docs/privacy-policy.md, store/compliance/). The channel header is for the Gradle-built CI APK; EAS Build overrides it per eas.json profile."
     },
     "ios": {
       "supportsTablet": true,

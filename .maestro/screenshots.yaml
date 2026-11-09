@@ -1,0 +1,125 @@
+# Store screenshots (plan 30, store/README.md): eight screens in store order, from the simulator on a
+# fresh install. Run through scripts/screenshots.sh, which cleans the status bar (demo mode), passes
+# the labels of the chosen language (read from src/shared/i18n/locales/<lang>/*.json, regex-escaped)
+# and resizes the results to the store size:
+#   scripts/screenshots.sh            # English, then Romanian
+#   scripts/screenshots.sh ro         # one language
+# Running this flow directly uses the English defaults below:
+#   maestro test .maestro/screenshots.yaml
+# Labels come from the app's strings (tapOn text is a regular expression); when a screen's copy
+# changes, the script picks the new text up from the locale files. Screens are opened by deep link
+# (scheme `bolidtester`, app.json), so only the setup steps depend on labels.
+appId: com.bolidtester.app
+name: Store screenshots — simulator, Golf, two injected faults
+env:
+  OUT: store/screenshots/android/phone/en
+  # The language button in Settings → General → Language (endonyms: English / Română).
+  LANG_BUTTON: English
+  TAB_SETTINGS: Settings
+  TAB_CONNECT: Connect
+  DEV_TITLE: Developer & simulator
+  SIM_SOURCE: Simulator \(no car\)
+  SIM_VEHICLE: golf-plus-2009-20tdi
+  CUSTOM_DTCS: Custom…
+  CUSTOM_PLACEHOLDER: e\.g\. P0135, P0420
+  CONNECT_SIM: Connect to simulator
+  PROFILES_TITLE: Built-in profiles
+  RUN_INSPECTION: Run inspection
+  SCAN_ALL: Scan all modules
+---
+- launchApp:
+    clearState: true
+# Android 13+ may ask for the notification permission on first launch; dismiss it if it shows.
+- tapOn:
+    text: '(?i)(allow|don.t allow)'
+    optional: true
+- extendedWaitUntil:
+    visible: 'Scan for adapters'
+    timeout: 30000
+
+# 1. Language first (the phone stays en-US; the app's own setting switches every label).
+- tapOn: 'Settings'
+- scrollUntilVisible:
+    element:
+      text: ${LANG_BUTTON}
+    direction: DOWN
+- tapOn: ${LANG_BUTTON}
+- waitForAnimationToEnd
+
+# 2. Connect tab on a fresh install: Bluetooth mode with the first-run card (store slot 8).
+- tapOn: ${TAB_CONNECT}
+- waitForAnimationToEnd
+- takeScreenshot: ${OUT}/08-connect
+
+# 3. Settings → Developer & simulator → simulator, the Golf profile, P2183 + P2015 injected.
+- tapOn: ${TAB_SETTINGS}
+- scrollUntilVisible:
+    element:
+      text: '(?i)${DEV_TITLE}.*'
+    direction: DOWN
+- tapOn: '(?i)${DEV_TITLE}.*'
+- scrollUntilVisible:
+    element:
+      text: ${SIM_SOURCE}
+    direction: DOWN
+- tapOn: ${SIM_SOURCE}
+- scrollUntilVisible:
+    element:
+      text: ${SIM_VEHICLE}
+    direction: DOWN
+- tapOn: ${SIM_VEHICLE}
+- scrollUntilVisible:
+    element:
+      text: ${CUSTOM_DTCS}
+    direction: DOWN
+- tapOn: ${CUSTOM_DTCS}
+- tapOn: ${CUSTOM_PLACEHOLDER}
+- inputText: 'P2183, P2015'
+- hideKeyboard
+
+# 4. Connect to the simulator; a successful connect moves on to vehicle selection.
+- tapOn: ${TAB_CONNECT}
+- tapOn: ${CONNECT_SIM}
+- extendedWaitUntil:
+    visible: ${PROFILES_TITLE}
+    timeout: 30000
+
+# 5. The screens, in store order. The simulator keeps the engine running, so Live moves.
+- openLink: bolidtester://dashboard
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: ${OUT}/01-live
+
+- openLink: bolidtester://faults
+- extendedWaitUntil:
+    visible: 'P2183'
+    timeout: 20000
+- takeScreenshot: ${OUT}/02-faults
+
+- openLink: bolidtester://inspection
+- tapOn: ${RUN_INSPECTION}
+- extendedWaitUntil:
+    visible: ${RUN_INSPECTION}
+    timeout: 60000
+- takeScreenshot: ${OUT}/03-inspection
+
+- openLink: bolidtester://charts
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: ${OUT}/04-charts
+
+- openLink: bolidtester://module-scan
+- tapOn: ${SCAN_ALL}
+- extendedWaitUntil:
+    visible: ${SCAN_ALL}
+    timeout: 90000
+- takeScreenshot: ${OUT}/05-module-scan
+
+- openLink: bolidtester://battery
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: ${OUT}/06-battery
+
+- openLink: bolidtester://maintenance
+- waitForAnimationToEnd
+- takeScreenshot: ${OUT}/07-maintenance

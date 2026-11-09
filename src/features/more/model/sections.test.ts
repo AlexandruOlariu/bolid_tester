@@ -25,6 +25,7 @@ const HIDDEN_ROUTES = [
   '/maintenance',
   '/error-log',
   '/feedback',
+  '/licenses',
   '/backup',
   '/module-scan',
   '/adaptations',
@@ -34,8 +35,8 @@ const HIDDEN_ROUTES = [
 ];
 
 /** Hidden routes reached from somewhere else than More: Info opens Extended PIDs, a trip row on
- *  Trips opens its detail screen. */
-const REACHED_ELSEWHERE = ['/extended', '/trip-detail'];
+ *  Trips opens its detail screen, Settings → About opens Licences (plan 30). */
+const REACHED_ELSEWHERE = ['/extended', '/trip-detail', '/licenses'];
 
 const allEntries = (): MoreEntry[] => MORE_SECTIONS.flatMap((s) => s.entries);
 const titles = (sections: typeof MORE_SECTIONS) =>

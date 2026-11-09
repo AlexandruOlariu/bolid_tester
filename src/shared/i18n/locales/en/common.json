@@ -32,7 +32,8 @@
     "adaptations": "Adaptations",
     "routines": "Routines & output tests",
     "sniffer": "Bus sniffer",
-    "adapterHealth": "Adapter health"
+    "adapterHealth": "Adapter health",
+    "licenses": "Licences"
   },
   "actions": {
     "ok": "OK",

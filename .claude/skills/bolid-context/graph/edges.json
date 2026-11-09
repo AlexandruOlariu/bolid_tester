@@ -4446,6 +4446,11 @@
   ],
   [
     "feature:settings",
+    "lib:storeLinks",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "lib:webRuntime",
     "imports"
   ],
@@ -5247,6 +5252,16 @@
   [
     "screen:inspection",
     "feature:inspection",
+    "serves"
+  ],
+  [
+    "screen:licenses",
+    "doc:third-party-licenses",
+    "named"
+  ],
+  [
+    "screen:licenses",
+    "feature:settings",
     "serves"
   ],
   [

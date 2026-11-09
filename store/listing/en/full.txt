@@ -1,0 +1,29 @@
+Bolid Tester is a generic OBD2 / EOBD diagnostics app that talks to an ELM327-compatible Bluetooth Low Energy adapter. It reads live engine data, reads and clears fault codes, shows readiness monitors and freeze frame, and reads the VIN, for any OBD2-compliant car: in the EU, petrol cars from 2001 and diesels from 2004.
+
+WHAT IT DOES
+• Live data: a dashboard with petrol, diesel and hybrid presets, plus every sensor your car supports, grouped by system
+• Fault codes: stored, pending and permanent codes with a plain-language meaning, typical causes and a severity hint; freeze frame; clear codes after a confirmation
+• Readiness monitors, with a coach that tells you what still has to run before an inspection
+• Vehicle info: VIN, protocol and supported sensors, plus a VIN decoder
+• Used-car inspection: one tap gives a pass / caution / fail verdict with every check explained
+• Charts, trip recording with a GPS track and CSV / JSON export, performance tests (0–100 km/h, braking) and threshold alerts
+• Battery and charging check, and a DPF / regeneration view for diesels
+• My garage: several cars, a maintenance log with reminders, a per-car timeline and a vehicle report you can share as PDF
+• Diagnose (AI), optional: connect your own local AI server or an AI provider for a plain-language summary of a scan
+• Backup and restore of all your data in one file
+• English and Romanian, light and dark theme, metric units
+• A built-in simulator, so you can try every screen without a car
+
+WORKSHOP TOOLS (EXPERIMENTAL)
+For Volkswagen-group cars there is a module scan, adaptations, guided output tests and a service-interval reset. They are experimental, clearly marked in the app, take a backup before any write and never touch the airbag, the immobilizer or the odometer.
+
+WHAT IT IS NOT
+Bolid Tester is not a full manufacturer-level tool and not a replacement for VCDS or a dealer tester. Over standard OBD2 a generic adapter reaches the engine / emissions control unit; there is no full ABS, airbag, transmission or instrument-cluster diagnosis. On Volkswagen-group cars the experimental module scan also reads identification and fault codes from a few other modules, such as ABS and the instrument cluster; its module list is illustrative until confirmed on a car. You need an ELM327-compatible adapter; it is not included.
+
+YOUR DATA STAYS ON YOUR PHONE
+No account, no advertising, no analytics, no tracking. Everything the app reads from your car is stored only on your phone, and files leave it only when you share them. Crash reports are off unless you turn them on. Privacy policy: https://github.com/AlexandruOlariu/bolid_tester/blob/HEAD/docs/privacy-policy.md
+
+SUPPORTED ADAPTERS
+Bluetooth Low Energy ELM327 adapters such as the Vgate iCar Pro Bluetooth 4.0, Wi-Fi ELM327 adapters, and classic Bluetooth adapters on Android. A community compatibility list is on the project page: https://github.com/AlexandruOlariu/bolid_tester
+
+Bolid Tester is open source (MIT licence).

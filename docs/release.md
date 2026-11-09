@@ -1,8 +1,11 @@
 # Releases: versioning, signing, OTA updates
 
 How a Bolid Tester build gets a version, a signature and over-the-air (OTA) updates, and how to cut,
-check and roll back a release. Implemented by [plan 08](./plans/08-signed-release-ota.md). The privacy
-side (what the update check sends) is in [privacy-policy.md](./privacy-policy.md).
+check and roll back a release. Implemented by [plan 08](./plans/08-signed-release-ota.md); the store
+side (submission, the rollout ladder with go / no-go criteria, the stability KPI and the store
+checklist) by [plan 30](./plans/30-store-release-prep.md), with the listing assets in
+[`store/`](../store/README.md). The privacy side (what the update check sends) is in
+[privacy-policy.md](./privacy-policy.md).
 
 ## Versions
 
@@ -48,7 +51,7 @@ app.json`), so app.json lands in the same commit as the bump. Never edit the thr
 
 - `verify`: lint, both typechecks, all Jest tests, `npm run check:release`
   (`scripts/check-signing-plugin.mjs` + `scripts/check-version-sync.mjs`) and `npm run check:capture`
-  (the capture analyzer CLI on the synthetic capture, plan 25), `npm run adapters:check` (plan 29)
+  (the capture analyzer CLI on the synthetic capture, plan 25), `npm run check:store` (the store listing assets, plan 30), `npm run adapters:check` (plan 29)
   and **`npm run validate:contrib`** — the community contribution checks (plan 33,
   `scripts/validate-contrib.mjs`: vehicle-doc front-matter, replay fixtures, label packs, DTC tables
   and their `License:` headers, sniffer capture headers, licence hygiene; see
@@ -170,6 +173,89 @@ source-map debug ids, without Web Replay). The organisation slug comes from `SEN
 - The crash-free sessions figure for the store release (plan 30) comes from
   `enableAutoSessionTracking`.
 
+## Store submission (plan 30)
+
+| Thing                    | Value / where                                                                                                                                                                                                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Application id           | `com.bolidtester.app` (`app.json`), Android package and iOS bundle id                                                                                                                                                                                                                            |
+| Android SDK levels       | `targetSdk 36`, `compileSdk 36`, `minSdk 24`, from React Native 0.85's version catalog (`node_modules/react-native/gradle/libs.versions.toml`). Google Play requires target API 35 or higher for new apps and updates in 2026, so SDK 56 builds comply. **Re-verify at every Expo SDK upgrade.** |
+| Upload format            | Play: the **AAB** from CI (`build-android`, tag builds) or `eas build -p android --profile production`; iOS: `eas build -p ios --profile production`                                                                                                                                             |
+| iOS build number         | EAS remote version source, auto-incremented by the `production` profile (`eas.json`)                                                                                                                                                                                                             |
+| `eas submit` (Android)   | `eas.json` `submit.production.android`: `serviceAccountKeyPath: ./secrets/play-service-account.json` (gitignored), `track: internal`, `releaseStatus: draft`                                                                                                                                     |
+| `eas submit` (iOS)       | `submit.production.ios` is empty on purpose: pass the Apple ID and the App Store Connect app id (`ascAppId`) at submit time, or set `EXPO_APPLE_ID`; never commit them (`storeConfig.test.ts` fails if they appear)                                                                              |
+| Listing, graphics, shots | [`store/`](../store/README.md): `npm run check:store` on every push, `npm run store:release-check` before an upload                                                                                                                                                                              |
+| Data safety / privacy    | [`store/compliance/`](../store/compliance/): answers derived from the code, each row citing it                                                                                                                                                                                                   |
+| Third-party notices      | `npm run licenses` writes [third-party-licenses.md](./third-party-licenses.md) and the data of **Settings → About → Licences**; rerun after any dependency change                                                                                                                                |
+
+```bash
+# Android: Google requires the very first upload of a new app to be done by hand in Play Console;
+# afterwards eas submit pushes to the internal track as a draft.
+eas submit -p android --profile production --path dist/bolid-tester-vX.Y.Z-<run>.aab
+eas submit -p ios --profile production --latest     # to App Store Connect / TestFlight
+```
+
+## Store rollout
+
+Each step needs the previous step's exit criteria. Times are minimums.
+
+1. **Internal testing** (Play internal track) / **TestFlight internal**: every `v*` tag build.
+   Smoke: the plan 10 Maestro flow (`.maestro/simulator-smoke.yaml`) on the signed build, plus the
+   [simulator checklist](./testing.md) on a phone. Exit: smoke green, nothing new in the error log.
+2. **Closed testing** (Play closed track, list "Bolid testers") / **TestFlight external** (group
+   "Bolid testers"). Play requires **at least 12 testers opted in for 14 continuous days** before
+   a personal developer account created after November 2023 can apply for production. Exit
+   criteria, all of them:
+   - crash-free sessions **at least 99.5 %** over the period (Sentry release health, see
+     [Stability](#stability)); if crash reports are off for every tester, fall back to **zero
+     fatal entries** in the feedback bundles testers sent (More → Report a problem, plan 32);
+   - no open P0 bug (data loss, a write to the car outside its gate, a crash on a primary path);
+   - the Play pre-launch report shows no crash.
+3. **Production, staged.** Play: **10 % → 50 % → 100 %**, at least **48 h** between steps.
+   **Halt rule** (halt the rollout in Play Console, fix, ship a new version): crash-free sessions
+   **below 99 %**, Play Vitals user-perceived crash rate at or above 1.09 % or ANR rate at or above
+   0.47 %, any ANR cluster above 0.5 % of sessions, or a P0 report. iOS: **phased release** on
+   (Apple's automatic 7-day ramp), paused under the same halt rule.
+4. **Hotfix path.** JS-only fix: OTA to the installs of that version (`eas update --branch
+production`, see [OTA updates](#ota-updates-eas-update)), tested first on `preview`. Native fix:
+   a new patch tag through the same ladder from step 1, with an expedited App Review request on
+   iOS. Never re-use a version code or a tag.
+
+## Stability
+
+**KPI:** Sentry **crash-free sessions** per release (plan 31, `enableAutoSessionTracking`; counted
+only for users who turned crash reports on). **Targets for v1.0:** at least **99.5 %** on Android
+and at least **99.5 %** on iOS. Secondary, from the store consoles (all users): Play Vitals
+user-perceived crash rate **below 1.09 %** and user-perceived ANR rate **below 0.47 %** (Play's
+bad-behaviour thresholds); App Store Connect crashes flat or falling. The simulator path must be
+crash-free in CI: the plan 10 Maestro smoke (`e2e.yml`, nightly) fails on any crash. The three
+reference cars are covered by the on-car sessions of [plan 02](./plans/02-on-car-validation.md):
+a session with a crash fails it.
+
+Record each release after 7 days in production (or at the end of closed testing):
+
+| Release | Platform | Crash-free sessions (Sentry) | Play user-perceived crash rate | Play ANR rate | Sessions counted | Notes |
+| ------- | -------- | ---------------------------- | ------------------------------ | ------------- | ---------------- | ----- |
+| v1.0.0  | Android  |                              |                                |               |                  |       |
+| v1.0.0  | iOS      |                              | n/a                            | n/a           |                  |       |
+
+## Store checklist
+
+Before promoting a build out of internal testing:
+
+- [ ] `npm run ci` green on the tag; `npm run store:release-check` passes (at least 6 phone
+      screenshots per language, text within limits, graphics at size).
+- [ ] `store/listing/<lang>/whats-new/<version>.txt` written for **en** and **ro**.
+- [ ] Re-read [`store/compliance/`](../store/compliance/) against the changes since the last
+      release: a new network call, permission, SDK or stored data type means updating both sheets
+      **and** the [privacy policy](./privacy-policy.md) (both copies, `privacyPolicy.test.ts`),
+      then the answers in both consoles.
+- [ ] `npm run licenses` rerun if any dependency changed (the licences test fails otherwise).
+- [ ] Target SDK still at or above Play's current minimum ([Store submission](#store-submission-plan-30)).
+- [ ] The permissions in the built APK match `app.json` (`aapt2 dump permissions`).
+- [ ] The review notes (simulator path) still match the app's labels
+      ([store/README.md](../store/README.md#review-notes-both-stores)).
+- [ ] The rollout step and its numbers recorded in the [Stability](#stability) table.
+
 ## Owner setup (once)
 
 None of this blocks the code: without it, main builds are debug-signed and OTA is skipped.
@@ -197,7 +283,14 @@ None of this blocks the code: without it, main builds are debug-signed and OTA i
    release build, switch on Settings → Privacy → Send anonymous crash reports and press Settings →
    Developer & simulator → **Send test crash report**: the event must arrive with `***03398`,
    `<device-id>` and `<url>` in its message, no device name, and `environment: production`.
-5. **First release** (the plan's step 5): when the v0.2 items are in, `npm version minor` → `v0.2.0`,
+5. **Store accounts (plan 30).** A Google Play Console developer account, the app record
+   `com.bolidtester.app`, a service account with release permission whose JSON key goes to
+   `secrets/play-service-account.json` (gitignored; for CI use an EAS secret instead), and at least
+   12 closed testers for 14 days. The Apple Developer Program, the App Store Connect record (put
+   its numeric Apple ID into `app.json` `expo.extra.appStoreId`, which turns on **Rate this app**
+   on iOS), and the review-notes screen recording of a Bluetooth connection on the Golf. Approve
+   the EN / RO listing copy and the feature graphic in [`store/`](../store/README.md).
+6. **First release** (the plan's step 5): when the v0.2 items are in, `npm version minor` → `v0.2.0`,
    push, and check the acceptance list below on the tag's run.
 
 ### Acceptance checks for the first signed tag

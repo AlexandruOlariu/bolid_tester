@@ -1,11 +1,13 @@
 # Bolid Tester — Privacy policy
 
-Last updated: 2026-11-09
+Last updated: 2026-11-10
 
 Bolid Tester is an OBD2 diagnostics app. This policy says what it stores, what it sends and where.
 The same text is shown in the app under **Settings → About → Privacy policy**
-(`src/features/settings/model/privacyPolicy.ts`; `privacyPolicy.test.ts` keeps the two in step). A
-hosted copy for the app stores follows with [plan 30](./plans/30-store-release-prep.md).
+(`src/features/settings/model/privacyPolicy.ts`; `privacyPolicy.test.ts` keeps the two in step).
+This page is also the privacy-policy URL of the Google Play and App Store listings
+([plan 30](./plans/30-store-release-prep.md)); the store data-safety answers derived from it are in
+[`store/compliance/`](../store/compliance/).
 
 ## What stays on your phone
 
@@ -34,6 +36,8 @@ from the app unless you turn on crash reports (below).
   during start-up, to recover with a working version.
 - Web search: on a fault code’s detail sheet, Search the web opens your browser with a search for
   that code and, when a car is selected, its name. From there the browser and the search engine apply their own privacy policies.
+- Rate this app: Settings → About → Rate this app opens the app’s page in Google Play or the App
+  Store. The app sends nothing itself; the store applies its own privacy policy.
 
 ## Crash reports (optional)
 

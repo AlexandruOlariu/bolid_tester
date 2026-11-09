@@ -1,0 +1,1 @@
+obd2,obd,elm327,eobd,car diagnostic,scanner,fault codes,dtc,check engine,readiness,vin,trip

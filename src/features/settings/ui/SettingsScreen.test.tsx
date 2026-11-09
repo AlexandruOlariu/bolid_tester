@@ -334,6 +334,54 @@ describe('SettingsScreen', () => {
     open.mockRestore();
   });
 
+  it('About offers Rate this app, the privacy policy, Report a problem and Licences (plan 30)', () => {
+    jest.replaceProperty(Platform, 'OS', 'android');
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+
+    expect(screen.getByText('Privacy policy')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Rate this app in the store'));
+    expect(open).toHaveBeenCalledWith('market://details?id=com.bolidtester.app');
+
+    fireEvent.press(
+      screen.getByLabelText('Report a problem: build a redacted log bundle to share'),
+    );
+    expect(mockPush).toHaveBeenCalledWith('/feedback');
+
+    fireEvent.press(screen.getByLabelText('Open the third-party licences'));
+    expect(mockPush).toHaveBeenCalledWith('/licenses');
+    jest.restoreAllMocks(); // also puts Platform.OS back
+  });
+
+  it('Rate this app falls back to the Play web page when the store app is missing', async () => {
+    jest.replaceProperty(Platform, 'OS', 'android');
+    const open = jest
+      .spyOn(Linking, 'openURL')
+      .mockRejectedValueOnce(new Error('No Activity found to handle Intent'))
+      .mockResolvedValue(true);
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    fireEvent.press(screen.getByLabelText('Rate this app in the store'));
+    await waitFor(() =>
+      expect(open).toHaveBeenLastCalledWith(
+        'https://play.google.com/store/apps/details?id=com.bolidtester.app',
+      ),
+    );
+    jest.restoreAllMocks(); // also puts Platform.OS back
+  });
+
+  it('hides Rate this app on iOS until the App Store id exists, and on the web', () => {
+    jest.replaceProperty(Platform, 'OS', 'ios');
+    const { unmount } = renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    expect(screen.queryByText('Rate this app')).toBeNull();
+    expect(screen.getByText('Licences')).toBeTruthy();
+    unmount();
+    jest.replaceProperty(Platform, 'OS', 'web');
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    expect(screen.queryByText('Rate this app')).toBeNull();
+    jest.restoreAllMocks();
+  });
+
   it('exports the adapter log as a replay fixture named after the vehicle and the flow', async () => {
     clearAdapterLog(); // the log is module-level: start from this test's own session
     await connectSimulator({ injectedDtcs: ['P0299'] });

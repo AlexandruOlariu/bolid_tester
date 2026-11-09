@@ -1,0 +1,6 @@
+First store release.
+• Every fault code explained: a full generic code database with causes and severity
+• My garage: several cars, learned profiles and a per-car timeline
+• Shareable vehicle report, trip maps with GPS and one-file backup
+• English and Romanian, accessible colours, tablet layout
+• Wi-Fi and classic Bluetooth adapters, a more reliable Bluetooth connection

@@ -1,0 +1,6 @@
+Prima versiune în magazin.
+• Fiecare cod de eroare explicat: o bază completă de coduri generice, cu cauze și gravitate
+• Garajul meu: mai multe mașini, profiluri învățate și istoric pe fiecare mașină
+• Raport al vehiculului de trimis, hărți GPS ale călătoriilor și backup într-un singur fișier
+• Română și engleză, culori accesibile, aspect pentru tabletă
+• Adaptoare Wi-Fi și Bluetooth clasic, o conexiune Bluetooth mai stabilă

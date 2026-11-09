@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Play feature graphic source (plan 30, store/README.md): 1024 x 500, brand green background,
+     the app logo (same drawing as src/shared/ui/AppLogo.tsx, 64-unit grid scaled 5x) and the tagline.
+     Edit this file, then run `npm run store:assets` to render graphics/feature-graphic.png.
+     Keep text away from the outer 60 px: Play may overlay a play button or crop the edges. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <rect width="1024" height="500" fill="#2bb673"/>
+  <g transform="translate(90 90) scale(5)">
+    <rect x="4" y="4" width="56" height="56" rx="14" fill="#0D1117"/>
+    <rect x="6" y="6" width="52" height="52" rx="12" fill="#111827"/>
+    <path d="M18 35.5L21.6 26C22.3 24.2 24 23 25.9 23H38.1C40 23 41.7 24.2 42.4 26L46 35.5" fill="none" stroke="#E6EDF3" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M16 36H48V43C48 45.2 46.2 47 44 47H20C17.8 47 16 45.2 16 43V36Z" fill="#2bb673"/>
+    <path d="M23 36L26 30H38L41 36" fill="#193C32"/>
+    <circle cx="24" cy="44" r="3.5" fill="#0D1117"/>
+    <circle cx="40" cy="44" r="3.5" fill="#0D1117"/>
+    <polyline points="14 22 21 22 25 15 31 29 36 18 40 22 50 22" fill="none" stroke="#2bb673" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="32" y1="50" x2="32" y2="55" stroke="#2bb673" stroke-width="3" stroke-linecap="round"/>
+    <line x1="24" y1="53" x2="40" y2="53" stroke="#2bb673" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <g font-family="Roboto, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif" fill="#0D1117">
+    <text x="440" y="200" font-size="68" font-weight="800">Bolid Tester</text>
+    <text x="440" y="268" font-size="38" font-weight="600">OBD2 diagnostics for any car</text>
+    <text x="440" y="330" font-size="24" font-weight="500">Live data · Fault codes · Readiness</text>
+    <text x="440" y="366" font-size="24" font-weight="500">Bluetooth LE ELM327 · Metric · No account</text>
+  </g>
+</svg>
