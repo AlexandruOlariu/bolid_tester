@@ -175,9 +175,18 @@
       "tokens": ["readiness","coach","drivecycle","monitor","ready","itp","clear","0101","complete"] },
     { "id": "fuel-economy-units",
       "summary": "Fuel economy derived from live PIDs (fuel-rate 015E preferred, else MAF+speed with per-fuel constants) as instantaneous + windowed L/100km (L/h at standstill), on the dashboard and in trip stats; shown in L/100km as decoded (the app is metric only, plan 07).",
-      "tokens": ["fuel","economy","consumption","l100km","maf","units","metric"] }
+      "tokens": ["fuel","economy","consumption","l100km","maf","units","metric"] },
+    { "id": "wifi-adapter",
+      "summary": "Wi-Fi ELM327 (WiFi_OBDII class, plan 26): the adapter is its own access point and a raw TCP byte pipe on 192.168.0.10:35000. TcpTransport (shared/transports/tcp) over react-native-tcp-socket (variable-specifier import, injected TcpSocketFactory), 5 s connect timeout, unsolicited close -> disconnected so link loss / auto-reconnect work as on BLE. Settings adapterSource 'wifi' + wifi {host, port} (v7); no BLE permission or BleManager. Android warns the network has no internet (choose Stay connected, mobile data off); iOS 14+ asks for Local Network access (NSLocalNetworkUsageDescription). Tested through bridgeToMock (obd-core/transport/testing/bridge) with a fake socket.",
+      "tokens": ["wifi","wi-fi","tcp","socket","35000","192.168.0.10","wifi_obdii","network","local","lan","adapter","endpoint"] }
   ],
   "links": [
+    ["concept:wifi-adapter", "transport:TcpTransport", "relates"],
+    ["concept:wifi-adapter", "transport:endpoint", "relates"],
+    ["concept:wifi-adapter", "core:transport/testing/bridge", "relates"],
+    ["concept:wifi-adapter", "concept:connection-lifecycle", "relates"],
+    ["concept:wifi-adapter", "feature:connection", "relates"],
+    ["concept:wifi-adapter", "doc:plans/26-wifi-tcp-transport", "relates"],
     ["concept:live-value-keys", "core:obd/liveKeys", "relates"],
     ["concept:live-value-keys", "feature:engine-host", "relates"],
     ["concept:live-value-keys", "feature:live-charts", "relates"],

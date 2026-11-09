@@ -25,7 +25,8 @@
       "bundleIdentifier": "com.bolidtester.app",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "Bolid Tester connects to your OBD2 Bluetooth adapter to read vehicle diagnostics.",
-        "NSBluetoothPeripheralUsageDescription": "Bolid Tester connects to your OBD2 Bluetooth adapter to read vehicle diagnostics."
+        "NSBluetoothPeripheralUsageDescription": "Bolid Tester connects to your OBD2 Bluetooth adapter to read vehicle diagnostics.",
+        "NSLocalNetworkUsageDescription": "Bolid Tester connects to a Wi-Fi OBD2 adapter on your local network."
       }
     },
     "android": {

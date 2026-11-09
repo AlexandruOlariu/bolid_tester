@@ -307,12 +307,13 @@ def build_shared(g):
             else:
                 add_filenode(f"core:{sub}", "core", p)
 
-    # lib / state(store) / ui / transports(ble)
+    # lib / state(store) / ui / transports(ble, tcp)
     for sub, prefix, ntype in (
         ("lib", "lib", "lib"),
         ("state", "store", "store"),
         ("ui", "ui", "ui"),
         ("transports/ble", "transport", "transport"),
+        ("transports/tcp", "transport", "transport"),
     ):
         d = root / sub
         if not d.is_dir():

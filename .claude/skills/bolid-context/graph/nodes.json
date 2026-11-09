@@ -946,6 +946,25 @@
     ],
     "type": "concept"
   },
+  "concept:wifi-adapter": {
+    "path": null,
+    "summary": "Wi-Fi ELM327 (WiFi_OBDII class, plan 26): the adapter is its own access point and a raw TCP byte pipe on 192.168.0.10:35000. TcpTransport (shared/tra\u2026",
+    "tokens": [
+      "192.168.0.10",
+      "35000",
+      "adapter",
+      "endpoint",
+      "lan",
+      "local",
+      "network",
+      "socket",
+      "tcp",
+      "wi-fi",
+      "wifi",
+      "wifi_obdii"
+    ],
+    "type": "concept"
+  },
   "core:analysis/aiDiagnosis": {
     "path": "src/shared/obd-core/analysis/aiDiagnosis.ts",
     "summary": "Pure logic for the AI auto-diagnosis feature.",
@@ -1756,6 +1775,16 @@
     "tokens": [
       "fixtures",
       "sim",
+      "transport"
+    ],
+    "type": "core"
+  },
+  "core:transport/testing/bridge": {
+    "path": "src/shared/obd-core/transport/testing/bridge.ts",
+    "summary": "Test bridge (plan 26, reused by plans 27 and 28): drive any fake socket / device from a `MockTransport`, so a new `Transport` can be integration-test\u2026",
+    "tokens": [
+      "bridge",
+      "testing",
       "transport"
     ],
     "type": "core"
@@ -3049,7 +3078,7 @@
   },
   "feature:connection": {
     "path": "src/features/connection",
-    "summary": "Scan for, connect to, and initialize the ELM327 BLE adapter.",
+    "summary": "Scan for, connect to, and initialize the ELM327 adapter \u2014 Bluetooth LE, or Wi-Fi over TCP (plan 26).",
     "tests": [
       "src/features/connection/api/connectionService.test.ts",
       "src/features/connection/api/diagnoseFailure.test.ts",
@@ -4018,6 +4047,38 @@
     "tokens": [
       "ble",
       "transport"
+    ],
+    "type": "transport"
+  },
+  "transport:TcpTransport": {
+    "path": "src/shared/transports/tcp/TcpTransport.ts",
+    "summary": "Transport implementation over a TCP socket, for Wi-Fi ELM327 adapters (plan 26).",
+    "tests": [
+      "src/shared/transports/tcp/TcpTransport.test.ts"
+    ],
+    "tokens": [
+      "tcp",
+      "transport"
+    ],
+    "type": "transport"
+  },
+  "transport:endpoint": {
+    "path": "src/shared/transports/tcp/endpoint.ts",
+    "summary": "Wi-Fi adapter endpoints (plan 26) \u2014 pure parsing / formatting, unit-tested in the core project.",
+    "tests": [
+      "src/shared/transports/tcp/endpoint.test.ts"
+    ],
+    "tokens": [
+      "endpoint"
+    ],
+    "type": "transport"
+  },
+  "transport:fakeSocket": {
+    "path": "src/shared/transports/tcp/testing/fakeSocket.ts",
+    "summary": "Test-only fakes for `TcpTransport` (plan 26): a scriptable `TcpSocketLike` and a socket that plays a Wi-Fi ELM327 by forwarding to the simulator thro\u2026",
+    "tokens": [
+      "fake",
+      "socket"
     ],
     "type": "transport"
   },

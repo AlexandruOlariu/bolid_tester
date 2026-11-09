@@ -1,6 +1,6 @@
 # Feature: connection
 
-Scan for, connect to, and initialize the ELM327 BLE adapter.
+Scan for, connect to, and initialize the ELM327 adapter — Bluetooth LE, or Wi-Fi over TCP (plan 26).
 
 ## UI
 
@@ -10,8 +10,16 @@ Initializing… / Connected / Error` with an icon and colour per `ConnState`;
   - the first-run card (`FirstRunCard`, below);
   - the session error, if any, and the **connection diagnostics panel** (below) while in `error`;
   - in simulator mode, a panel to connect the simulated car (with **Use a real adapter**);
-  - otherwise the `BluetoothPrompt` banner when the radio is not ready, **Scan for adapters**, the
-    device list and, on Android, **Connect by address**.
+  - with the **Wi-Fi** source (`testID="connect-wifi"`), a panel — "Join the adapter's Wi-Fi network
+    first (usually `WiFi_OBDII`, no password). On Android, if the phone warns the network has no
+    internet, choose _Stay connected_." — the adapter address from Settings
+    (`connect-wifi-endpoint`), **Connect over Wi-Fi** and **Use a Bluetooth adapter**; no scan and no
+    `BleManager` (see [Wi-Fi adapters](#wi-fi-adapters-tcp-plan-26));
+  - otherwise (Bluetooth) the `BluetoothPrompt` banner when the radio is not ready, **Scan for
+    adapters**, the device list, on Android **Connect by address**, and a small **Using a Wi-Fi
+    adapter instead?** link that switches the source to Wi-Fi.
+  - The subtitle follows the source ("Pair with your OBD2 Bluetooth adapter" / "Connect to your
+    Wi-Fi OBD2 adapter").
 - **DeviceRow** — one scanned device: name (or "(unnamed)"), id and RSSI, a ⭐ when the name matches
   an adapter hint (`ADAPTER_NAME_HINTS` in `shared/transports/ble/manager.ts`: `vlink`,
   `ios-vlink`, `v-link`, `veepeak`, `obdii`, `obd`, `icar`), and a **Connect** button.
@@ -62,14 +70,16 @@ no-op.
   `connect` calls `connectionService.connect` and, once the session is `connected`, pushes
   `/vehicle`; errors are surfaced through `sessionStore.error`, not thrown.
 - `useBluetoothState(enabled?)` — subscribe to the phone's live Bluetooth radio state
-  (`onStateChange`): `ready / poweredOff / unauthorized / unsupported / checking`. Pass `false` in
-  simulator mode so the `BleManager` is never constructed. Drives `BluetoothPrompt`.
+  (`onStateChange`): `ready / poweredOff / unauthorized / unsupported / checking`. The Connect
+  screen passes `adapterSource === 'ble'`, so neither the simulator nor Wi-Fi ever constructs the
+  `BleManager`. Drives `BluetoothPrompt`.
 
 ## api (service layer)
 
 - `connectionService` (`api/connectionService.ts`, exported as a namespace from the slice) —
-  `connect(target?: ConnectTarget)` builds the `Transport` (`BleTransport` for `{ deviceId }`, or a
-  `MockTransport` over the simulated car per Settings), wraps it so all I/O is mirrored to the
+  `connect(target?: ConnectTarget)` builds the `Transport` (`BleTransport` for `{ deviceId }`, a
+  `TcpTransport` to `settings.wifi` for the Wi-Fi source, or a `MockTransport` over the simulated car
+  per Settings), wraps it so all I/O is mirrored to the
   adapter log, constructs the `DiagnosticSession` (which owns the `Elm327Client`), runs
   `session.connect()` (init → probe → identify), then — on CAN, when the active profile declares
   extended PIDs — reads the engine part number once (`session.readPartNumber()`, `22 F187`) into
@@ -78,7 +88,9 @@ no-op.
   with `sessionStore.setConnected`. Also `disconnect()`, `switchAdapterSource(source)`,
   `switchToRealAdapter()`, `resetForRestore()` (the same teardown as a source switch — in-flight
   connect invalidated, auto-reconnect cancelled, adapter log cleared — run before a data restore,
-  whose restored settings may change the source; plan 18), `FLAP_PAUSED_MESSAGE`, and the
+  whose restored settings may change the source; plan 18), `FLAP_PAUSED_MESSAGE`,
+  `setTcpSocketFactory(factory?)` (test seam: Wi-Fi sockets from a fake instead of
+  `react-native-tcp-socket`), and the
   simulator dev hooks under `__sim`
   (Settings → Developer & simulator). Link-loss, auto-reconnect and the flap guard live here too (below).
 - Pure helpers, unit-tested: `reconnect.ts` (`runReconnect`), `flapGuard.ts`
@@ -95,14 +107,16 @@ no-op.
   but keeps the device so reconnect can be offered) and `reset`.
 - `model/scanStore.ts` (`useScanStore`, in-memory): `scanning`, `devices: ScannedDevice[]`
   (`id`, `name`, `rssi`, `isLikelyAdapter`); `setScanning`, `upsert`, `clear`.
-- `model/linkStore.ts` (`useLinkStore`, in-memory): `link: BleLinkInfo | null` (set the moment the
+- `model/linkStore.ts` (`useLinkStore`, in-memory): `kind: 'ble' | 'wifi' | null` (the latest
+  attempt's link kind; null for the simulator), `link: BleLinkInfo | null` (set the moment the
   transport reports `connected`, so a failed init still shows it, and again after a successful
   connect; null for the simulator), `stage: ConnectStage | null` (the furthest stage the latest
   attempt reached: `bluetooth` → `transport` → `init` → `probe` → `identify`; the last three come
   from `DiagnosticSession.connect(onStage)`), `attemptStartedAt` (ms) and
   `device: AttemptDevice | null` (`{ id, name }` of the device this attempt targeted; `sessionStore`
-  only learns the device on success). Actions: `beginAttempt(stage, device, now?)` (clears `link`,
-  records the first stage, the device and the start time), `setStage` and `setLink`. Written by
+  only learns the device on success; for Wi-Fi `{ id: '192.168.0.10:35000', name: 'Wi-Fi ELM327' }`).
+  Actions: `beginAttempt(stage, device, kind?, now?)` (clears `link`, records the first stage, the
+  device, the link kind and the start time), `setStage` and `setLink`. Written by
   `connectionService.connectInternal`; read by the diagnostics panel.
 
 ## Behavior
@@ -217,6 +231,53 @@ no-op.
   most 300 ms after a timeout. A failed write starts the same drain (a partial write can still draw
   a reply, e.g. the `?` to `LINE_FLUSH`).
 
+## Wi-Fi adapters (TCP, plan 26)
+
+Wi-Fi ELM327 adapters (the `WiFi_OBDII` class) run their own access point and listen on a fixed TCP
+address — almost always **`192.168.0.10:35000`**. They need no Bluetooth permission and work on iOS
+without MFi.
+
+- **Transport.** `shared/transports/tcp/TcpTransport.ts` implements `Transport` over an injected
+  `TcpSocketFactory`; the app's `defaultSocketFactory` uses
+  [`react-native-tcp-socket`](https://github.com/Rapsssito/react-native-tcp-socket) 6.x
+  (`createConnection({ host, port, connectTimeout }, onConnect)`, autolinked — no config plugin),
+  loaded through a variable specifier so Jest and web never resolve it (a build without the module
+  fails the connect with "Wi-Fi adapters need the TCP socket module…"). Nagle is turned off on
+  connect (`setNoDelay(true)`): every ELM327 command is a few bytes waiting for its reply.
+- **Status.** `connecting` → `connected` on the socket's `connect`; a socket `error` / `close` before
+  that, or no connect within **5 s** (`DEFAULT_CONNECT_TIMEOUT_MS`), → `error` with a message naming
+  the address (`Could not reach the Wi-Fi adapter at …: <socket error>`, `No answer from the Wi-Fi
+adapter at … within 5 s (ETIMEDOUT)`). After connecting, an unsolicited `close` → `disconnected`
+  and an unsolicited `error` → `error`, so the link-loss handling and auto-reconnect below treat a
+  Wi-Fi drop exactly like a BLE one. A manual `disconnect()` destroys the socket and emits only
+  `disconnected`; a `disconnect()` during a connect cancels it (`TcpConnectCancelledError`). String
+  `data` chunks are converted with `stringToBytes`, Buffers are copied into plain `Uint8Array`s.
+- **Endpoint.** `shared/transports/tcp/endpoint.ts` (pure): `parseEndpoint('host:port')` (IPv4 or
+  host name, port 1–65535, else null), `formatEndpoint`, `isValidEndpoint`,
+  `DEFAULT_WIFI_ENDPOINT`. Edited in Settings → Developer & simulator → Adapter source → **Wi-Fi
+  adapter** ([settings](./settings.md)).
+- **Connect.** `connectInternal` builds `new TcpTransport(settings.wifi)` — no permission request,
+  `wakeAfterIdleMs` as for BLE (real adapters sleep), the attempt device
+  `{ id: '<host>:<port>', name: 'Wi-Fi ELM327' }`, adapter-log origin
+  `{ source: 'car', deviceId: '<host>:<port>' }`. `lastTarget` stays undefined: auto-reconnect
+  re-reads the endpoint from settings.
+- **Android.** A Wi-Fi network without internet makes Android warn ("This network has no internet
+  access") and may move traffic back to mobile data; the user chooses **Stay connected**. If the
+  connect still fails, turning mobile data off helps (diagnostics suggestion).
+- **iOS.** iOS 14+ asks for **Local Network** access the first time the app opens a socket on the
+  LAN; the prompt text is `ios.infoPlist.NSLocalNetworkUsageDescription` in `app.json` ("Bolid
+  Tester connects to a Wi-Fi OBD2 adapter on your local network."). A denied permission shows up as
+  an unreachable host; the diagnostics point to Settings → Privacy & Security → Local Network.
+- **Tests.** `TcpTransport.test.ts` (fake socket: every status transition, timeout, conversion,
+  teardown, the default factory against a virtual module), `endpoint.test.ts`,
+  `TcpTransport.session.integration.test.ts` (`DiagnosticSession` over `TcpTransport` whose fake
+  socket plays the simulated Golf through `bridgeToMock`, see [simulator](../simulator.md)), the
+  Wi-Fi cases in `connectionService.test.ts`, `diagnoseFailure.test.ts` and
+  `ConnectionScreen.test.tsx`.
+- **Out of scope:** discovering the adapter address automatically (mDNS / UDP broadcast), Wi-Fi
+  networks with a password, classic Bluetooth (plan 27). Verifying a real Wi-Fi adapter on Android
+  and iOS is on-car pending (plan 26 § Deferred).
+
 ## Connection diagnostics panel
 
 - `ui/ConnectionDiagnostics.tsx`, mounted under the error `Panel` on `ConnectionScreen`, renders
@@ -225,16 +286,23 @@ no-op.
   **Details** (closed by default) shows this attempt's last 20 adapter-log entries (`» tx` / `« rx`,
   a bare-CR wake-up as `(wake-up)`), the `linkStore` values when present (MTU, payload, service,
   write mode), the device name/id of **this attempt** (`linkStore.device` — `sessionStore` only learns
-  the device on success and keeps the previous one after a drop) and the furthest stage reached, with
+  the device on success and keeps the previous one after a drop), "Link: Wi-Fi (TCP socket) to
+  `<host>:<port>`" for a Wi-Fi attempt, and the furthest stage reached, with
   **Copy details**
   (`Share.share({ message })` — no clipboard dependency) and **Open error log** (`/error-log`).
 - The rules are the pure `api/diagnoseFailure.ts` (`diagnoseFailure(input): FailureDiagnosis`),
-  first match wins. Stages: `bluetooth | transport | init | probe | identify`.
-  1. Real adapter and the radio is off / unauthorized / unsupported → `bluetooth` (the
-     `BluetoothPrompt` wording; a still-settling radio is not evidence).
+  first match wins. Stages: `bluetooth | transport | init | probe | identify` (the `transport` chip
+  reads "Wi-Fi link" for the Wi-Fi source — `stageLabel(stage, source)`).
+  1. Bluetooth source and the radio is off / unauthorized / unsupported → `bluetooth` (the
+     `BluetoothPrompt` wording; a still-settling radio is not evidence). - 1b. Wi-Fi source and the error matches `ECONNREFUSED | ETIMEDOUT | EHOSTUNREACH |
+ENETUNREACH`, "connection refused", "no route to host", "network is unreachable" or
+     `TcpTransport`'s own wording → `transport`: "The phone is not on the adapter's Wi-Fi network,
+     or the adapter uses a different address", with: join the `WiFi_OBDII` network (Android:
+     _Stay connected_), check `192.168.0.10`, port `35000`, turn mobile data off, allow Local
+     Network on iPhone (plan 26).
   2. Error `No suitable notify…` → `transport`: not a serial-over-BLE adapter, maybe classic
      Bluetooth (SPP) — not supported yet (plan 27).
-  3. Error mentions permission → `bluetooth` (permission needed).
+  3. Error mentions permission (not on Wi-Fi) → `bluetooth` (permission needed).
   4. A timeout whose last command was `ATZ` → `init`: "accepted the link but did not answer `ATZ` —
      it is unpowered or asleep".
   5. "vehicle isn't responding" (DiagnosticSession's probe error) → `probe`, ignition guidance —
@@ -243,7 +311,8 @@ no-op.
      entries are joined with whitespace removed first: on BLE each entry is one notification (≤ 20
      bytes at MTU 23), so the message can be split across two.
   7. A timeout whose last command was an OBD request → `identify`.
-  8. Anything else → `transport` with the raw error.
+  8. Anything else → `transport` with the raw error. Rules 4, 7 and 8 word their link suggestions
+     for the source (the Wi-Fi network instead of Bluetooth).
 - The panel only feeds the classifier entries newer than `linkStore.attemptStartedAt`, so an older
   session's traffic cannot mislead it. `formatDiagnosticsReport` builds the shared text.
 
@@ -288,5 +357,10 @@ the app never lists it." The connection flow handles it as follows:
 - A 16-byte coding write succeeds over a BLE link stuck at MTU 23 (unit test through a BLE fake).
 - A late reply after a timeout is never attributed to the next command; an adapter that went to
   sleep is woken before the next command (unit tests against the simulator).
+- Settings → Developer & simulator → **Wi-Fi adapter** → Connect with no adapter reachable fails
+  within 5 s and the diagnostics panel shows the join-the-network suggestion (unit + component
+  tests). Switching between Simulator / Bluetooth / Wi-Fi never constructs a `BleManager` unless
+  Bluetooth is selected, not even when the Connect screen unmounts (`useScan`'s `stop()` touches
+  the BLE stack only after a scan was started). A real Wi-Fi ELM327 on Android and iOS: on-car pending.
 - On-car pending (plan 12, deferred): the Vgate's real sleep delay and whether a bare `\r` wakes it,
   the negotiated MTU on the owner's phones, and one walk-out-of-range reconnect + flap-guard check.

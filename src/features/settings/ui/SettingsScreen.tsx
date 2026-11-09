@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Linking, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ScrollView, YStack, XStack, Text, Paragraph, Button, Card, Input, Spinner } from 'tamagui';
@@ -29,6 +29,12 @@ import { APP_BUILD, APP_NAME, APP_VERSION, DOCS_URL } from '@/shared/lib/appInfo
 import { PRIVACY_POLICY, PRIVACY_POLICY_UPDATED } from '../model/privacyPolicy';
 import { LabelPacksSection } from './LabelPacksSection';
 import { SeedKeysSection } from './SeedKeysSection';
+import {
+  DEFAULT_WIFI_ENDPOINT,
+  formatEndpoint,
+  isValidHost,
+  parseEndpoint,
+} from '@/shared/transports/tcp/endpoint';
 
 const ACCENT = '#2bb673';
 
@@ -842,6 +848,89 @@ function HintsAndResetSection({ resetAppData }: { resetAppData?: ResetAppData })
   );
 }
 
+/** The Wi-Fi adapter's address (plan 26), shown under the adapter-source segment while Wi-Fi is
+ *  selected. Host and port are edited as text; a valid pair is saved at once, an invalid one shows
+ *  why and leaves the saved address untouched. */
+function WifiEndpointSection() {
+  const wifi = useSettingsStore((st) => st.wifi);
+  const setWifi = useSettingsStore((st) => st.setWifi);
+  const [host, setHost] = useState(wifi.host);
+  const [port, setPort] = useState(String(wifi.port));
+  // The address these fields last showed or saved. When the stored address changes from elsewhere
+  // (a data restore, another setWifi caller) the fields follow it instead of keeping stale text —
+  // otherwise the next keystroke would pair with the stale other field and overwrite the restore.
+  const shown = useRef(formatEndpoint(wifi));
+  useEffect(() => {
+    const stored = formatEndpoint(wifi);
+    if (stored === shown.current) return;
+    shown.current = stored;
+    setHost(wifi.host);
+    setPort(String(wifi.port));
+  }, [wifi]);
+
+  const parsed = parseEndpoint(`${host.trim()}:${port.trim()}`);
+  const problem = parsed
+    ? null
+    : !isValidHost(host.trim())
+      ? 'Enter an IP address (like 192.168.0.10) or a host name.'
+      : 'Enter a port from 1 to 65535.';
+
+  const edit = (nextHost: string, nextPort: string) => {
+    setHost(nextHost);
+    setPort(nextPort);
+    const ep = parseEndpoint(`${nextHost.trim()}:${nextPort.trim()}`);
+    if (ep) {
+      shown.current = formatEndpoint(ep);
+      setWifi(ep);
+    }
+  };
+
+  return (
+    <YStack gap="$2" testID="settings-wifi">
+      <SubLabel>Wi-Fi adapter address</SubLabel>
+      <XStack gap="$2" alignItems="center">
+        <Input
+          flex={3}
+          value={host}
+          onChangeText={(t) => edit(t, port)}
+          placeholder={DEFAULT_WIFI_ENDPOINT.host}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          accessibilityLabel="Wi-Fi adapter host"
+        />
+        <Input
+          flex={2}
+          value={port}
+          onChangeText={(t) => edit(host, t)}
+          placeholder={String(DEFAULT_WIFI_ENDPOINT.port)}
+          keyboardType="number-pad"
+          accessibilityLabel="Wi-Fi adapter port"
+        />
+      </XStack>
+      {problem ? (
+        <Paragraph color="$red10" fontSize="$2" testID="settings-wifi-error">
+          {problem} The app keeps using {formatEndpoint(wifi)}.
+        </Paragraph>
+      ) : null}
+      <Paragraph theme="alt2" fontSize="$1">
+        Most Wi-Fi OBD2 adapters (network “WiFi_OBDII”) listen on{' '}
+        {formatEndpoint(DEFAULT_WIFI_ENDPOINT)}. Join the adapter’s network in the phone’s Wi-Fi
+        settings before connecting.
+      </Paragraph>
+      {formatEndpoint(wifi) !== formatEndpoint(DEFAULT_WIFI_ENDPOINT) ? (
+        <Button
+          size="$2"
+          alignSelf="flex-start"
+          onPress={() => edit(DEFAULT_WIFI_ENDPOINT.host, String(DEFAULT_WIFI_ENDPOINT.port))}
+        >
+          Use the default address
+        </Button>
+      ) : null}
+    </YStack>
+  );
+}
+
 /** **Developer & simulator** (plan 07): collapsed by default. The adapter source, the simulated
  *  car, injected codes and link tests, the adapter log with the replay-fixture export, and the
  *  hints / reset controls. The simulator banner (plan 01) stays the always-on indicator. */
@@ -883,16 +972,24 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
                   onPress={() => void connectionService.switchAdapterSource('ble')}
                 />
                 <Seg
+                  active={s.adapterSource === 'wifi'}
+                  label="Wi-Fi adapter"
+                  onPress={() => void connectionService.switchAdapterSource('wifi')}
+                />
+                <Seg
                   active={s.adapterSource === 'mock'}
                   label="Simulator (no car)"
                   onPress={() => void connectionService.switchAdapterSource('mock')}
                 />
               </XStack>
               <Paragraph theme="alt2" fontSize="$1">
-                The simulator emulates a real ECU so every screen works with no hardware. A banner
-                stays visible while it is on. Switching disconnects the current session.
+                Bluetooth LE and Wi-Fi ELM327 adapters connect to a real car. The simulator emulates
+                a real ECU so every screen works with no hardware; a banner stays visible while it
+                is on. Switching disconnects the current session.
               </Paragraph>
             </YStack>
+
+            {s.adapterSource === 'wifi' ? <WifiEndpointSection /> : null}
 
             {s.adapterSource === 'mock' ? (
               <>

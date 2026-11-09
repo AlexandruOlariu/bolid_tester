@@ -28,8 +28,15 @@ import {
   inferProvider,
   isAiProviderId,
 } from '@/shared/obd-core';
+import {
+  DEFAULT_WIFI_ENDPOINT,
+  isValidEndpoint,
+  type TcpEndpoint,
+} from '@/shared/transports/tcp/endpoint';
 
-export type AdapterSource = 'mock' | 'ble';
+/** Where the app gets its adapter: the simulator, a Bluetooth LE ELM327, or a Wi-Fi ELM327 over
+ *  TCP (plan 26). */
+export type AdapterSource = 'mock' | 'ble' | 'wifi';
 export type ThemePref = 'system' | 'light' | 'dark';
 
 /** Structured-output mode for the AI request (see obd-core `buildChatRequestBody`). */
@@ -68,6 +75,8 @@ export interface SettingsState {
   autoSelectByVin: boolean;
   theme: ThemePref;
   ai: AiSettings;
+  /** The Wi-Fi adapter's TCP address (plan 26), used when `adapterSource` is `'wifi'`. */
+  wifi: TcpEndpoint;
   setAdapterSource: (s: AdapterSource) => void;
   setSimulatedVehicle: (id: string) => void;
   setInjectedDtcs: (codes: string[]) => void;
@@ -76,6 +85,8 @@ export interface SettingsState {
   setAutoSelectByVin: (v: boolean) => void;
   setTheme: (t: ThemePref) => void;
   setAi: (patch: Partial<AiSettings>) => void;
+  /** Change the Wi-Fi endpoint; an invalid result (bad host, port out of 1–65535) is ignored. */
+  setWifi: (patch: Partial<TcpEndpoint>) => void;
 }
 
 export const DEFAULT_AI_SETTINGS: AiSettings = {
@@ -107,8 +118,9 @@ export function parseDtcList(text: string): string[] {
 
 /** Persisted settings schema version. v2 = production defaults (real adapter, no injected DTC);
  *  v3 = auto-reconnect on by default (plan 12); v4 = VIN auto-select of garage cars (plan 06);
- *  v5 = AI provider presets (plan 19); v6 = metric only, the dead `units` field dropped (plan 07). */
-export const SETTINGS_VERSION = 6;
+ *  v5 = AI provider presets (plan 19); v6 = metric only, the dead `units` field dropped (plan 07);
+ *  v7 = the Wi-Fi adapter endpoint (plan 26). */
+export const SETTINGS_VERSION = 7;
 
 /** Step a persisted blob up to `SETTINGS_VERSION`. Each step only fills *missing* fields with the new
  *  default — an explicit stored choice always survives (a tester who chose the simulator, or turned
@@ -118,7 +130,8 @@ export const SETTINGS_VERSION = 6;
  *   - v3 → v4: `autoSelectByVin: true`.
  *   - v4 → v5: `ai.provider` inferred from the stored server URL (`inferProvider`: api.openai.com →
  *     openai, api.anthropic.com → anthropic, blank → local, anything else → custom).
- *   - v5 → v6: the app is metric only (plan 07): a stale `units` key is dropped. */
+ *   - v5 → v6: the app is metric only (plan 07): a stale `units` key is dropped.
+ *   - v6 → v7: `wifi` (the Wi-Fi adapter endpoint, plan 26) defaults to `192.168.0.10:35000`. */
 export function migrateSettings(persisted: unknown, fromVersion: number): Partial<SettingsState> {
   let p = { ...((persisted ?? {}) as Partial<SettingsState>) };
   if (fromVersion < 2) {
@@ -141,6 +154,7 @@ export function migrateSettings(persisted: unknown, fromVersion: number): Partia
     };
   }
   if (fromVersion < 6) p = withoutUnits(p);
+  if (fromVersion < 7) p = { ...p, wifi: p.wifi ?? { ...DEFAULT_WIFI_ENDPOINT } };
   return p;
 }
 
@@ -167,6 +181,7 @@ export const useSettingsStore = create<SettingsState>()(
       autoSelectByVin: true,
       theme: 'dark',
       ai: DEFAULT_AI_SETTINGS,
+      wifi: { ...DEFAULT_WIFI_ENDPOINT },
       setAdapterSource: (adapterSource) => set({ adapterSource }),
       setSimulatedVehicle: (simulatedVehicleId) => set({ simulatedVehicleId }),
       setInjectedDtcs: (injectedDtcs) => set({ injectedDtcs }),
@@ -174,6 +189,10 @@ export const useSettingsStore = create<SettingsState>()(
       setAutoReconnect: (autoReconnect) => set({ autoReconnect }),
       setAutoSelectByVin: (autoSelectByVin) => set({ autoSelectByVin }),
       setTheme: (theme) => set({ theme }),
+      setWifi: (patch) => {
+        const next = { ...useSettingsStore.getState().wifi, ...patch };
+        if (isValidEndpoint(next)) set({ wifi: { host: next.host, port: next.port } });
+      },
       setAi: (patch) => {
         const prev = useSettingsStore.getState().ai;
         const { provider, ...rest } = patch;
@@ -210,6 +229,7 @@ export const useSettingsStore = create<SettingsState>()(
         autoSelectByVin: s.autoSelectByVin,
         theme: s.theme,
         ai: redactApiKey(s.ai),
+        wifi: s.wifi,
       }),
       // Deep-merge `ai` so new default fields survive an older persisted blob. A *legacy* blob may
       // still carry a plaintext apiKey here; it lands in runtime state, and `hydrateApiKey()` (below)
@@ -219,7 +239,9 @@ export const useSettingsStore = create<SettingsState>()(
         const p = withoutUnits((persisted ?? {}) as Partial<SettingsState>);
         const ai = { ...current.ai, ...(p.ai ?? {}) };
         if (!isAiProviderId(ai.provider)) ai.provider = inferProvider(ai.baseUrl);
-        return { ...current, ...p, ai };
+        // A restored or hand-edited file with an unusable endpoint keeps the current one.
+        const wifi = isValidEndpoint(p.wifi) ? p.wifi : current.wifi;
+        return { ...current, ...p, ai, wifi };
       },
       // Once the persisted blob is in memory, reconcile the apiKey with the keystore (migrate a legacy
       // plaintext key out of the file, or load the stored key into runtime state).

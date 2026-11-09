@@ -40,6 +40,9 @@ import {
   useSettingsStore,
 } from './settingsStore';
 import { setSecureStoreModule } from './secureApiKey';
+import { DEFAULT_WIFI_ENDPOINT } from '@/shared/transports/tcp/endpoint';
+
+const WIFI = DEFAULT_WIFI_ENDPOINT;
 
 beforeAll(() => setSecureStoreModule(memoryKeystore));
 afterAll(() => setSecureStoreModule(undefined));
@@ -62,9 +65,18 @@ describe('settings defaults', () => {
     expect(useSettingsStore.getInitialState().autoSelectByVin).toBe(true);
   });
 
-  it('persists at schema version 6', () => {
-    expect(SETTINGS_VERSION).toBe(6);
-    expect(useSettingsStore.persist.getOptions().version).toBe(6);
+  it('persists at schema version 7', () => {
+    expect(SETTINGS_VERSION).toBe(7);
+    expect(useSettingsStore.persist.getOptions().version).toBe(7);
+  });
+
+  it('a fresh install has the default Wi-Fi adapter endpoint, persisted (plan 26)', () => {
+    expect(useSettingsStore.getInitialState().wifi).toEqual(DEFAULT_WIFI_ENDPOINT);
+    const partialize = useSettingsStore.persist.getOptions().partialize!;
+    expect(partialize(useSettingsStore.getInitialState())).toHaveProperty('wifi', {
+      host: '192.168.0.10',
+      port: 35000,
+    });
   });
 
   it('is metric only: no units field in state or in the written file (plan 07)', () => {
@@ -89,6 +101,7 @@ describe('migrateSettings', () => {
       injectedDtcs: ['P0299'],
       autoReconnect: false,
       autoSelectByVin: true,
+      wifi: DEFAULT_WIFI_ENDPOINT,
     });
   });
 
@@ -99,22 +112,25 @@ describe('migrateSettings', () => {
       injectedDtcs: [],
       autoReconnect: true,
       autoSelectByVin: true,
+      wifi: DEFAULT_WIFI_ENDPOINT,
     });
     expect(migrateSettings(undefined, 1)).toEqual({
       adapterSource: 'ble',
       injectedDtcs: [],
       autoReconnect: true,
       autoSelectByVin: true,
+      wifi: DEFAULT_WIFI_ENDPOINT,
     });
   });
 
   it('v2 → v4 keeps a stored auto-reconnect choice and defaults a missing one to on', () => {
     const blob = { adapterSource: 'mock' as const, injectedDtcs: ['P0420'], autoReconnect: false };
-    expect(migrateSettings(blob, 2)).toEqual({ ...blob, autoSelectByVin: true });
+    expect(migrateSettings(blob, 2)).toEqual({ ...blob, autoSelectByVin: true, wifi: WIFI });
     expect(migrateSettings({ theme: 'light' as const }, 2)).toEqual({
       theme: 'light',
       autoReconnect: true,
       autoSelectByVin: true,
+      wifi: WIFI,
     });
   });
 
@@ -125,10 +141,11 @@ describe('migrateSettings', () => {
       autoReconnect: false,
       theme: 'light' as const,
     };
-    expect(migrateSettings(blob, 3)).toEqual({ ...blob, autoSelectByVin: true });
+    expect(migrateSettings(blob, 3)).toEqual({ ...blob, autoSelectByVin: true, wifi: WIFI });
     expect(migrateSettings({ ...blob, autoSelectByVin: false }, 3)).toEqual({
       ...blob,
       autoSelectByVin: false,
+      wifi: WIFI,
     });
   });
 
@@ -147,26 +164,35 @@ describe('migrateSettings', () => {
       jsonMode: 'schema',
     });
     // a blob without an ai section stays without one (merge fills the defaults)
-    expect(migrateSettings({ theme: 'dark' as const }, 4)).toEqual({ theme: 'dark' });
+    expect(migrateSettings({ theme: 'dark' as const }, 4)).toEqual({ theme: 'dark', wifi: WIFI });
   });
 
   it('v5 → v6 drops the dead units key and keeps everything else (plan 07)', () => {
     const blob = { theme: 'light' as const, pollIntervalMs: 500 };
-    expect(migrateSettings({ ...blob, units: 'metric' }, 5)).toEqual(blob);
+    expect(migrateSettings({ ...blob, units: 'metric' }, 5)).toEqual({ ...blob, wifi: WIFI });
     expect(migrateSettings({ ...blob, units: 'metric' }, 1)).not.toHaveProperty('units');
-    expect(migrateSettings(blob, 5)).toEqual(blob);
+    expect(migrateSettings(blob, 5)).toEqual({ ...blob, wifi: WIFI });
   });
 
-  it('is the identity from v6 on', () => {
+  it('v6 → v7 fills the Wi-Fi endpoint and keeps a stored one (plan 26)', () => {
+    const blob = { adapterSource: 'ble' as const, theme: 'light' as const };
+    expect(migrateSettings(blob, 6)).toEqual({ ...blob, wifi: WIFI });
+    const custom = { ...blob, wifi: { host: '192.168.4.1', port: 23 } };
+    expect(migrateSettings(custom, 6)).toEqual(custom);
+    // A fresh copy: the frozen default is never handed out as mutable state.
+    expect(migrateSettings(blob, 6).wifi).not.toBe(DEFAULT_WIFI_ENDPOINT);
+  });
+
+  it('is the identity from v7 on', () => {
     const blob = {
       adapterSource: 'mock' as const,
       injectedDtcs: ['P0420'],
       theme: 'light' as const,
       ai: { ...DEFAULT_AI_SETTINGS, provider: 'local' as const, baseUrl: 'https://api.openai.com' },
     };
-    expect(migrateSettings(blob, 6)).toEqual(blob);
+    expect(migrateSettings(blob, 7)).toEqual(blob);
     const partial = { theme: 'dark' as const };
-    expect(migrateSettings(partial, 6)).toEqual(partial);
+    expect(migrateSettings(partial, 7)).toEqual(partial);
   });
 });
 
@@ -385,5 +411,51 @@ describe('parseDtcList (Custom… injection)', () => {
     expect(parseDtcList('P4135, C8000, UF123, P3FFF')).toEqual(['P3FFF']);
     expect(parseDtcList('')).toEqual([]);
     expect(parseDtcList(' , ,')).toEqual([]);
+  });
+});
+
+describe('Wi-Fi adapter endpoint (plan 26)', () => {
+  beforeEach(() => {
+    files.clear();
+    useSettingsStore.setState(useSettingsStore.getInitialState(), true);
+  });
+
+  const writeBlob = (state: Record<string, unknown>, version: number) =>
+    files.set(SETTINGS_FILE, JSON.stringify({ state, version }));
+
+  it('a v6 blob rehydrates with the default endpoint and keeps its adapter choice', async () => {
+    useSettingsStore.setState({ wifi: { host: '10.0.0.9', port: 1 } });
+    writeBlob({ adapterSource: 'mock', injectedDtcs: [], theme: 'light' }, 6);
+    await useSettingsStore.persist.rehydrate();
+    const s = useSettingsStore.getState();
+    expect(s.wifi).toEqual(DEFAULT_WIFI_ENDPOINT);
+    expect(s.adapterSource).toBe('mock');
+  });
+
+  it('a v7 blob keeps its Wi-Fi source and endpoint', async () => {
+    writeBlob({ adapterSource: 'wifi', wifi: { host: '192.168.4.1', port: 23 } }, 7);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().adapterSource).toBe('wifi');
+    expect(useSettingsStore.getState().wifi).toEqual({ host: '192.168.4.1', port: 23 });
+  });
+
+  it('an unusable stored endpoint is ignored on rehydrate', async () => {
+    writeBlob({ wifi: { host: 'bad host', port: 99999 } }, 7);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().wifi).toEqual(DEFAULT_WIFI_ENDPOINT);
+  });
+
+  it('setWifi applies a valid patch and ignores an invalid one', () => {
+    useSettingsStore.getState().setWifi({ host: '192.168.4.1' });
+    expect(useSettingsStore.getState().wifi).toEqual({ host: '192.168.4.1', port: 35000 });
+    useSettingsStore.getState().setWifi({ port: 23 });
+    expect(useSettingsStore.getState().wifi).toEqual({ host: '192.168.4.1', port: 23 });
+    useSettingsStore.getState().setWifi({ port: 0 });
+    useSettingsStore.getState().setWifi({ host: '192.168.0.300' });
+    expect(useSettingsStore.getState().wifi).toEqual({ host: '192.168.4.1', port: 23 });
+    expect(JSON.parse(files.get(SETTINGS_FILE) ?? '{}').state.wifi).toEqual({
+      host: '192.168.4.1',
+      port: 23,
+    });
   });
 });

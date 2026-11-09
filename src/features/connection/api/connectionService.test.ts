@@ -32,9 +32,13 @@ import {
   disconnect,
   FLAP_PAUSED_MESSAGE,
   resetForRestore,
+  setTcpSocketFactory,
   switchAdapterSource,
   switchToRealAdapter,
 } from './connectionService';
+import { bridgeToMock } from '@/shared/obd-core/transport/testing/bridge';
+import { FakeSocket, socketOverBridge } from '@/shared/transports/tcp/testing/fakeSocket';
+import { DEFAULT_WIFI_ENDPOINT } from '@/shared/transports/tcp/endpoint';
 import { diagnoseFailure } from './diagnoseFailure';
 import { useLinkStore } from '../model/linkStore';
 
@@ -313,5 +317,92 @@ describe('simulator "fail next connect" (plan 12)', () => {
     } finally {
       spy.mockRestore();
     }
+  });
+});
+
+describe('Wi-Fi adapter (plan 26)', () => {
+  let sockets: FakeSocket[] = [];
+  /** Every Wi-Fi connect plays the simulated Golf through the test bridge. */
+  const bridgedGolf = async () => {
+    const socket = socketOverBridge(bridgeToMock(scenarios.buildScenario('golf-plus-2009-20tdi')));
+    sockets.push(socket);
+    return socket;
+  };
+
+  beforeEach(() => {
+    sockets = [];
+    useSettingsStore.setState({
+      adapterSource: 'wifi',
+      wifi: { ...DEFAULT_WIFI_ENDPOINT },
+      autoReconnect: false,
+    });
+  });
+  afterEach(() => {
+    setTcpSocketFactory(undefined);
+    jest.useRealTimers();
+    useSettingsStore.setState({ autoReconnect: true });
+  });
+
+  it('connects over TCP to the endpoint from settings and publishes the session', async () => {
+    setTcpSocketFactory(bridgedGolf);
+    await connect();
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('connected');
+    expect(s.deviceId).toBe('192.168.0.10:35000');
+    expect(s.deviceName).toBe('Wi-Fi ELM327');
+    expect(s.info?.protocol).toBe('ISO_15765_4_CAN_11_500');
+    expect(useLinkStore.getState().kind).toBe('wifi');
+    expect(useLinkStore.getState().link).toBeNull(); // no BLE link facts for a socket
+    expect(adapterLogOrigin()).toMatchObject({ source: 'car', deviceId: '192.168.0.10:35000' });
+    expect(adapterLogSnapshot().some((e) => e.dir === 'tx' && /ATZ/.test(e.text))).toBe(true);
+
+    await disconnect();
+    expect(sockets[0].destroyed).toBe(1);
+    expect(useSessionStore.getState().status).toBe('disconnected');
+  });
+
+  it('a refused connection ends in error with the join-the-network diagnosis', async () => {
+    setTcpSocketFactory(async () => {
+      const socket = new FakeSocket();
+      setTimeout(() => socket.emitError(new Error('connect ECONNREFUSED 192.168.0.10:35000')), 0);
+      return socket;
+    });
+    await expect(connect()).rejects.toThrow(/Could not reach the Wi-Fi adapter/);
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('error');
+    expect(useLinkStore.getState().stage).toBe('transport');
+    expect(useLinkStore.getState().device).toEqual({
+      id: '192.168.0.10:35000',
+      name: 'Wi-Fi ELM327',
+    });
+    const d = diagnoseFailure({
+      error: s.error,
+      btState: 'checking',
+      adapterSource: 'wifi',
+      logTail: [],
+      deviceName: 'Wi-Fi ELM327',
+    });
+    expect(d.explanation).toMatch(/not on the adapter’s Wi-Fi network/);
+  });
+
+  it('no adapter on the network: fails within 5 s', async () => {
+    jest.useFakeTimers();
+    setTcpSocketFactory(async () => new FakeSocket()); // never connects
+    const failing = connect().catch((e: unknown) => e);
+    await jest.advanceTimersByTimeAsync(4999);
+    expect(useSessionStore.getState().status).not.toBe('error');
+    await jest.advanceTimersByTimeAsync(1);
+    expect(await failing).toBeInstanceOf(Error);
+    expect(useSessionStore.getState().status).toBe('error');
+    expect(useSessionStore.getState().error).toMatch(/within 5 s \(ETIMEDOUT\)/);
+  });
+
+  it('an unsolicited socket close is handled as a link loss', async () => {
+    setTcpSocketFactory(bridgedGolf);
+    await connect();
+    sockets[0].emitClose();
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('disconnected');
+    expect(s.error).toMatch(/Adapter link lost/);
   });
 });

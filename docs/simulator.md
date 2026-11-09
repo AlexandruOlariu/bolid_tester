@@ -139,6 +139,14 @@ speed; non-zero to emulate K-line in the UI).
   no reply to ATZ** arms exactly that (`dropResponses(1, { includeAt: true })`) for the next
   simulator connect. A bare `\r` is never dropped; calling it again replaces the budget.
 - For a **late** reply (rather than none), set `latencyMs` above the client's timeout.
+- **Test bridge** (plan 26, reused by plans 27 and 28) —
+  `transport/testing/bridge.ts` → `bridgeToMock(scenario)` returns `{ write, onData, mock }`: a
+  connected `MockTransport` wrapped as a raw byte pipe, so a fake socket / device can play the
+  adapter for a **new** `Transport` and that transport is integration-tested through the real
+  `DiagnosticSession` with no hardware. `shared/transports/tcp/testing/fakeSocket.ts`
+  (`socketOverBridge(bridgeToMock(buildScenario('golf-plus-2009-20tdi')))`) is the Wi-Fi example:
+  `TcpTransport.session.integration.test.ts` connects, identifies the Golf (CAN 11/500, VIN, 16
+  PIDs) and reads `03` over it. Not exported from the obd-core barrel; no protocol change.
 
 ## Replay fixtures
 

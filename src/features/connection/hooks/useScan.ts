@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { State } from 'react-native-ble-plx';
-import { getBleManager, looksLikeAdapter, OBD_SERVICE_UUIDS } from '@/shared/transports/ble/manager';
+import {
+  getBleManager,
+  looksLikeAdapter,
+  OBD_SERVICE_UUIDS,
+} from '@/shared/transports/ble/manager';
 import { requestBlePermissions } from '@/shared/transports/ble/permissions';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
@@ -18,17 +22,22 @@ const BLUETOOTH_OFF_MSG = 'Bluetooth is off. Turn Bluetooth on, then scan again.
 export function useScan() {
   const { scanning, devices, setScanning, upsert, clear } = useScanStore();
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Set once this hook has used the BLE stack. Until then there is no scan to stop, and `stop()`
+  // (also run on unmount) must not construct a BleManager: the simulator and Wi-Fi sources never
+  // touch Bluetooth, and on iOS creating the manager can raise the Bluetooth permission prompt.
+  const bleUsedRef = useRef(false);
 
   const stop = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    getBleManager().stopDeviceScan();
+    if (bleUsedRef.current) getBleManager().stopDeviceScan();
     setScanning(false);
   }, [setScanning]);
 
   const start = useCallback(async () => {
+    bleUsedRef.current = true;
     if (!(await requestBlePermissions())) {
       setScanning(false);
       useSessionStore.getState().setError(PERMISSION_DENIED_MSG);

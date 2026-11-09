@@ -4,9 +4,10 @@
  *  Rules are evaluated in order; the first match wins. See docs/features/connection.md. */
 
 import type { BleLinkInfo } from '@/shared/transports/ble/BleTransport';
+import type { AdapterSource } from '@/shared/state/settingsStore';
 
-/** Where a connect attempt failed: the phone's radio, the BLE link, the adapter's own init, the
- *  first request to the car (`0100`), or reading the car's details afterwards. */
+/** Where a connect attempt failed: the phone's radio, the link (BLE or Wi-Fi), the adapter's own
+ *  init, the first request to the car (`0100`), or reading the car's details afterwards. */
 export type ConnectStage = 'bluetooth' | 'transport' | 'init' | 'probe' | 'identify';
 
 export type BtRadioState = 'ready' | 'poweredOff' | 'unauthorized' | 'unsupported' | 'checking';
@@ -22,7 +23,7 @@ export interface FailureDiagnosis {
 export interface DiagnoseInput {
   error: string | null;
   btState: BtRadioState;
-  adapterSource: 'mock' | 'ble';
+  adapterSource: AdapterSource;
   /** The last ≤ 20 adapter-log entries of this attempt (oldest first). */
   logTail: { dir: 'tx' | 'rx'; text: string }[];
   deviceName: string | null;
@@ -35,6 +36,29 @@ export const STAGE_LABELS: Record<ConnectStage, string> = {
   init: 'Adapter start-up',
   probe: 'Car not answering',
   identify: 'Reading car details',
+};
+
+/** The stage chip's label for `source`: the link stage of a Wi-Fi adapter is its Wi-Fi link. */
+export function stageLabel(stage: ConnectStage, source: AdapterSource): string {
+  return stage === 'transport' && source === 'wifi' ? 'Wi-Fi link' : STAGE_LABELS[stage];
+}
+
+/** Socket errors that mean the phone cannot reach the adapter's address at all: TcpTransport's
+ *  own wrappers plus the errno names / texts Android and iOS socket errors carry (plan 26). */
+const WIFI_UNREACHABLE =
+  /ECONNREFUSED|ETIMEDOUT|EHOSTUNREACH|ENETUNREACH|Could not reach the Wi-Fi adapter|No answer from the Wi-Fi adapter|connection refused|no route to host|network is unreachable/i;
+
+const WIFI_UNREACHABLE_DIAGNOSIS: FailureDiagnosis = {
+  stage: 'transport',
+  title: 'Can’t reach the Wi-Fi adapter',
+  explanation:
+    'The phone is not on the adapter’s Wi-Fi network, or the adapter uses a different address.',
+  suggestions: [
+    'Join the adapter’s Wi-Fi network (usually “WiFi_OBDII”, no password). On Android, choose “Stay connected” if the phone warns the network has no internet.',
+    'Check the adapter’s address: most use 192.168.0.10, port 35000 (Settings → Developer & simulator → Adapter source).',
+    'Turn mobile data off, so the phone does not send the connection over the mobile network instead.',
+    'On iPhone, allow Local Network for Bolid Tester (Settings → Privacy & Security → Local Network).',
+  ],
 };
 
 const BT_PERMISSION: FailureDiagnosis = {
@@ -85,6 +109,8 @@ const isObdCommand = (cmd: string | null) => cmd !== null && /^[0-9A-F]{2,}$/.te
 
 export function diagnoseFailure(input: DiagnoseInput): FailureDiagnosis {
   const error = input.error ?? '';
+  const wifi = input.adapterSource === 'wifi';
+  const linkName = wifi ? 'Wi-Fi link' : 'Bluetooth link';
   const last = lastTx(input.logTail);
   const timeout = /timeout|timed out/i.test(error);
   // On BLE each rx log entry is one GATT notification (≤ 20 bytes at MTU 23), so the adapter's
@@ -100,6 +126,9 @@ export function diagnoseFailure(input: DiagnoseInput): FailureDiagnosis {
   if (input.adapterSource === 'ble' && input.btState !== 'ready' && input.btState !== 'checking') {
     return bluetoothDiagnosis(input.btState);
   }
+
+  // 1b. Wi-Fi (plan 26): the socket never opened — wrong network or wrong address.
+  if (wifi && WIFI_UNREACHABLE.test(error)) return WIFI_UNREACHABLE_DIAGNOSIS;
 
   // 2. Connected over BLE, but no serial-over-BLE characteristic pair (BleTransport's error).
   if (/No suitable notify/i.test(error)) {
@@ -118,7 +147,7 @@ export function diagnoseFailure(input: DiagnoseInput): FailureDiagnosis {
   }
 
   // 3. Permission denied (the request in connectionService, or a scan).
-  if (/permission/i.test(error)) return BT_PERMISSION;
+  if (!wifi && /permission/i.test(error)) return BT_PERMISSION;
 
   // 4. The link came up but the adapter never answered its reset.
   if (timeout && (last === 'ATZ' || /"ATZ"/.test(error))) {
@@ -131,7 +160,9 @@ export function diagnoseFailure(input: DiagnoseInput): FailureDiagnosis {
         'Check the adapter is pushed fully into the OBD2 port and its light is on.',
         'Wake it: unplug the adapter for 10 seconds, plug it back in, then reconnect.',
         'Move the phone closer to the adapter.',
-        'Still failing? Remove the adapter from the phone’s Bluetooth list and scan again.',
+        wifi
+          ? 'Still failing? Check the phone is still on the adapter’s Wi-Fi network.'
+          : 'Still failing? Remove the adapter from the phone’s Bluetooth list and scan again.',
       ],
     };
   }
@@ -177,7 +208,7 @@ export function diagnoseFailure(input: DiagnoseInput): FailureDiagnosis {
       title: 'The link stopped answering',
       explanation:
         'The car answered at first, but a request timed out while the app was reading the car’s ' +
-        'details — the Bluetooth link or the adapter stalled.',
+        `details — the ${linkName} or the adapter stalled.`,
       suggestions: [
         'Reconnect.',
         'Move the phone closer to the adapter.',
@@ -197,11 +228,19 @@ export function diagnoseFailure(input: DiagnoseInput): FailureDiagnosis {
     suggestions: [
       'Check the adapter is plugged in and its light is on.',
       'Move the phone closer to the adapter.',
-      'Turn Bluetooth off and on again, then reconnect.',
+      wifi
+        ? 'Rejoin the adapter’s Wi-Fi network, then reconnect.'
+        : 'Turn Bluetooth off and on again, then reconnect.',
       'Open the error log for the technical details.',
     ],
   };
 }
+
+const SOURCE_LABELS: Record<AdapterSource, string> = {
+  ble: 'Bluetooth adapter',
+  wifi: 'Wi-Fi adapter',
+  mock: 'Simulator',
+};
 
 export interface DiagnosticsReportInput {
   diagnosis: FailureDiagnosis;
@@ -212,7 +251,7 @@ export interface DiagnosticsReportInput {
   reached: ConnectStage | null;
   deviceId: string | null;
   deviceName: string | null;
-  adapterSource: 'mock' | 'ble';
+  adapterSource: AdapterSource;
 }
 
 /** One adapter-log line as Settings shows it: `» tx` / `« rx`, on one line (rx chunks keep their
@@ -226,16 +265,16 @@ export function formatLogLine(e: { dir: 'tx' | 'rx'; text: string }): string {
 export function formatDiagnosticsReport(r: DiagnosticsReportInput): string {
   const lines = [
     'Bolid Tester — connection diagnostics',
-    `Stage: ${STAGE_LABELS[r.diagnosis.stage]} (${r.diagnosis.stage})`,
+    `Stage: ${stageLabel(r.diagnosis.stage, r.adapterSource)} (${r.diagnosis.stage})`,
     `What happened: ${r.diagnosis.title}. ${r.diagnosis.explanation}`,
     'Try:',
     ...r.diagnosis.suggestions.map((s) => `- ${s}`),
     '',
     `Error: ${r.error ?? '(none)'}`,
-    `Adapter source: ${r.adapterSource === 'ble' ? 'Bluetooth adapter' : 'Simulator'}`,
+    `Adapter source: ${SOURCE_LABELS[r.adapterSource]}`,
     `Device: ${r.deviceName ?? '(unknown)'} [${r.deviceId ?? '-'}]`,
   ];
-  if (r.reached) lines.push(`Got as far as: ${STAGE_LABELS[r.reached]}`);
+  if (r.reached) lines.push(`Got as far as: ${stageLabel(r.reached, r.adapterSource)}`);
   if (r.link) {
     lines.push(
       `Link: MTU ${r.link.mtu} (payload ${r.link.payload} B), service ${r.link.service}, ` +

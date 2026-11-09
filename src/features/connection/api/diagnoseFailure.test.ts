@@ -2,6 +2,7 @@ import {
   diagnoseFailure,
   formatDiagnosticsReport,
   formatLogLine,
+  stageLabel,
   type DiagnoseInput,
 } from './diagnoseFailure';
 
@@ -130,6 +131,46 @@ describe('diagnoseFailure', () => {
     expect(diagnoseFailure({ ...base, error: 'Operation timed out' }).stage).toBe('transport');
   });
 
+  it('wifi: an unreachable adapter address → join-the-network guidance (plan 26)', () => {
+    const wifi = { ...base, adapterSource: 'wifi' as const, btState: 'checking' as const };
+    for (const error of [
+      'Could not reach the Wi-Fi adapter at 192.168.0.10:35000: connect ECONNREFUSED',
+      'No answer from the Wi-Fi adapter at 192.168.0.10:35000 within 5 s (ETIMEDOUT)',
+      'failed to connect to /192.168.0.10 (port 35000): connect failed: EHOSTUNREACH (No route to host)',
+      'connect ENETUNREACH 192.168.0.10:35000',
+      'Auto-reconnect failed after 3 attempts. Last error: Could not reach the Wi-Fi adapter at x',
+    ]) {
+      const d = diagnoseFailure({ ...wifi, error });
+      expect(d.stage).toBe('transport');
+      expect(d.explanation).toBe(
+        'The phone is not on the adapter’s Wi-Fi network, or the adapter uses a different address.',
+      );
+      expect(d.suggestions.join(' ')).toContain('192.168.0.10, port 35000');
+      expect(d.suggestions.join(' ')).toMatch(/mobile data off/);
+    }
+    // The same socket error on Bluetooth is not a Wi-Fi diagnosis.
+    expect(
+      diagnoseFailure({ ...base, error: 'connect ECONNREFUSED 192.168.0.10:35000' }).title,
+    ).toBe('Connection failed');
+    // Wi-Fi never needs the Bluetooth radio, nor its permission.
+    expect(diagnoseFailure({ ...wifi, btState: 'poweredOff', error: 'boom' }).stage).toBe(
+      'transport',
+    );
+    expect(diagnoseFailure({ ...wifi, error: 'permission denied' }).title).toBe(
+      'Connection failed',
+    );
+    // An adapter that accepted the socket but ignored ATZ is still the init rule.
+    expect(
+      diagnoseFailure({
+        ...wifi,
+        error: 'ELM327 timeout after 5000ms for "ATZ"',
+        logTail: [tx('ATZ')],
+      }).suggestions.join(' '),
+    ).toContain('Wi-Fi network');
+    expect(stageLabel('transport', 'wifi')).toBe('Wi-Fi link');
+    expect(stageLabel('transport', 'ble')).toBe('Bluetooth link');
+  });
+
   it('never suggests more than four things', () => {
     const inputs: DiagnoseInput[] = [
       { ...base, btState: 'poweredOff' },
@@ -138,6 +179,8 @@ describe('diagnoseFailure', () => {
       { ...base, error: IGNITION_ERROR },
       { ...base, logTail: [rx('BUS INIT: ERROR')] },
       { ...base, error: 'boom' },
+      { ...base, adapterSource: 'wifi', error: 'connect ECONNREFUSED' },
+      { ...base, adapterSource: 'wifi', error: 'boom' },
     ];
     for (const i of inputs) {
       const d = diagnoseFailure(i);
@@ -179,5 +222,23 @@ describe('formatDiagnosticsReport', () => {
     expect(text).toContain('» (wake-up)');
     expect(text).toContain('Got as far as: Adapter start-up');
     expect(formatLogLine(rx('OK'))).toBe('« OK');
+  });
+
+  it('names a Wi-Fi adapter source and its link stage', () => {
+    const error = 'Could not reach the Wi-Fi adapter at 192.168.0.10:35000: ECONNREFUSED';
+    const input = { ...base, adapterSource: 'wifi' as const, error };
+    const text = formatDiagnosticsReport({
+      diagnosis: diagnoseFailure(input),
+      error,
+      logTail: [],
+      link: null,
+      reached: 'transport',
+      deviceId: '192.168.0.10:35000',
+      deviceName: 'Wi-Fi ELM327',
+      adapterSource: 'wifi',
+    });
+    expect(text).toContain('Stage: Wi-Fi link (transport)');
+    expect(text).toContain('Adapter source: Wi-Fi adapter');
+    expect(text).toContain('Wi-Fi ELM327 [192.168.0.10:35000]');
   });
 });

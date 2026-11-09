@@ -12,7 +12,7 @@ import {
   diagnoseFailure,
   formatDiagnosticsReport,
   formatLogLine,
-  STAGE_LABELS,
+  stageLabel,
   type BtRadioState,
 } from '../api/diagnoseFailure';
 import { useLinkStore } from '../model/linkStore';
@@ -31,7 +31,7 @@ function radioState(bt: BluetoothState): BtRadioState {
 
 /** Shown under the error panel on the Connect screen whenever the session is in `error`: what went
  *  wrong (a stage + plain-English explanation), what to try, and — under a collapsible "Details" —
- *  this attempt's adapter-log tail, the negotiated BLE link and the device, with **Copy details**
+ *  this attempt's adapter-log tail, the negotiated BLE link (or the Wi-Fi socket) and the device, with **Copy details**
  *  (OS share sheet) and **Open error log**. The rules live in the pure `diagnoseFailure`. */
 export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
   const router = useRouter();
@@ -40,6 +40,7 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
   const adapterSource = useSettingsStore((s) => s.adapterSource);
   const entries = useAdapterLogStore((s) => s.entries);
   const link = useLinkStore((s) => s.link);
+  const kind = useLinkStore((s) => s.kind);
   const reached = useLinkStore((s) => s.stage);
   const since = useLinkStore((s) => s.attemptStartedAt);
   // The failed attempt's own target — sessionStore's device is only set on success (and keeps the
@@ -93,10 +94,10 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
               paddingVertical="$1"
               backgroundColor="$red3"
               borderRadius="$10"
-              accessibilityLabel={`Failed at: ${STAGE_LABELS[diagnosis.stage]}`}
+              accessibilityLabel={`Failed at: ${stageLabel(diagnosis.stage, adapterSource)}`}
             >
               <Text fontSize="$1" fontWeight="700" color="$red11">
-                {STAGE_LABELS[diagnosis.stage]}
+                {stageLabel(diagnosis.stage, adapterSource)}
               </Text>
             </Card>
           </XStack>
@@ -136,13 +137,18 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
                 </Text>
                 {reached ? (
                   <Text fontSize="$2" color="$placeholderColor">
-                    Got as far as: {STAGE_LABELS[reached]}
+                    Got as far as: {stageLabel(reached, adapterSource)}
                   </Text>
                 ) : null}
                 {link ? (
                   <Text fontSize="$2" color="$placeholderColor">
                     Link: MTU {link.mtu} ({link.payload} bytes per write) · service {link.service} ·{' '}
                     {link.writeWithoutResponse ? 'write without response' : 'write with response'}
+                  </Text>
+                ) : null}
+                {kind === 'wifi' ? (
+                  <Text fontSize="$2" color="$placeholderColor">
+                    Link: Wi-Fi (TCP socket){deviceId ? ` to ${deviceId}` : ''}
                   </Text>
                 ) : null}
               </YStack>

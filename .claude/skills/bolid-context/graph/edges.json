@@ -1180,6 +1180,36 @@
     "relates"
   ],
   [
+    "concept:wifi-adapter",
+    "concept:connection-lifecycle",
+    "relates"
+  ],
+  [
+    "concept:wifi-adapter",
+    "core:transport/testing/bridge",
+    "relates"
+  ],
+  [
+    "concept:wifi-adapter",
+    "doc:plans/26-wifi-tcp-transport",
+    "relates"
+  ],
+  [
+    "concept:wifi-adapter",
+    "feature:connection",
+    "relates"
+  ],
+  [
+    "concept:wifi-adapter",
+    "transport:TcpTransport",
+    "relates"
+  ],
+  [
+    "concept:wifi-adapter",
+    "transport:endpoint",
+    "relates"
+  ],
+  [
     "core:analysis/aiDiagnosis",
     "core:obd/dtc",
     "imports"
@@ -1901,6 +1931,11 @@
   ],
   [
     "core:tp20/fakeTp20Bus",
+    "transport:fakeSocket",
+    "named"
+  ],
+  [
+    "core:tp20/fakeTp20Bus",
     "vehicle:types",
     "imports"
   ],
@@ -2088,6 +2123,16 @@
     "core:transport/simFixtures",
     "vehicle:registry",
     "imports"
+  ],
+  [
+    "core:transport/testing/bridge",
+    "core:transport/MockTransport",
+    "imports"
+  ],
+  [
+    "core:transport/testing/bridge",
+    "doc:testing",
+    "named"
   ],
   [
     "core:uds/discoverModules",
@@ -2947,6 +2992,16 @@
   [
     "feature:connection",
     "transport:BleTransport",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "transport:TcpTransport",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "transport:endpoint",
     "imports"
   ],
   [
@@ -4071,6 +4126,11 @@
   ],
   [
     "feature:settings",
+    "transport:endpoint",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "ui:ImportPreviewSheet",
     "imports"
   ],
@@ -5170,6 +5230,11 @@
     "imports"
   ],
   [
+    "store:settingsStore",
+    "transport:endpoint",
+    "imports"
+  ],
+  [
     "store:vehicleStore",
     "store:persistStorage",
     "imports"
@@ -5197,6 +5262,36 @@
   [
     "transport:BleTransport",
     "lib:base64",
+    "imports"
+  ],
+  [
+    "transport:TcpTransport",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "transport:TcpTransport",
+    "doc:plans/26-wifi-tcp-transport",
+    "named"
+  ],
+  [
+    "transport:TcpTransport",
+    "lib:bytes",
+    "imports"
+  ],
+  [
+    "transport:TcpTransport",
+    "transport:endpoint",
+    "imports"
+  ],
+  [
+    "transport:fakeSocket",
+    "core:transport/testing/bridge",
+    "imports"
+  ],
+  [
+    "transport:fakeSocket",
+    "transport:TcpTransport",
     "imports"
   ],
   [

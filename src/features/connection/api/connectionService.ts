@@ -1,4 +1,5 @@
-/** The connection feature's service layer: builds the right Transport (mock or BLE), wires the
+/** The connection feature's service layer: builds the right Transport (simulator, BLE or Wi-Fi
+ *  TCP — plan 26), wires the
  *  adapter I/O log, runs the DiagnosticSession, and updates the shared stores.
  *  Note: "api" here means device/engine access, not a network API.
  *
@@ -16,6 +17,8 @@ import { logRxText, logTxText } from '@/shared/obd-core/transport/recordingTrans
 import { BleTransport } from '@/shared/transports/ble/BleTransport';
 import { getBleManager } from '@/shared/transports/ble/manager';
 import { requestBlePermissions } from '@/shared/transports/ble/permissions';
+import { TcpTransport, type TcpSocketFactory } from '@/shared/transports/tcp/TcpTransport';
+import { formatEndpoint } from '@/shared/transports/tcp/endpoint';
 import { useSettingsStore, type AdapterSource } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useGarageStore } from '@/shared/state/garageStore';
@@ -102,6 +105,17 @@ let dropsAt: number[] = [];
 let liveRawTransport: Transport | null = null;
 /** Simulator dev hook: the next simulator connect gets no reply to `ATZ` (see `__sim`). */
 let failNextSimConnect = false;
+/** The socket factory Wi-Fi connects use; undefined = `react-native-tcp-socket` (the app). */
+let tcpSocketFactory: TcpSocketFactory | undefined;
+
+/** Test seam (plan 26): open Wi-Fi sockets with `factory` instead of `react-native-tcp-socket`, so
+ *  the Wi-Fi connect path runs under Jest against a fake socket. `undefined` restores the default. */
+export function setTcpSocketFactory(factory: TcpSocketFactory | undefined): void {
+  tcpSocketFactory = factory;
+}
+
+/** The device a Wi-Fi attempt targets: the endpoint from settings (there is nothing to pick). */
+export const WIFI_DEVICE_NAME = 'Wi-Fi ELM327';
 
 function detachStatusWatch(): void {
   statusUnsub?.();
@@ -227,7 +241,7 @@ function linkInfoOf(t: Transport) {
 /** Build the transport + session, run init, and publish the connected state. Does NOT touch the
  *  auto-reconnect controller, so it is safe to call from within a reconnect attempt. */
 async function connectInternal(target?: ConnectTarget): Promise<void> {
-  const { adapterSource, simulatedVehicleId, injectedDtcs } = useSettingsStore.getState();
+  const { adapterSource, simulatedVehicleId, injectedDtcs, wifi } = useSettingsStore.getState();
   const epoch = connectEpoch;
   /** True once the adapter source was switched while this connect was in flight. */
   const stale = () => epoch !== connectEpoch;
@@ -245,14 +259,23 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
       ? target
         ? { id: target.deviceId, name: target.deviceName ?? null }
         : null
-      : { id: 'mock', name: `Simulator · ${simulatedVehicleId}` };
-  link.beginAttempt(adapterSource === 'ble' ? 'bluetooth' : 'transport', attemptDevice);
+      : adapterSource === 'wifi'
+        ? { id: formatEndpoint(wifi), name: WIFI_DEVICE_NAME }
+        : { id: 'mock', name: `Simulator · ${simulatedVehicleId}` };
+  link.beginAttempt(
+    adapterSource === 'ble' ? 'bluetooth' : 'transport',
+    attemptDevice,
+    adapterSource === 'mock' ? null : adapterSource,
+  );
   // Stamp how the adapter log's traffic is recorded (plan W2) before the first write, so a replay
   // fixture exported later is labelled by the session that produced it, not by the settings then.
   beginAdapterLogRecording(
     adapterSource === 'mock'
       ? { source: 'simulator', simulatedVehicleId }
-      : { source: 'car', deviceId: target?.deviceId },
+      : {
+          source: 'car',
+          deviceId: adapterSource === 'wifi' ? attemptDevice?.id : target?.deviceId,
+        },
   );
 
   let transport: Transport | undefined;
@@ -269,6 +292,13 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
       rawTransport = new BleTransport(getBleManager(), target.deviceId);
       device = attemptDevice;
       // Real adapters auto-sleep when idle: wake them before a command after 20 s of silence.
+      wakeAfterIdleMs = DEFAULT_WAKE_AFTER_IDLE_MS;
+    } else if (adapterSource === 'wifi') {
+      // Wi-Fi ELM327 (plan 26): a TCP socket to the endpoint in settings. No permission prompt
+      // (iOS asks for Local Network access by itself on the first connect). Auto-reconnect replays
+      // the endpoint from settings, so `lastTarget` stays undefined.
+      rawTransport = new TcpTransport(wifi, tcpSocketFactory);
+      device = attemptDevice ?? { id: formatEndpoint(wifi), name: WIFI_DEVICE_NAME };
       wakeAfterIdleMs = DEFAULT_WAKE_AFTER_IDLE_MS;
     } else {
       // The in-app injector is the single source of truth for simulated faults: it sets the stored

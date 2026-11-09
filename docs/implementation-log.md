@@ -5,6 +5,124 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 26 — Wi-Fi ELM327 transport (TCP) (2026-11-09)
+
+[Plan 26](./plans/26-wifi-tcp-transport.md) landed: Wi-Fi ELM327 adapters (the `WiFi_OBDII` class,
+`192.168.0.10:35000`) connect through a `TcpTransport` that implements the existing `Transport`
+interface, selectable in Settings as a third adapter source; the ELM client, the session and every
+feature are unchanged above it. What waits for hardware (the plan's "Deferred" section, roadmap
+"on-car pending"): a real Wi-Fi adapter on Android and iOS (adapter, endpoint, `ATI`, latency grade
+into `docs/adapters/` with plan 29), the Android "no internet" behaviour and whether mobile data
+must be off (then adjust the Connect-screen copy), and — new — that `react-native-tcp-socket` 6.4.3
+runs under the New Architecture (`newArchEnabled: true`, RN 0.85) through the interop layer; if it
+does not, only `defaultSocketFactory` changes.
+
+- **Dependency.** `react-native-tcp-socket` 6.4.3 (autolinked, no config plugin). Its API matches
+  the plan except the timeout option, `connectTimeout`; `data` arrives as a `Buffer`.
+- **`src/shared/transports/tcp/endpoint.ts` (pure).** `TcpEndpoint`, `DEFAULT_WIFI_ENDPOINT`
+  (frozen), `parseEndpoint('host:port')` (IPv4 or RFC 1123 host name — an all-numeric name must be
+  a valid IPv4 — and a port 1–65535, else null), `formatEndpoint`, `isValidHost`, `isValidPort`,
+  `isValidEndpoint`.
+- **`src/shared/transports/tcp/TcpTransport.ts`.** `TcpSocketLike`, `TcpSocketFactory`,
+  `TcpTransport(endpoint, factory = defaultSocketFactory, connectTimeoutMs = 5000)`.
+  `connecting` → `connected` on the socket's `connect`; an `error` / `close` before it, or no
+  connect within 5 s, → `error`, socket destroyed, a message naming the address
+  (`Could not reach the Wi-Fi adapter at …: <error>` / `No answer from the Wi-Fi adapter at …
+within 5 s (ETIMEDOUT)` / `… closed the connection before it opened (ECONNREFUSED)`). After
+  connecting, an unsolicited `close` → `disconnected` (once), an unsolicited `error` → `error`, and
+  the dead socket's later events are ignored — so `connectionService.watchStatus` handles a Wi-Fi
+  drop like a BLE one, auto-reconnect included. `disconnect()` destroys the socket and emits only
+  `disconnected`; during a connect it cancels it (`TcpConnectCancelledError`, no `error` status).
+  A socket the factory delivers after a timeout or cancel is destroyed, never leaked. String chunks
+  → `stringToBytes`, Buffers → `Uint8Array.from`. `defaultSocketFactory` loads the module with
+  `import('react-native-tcp-socket' as string)` (absent under Jest / web → "Wi-Fi adapters need the
+  TCP socket module…"), opens `createConnection({ host, port, connectTimeout })`, turns Nagle off
+  on connect and replays the connect callback to a `'connect'` listener added after it fired.
+- **Test bridge.** `src/shared/obd-core/transport/testing/bridge.ts` → `bridgeToMock(scenario)`
+  (`{ write, onData, mock }`, not in the core barrel; reused by plans 27 / 28), and the test-only
+  `src/shared/transports/tcp/testing/fakeSocket.ts` (`FakeSocket`, `socketOverBridge(bridge)` —
+  replies alternate Buffer-like and string chunks).
+- **Settings.** `AdapterSource = 'mock' | 'ble' | 'wifi'`; `wifi: TcpEndpoint` (default
+  `192.168.0.10:35000`, persisted) and `setWifi(patch)` (an invalid result is ignored);
+  `SETTINGS_VERSION` 7 with `migrateSettings` v6 → v7 `wifi: p.wifi ?? DEFAULT_WIFI_ENDPOINT`;
+  `merge` keeps the current endpoint when a restored / hand-edited file carries an unusable one.
+  Settings → Developer & simulator → Adapter source gains **Wi-Fi adapter**; while selected, host
+  and port fields (`settings-wifi`) save every valid pair at once and explain an invalid one
+  (`settings-wifi-error`), plus **Use the default address**.
+- **Connection flow.** `connectInternal`'s Wi-Fi branch: `new TcpTransport(settings.wifi)`, no
+  permission request, `wakeAfterIdleMs` as for BLE, attempt device `{ id: '<host>:<port>', name:
+'Wi-Fi ELM327' }`, adapter-log origin `{ source: 'car', deviceId: '<host>:<port>' }`,
+  `lastTarget` undefined (auto-reconnect re-reads settings). `setTcpSocketFactory(factory?)` is the
+  test seam. `linkStore.kind: 'ble' | 'wifi' | null`. `ConnectionScreen`: a Wi-Fi branch
+  (`connect-wifi`: join-the-network panel with the Android _Stay connected_ note, the address,
+  **Connect over Wi-Fi**, **Use a Bluetooth adapter**) and `useBluetoothState(adapterSource ===
+'ble')`, so neither the simulator nor Wi-Fi constructs a `BleManager`. Diagnostics: rule 1b —
+  Wi-Fi and `ECONNREFUSED | ETIMEDOUT | EHOSTUNREACH | ENETUNREACH` (or the text forms / the
+  transport's wording) → "The phone is not on the adapter's Wi-Fi network, or the adapter uses a
+  different address" (join `WiFi_OBDII`, check `192.168.0.10`:`35000`, mobile data off, iOS Local
+  Network); the stage chip reads "Wi-Fi link" (`stageLabel`); the Details show the socket; the
+  report names "Wi-Fi adapter".
+- **`app.json`.** `ios.infoPlist.NSLocalNetworkUsageDescription`: "Bolid Tester connects to a
+  Wi-Fi OBD2 adapter on your local network." (Android needs only `INTERNET`, which Expo's template
+  already declares.)
+- **Tests.** `endpoint.test.ts`; `TcpTransport.test.ts` (connect, error / close / factory failure
+  before connect, 5 s timeout, late socket after a timeout, write, string + Buffer chunks,
+  unsolicited close once, unsolicited error, manual disconnect, disconnect during connect,
+  reconnect with a fresh socket, `defaultSocketFactory` against a virtual module);
+  `TcpTransport.session.integration.test.ts` (`DiagnosticSession` over `TcpTransport` with the
+  bridged Golf: `ISO_15765_4_CAN_11_500`, VIN, 16 PIDs, `010C`, `readDtcs('03')`);
+  `settingsStore.test.ts` (v7, migration fills / keeps `wifi`, rehydration, invalid stored
+  endpoint, `setWifi`); `diagnoseFailure.test.ts` (rule 1b, Wi-Fi wording, report);
+  `connectionService.test.ts` (connect over the bridge, refused → diagnosis, fails within 5 s,
+  unsolicited close = link loss); `ConnectionScreen.test.tsx` (Wi-Fi branch, no `BleManager`
+  unless Bluetooth, network suggestion on a refused connect, source switch);
+  `SettingsScreen.test.tsx` (segment + fields, validation).
+- **Docs.** connection (§ Wi-Fi adapters, diagnostics rule 1b, linkStore, acceptance), settings
+  (source, fields, v7), architecture (transport diagram + `TcpTransport`), simulator (test bridge);
+  roadmap item ✅ (on-car pending) and the Connect row of the feature map. Context graph: the builder
+  now scans `shared/transports/tcp`; curated concept `wifi-adapter`.
+
+**Deviations.**
+
+- `npx expo install react-native-tcp-socket` also wrote the optional peers it resolves without
+  `--legacy-peer-deps` (react-native-reanimated, -gesture-handler, -worklets, @testing-library/dom
+  and more) into `package-lock.json`. Reverted, and the same version was installed with
+  `npm install react-native-tcp-socket@^6.4.3 --legacy-peer-deps`, the way the lockfile was built:
+  it gains only the package and its three dependencies (buffer, eventemitter3, ieee754).
+- The library's option is `connectTimeout`, not `timeout`. The factory resolves once the socket
+  exists and the transport waits for `'connect'` with its own 5 s timer (which also covers a slow
+  module load); the default factory replays a connect that fired before the listener was added,
+  and calls `setNoDelay(true)` — none of this was in the plan's sketch.
+- A `close` before connecting is an `error` (refused); a `disconnect()` during a connect rejects it
+  with `TcpConnectCancelledError` (BLE resolves silently) so `session.connect()` never proceeds on
+  a closed socket.
+- `linkStore.kind` is `'ble' | 'wifi' | null` (null for the simulator), and `beginAttempt` takes it
+  as an optional third argument, before `now`.
+- The classifier matches more than the plan's three errno names (ENETUNREACH, "connection refused",
+  "no route to host", "network is unreachable", and `TcpTransport`'s own wording), adds an iOS
+  Local Network suggestion, skips the Bluetooth-permission rule on Wi-Fi and words rules 4, 7 and 8
+  for the Wi-Fi link.
+- Added (not in the plan): the `setTcpSocketFactory` test seam; a per-source Connect subtitle with
+  **Using a Wi-Fi adapter instead?** / **Use a Bluetooth adapter** buttons (the Wi-Fi segment
+  otherwise lives only in the collapsed Developer & simulator section); `setWifi` / `merge`
+  validation; **Use the default address**; `isValidHost` / `isValidPort` / `isValidEndpoint`.
+- The existing `migrateSettings` tests now expect the `wifi` field on every pre-v7 migration.
+
+**Review follow-ups.**
+
+- `useScan`'s `stop()` (also its unmount cleanup) called `getBleManager().stopDeviceScan()` for
+  every source, so leaving the Connect screen in Simulator or Wi-Fi mode still constructed a
+  `BleManager` (on iOS that can raise the Bluetooth prompt). `stop()` now touches the BLE stack only
+  once `start()` has run. The ConnectionScreen test unmounts before checking the spy, and a
+  remount in Wi-Fi mode stays BLE-free too.
+- `WifiEndpointSection` copied the stored address into local state once, at mount. A change made
+  elsewhere while it stayed mounted (a restore from Backup, pushed on top of Settings) left stale
+  text in the fields, and the next keystroke saved the stale other field over the restore. The
+  fields now follow the stored address whenever it changes to something they did not just save
+  (new SettingsScreen test).
+
+---
+
 ## Plan 21 — Tablet and landscape layout (2026-11-09)
 
 [Plan 21](./plans/21-tablet-layout.md) landed: on windows ≥ 600 dp the app uses the space — a side

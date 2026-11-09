@@ -9,7 +9,8 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import type { ConnState } from '@/shared/state/sessionStore';
 import { useScan } from '../hooks/useScan';
 import { useConnect } from '../hooks/useConnect';
-import { switchToRealAdapter } from '../api/connectionService';
+import { formatEndpoint } from '@/shared/transports/tcp/endpoint';
+import { switchAdapterSource, switchToRealAdapter } from '../api/connectionService';
 import { useBluetoothState } from '../hooks/useBluetoothState';
 import { DeviceRow } from './DeviceRow';
 import { BluetoothPrompt } from './BluetoothPrompt';
@@ -45,6 +46,59 @@ function StatusHero({ status }: { status: ConnState }) {
   );
 }
 
+const SUBTITLES = {
+  ble: 'Pair with your OBD2 Bluetooth adapter',
+  wifi: 'Connect to your Wi-Fi OBD2 adapter',
+  mock: 'Pair with your OBD2 Bluetooth adapter',
+} as const;
+
+/** The Wi-Fi adapter branch (plan 26): join the adapter's network, then connect to the endpoint
+ *  from Settings. There is nothing to scan and no permission to ask for. */
+function WifiConnect({ busy, onConnect }: { busy: boolean; onConnect: () => void }) {
+  const wifi = useSettingsStore((s) => s.wifi);
+  return (
+    <YStack gap="$3" marginTop="$2" testID="connect-wifi">
+      <Panel>
+        <YStack gap="$2">
+          <Text fontWeight="700" fontSize="$3">
+            Wi-Fi adapter
+          </Text>
+          <Paragraph fontSize="$3">
+            Join the adapter’s Wi-Fi network first (usually{' '}
+            <Text fontWeight="700" color="$color">
+              WiFi_OBDII
+            </Text>
+            , no password). On Android, if the phone warns the network has no internet, choose{' '}
+            <Text fontStyle="italic" color="$color">
+              Stay connected
+            </Text>
+            .
+          </Paragraph>
+          <Paragraph theme="alt2" fontSize="$2">
+            Adapter address:{' '}
+            <Text fontWeight="700" color="$color" testID="connect-wifi-endpoint">
+              {formatEndpoint(wifi)}
+            </Text>{' '}
+            — change it in Settings → Developer & simulator → Adapter source.
+          </Paragraph>
+        </YStack>
+      </Panel>
+      <Button
+        theme="green"
+        size="$5"
+        disabled={busy}
+        icon={busy ? () => <Spinner /> : undefined}
+        onPress={onConnect}
+      >
+        Connect over Wi-Fi
+      </Button>
+      <Button size="$5" disabled={busy} onPress={() => void switchAdapterSource('ble')}>
+        Use a Bluetooth adapter
+      </Button>
+    </YStack>
+  );
+}
+
 export function ConnectionScreen() {
   const adapterSource = useSettingsStore((s) => s.adapterSource);
   const simulated = useSettingsStore((s) => s.simulatedVehicleId);
@@ -52,7 +106,9 @@ export function ConnectionScreen() {
   const error = useSessionStore((s) => s.error);
   const { scanning, devices, start, stop } = useScan();
   const { connect, busy } = useConnect();
-  const bt = useBluetoothState(adapterSource !== 'mock');
+  // Only the Bluetooth source touches the BLE stack: the simulator and Wi-Fi never construct a
+  // BleManager (plan 26).
+  const bt = useBluetoothState(adapterSource === 'ble');
   const [manualId, setManualId] = useState('');
 
   // Positively-known "not ready" states block scanning; while still settling we let the scan run and
@@ -60,7 +116,7 @@ export function ConnectionScreen() {
   const btBlocked = bt.poweredOff || bt.unauthorized || bt.unsupported;
 
   return (
-    <Screen title="Connect" subtitle="Pair with your OBD2 Bluetooth adapter">
+    <Screen title="Connect" subtitle={SUBTITLES[adapterSource]}>
       <StatusHero status={status} />
 
       <FirstRunCard />
@@ -97,6 +153,8 @@ export function ConnectionScreen() {
             Use a real adapter
           </Button>
         </YStack>
+      ) : adapterSource === 'wifi' ? (
+        <WifiConnect busy={busy} onConnect={() => void connect()} />
       ) : (
         <YStack gap="$3" marginTop="$2">
           <BluetoothPrompt bt={bt} />
@@ -158,6 +216,16 @@ export function ConnectionScreen() {
               </YStack>
             </Panel>
           ) : null}
+
+          <Button
+            size="$3"
+            chromeless
+            alignSelf="flex-start"
+            disabled={busy}
+            onPress={() => void switchAdapterSource('wifi')}
+          >
+            Using a Wi-Fi adapter instead?
+          </Button>
         </YStack>
       )}
     </Screen>

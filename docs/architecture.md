@@ -4,8 +4,8 @@
 
 A pure-TypeScript **OBD2 core** (no platform APIs) sits behind a swappable **Transport** interface.
 A thin React Native (Expo) UI, organized as **feature slices**, sits on top. This keeps the
-diagnostic engine unit-testable with **no hardware** and reusable across the BLE transport, a future
-Web Bluetooth build, and the in-memory simulator.
+diagnostic engine unit-testable with **no hardware** and reusable across the BLE transport, the
+Wi-Fi TCP transport, a future Web Bluetooth build, and the in-memory simulator.
 
 ```
 UI — feature slices (Tamagui)  ──►  state stores (Zustand)  ──►  DiagnosticSession
@@ -15,17 +15,18 @@ UI — feature slices (Tamagui)  ──►  state stores (Zustand)  ──►  D
                                                        ELM327 client (AT cmds, queue, parsing)
                                                               │
                                                    Transport interface
-                                          ┌───────────────┼─────────────────┐
-                                   BleTransport      MockTransport     (WebBluetoothTransport
-                              (react-native-ble-plx)  (simulator)        — future, optional)
+                         ┌──────────────────┬──────────────┼─────────────────┐
+                  BleTransport         TcpTransport     MockTransport     (WebBluetoothTransport
+          (react-native-ble-plx)  (react-native-tcp-socket,  (simulator)    — future, optional)
+                                   Wi-Fi ELM327, plan 26)
 ```
 
 ## Layers (bottom-up)
 
 ### 1. Transport (`src/shared/obd-core/transport`)
 
-A minimal byte pipe. The rest of the stack does not care whether bytes go over BLE, a mock, or
-(later) Web Bluetooth.
+A minimal byte pipe. The rest of the stack does not care whether bytes go over BLE, a TCP socket,
+a mock, or (later) Web Bluetooth.
 
 ```ts
 interface Transport {
@@ -40,6 +41,11 @@ interface Transport {
 - **`MockTransport`** — the simulator (see [`simulator.md`](./simulator.md)). Pure, deterministic.
 - **`BleTransport`** — wraps `react-native-ble-plx`. **Discovers** the notify + write characteristics
   at runtime instead of hard-coding UUIDs, so it is robust across ELM327 BLE clones.
+- **`TcpTransport`** (`src/shared/transports/tcp/`, plan 26) — a TCP socket to a Wi-Fi ELM327
+  (default `192.168.0.10:35000`). Written against an injected `TcpSocketFactory`; the app's default
+  loads `react-native-tcp-socket` through a variable specifier, the tests use a fake socket driven
+  by the simulator (`obd-core/transport/testing/bridge.ts`). Same status events as BLE, so link
+  loss and auto-reconnect work unchanged (see [connection](./features/connection.md#wi-fi-adapters-tcp-plan-26)).
 
 ### 2. ELM327 client (`src/shared/obd-core/elm327`)
 
@@ -93,7 +99,7 @@ features/<name>/
 └── index.ts   # the feature's public surface
 ```
 
-Shared, cross-cutting code (the OBD2 core, vehicle registry, BLE transport, design-system wrappers,
+Shared, cross-cutting code (the OBD2 core, vehicle registry, BLE and TCP transports, design-system wrappers,
 theme, generic hooks, utils) lives under `src/shared/*`. Anything reused by two features is promoted
 to `shared`.
 

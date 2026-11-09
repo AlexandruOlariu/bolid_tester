@@ -18,7 +18,8 @@ User preferences first, then the developer and simulator controls in their own c
 5. **Data** — backup & restore, label packs, security-access plugins.
 6. **Developer & simulator** — **collapsed on open**: the header (a button labelled
    "Developer & simulator. Show" / "… Hide") shows **Show** and a one-line summary; pressing it
-   reveals, in one card: **Adapter source**, then (simulator only) **Simulated vehicle**,
+   reveals, in one card: **Adapter source**, then (Wi-Fi only) **Wi-Fi adapter address**, then
+   (simulator only) **Simulated vehicle**,
    **Injected DTCs** and **Simulator test controls**, then the **Adapter log** with the replay-fixture
    export, and **Hints and app data** (**Show hints again**, **Reset all app data**). The simulator
    banner (plan 01) stays the always-on indicator that the simulator is selected.
@@ -27,8 +28,8 @@ User preferences first, then the developer and simulator controls in their own c
 Then **Disconnect** while a session is connected. The parts in detail:
 
 - **Developer & simulator** parts:
-  - **Adapter source** toggle — default **Real adapter (Bluetooth)**; **Simulator (no car)** is an
-    explicit opt-in and, while it is on, an amber **simulator banner** stays visible on every screen
+  - **Adapter source** toggle — **Real adapter (Bluetooth)** (default), **Wi-Fi adapter** (plan 26)
+    or **Simulator (no car)**. The simulator is an explicit opt-in and, while it is on, an amber **simulator banner** stays visible on every screen
     (see [connection](./connection.md#simulator-banner)). The segments call
     `connectionService.switchAdapterSource()`, so switching disconnects any session built for the
     other source (a simulator session never survives under the real adapter, or vice versa) and
@@ -36,6 +37,17 @@ Then **Disconnect** while a session is connected. The parts in detail:
     simulator mode a picker chooses which car to emulate (generic / Golf / Punto / Passat, then the
     garage cars). A garage car is emulated from its base profile with its learned VIN, PIDs and
     calibration id on top (plan 06, see [vehicle-select](./vehicle-select.md#simulator)).
+  - **Wi-Fi adapter address** (Wi-Fi only, `testID="settings-wifi"`) — a host field ("Wi-Fi adapter
+    host") and a port field ("Wi-Fi adapter port"), prefilled with the saved endpoint (default
+    `192.168.0.10` / `35000`, the `WiFi_OBDII` class). Every edit is checked with `parseEndpoint`
+    (IPv4 or host name, port 1–65535): a valid pair is saved at once (`setWifi`); an invalid one
+    shows why in red (`settings-wifi-error`: "Enter an IP address (like 192.168.0.10) or a host
+    name." / "Enter a port from 1 to 65535.", plus "The app keeps using `<saved address>`") and
+    saves nothing. If the saved address changes elsewhere while the section is open (a restore from
+    Backup), the fields follow it. **Use the default address** appears once the address differs
+    from the default.
+    The Connect screen shows the address and connects to it (see
+    [connection](./connection.md#wi-fi-adapters-tcp-plan-26)).
   - **Injected DTCs** (simulator only) — **None** (default), **P0299**, **P0299+P0401**, or
     **Custom…**, which reveals a text field taking comma-separated codes. Each code must be a letter
     `P`/`C`/`B`/`U`, a first digit `0`–`3`, then three hex digits (`/^[PCBU][0-3][0-9A-F]{3}$/i` —
@@ -204,8 +216,10 @@ Then **Disconnect** while a session is connected. The parts in detail:
 
 ## model
 
-- `settingsStore` (Zustand, **persisted**): `adapterSource`, `simulatedVehicleId`, `injectedDtcs`,
-  `pollIntervalMs`, `autoReconnect`, `autoSelectByVin`, `theme`, and the `ai` config
+- `settingsStore` (Zustand, **persisted**): `adapterSource` (`'mock' | 'ble' | 'wifi'`),
+  `simulatedVehicleId`, `injectedDtcs`, `pollIntervalMs`, `autoReconnect`, `autoSelectByVin`,
+  `theme`, `wifi: { host, port }` (the Wi-Fi adapter endpoint, plan 26; `setWifi(patch)` ignores a
+  patch that would make it invalid), and the `ai` config
   (`provider`, server URL, model, structured-output mode, timeout, `remembered` per-provider URL /
   model / mode, and the current provider's key in runtime state only). It no longer holds the
   adapter I/O log (see above).
@@ -221,9 +235,9 @@ Then **Disconnect** while a session is connected. The parts in detail:
   slot; the legacy slot is deleted once its key is safe (loaded from the provider slot, or the move
   into it succeeded — a failed keystore write keeps it for the next start). Without the native module (Expo Go, web, tests) keys
   live in memory for the session.
-- Persisted as `bolid.settings` at **version 6**. Defaults: `adapterSource: 'ble'`,
+- Persisted as `bolid.settings` at **version 7**. Defaults: `adapterSource: 'ble'`,
   `simulatedVehicleId: 'golf-plus-2009-20tdi'`, `injectedDtcs: []`, `autoReconnect: true`,
-  `autoSelectByVin: true`. `simulatedVehicleId` may be a registry id or a garage `user:` id.
+  `autoSelectByVin: true`, `wifi: { host: '192.168.0.10', port: 35000 }`. `simulatedVehicleId` may be a registry id or a garage `user:` id.
 - **Migrations** (`migrateSettings`, pure and unit-tested; each step only fills _missing_ fields, so
   an explicit stored choice always survives):
   - **v1 → v2** (plan 01): a v1 blob keeps its explicit `adapterSource` and `injectedDtcs` — a tester
@@ -241,8 +255,11 @@ Then **Disconnect** while a session is connected. The parts in detail:
   - **v5 → v6** (plan 07): metric only — a stale `units` key is dropped (`withoutUnits`); every
     other field is kept. `merge` drops it too, so a restored or hand-edited v6 file carrying it
     never brings it back.
-  - From v6 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults
-    (and infers `provider` if a blob somehow lacks a valid one).
+  - **v6 → v7** (plan 26): `wifi: p.wifi ?? DEFAULT_WIFI_ENDPOINT` (a copy); every other field is
+    kept.
+  - From v7 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults
+    (and infers `provider` if a blob somehow lacks a valid one), and keeps the current `wifi` when a
+    restored or hand-edited file carries an unusable one (`isValidEndpoint`).
 - **Known limitation:** v1's `partialize` always wrote `adapterSource` and `injectedDtcs`, so every
   real v1 file carries them — including installs that never chose anything and just persisted the
   old defaults (`'mock'`, `['P0299']`). The migration cannot tell those apart from a deliberate

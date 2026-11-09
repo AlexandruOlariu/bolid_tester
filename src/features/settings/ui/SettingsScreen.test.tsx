@@ -577,3 +577,65 @@ describe('SettingsScreen AI provider (plan 19)', () => {
     expect(screen.queryByText('Connecting…')).toBeNull();
   });
 });
+
+describe('Settings → Wi-Fi adapter (plan 26)', () => {
+  it('the Wi-Fi segment selects the Wi-Fi source and shows the address fields', async () => {
+    useSettingsStore.setState({ adapterSource: 'ble' });
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
+    expect(screen.queryByTestId('settings-wifi')).toBeNull();
+
+    fireEvent.press(screen.getByText('Wi-Fi adapter'));
+
+    await waitFor(() => expect(useSettingsStore.getState().adapterSource).toBe('wifi'));
+    expect(screen.getByTestId('settings-wifi')).toBeTruthy();
+    expect(screen.getByLabelText('Wi-Fi adapter host').props.value).toBe('192.168.0.10');
+    expect(screen.getByLabelText('Wi-Fi adapter port').props.value).toBe('35000');
+    expect(screen.queryByText('Simulated vehicle')).toBeNull();
+  });
+
+  it('saves a valid address and explains an invalid one without saving it', () => {
+    useSettingsStore.setState({
+      adapterSource: 'wifi',
+      wifi: { host: '192.168.0.10', port: 35000 },
+    });
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
+
+    fireEvent.changeText(screen.getByLabelText('Wi-Fi adapter host'), '192.168.4.1');
+    fireEvent.changeText(screen.getByLabelText('Wi-Fi adapter port'), '23');
+    expect(useSettingsStore.getState().wifi).toEqual({ host: '192.168.4.1', port: 23 });
+    expect(screen.queryByTestId('settings-wifi-error')).toBeNull();
+
+    fireEvent.changeText(screen.getByLabelText('Wi-Fi adapter port'), '70000');
+    expect(screen.getByTestId('settings-wifi-error')).toHaveTextContent(
+      /port from 1 to 65535.*keeps using 192\.168\.4\.1:23/,
+    );
+    fireEvent.changeText(screen.getByLabelText('Wi-Fi adapter host'), '192.168.0.300');
+    expect(screen.getByTestId('settings-wifi-error')).toHaveTextContent(/IP address/);
+    expect(useSettingsStore.getState().wifi).toEqual({ host: '192.168.4.1', port: 23 });
+
+    fireEvent.press(screen.getByText('Use the default address'));
+    expect(useSettingsStore.getState().wifi).toEqual({ host: '192.168.0.10', port: 35000 });
+    expect(screen.queryByTestId('settings-wifi-error')).toBeNull();
+  });
+
+  it('follows a stored address that changes elsewhere, without overwriting it on the next edit', () => {
+    useSettingsStore.setState({
+      adapterSource: 'wifi',
+      wifi: { host: '192.168.0.10', port: 35000 },
+    });
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
+
+    // e.g. a data restore from the Backup screen pushed on top of Settings
+    act(() => {
+      useSettingsStore.setState({ wifi: { host: '10.0.0.5', port: 23 } });
+    });
+    expect(screen.getByLabelText('Wi-Fi adapter host').props.value).toBe('10.0.0.5');
+    expect(screen.getByLabelText('Wi-Fi adapter port').props.value).toBe('23');
+
+    fireEvent.changeText(screen.getByLabelText('Wi-Fi adapter host'), '10.0.0.6');
+    expect(useSettingsStore.getState().wifi).toEqual({ host: '10.0.0.6', port: 23 });
+  });
+});
