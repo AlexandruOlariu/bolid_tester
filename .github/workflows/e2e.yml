@@ -38,6 +38,10 @@ jobs:
       - name: Build APK (embedded bundle)
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
+        env:
+          # The Sentry Expo plugin (plan 31) adds a source-map upload to every release build; this
+          # test build has no Sentry token or DSN, so the upload is switched off (docs/release.md).
+          SENTRY_DISABLE_AUTO_UPLOAD: 'true'
       - name: Locate APK
         id: apk
         run: |

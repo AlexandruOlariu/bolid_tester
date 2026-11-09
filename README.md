@@ -126,11 +126,17 @@ support and what works on the web.
 npm install
 npx expo prebuild --platform android --clean   # once, or after native config changes
 cd android
+set SENTRY_DISABLE_AUTO_UPLOAD=true            # PowerShell: $env:SENTRY_DISABLE_AUTO_UPLOAD = "true"
 gradlew.bat assembleRelease
 # Output: android\app\build\outputs\apk\release\app-release.apk
 ```
 
-(Convenience scripts: `npm run prebuild:android`, `npm run android:apk`, `npm run android:clean`.)
+`SENTRY_DISABLE_AUTO_UPLOAD=true` switches off the Sentry source-map upload that the crash-report
+plugin adds to every release build; without a Sentry token the build fails otherwise (see
+[docs/release.md → Crash reports](./docs/release.md#crash-reports-plan-31)).
+
+(Convenience scripts: `npm run prebuild:android`, `npm run android:apk` (sets the switch itself),
+`npm run android:clean`.)
 
 ### Windows: `Filename longer than 260 characters` (MAX_PATH)
 
@@ -158,6 +164,7 @@ object-file paths embed the full project path, which overflows 260 chars.
    ```bat
    rmdir /s /q C:\b\android\app\.cxx
    cd /d C:\b\android
+   set SENTRY_DISABLE_AUTO_UPLOAD=true
    gradlew.bat assembleRelease
    ```
    The APK still lands at `android\app\build\outputs\apk\release\app-release.apk` in the real project

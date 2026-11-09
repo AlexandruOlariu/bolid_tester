@@ -29,7 +29,18 @@ import { DEFAULT_FLOW_NAME, fixtureVehicleId } from '../model/replayExport';
 import { useVehicleStore } from '@/shared/state/vehicleStore';
 import { connectionService } from '@/features/connection';
 import { useOnboardingStore } from '@/shared/state/onboardingStore';
-import { APP_BUILD, APP_NAME, APP_VERSION, DOCS_URL } from '@/shared/lib/appInfo';
+import {
+  APP_BUILD,
+  APP_NAME,
+  APP_VERSION,
+  DOCS_URL,
+  PRIVACY_POLICY_URL,
+} from '@/shared/lib/appInfo';
+import {
+  crashReportingReady,
+  isCrashReportingAvailable,
+  sendTestCrashReport,
+} from '@/shared/telemetry/crashReporting';
 import { PRIVACY_POLICY, PRIVACY_POLICY_UPDATED } from '../model/privacyPolicy';
 import { LabelPacksSection } from './LabelPacksSection';
 import { SeedKeysSection } from './SeedKeysSection';
@@ -65,9 +76,29 @@ function SubLabel({ children }: { children: string }) {
   );
 }
 
-function Seg({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
+function Seg({
+  active,
+  label,
+  onPress,
+  disabled,
+  accessibilityLabel,
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+}) {
   return (
-    <Button size="$2" theme={active ? 'green' : 'gray'} onPress={onPress}>
+    <Button
+      size="$2"
+      theme={active ? 'green' : 'gray'}
+      onPress={onPress}
+      disabled={disabled}
+      opacity={disabled ? 0.5 : 1}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled: !!disabled, selected: active }}
+    >
       {label}
     </Button>
   );
@@ -554,6 +585,114 @@ function GeneralSection() {
   );
 }
 
+/** What a crash report holds and never holds (plan 31): the Privacy section and its confirmation. */
+export const CRASH_REPORTS_TEXT =
+  "Off by default. When on, crashes and unexpected errors are sent to a crash-reporting service in the EU so they can be fixed. Reports contain the app version, device model and OS version, and the error. Before a report leaves the phone, the app removes your VIN, adapter name and address, and AI server address and key; a crash inside the phone's own system code is sent without that clean-up and could, rarely, include a Bluetooth adapter's address. Reports never contain trip data or location. You can turn this off any time.";
+
+/** **Privacy** (plan 31): the opt-in switch for anonymous crash reports. Off by default; switching
+ *  on asks first. A build without a crash-service address (dev builds, forks) shows "Unavailable in
+ *  this build" and keeps the switch disabled — nothing can be sent there. */
+function PrivacySection() {
+  const on = useSettingsStore((st) => st.crashReports);
+  const setCrashReports = useSettingsStore((st) => st.setCrashReports);
+  const available = isCrashReportingAvailable();
+
+  // The guards matter: a disabled button must never record consent.
+  const turnOn = () => {
+    if (on || !available) return;
+    appAlert('Send anonymous crash reports?', CRASH_REPORTS_TEXT, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Turn on', onPress: () => setCrashReports(true) },
+    ]);
+  };
+
+  return (
+    <YStack gap="$2">
+      <SectionLabel>Privacy</SectionLabel>
+      <SegGroup>
+        <YStack gap="$2" testID="settings-privacy">
+          <SubLabel>Send anonymous crash reports</SubLabel>
+          <XStack gap="$2" alignItems="center">
+            <Paragraph flex={1}>Help fix crashes</Paragraph>
+            <Seg
+              active={on}
+              label="On"
+              onPress={turnOn}
+              disabled={!available}
+              accessibilityLabel="Send anonymous crash reports: on"
+            />
+            <Seg
+              active={!on}
+              label="Off"
+              onPress={() => available && setCrashReports(false)}
+              disabled={!available}
+              accessibilityLabel="Send anonymous crash reports: off"
+            />
+          </XStack>
+          <Paragraph theme="alt2" fontSize="$1">
+            {CRASH_REPORTS_TEXT}
+          </Paragraph>
+          {!available ? (
+            <Paragraph theme="alt2" fontSize="$1" opacity={0.7} testID="crash-reports-unavailable">
+              Unavailable in this build.
+            </Paragraph>
+          ) : null}
+          <Button
+            size="$2"
+            alignSelf="flex-start"
+            accessibilityLabel="Read the privacy policy on GitHub"
+            onPress={() =>
+              Linking.openURL(PRIVACY_POLICY_URL).catch((e: unknown) =>
+                logError({ source: 'settings/privacy', error: e, severity: 'warning' }),
+              )
+            }
+          >
+            Read the privacy policy
+          </Button>
+        </YStack>
+      </SegGroup>
+    </YStack>
+  );
+}
+
+/** Developer & simulator → **Send test crash report** (plan 31): hands the crash service one event
+ *  carrying a sample VIN, adapter address and server address, so the received report shows the
+ *  scrubbing (`***03398`, `<device-id>`, `<url>`). Disabled while reporting is off. */
+function TestCrashReportSection() {
+  const on = useSettingsStore((st) => st.crashReports);
+  const usable = on && isCrashReportingAvailable();
+  const send = async () => {
+    await crashReportingReady();
+    appAlert(
+      'Test crash report',
+      sendTestCrashReport()
+        ? 'Sent. It should appear in the crash service within a minute, with the sample VIN, adapter address and server address removed.'
+        : 'Not sent: crash reporting is off or not available in this build.',
+    );
+  };
+  return (
+    <YStack gap="$2">
+      <SubLabel>Crash reports</SubLabel>
+      <Button
+        size="$3"
+        alignSelf="flex-start"
+        disabled={!usable}
+        opacity={usable ? 1 : 0.5}
+        onPress={() => {
+          if (usable) void send();
+        }}
+      >
+        Send test crash report
+      </Button>
+      <Paragraph theme="alt2" fontSize="$1">
+        {usable
+          ? 'Sends one test report with a sample VIN and adapter address, to check they arrive removed.'
+          : 'Turn on Settings → Privacy → Send anonymous crash reports first (needs a build with a crash-reporting address).'}
+      </Paragraph>
+    </YStack>
+  );
+}
+
 /** **Connection**: auto-reconnect, the poll interval and VIN recognition of garage cars. */
 function ConnectionSection() {
   const s = useSettingsStore();
@@ -970,7 +1109,7 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
       {!open ? (
         <Paragraph theme="alt2" fontSize="$1">
           Adapter source and simulator, adapter log and replay fixtures, feedback bundle preview,
-          show hints again, reset all app data.
+          test crash report, show hints again, reset all app data.
         </Paragraph>
       ) : (
         <SegGroup>
@@ -1082,6 +1221,8 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
               </Paragraph>
             </YStack>
 
+            <TestCrashReportSection />
+
             <HintsAndResetSection resetAppData={resetAppData} />
           </YStack>
         </SegGroup>
@@ -1100,6 +1241,8 @@ export function SettingsScreen({ resetAppData }: { resetAppData?: ResetAppData }
       <GeneralSection />
 
       <ConnectionSection />
+
+      <PrivacySection />
 
       <AiSection />
 

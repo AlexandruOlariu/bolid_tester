@@ -117,7 +117,7 @@ def ts_summary(path):
     """One-line summary for a TS/TSX module: first JSDoc sentence, else first
     `//` comment, else first exported symbol name."""
     txt = read_text(path)
-    m = _JSDOC.search(txt[:1200])
+    m = _JSDOC.search(txt[:2400])
     if m:
         body = re.sub(r"^\s*\*\s?", "", m.group(1), flags=re.M)
         body = re.sub(r"\s+", " ", body).strip()
@@ -307,7 +307,7 @@ def build_shared(g):
             else:
                 add_filenode(f"core:{sub}", "core", p)
 
-    # lib / state(store) / ui / transports(ble, tcp, spp)
+    # lib / state(store) / ui / transports(ble, tcp, spp) / telemetry (opt-in crash reports)
     for sub, prefix, ntype in (
         ("lib", "lib", "lib"),
         ("state", "store", "store"),
@@ -315,6 +315,7 @@ def build_shared(g):
         ("transports/ble", "transport", "transport"),
         ("transports/tcp", "transport", "transport"),
         ("transports/spp", "transport", "transport"),
+        ("telemetry", "telemetry", "service"),
     ):
         d = root / sub
         if not d.is_dir():

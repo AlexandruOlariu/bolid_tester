@@ -4386,6 +4386,11 @@
   ],
   [
     "feature:settings",
+    "telemetry:crashReporting",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "transport:endpoint",
     "imports"
   ],
@@ -4901,6 +4906,11 @@
   ],
   [
     "screen:_layout",
+    "telemetry:useCrashReporting",
+    "imports"
+  ],
+  [
+    "screen:_layout",
     "ui:AppSplash",
     "imports"
   ],
@@ -5345,6 +5355,11 @@
     "imports"
   ],
   [
+    "store:errorLogStore",
+    "telemetry:crashReporting",
+    "imports"
+  ],
+  [
     "store:eventLog",
     "store:errorLogStore",
     "imports"
@@ -5577,6 +5592,51 @@
   [
     "store:vehicleStore",
     "store:persistStorage",
+    "imports"
+  ],
+  [
+    "telemetry:crashReporting",
+    "doc:plans/31-opt-in-crash-reporting",
+    "named"
+  ],
+  [
+    "telemetry:crashReporting",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "telemetry:crashReporting",
+    "lib:errorLog",
+    "imports"
+  ],
+  [
+    "telemetry:crashReporting",
+    "lib:scrub",
+    "imports"
+  ],
+  [
+    "telemetry:useCrashReporting",
+    "doc:plans/31-opt-in-crash-reporting",
+    "named"
+  ],
+  [
+    "telemetry:useCrashReporting",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "telemetry:useCrashReporting",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "telemetry:useCrashReporting",
+    "store:settingsStore",
+    "imports"
+  ],
+  [
+    "telemetry:useCrashReporting",
+    "telemetry:crashReporting",
     "imports"
   ],
   [

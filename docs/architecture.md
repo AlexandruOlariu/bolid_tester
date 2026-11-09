@@ -192,8 +192,8 @@ Keeping stores thin and the logic in the core means the logic is testable withou
 Shared stores (`src/shared/state/`), used by several features:
 
 - `sessionStore` — connection status and the live `DiagnosticSession` + `SessionInfo` (in memory);
-- `settingsStore` — adapter source, simulator, polling, auto-reconnect, VIN auto-select, theme, AI
-  (`bolid.settings`);
+- `settingsStore` — adapter source, simulator, polling, auto-reconnect, VIN auto-select, theme, AI,
+  opt-in crash reports (`bolid.settings`);
 - `garageStore` — the user's garage cars (`UserVehicle[]`, `bolid.garage`);
 - `vehicleStore` — the selected vehicle id (`bolid.vehicle`); `activeProfile.ts` resolves it over the
   registry and the garage by `resolveProfile` (`getActiveProfile` / `useActiveProfile`, see
@@ -216,6 +216,34 @@ backup reads complete files).
   (e.g. skip an unsupported PID rather than abort the whole poll).
 - BLE disconnects surface as a `status` change; the UI offers reconnect.
 - All adapter I/O can be mirrored to an in-app **log** (Settings) for debugging real cars.
+
+## Telemetry: opt-in crash reports (plan 31)
+
+`src/shared/telemetry/` holds the only code that can send diagnostics off the phone on its own, and
+it is **opt-in**: off by default, switched on only by the user in Settings → Privacy (after a
+confirmation), and a **no-op** when the build has no `EXPO_PUBLIC_SENTRY_DSN` (dev builds, forks —
+the DSN comes from a CI / EAS secret, never from the repository) or `@sentry/react-native` cannot be
+loaded.
+
+- `crashReporting.ts` — no React Native or store imports (so `errorLogStore` can call it without an
+  import cycle, and it runs in the Node test project). Loads the SDK lazily through a variable
+  import specifier, initialises it only when switched on, closes it when switched off, and gates
+  `beforeSend` on the switch. `captureError(input)` is called by `logError` for `error` / `fatal`
+  entries; `addCrashBreadcrumb('nav' | 'connection', …)`; `sendTestCrashReport()`.
+- `useCrashReporting.ts` — mounted once by `src/app/_layout.tsx` as the headless
+  `<CrashReportingHost />` (so its per-navigation `usePathname` re-render stays out of the root
+  layout): starts the reporter with the
+  stored choice, follows the switch, adds the screen-path and connection-status breadcrumbs, keeps
+  the known VINs (connected car, garage) in the scrubber's list.
+- `src/shared/lib/scrub.ts` — `scrubEvent` / `scrubBreadcrumb` / `scrubCrashText`, pure and in the
+  core typecheck scope: VIN, device ids, URLs, tokens, coordinates and e-mail addresses removed;
+  `user` / `request` / `server_name` dropped; contexts reduced to device model, OS and app version;
+  tags whitelisted; only `nav` / `connection` breadcrumbs kept. Native crashes (Java / Objective-C /
+  NDK / ANR) are sent by the native SDK without this scrubber; the privacy policy says so. No
+  tracing: `tracesSampleRate` is unset, so no `sentry-trace` / `baggage` headers go on any request.
+
+Rule: anything new that would send data off the phone without the user choosing a destination
+goes through this module's opt-in gate and the privacy policy first.
 
 ## Why this shape
 

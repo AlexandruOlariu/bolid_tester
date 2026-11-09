@@ -52,14 +52,19 @@ app.json`), so app.json lands in the same commit as the bump. Never edit the thr
 - `build-android`, in order: tag = `v<package.json version>` (tags only) → restore the keystore from
   `ANDROID_KEYSTORE_B64` into `$RUNNER_TEMP` and export `BOLID_KEYSTORE_PATH` (a tag build **fails
   here** when the secret is missing, instead of publishing a debug-signed release) → `expo prebuild`
-  with `BOLID_VERSION_CODE=<run number>` → `./gradlew assembleRelease bundleRelease` →
+  with `BOLID_VERSION_CODE=<run number>` → **Sentry source-map upload switch** (sets
+  `SENTRY_DISABLE_AUTO_UPLOAD=true` while the `SENTRY_AUTH_TOKEN` secret is missing, plan 31) →
+  `./gradlew assembleRelease bundleRelease` (with `EXPO_PUBLIC_SENTRY_DSN` from the `SENTRY_DSN`
+  secret, `SENTRY_AUTH_TOKEN`, and `SENTRY_ORG` from the repository variable) →
   `aapt2 dump badging` must show `versionCode=<run number>` and `versionName=<version>` →
   `apksigner verify --print-certs` must succeed, print a signer certificate and not show "Android
   Debug" (whenever a keystore was restored)
   → artifact `android-v<version>-<run>` holding `bolid-tester-v<version>-<run>.apk` and `.aab`.
 - Tags only: `gh release create vX.Y.Z <apk> <aab> --verify-tag --generate-notes` (notes from the
   merged PRs and commits since the previous tag).
-- `ota-publish` (tags only, after the build): `eas-cli update --branch production --message vX.Y.Z`.
+- `ota-publish` (tags only, after the build): `eas-cli update --branch production --message vX.Y.Z`,
+  with the same `EXPO_PUBLIC_SENTRY_DSN` as the APK (an update bundled without it would turn crash
+  reporting into a no-op on every install that takes it).
   It skips with a warning while `EXPO_TOKEN` is missing or `app.json` still has the placeholder
   project, so a tag release never waits on the Expo setup.
 - `git push --follow-tags` from `main` starts two runs (the branch and the tag). Both build; only the
@@ -95,6 +100,9 @@ $env:BOLID_VERSION_CODE = "1000"   # optional
 npx expo prebuild --platform android --no-install
 $env:BOLID_KEYSTORE_PATH = "C:\keys\bolid-release.keystore"
 $env:BOLID_KEYSTORE_PASSWORD = "…"; $env:BOLID_KEY_ALIAS = "bolid"; $env:BOLID_KEY_PASSWORD = "…"
+# No Sentry token on a dev machine: switch the source-map upload off or the build fails (plan 31).
+# With a token instead: $env:SENTRY_AUTH_TOKEN = "…"; $env:SENTRY_ORG = "<org slug>"
+$env:SENTRY_DISABLE_AUTO_UPLOAD = "true"
 cd android; .\gradlew.bat assembleRelease bundleRelease --no-daemon
 ```
 
@@ -128,6 +136,36 @@ Keystores never enter git: `.gitignore` ignores `*.keystore` and `*.jks`.
 - **A bad tag** (CI failed, nothing published): `git push --delete origin vX.Y.Z && git tag -d
 vX.Y.Z`, fix, then `npm version patch` again. Do not reuse a tag that produced a Release.
 
+## Crash reports (plan 31)
+
+Opt-in crash reporting ([settings → Privacy](./features/settings.md#privacy-crash-reports-plan-31))
+uses Sentry through `@sentry/react-native` and its Expo config plugin
+(`["@sentry/react-native/expo", { "project": "bolid-tester", "url": "https://de.sentry.io/" }]` in
+`app.json`, before `./plugins/withReleaseSigning`; `metro.config.js` uses `getSentryExpoConfig` for
+source-map debug ids, without Web Replay). The organisation slug comes from `SENTRY_ORG`.
+
+| Name                         | Where                                                     | What for                                                                                |
+| ---------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `SENTRY_DSN`                 | GitHub secret                                             | Becomes `EXPO_PUBLIC_SENTRY_DSN` in the CI APK / AAB and the OTA bundle                 |
+| `SENTRY_AUTH_TOKEN`          | GitHub secret (and EAS secret for EAS builds)             | Source-map upload during the release build; without it the upload is switched off       |
+| `SENTRY_ORG`                 | GitHub repository **variable** (and EAS env)              | The Sentry organisation slug for the upload                                             |
+| `EXPO_PUBLIC_SENTRY_DSN`     | EAS environment variable (`eas env:create`), production   | The DSN for EAS-built apps                                                              |
+| `SENTRY_DISABLE_AUTO_UPLOAD` | `eas.json`, every profile (`"true"`)                      | Keeps EAS builds green until the token exists; remove it from `production` once it does |
+| `SENTRY_DISABLE_AUTO_UPLOAD` | `e2e.yml` build step, `npm run android:apk`, local builds | These builds never have a token; the upload step would otherwise fail the build         |
+
+- **No DSN is committed.** Without `EXPO_PUBLIC_SENTRY_DSN` (dev builds, forks, local Gradle builds)
+  the reporter is a no-op and Settings shows "Unavailable in this build".
+- Even with a DSN nothing is sent until the user turns the switch on; events are scrubbed in
+  `beforeSend` (`scrubEvent`) and tagged `release` = the app version, `environment: production`
+  (`dev` in a dev build).
+- Native crashes (Java / Objective-C / NDK) are captured by the native SDK and do not pass through
+  the JavaScript scrubber; with `sendDefaultPii: false` they carry no device name. The native SDK
+  attaches its own random installation ID (used to count crash-free sessions; it is not linked to
+  the user). In the Sentry project, also turn on **Prevent storing of IP addresses** and keep the
+  server-side data scrubbing defaults.
+- The crash-free sessions figure for the store release (plan 30) comes from
+  `enableAutoSessionTracking`.
+
 ## Owner setup (once)
 
 None of this blocks the code: without it, main builds are debug-signed and OTA is skipped.
@@ -146,7 +184,16 @@ None of this blocks the code: without it, main builds are debug-signed and OTA i
    resulting `app.json`. Create the channels if EAS has not: `eas channel:create production` and
    `eas channel:create preview`. Add an `EXPO_TOKEN` secret (expo.dev → Access tokens) for
    `ota-publish`.
-4. **First release** (the plan's step 5): when the v0.2 items are in, `npm version minor` → `v0.2.0`,
+4. **Crash reports (optional, plan 31).** Create a Sentry organisation and a `bolid-tester`
+   project in the **EU region** (de.sentry.io). Add the GitHub secrets `SENTRY_DSN` and
+   `SENTRY_AUTH_TOKEN` and the repository variable `SENTRY_ORG`; for EAS builds add
+   `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_AUTH_TOKEN` and `SENTRY_ORG` as EAS environment variables of
+   the production environment and delete `SENTRY_DISABLE_AUTO_UPLOAD` from the `production` profile
+   in `eas.json`. In the project settings turn on **Prevent storing of IP addresses**. Then, on a
+   release build, switch on Settings → Privacy → Send anonymous crash reports and press Settings →
+   Developer & simulator → **Send test crash report**: the event must arrive with `***03398`,
+   `<device-id>` and `<url>` in its message, no device name, and `environment: production`.
+5. **First release** (the plan's step 5): when the v0.2 items are in, `npm version minor` → `v0.2.0`,
    push, and check the acceptance list below on the tag's run.
 
 ### Acceptance checks for the first signed tag

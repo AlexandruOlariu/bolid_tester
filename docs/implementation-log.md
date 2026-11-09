@@ -5,6 +5,145 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 31 — Opt-in crash reporting (2026-11-09)
+
+[Plan 31](./plans/31-opt-in-crash-reporting.md) landed: a user can switch on anonymous, scrubbed
+crash reports in **Settings → Privacy**; everyone else sends nothing. Off by default, a confirmation
+before it turns on, a no-op without a DSN (env only, never committed) or without the SDK. The error
+log stays the complete local record. Roadmap ✅, owner setup pending (the Sentry EU project and the
+DSN / token secrets, plan § Owner actions).
+
+- **Scrubbing (`src/shared/lib/scrub.ts`, core scope).** Plan 32 had already shipped `scrubText`
+  with the plan's five rules (VIN → `***` + last 5, MAC / UUID → `<device-id>`, URLs → `<url>`,
+  `sk-` keys / bearer tokens → `<token>`, GPS pairs → `<coords>`), so this plan reuses it and adds
+  `scrubCrashText` (plus e-mail addresses → `<email>` and the VINs the app knows, wherever they
+  occur), `scrubBreadcrumb` (only `nav` / `connection`, message scrubbed, `data` dropped) and
+  `scrubEvent` (message, `logentry`, every `exception.values[].value`, breadcrumbs, `extra`
+  strings scrubbed; `user`, `request`, `server_name` removed; contexts reduced to device model /
+  family / maker, `os`, app name / version / build — never the device name, `device_app_hash` or an
+  id; tags limited to `screen`, `source`, `severity`, `adapterSource`, `protocol`). Pure, the input
+  is not changed, idempotent.
+- **Reporter (`src/shared/telemetry/crashReporting.ts`).** No RN or store imports. Loads
+  `@sentry/react-native` with the variable-specifier import and calls `Sentry.init` only once the
+  switch is on (`sendDefaultPii: false`, `attachStacktrace`, no screenshot / view hierarchy,
+  `maxBreadcrumbs: 30`, no tracing, `enableAutoSessionTracking: true`, `release` = app
+  version, `environment` `dev` / `production`, `beforeSend` = gate + `scrubEvent`,
+  `beforeBreadcrumb` = `scrubBreadcrumb`). Switching off closes the SDK and closes the gate;
+  switching on re-initialises without a restart; switched off mid-load = never initialised.
+  `getCrashReportingStatus()` (`unavailable` / `missing` / `off` / `on`), `sendTestCrashReport()`,
+  `setCrashScrubVins()`, and test seams (`setCrashReportingDsn`, `setCrashReportingModuleLoader`,
+  `resetCrashReporting`).
+- **Wiring.** `logError` hands `error` / `fatal` entries to `captureError` after the store write
+  (dedup stays in `logError`); `global` / `unhandledRejection` entries are skipped because the SDK's
+  own handlers capture them. `useCrashReporting()` (run by the headless `<CrashReportingHost />`
+  in `src/app/_layout.tsx`) starts the
+  reporter with the stored choice, follows the switch (including the change hydration makes),
+  adds `nav` (`usePathname`) and `connection` (status) breadcrumbs, and keeps the session / garage
+  VINs in the scrubber.
+- **Settings.** `settingsStore.crashReports` (default `false`) + `setCrashReports`, persisted at
+  **version 8**: `migrateSettings` v7 → v8 sets `crashReports: p.crashReports === true` and `merge`
+  reads anything but an explicit `true` as off. New **Privacy** section between Connection and AI
+  (the plan's wording, On / Off with an `appAlert` **Cancel** / **Turn on** confirmation, **Read the
+  privacy policy**, "Unavailable in this build" and disabled segments without a DSN). Developer &
+  simulator → **Crash reports → Send test crash report** (disabled while off).
+- **Build.** `npx expo install @sentry/react-native -- --legacy-peer-deps` (~7.11.0); `app.json` plugin
+  `["@sentry/react-native/expo", { "project": "bolid-tester", "url": "https://de.sentry.io/" }]`
+  before `./plugins/withReleaseSigning`; `metro.config.js` → `getSentryExpoConfig` (debug ids, no
+  Web Replay); `eas.json` `env.SENTRY_DISABLE_AUTO_UPLOAD: "true"` on every profile; CI
+  `build-android` turns the upload off while `SENTRY_AUTH_TOKEN` is missing and passes
+  `EXPO_PUBLIC_SENTRY_DSN` (secret `SENTRY_DSN`), `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` (variable) to
+  Gradle; `ota-publish` passes the same DSN so an OTA bundle keeps reporting working. The plugin
+  adds a source-map upload to every non-debug Gradle build, so every build without a token sets
+  `SENTRY_DISABLE_AUTO_UPLOAD=true`: the `e2e.yml` build step, `npm run android:apk`, and the local
+  recipes in `README.md`, `release.md` and the `android-apk` skill.
+- **Tests (+2 suites, 1982 tests / 219 suites).** `crashReporting.test.ts` (no DSN → nothing
+  loaded; the real import mocked to throw `MODULE_NOT_FOUND` → status `missing`, nothing sent;
+  switch off → no load, no init, `logError` sends nothing; on → one `init` with the privacy
+  options; errors and fatals sent, warnings and SDK-captured sources not; off → close + gate drops
+  queued events, on again resumes; off during load; `beforeSend` / `beforeBreadcrumb` scrubbing;
+  test report; failing init). `useCrashReporting.test.tsx` (fresh install sends nothing; the switch
+  on / off / on; launch with the stored choice on, connection breadcrumbs, session VIN masked).
+  Extended `scrub.test.ts` (e-mail, known VINs, breadcrumbs, `scrubEvent` user / contexts / tags /
+  nested exception values / extra, purity, idempotence), `settingsStore.test.ts` (v8, default off,
+  v7 → v8, malformed value, persistence), `SettingsScreen.test.tsx` (section order with Privacy,
+  unavailable, consent dialog, test button), `privacyPolicy.test.ts` (Sentry named, the crash
+  section's contents).
+- **Docs.** `features/settings.md` (Privacy section, model, v8 migration, acceptance),
+  `features/error-log.md` (relationship: complete local record vs scrubbed subset),
+  `privacy-policy.md` + in-app copy (new section "Crash reports (optional)": what, where — Sentry EU,
+  retention 90 days, consent, withdrawal; "receives nothing … unless you turn on crash reports"),
+  `release.md` (Sentry secrets / variables table, owner step 4), `architecture.md` (Telemetry
+  section, opt-in rule), roadmap ✅ (owner setup pending).
+- **Deviations.**
+  - `scrubText` already existed (plan 32); the plan's step 1 became additions to it. E-mail masking
+    and known-VIN masking were added for crash reports only (`scrubCrashText`), so the problem
+    report's output is unchanged by them (the later scheme-less address rule, see Review fixes, is
+    in `scrubText` and applies to both).
+  - The SDK is initialised lazily (only when switched on) instead of always with `enabled: <flag>`,
+    because the SDK has no runtime enable switch; off = `close()` + the `beforeSend` gate. The
+    plan's `init(dsn)` / `setEnabled` interface exists as `crashReporter`, backed by the module
+    functions.
+  - The acceptance's "debug log line 'crash reporting: disabled'" is replaced by
+    `getCrashReportingStatus()` (asserted in tests): the repo rule forbids `console.*`.
+  - The Privacy section sits between Connection and AI (General → Connection → Privacy → AI), still
+    between General and AI as the plan says; Connection already followed General.
+  - The plugin is `@sentry/react-native/expo` with `url: https://de.sentry.io/` (EU) and no
+    `organization` (it comes from `SENTRY_ORG`), so no placeholder is committed.
+  - `SENTRY_DISABLE_AUTO_UPLOAD` in `eas.json` (all profiles) and a CI step keep builds green until
+    the owner adds the token; the owner removes it from the `production` profile then.
+  - The "Send test crash report" button lives in the collapsed Developer & simulator section of
+    every build (not `__DEV__` only), because the acceptance runs it on a release build.
+  - Native crashes are captured by the native SDK and do not pass through the JavaScript scrubber;
+    the native SDK also attaches its own random installation ID for crash-free sessions. Both are
+    stated in the privacy policy and `release.md` (owner: turn on "Prevent storing of IP addresses").
+- **Review fixes.**
+  - The first install ran without `--legacy-peer-deps` and polluted `package-lock.json` with 23
+    `"peer": true` entries, the same regression as plan 23's expo-print (entry (d)). Among them were
+    native peers (reanimated, worklets outside expo-modules-core's range, gesture-handler) that
+    autolinking would have compiled in. The lockfile was restored from HEAD and the install redone
+    with `-- --legacy-peer-deps`: 0 peer entries, the `dev` flags unchanged. `expo install` also
+    appended a second bare `"@sentry/react-native"` plugin entry to `app.json`, which was removed.
+  - `e2e.yml` and the local release recipes would have failed on the Sentry upload step without a
+    token; they now set `SENTRY_DISABLE_AUTO_UPLOAD=true` (see Build).
+  - `tracesSampleRate: 0` turned Sentry's tracing on: any number does. While reports were on, its XHR
+    instrumentation (with `tracePropagationTargets` defaulting to every URL on native) added
+    `sentry-trace` / `baggage` headers to every request, AI calls included. The option is now unset,
+    with `enableAutoPerformanceTracing: false` and `tracePropagationTargets: []` as extra guards. A test
+    asserts there is no `tracesSampleRate` key.
+  - The policy promised that every report is scrubbed before it leaves the phone. Native crashes
+    skip the JS `beforeSend`, so the in-app and published policy (and the module header) now say that
+    a crash in system code or a built-in library is sent without that clean-up and could, rarely,
+    include an adapter's Bluetooth address. Native crash capture stays on, because the plan picked
+    Sentry for it.
+  - `useCrashReporting()` reads `usePathname()`, so calling it in `RootLayout` re-rendered the whole
+    navigator on every screen change. It now runs in a headless `CrashReportingHost` component that
+    renders nothing, with a test.
+  - Context graph: `graph.py` now scans `src/shared/telemetry/`, which adds the
+    `telemetry:crashReporting` / `telemetry:useCrashReporting` nodes. Its JSDoc summary window grew
+    from 1200 to 2400 characters, so long module headers get a real summary instead of
+    `exports X`. The CLAUDE.md layout line still omits `telemetry/`. It was left as it was because
+    this pass does not edit CLAUDE.md.
+  - The Wi-Fi adapter's address reached crash reports. `TcpTransport`'s connect errors quote the
+    bare `host:port` (`No answer from the Wi-Fi adapter at 192.168.0.10:35000 …`), `connectionService`
+    logs them at severity `error`, and no scrub rule matched an address without `http(s)://`, against
+    the consent text and the policy ("removes … adapter names and addresses"). `scrubText` now
+    replaces a dotted IPv4 address (port optional) or a `host:port` whose host's last label starts
+    with a letter by `<address>` (a clock time or ISO timestamp is not matched), alongside the
+    device-id rules, so **Keep VIN and adapter address** keeps it in a problem report. Being in
+    `scrubText`, this also applies to the plan 32 problem report (`features/feedback.md` redaction
+    table updated) — a gap there too, beyond the plan's rule list. URLs are now replaced first,
+    because a URL match ends at `<` and masking its host first would leave its path behind. Tests
+    cover the three TCP messages, IPv4, `obd.local:35000`, the not-an-address cases and idempotence.
+  - The consent text (`CRASH_REPORTS_TEXT`, shown under the switch and in the **Turn on** dialog)
+    said reports "never contain your VIN, adapter name or address", while the policy says native
+    crashes skip the scrubber and could, rarely, include a Bluetooth adapter's address. The text now
+    says the app removes them before a report leaves the phone, that a crash in the phone's own
+    system code is sent without that clean-up and could rarely include a Bluetooth adapter's
+    address, and that reports never contain trip data or location. `features/settings.md` quotes
+    the new text.
+
+---
+
 ## Plan 09 — iOS via EAS: config, code checks, docs (2026-11-09)
 
 [Plan 09](./plans/09-ios-eas.md) steps 1, 2 and 5 landed: the iOS app config and EAS profiles are

@@ -14,7 +14,7 @@ points, maintenance entries, backups, bus captures and the error log — is stor
 in the app’s private storage.
 
 There are no accounts, no analytics, no advertising and no tracking. The developer receives nothing
-from the app.
+from the app unless you turn on crash reports (below).
 
 ## When the app uses the internet
 
@@ -34,6 +34,12 @@ from the app.
   during start-up, to recover with a working version.
 - Web search: on a fault code’s detail sheet, Search the web opens your browser with a search for
   that code and, when a car is selected, its name. From there the browser and the search engine apply their own privacy policies.
+
+## Crash reports (optional)
+
+Crash reports are off unless you turn on Settings → Privacy → Send anonymous crash reports. When on, a crash or an unexpected error sends a report to Sentry (Functional Software, Inc.), a crash-reporting service, stored in its EU region (Germany). A report contains the app version, the phone model and system version, the error message and where in the app it happened, the last screens opened and the connection status changes before it. Before a report of an error in the app’s own code leaves the phone, the app removes VINs, adapter names and addresses, server addresses, API keys, e-mail addresses and GPS coordinates. A crash inside the phone’s system code or a built-in library is reported by the crash-reporting library directly, without that clean-up: it holds the technical error details and could, rarely, include a Bluetooth adapter’s address. A report never contains trip data, live values or your location. No account or user ID is set; the crash-reporting library adds its own random installation ID to count crash-free sessions, and the service sees your IP address like any web request but is set not to store it.
+
+Reports are kept for 90 days and used only to find and fix bugs. The legal basis is your consent, which you withdraw by turning the switch off: nothing more is sent from then on. Reports already sent cannot be deleted from the phone, but they are not linked to you.
 
 ## Bluetooth, location and notifications
 
@@ -77,5 +83,10 @@ in `app.json` `updates` (`checkAutomatically: "ON_ERROR_RECOVERY"`); the web sea
 `src/shared/lib/backup.ts` (`redactBackup` blanks any API key) and written by
 `src/features/backup/api/backupService.ts`, with no network call; the problem report is built by
 `redactBundle` (`src/shared/lib/feedbackBundle.ts`) and handed to the share sheet, the mail app or
-the browser by `src/features/feedback/hooks/useFeedbackBundle.ts`, with no network call of its own.
+the browser by `src/features/feedback/hooks/useFeedbackBundle.ts`, with no network call of its own;
+crash reports are sent only by `src/shared/telemetry/crashReporting.ts` (Sentry, initialised only
+after the Settings → Privacy switch is turned on, and only in builds with `EXPO_PUBLIC_SENTRY_DSN`),
+every JavaScript event passing `scrubEvent` (`src/shared/lib/scrub.ts`) first; native crashes
+(Java / Objective-C / NDK / ANR) are sent by the native Sentry SDK without that scrubber, as the
+policy text says.
 A new network call anywhere in the app must be added here first.

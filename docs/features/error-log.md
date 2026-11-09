@@ -76,6 +76,18 @@ dropped, next to the adapter log and the device info the error log lacks. The ro
 boundary's fallback ("Something broke") says "Try again, or report it from More > Report a
 problem".
 
+## Relationship to crash reports (plan 31)
+
+The error log is the **complete local record** and is always on. Opt-in crash reports
+([settings → Privacy](./settings.md#privacy-crash-reports-plan-31)) are a **scrubbed subset** sent
+only after the user turns them on in a build that carries a crash-service address: `logError`
+writes the entry first, then hands `error` / `fatal` entries to `captureError`
+(`src/shared/telemetry/crashReporting.ts`), whose gate decides whether anything leaves the phone.
+Warnings are never sent; the dedup window stays in `logError` only; `global` and
+`unhandledRejection` entries are not forwarded because the crash SDK's own handlers capture those
+errors (and native crashes) once it is initialised. `installGlobalErrorHandlers` keeps its 150 ms
+deferral of the fatal handler.
+
 ## Retention
 
 - **Capped at `MAX_ERRORS` (500)** — newest kept, oldest dropped, so the persisted file can't grow
@@ -89,3 +101,5 @@ problem".
 - Entries persist across app restarts and render under the correct severity filter.
 - Export produces a Markdown or JSON file and opens the share sheet; Clear all empties the list and
   the persisted file.
+- With crash reports off (the default), no build or DSN, `logError` sends nothing anywhere
+  (`crashReporting.test.ts`).

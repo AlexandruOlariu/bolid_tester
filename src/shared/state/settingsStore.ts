@@ -110,6 +110,9 @@ export interface SettingsState {
   ai: AiSettings;
   /** The Wi-Fi adapter's TCP address (plan 26), used when `adapterSource` is `'wifi'`. */
   wifi: TcpEndpoint;
+  /** Send anonymous, scrubbed crash reports (plan 31). Off by default; only the user turns it on
+   *  (Settings → Privacy, after a confirmation). See `src/shared/telemetry/crashReporting.ts`. */
+  crashReports: boolean;
   /** Runtime only (never persisted): set when hydration replaced an adapter source this platform
    *  cannot use (a stored `'spp'` on iOS, plan 27). The Connect screen shows it once. */
   adapterSourceNotice: string | null;
@@ -124,6 +127,7 @@ export interface SettingsState {
   setAi: (patch: Partial<AiSettings>) => void;
   /** Change the Wi-Fi endpoint; an invalid result (bad host, port out of 1–65535) is ignored. */
   setWifi: (patch: Partial<TcpEndpoint>) => void;
+  setCrashReports: (on: boolean) => void;
 }
 
 export const DEFAULT_AI_SETTINGS: AiSettings = {
@@ -156,8 +160,8 @@ export function parseDtcList(text: string): string[] {
 /** Persisted settings schema version. v2 = production defaults (real adapter, no injected DTC);
  *  v3 = auto-reconnect on by default (plan 12); v4 = VIN auto-select of garage cars (plan 06);
  *  v5 = AI provider presets (plan 19); v6 = metric only, the dead `units` field dropped (plan 07);
- *  v7 = the Wi-Fi adapter endpoint (plan 26). */
-export const SETTINGS_VERSION = 7;
+ *  v7 = the Wi-Fi adapter endpoint (plan 26); v8 = opt-in crash reports (plan 31). */
+export const SETTINGS_VERSION = 8;
 
 /** Step a persisted blob up to `SETTINGS_VERSION`. Each step only fills *missing* fields with the new
  *  default — an explicit stored choice always survives (a tester who chose the simulator, or turned
@@ -168,7 +172,8 @@ export const SETTINGS_VERSION = 7;
  *   - v4 → v5: `ai.provider` inferred from the stored server URL (`inferProvider`: api.openai.com →
  *     openai, api.anthropic.com → anthropic, blank → local, anything else → custom).
  *   - v5 → v6: the app is metric only (plan 07): a stale `units` key is dropped.
- *   - v6 → v7: `wifi` (the Wi-Fi adapter endpoint, plan 26) defaults to `192.168.0.10:35000`. */
+ *   - v6 → v7: `wifi` (the Wi-Fi adapter endpoint, plan 26) defaults to `192.168.0.10:35000`.
+ *   - v7 → v8: `crashReports` (plan 31) defaults to off — an upgrade never opts anyone in. */
 export function migrateSettings(persisted: unknown, fromVersion: number): Partial<SettingsState> {
   let p = { ...((persisted ?? {}) as Partial<SettingsState>) };
   if (fromVersion < 2) {
@@ -192,6 +197,7 @@ export function migrateSettings(persisted: unknown, fromVersion: number): Partia
   }
   if (fromVersion < 6) p = withoutUnits(p);
   if (fromVersion < 7) p = { ...p, wifi: p.wifi ?? { ...DEFAULT_WIFI_ENDPOINT } };
+  if (fromVersion < 8) p = { ...p, crashReports: p.crashReports === true };
   return p;
 }
 
@@ -219,6 +225,8 @@ export const useSettingsStore = create<SettingsState>()(
       theme: 'dark',
       ai: DEFAULT_AI_SETTINGS,
       wifi: { ...DEFAULT_WIFI_ENDPOINT },
+      // Off by default (plan 31): nothing is sent until the user opts in.
+      crashReports: false,
       adapterSourceNotice: null,
       dismissAdapterSourceNotice: () => set({ adapterSourceNotice: null }),
       setAdapterSource: (adapterSource) => set({ adapterSource }),
@@ -228,6 +236,7 @@ export const useSettingsStore = create<SettingsState>()(
       setAutoReconnect: (autoReconnect) => set({ autoReconnect }),
       setAutoSelectByVin: (autoSelectByVin) => set({ autoSelectByVin }),
       setTheme: (theme) => set({ theme }),
+      setCrashReports: (crashReports) => set({ crashReports }),
       setWifi: (patch) => {
         const next = { ...useSettingsStore.getState().wifi, ...patch };
         if (isValidEndpoint(next)) set({ wifi: { host: next.host, port: next.port } });
@@ -269,6 +278,7 @@ export const useSettingsStore = create<SettingsState>()(
         theme: s.theme,
         ai: redactApiKey(s.ai),
         wifi: s.wifi,
+        crashReports: s.crashReports,
       }),
       // Deep-merge `ai` so new default fields survive an older persisted blob. A *legacy* blob may
       // still carry a plaintext apiKey here; it lands in runtime state, and `hydrateApiKey()` (below)
@@ -280,7 +290,9 @@ export const useSettingsStore = create<SettingsState>()(
         if (!isAiProviderId(ai.provider)) ai.provider = inferProvider(ai.baseUrl);
         // A restored or hand-edited file with an unusable endpoint keeps the current one.
         const wifi = isValidEndpoint(p.wifi) ? p.wifi : current.wifi;
-        const merged = { ...current, ...p, ai, wifi };
+        // Only an explicit `true` opts in (plan 31): a malformed value reads as off.
+        const crashReports = p.crashReports === true;
+        const merged = { ...current, ...p, ai, wifi, crashReports };
         // Classic Bluetooth on iOS (a backup restored from an Android phone): fall back to BLE,
         // and have onRehydrateStorage write that back to the file.
         const fallback = platformFallback(merged.adapterSource);

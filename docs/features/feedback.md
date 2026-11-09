@@ -92,7 +92,7 @@ boundary's fallback text points here: "Try again, or report it from More > Repor
 ## Redaction
 
 Applied by `redactBundle`. **Keep VIN and adapter address** (`redacted: false`) skips only the
-first four rows — the VIN and the device ids; the URL, secret, token and coordinate rows apply
+first five rows — the VIN, the device ids and the network addresses; the URL, secret, token and coordinate rows apply
 whatever the switch says.
 
 | What                                    | Becomes                                                                                      |
@@ -101,6 +101,7 @@ whatever the switch says.
 | VIN reply in the adapter log (`49 02`)  | ASCII hex of the first 12 characters → `*`, last 5 kept — contiguous, multi-frame or chunked |
 | Adapter device id                       | MAC → `AA:BB:CC:**:**:**`; UUID / Wi-Fi address → `<device-id>`                              |
 | MAC / UUID inside any text              | `<device-id>`                                                                                |
+| IPv4 / `host:port` inside any text      | `<address>` (the Wi-Fi adapter's `192.168.0.10:35000`, quoted by its connect errors)         |
 | http(s) URL inside any text             | `<url>`                                                                                      |
 | Error context key `baseUrl` / `*url*` … | `<url>`                                                                                      |
 | Error context key `apiKey` / token …    | dropped                                                                                      |

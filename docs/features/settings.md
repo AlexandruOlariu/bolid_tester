@@ -12,21 +12,75 @@ User preferences first, then the developer and simulator controls in their own c
    with plan 11.
 2. **Connection** — **Auto-reconnect**, **Poll interval** (250 / 500 / 1000 / 2000 ms; "How often
    live values are read. A slow K-line car sets its own pace.") and **Recognise my cars by VIN**.
-3. **AI assistant (auto-diagnose)**.
-4. **Notifications** — one row, **Notification settings** ("Alerts, reminders and quiet mode"),
+3. **Privacy** — **Send anonymous crash reports** (plan 31), see [Privacy](#privacy-crash-reports-plan-31).
+4. **AI assistant (auto-diagnose)**.
+5. **Notifications** — one row, **Notification settings** ("Alerts, reminders and quiet mode"),
    that opens `/notifications`, where the preferences live ([notifications](./notifications.md)).
-5. **Data** — backup & restore, label packs, security-access plugins.
-6. **Developer & simulator** — **collapsed on open**: the header (a button labelled
+6. **Data** — backup & restore, label packs, security-access plugins.
+7. **Developer & simulator** — **collapsed on open**: the header (a button labelled
    "Developer & simulator. Show" / "… Hide") shows **Show** and a one-line summary; pressing it
    reveals, in one card: **Adapter source**, then (Wi-Fi only) **Wi-Fi adapter address**, (Classic
    Bluetooth only) the pairing note, then
    (simulator only) **Simulated vehicle**,
    **Injected DTCs** and **Simulator test controls**, then the **Adapter log** with the replay-fixture
-   export, **Problem report** (**Preview feedback bundle**), and **Hints and app data** (**Show hints again**, **Reset all app data**). The simulator
+   export, **Problem report** (**Preview feedback bundle**), **Crash reports** (**Send test crash
+   report**), and **Hints and app data** (**Show hints again**, **Reset all app data**). The simulator
    banner (plan 01) stays the always-on indicator that the simulator is selected.
-7. **About** — version, build, privacy policy, documentation link.
+8. **About** — version, build, privacy policy, documentation link.
 
 Then **Disconnect** while a session is connected. The parts in detail:
+
+### Privacy: crash reports (plan 31)
+
+[Plan 31](../plans/31-opt-in-crash-reporting.md). One switch, **Send anonymous crash reports**
+(**On** / **Off** segments, `testID="settings-privacy"`), **off by default**, with this text under it
+(`CRASH_REPORTS_TEXT`):
+
+> Off by default. When on, crashes and unexpected errors are sent to a crash-reporting service in
+> the EU so they can be fixed. Reports contain the app version, device model and OS version, and the
+> error. Before a report leaves the phone, the app removes your VIN, adapter name and address, and
+> AI server address and key; a crash inside the phone's own system code is sent without that
+> clean-up and could, rarely, include a Bluetooth adapter's address. Reports never contain trip
+> data or location. You can turn this off any time.
+
+- **On** opens a confirmation (`appAlert`, same text, **Cancel** / **Turn on**); only **Turn on**
+  stores `crashReports: true`. **Off** switches it off at once, no question.
+- **Read the privacy policy** opens `docs/privacy-policy.md` on GitHub (`PRIVACY_POLICY_URL`); its
+  section "Crash reports (optional)" says what is sent, where, for how long and on what legal basis.
+- A build without a crash-service address (`EXPO_PUBLIC_SENTRY_DSN` empty: dev builds, forks, the
+  tests) shows **Unavailable in this build** (`crash-reports-unavailable`) and both segments are
+  disabled: the reporter is a no-op there whatever is stored.
+- **Developer & simulator → Crash reports → Send test crash report** hands the crash service one
+  event whose message carries a sample VIN, adapter address and server address
+  (`TEST_REPORT_MESSAGE`), so the received report shows them removed (`***03398`, `<device-id>`,
+  `<url>`). Disabled while reporting is off or unavailable; the alert says "Sent." or "Not sent".
+
+How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architecture.md#telemetry-opt-in-crash-reports-plan-31)):
+
+- `crashReporting.ts` loads `@sentry/react-native` through a variable import specifier and calls
+  `Sentry.init` **only once the switch is on** (`sendDefaultPii: false`, no `tracesSampleRate` —
+  any number, even 0, turns on Sentry tracing and its `sentry-trace` / `baggage` headers on every
+  request — plus `enableAutoPerformanceTracing: false` and `tracePropagationTargets: []`,
+  `maxBreadcrumbs: 30`, `enableAutoSessionTracking: true` for the crash-free-sessions figure,
+  `release` = the app version, `environment` `dev` / `production`). Switching off closes the SDK
+  and closes the `beforeSend` gate (anything still queued is dropped); switching on again
+  re-initialises it without a restart. No DSN, or no SDK, = nothing loaded and nothing sent.
+- `logError` forwards every `error` / `fatal` entry to `captureError` after writing the error log;
+  the reporter alone decides whether it leaves the phone. Warnings never do, and the `global` /
+  `unhandledRejection` entries are skipped because the SDK's own handlers already capture them.
+- Every JavaScript event passes `scrubEvent` (`src/shared/lib/scrub.ts`) in `beforeSend` (native
+  crashes — Java / Objective-C / NDK / ANR — are sent by the native SDK without it; the privacy
+  policy says so): VINs → `***` + last
+  5 (and the VINs the app knows — connected car, garage — wherever they occur), MAC / UUID device
+  ids → `<device-id>`, URLs → `<url>`, a scheme-less network address (the Wi-Fi adapter's
+  `192.168.0.10:35000`, which the TCP transport's connect errors quote) → `<address>`, API keys and bearer tokens → `<token>`, GPS pairs →
+  `<coords>`, e-mail addresses → `<email>`; `user`, `request` and `server_name` removed; contexts
+  reduced to the device model, the OS and the app version (never the device name or an id); tags
+  limited to `screen`, `source`, `severity`, `adapterSource`, `protocol`.
+- Breadcrumbs: only `nav` (the screen path, from `usePathname`) and `connection` (status changes);
+  `scrubBreadcrumb` drops every other one (the SDK's console, fetch, touch breadcrumbs) and never
+  an adapter I/O line. `useCrashReporting()` (mounted by `src/app/_layout.tsx`) wires the switch,
+  the breadcrumbs and the known VINs.
 
 - **Developer & simulator** parts:
   - **Adapter source** toggle — **Real adapter (Bluetooth)** (default), **Wi-Fi adapter** (plan 26),
@@ -229,7 +283,8 @@ Then **Disconnect** while a session is connected. The parts in detail:
 - `settingsStore` (Zustand, **persisted**): `adapterSource` (`'mock' | 'ble' | 'wifi' | 'spp'`),
   `simulatedVehicleId`, `injectedDtcs`, `pollIntervalMs`, `autoReconnect`, `autoSelectByVin`,
   `theme`, `wifi: { host, port }` (the Wi-Fi adapter endpoint, plan 26; `setWifi(patch)` ignores a
-  patch that would make it invalid), and the `ai` config
+  patch that would make it invalid), `crashReports` (opt-in crash reports, plan 31, default `false`,
+  `setCrashReports`), and the `ai` config
   (`provider`, server URL, model, structured-output mode, timeout, `remembered` per-provider URL /
   model / mode, and the current provider's key in runtime state only). It no longer holds the
   adapter I/O log (see above). Runtime only (never persisted): `adapterSourceNotice` +
@@ -246,9 +301,9 @@ Then **Disconnect** while a session is connected. The parts in detail:
   slot; the legacy slot is deleted once its key is safe (loaded from the provider slot, or the move
   into it succeeded — a failed keystore write keeps it for the next start). Without the native module (Expo Go, web, tests) keys
   live in memory for the session.
-- Persisted as `bolid.settings` at **version 7**. Defaults: `adapterSource: 'ble'`,
+- Persisted as `bolid.settings` at **version 8**. Defaults: `adapterSource: 'ble'`,
   `simulatedVehicleId: 'golf-plus-2009-20tdi'`, `injectedDtcs: []`, `autoReconnect: true`,
-  `autoSelectByVin: true`, `wifi: { host: '192.168.0.10', port: 35000 }`. `simulatedVehicleId` may be a registry id or a garage `user:` id.
+  `autoSelectByVin: true`, `wifi: { host: '192.168.0.10', port: 35000 }`, `crashReports: false`. `simulatedVehicleId` may be a registry id or a garage `user:` id.
 - **Migrations** (`migrateSettings`, pure and unit-tested; each step only fills _missing_ fields, so
   an explicit stored choice always survives):
   - **v1 → v2** (plan 01): a v1 blob keeps its explicit `adapterSource` and `injectedDtcs` — a tester
@@ -268,9 +323,12 @@ Then **Disconnect** while a session is connected. The parts in detail:
     never brings it back.
   - **v6 → v7** (plan 26): `wifi: p.wifi ?? DEFAULT_WIFI_ENDPOINT` (a copy); every other field is
     kept.
-  - From v7 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults
-    (and infers `provider` if a blob somehow lacks a valid one), and keeps the current `wifi` when a
-    restored or hand-edited file carries an unusable one (`isValidEndpoint`).
+  - **v7 → v8** (plan 31): `crashReports: p.crashReports === true` — an upgrade never opts anyone
+    in; every other field is kept.
+  - From v8 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults
+    (and infers `provider` if a blob somehow lacks a valid one), keeps the current `wifi` when a
+    restored or hand-edited file carries an unusable one (`isValidEndpoint`), and reads anything but
+    an explicit `crashReports: true` as off.
   - **Platform fallback** (plan 27, no version bump — the shape did not change): Classic Bluetooth
     is Android only (`isAdapterSourceSupported(source, os)`). The root layout calls
     `setSettingsPlatform(Platform.OS)` at startup; `merge` then turns a stored `'spp'` on any other
@@ -314,9 +372,13 @@ Then **Disconnect** while a session is connected. The parts in detail:
 - With the simulator and **Injected DTCs: None**, Faults shows no codes; **Custom…** `P0135` shows
   `P0135`.
 - App is fully usable end-to-end in simulator mode.
-- Settings opens with General, Connection, AI assistant, Notifications, Data, Developer &
+- Settings opens with General, Connection, Privacy, AI assistant, Notifications, Data, Developer &
   simulator (collapsed: no adapter-source, simulator or log control rendered) and About, in that
   order; pressing **Developer & simulator** reveals them.
+- **Privacy**: a fresh install has **Send anonymous crash reports** off and sends nothing; without
+  `EXPO_PUBLIC_SENTRY_DSN` it shows **Unavailable in this build** and nothing initialises; **On**
+  asks first (Cancel keeps it off); off → later errors produce no events; on again resumes without
+  a restart (`crashReporting.test.ts`, `useCrashReporting.test.tsx`, `SettingsScreen.test.tsx`).
 - No imperial code remains: `grep -rn "UnitSystem\|imperial\|displayUnit\|convertValue" src` is
   empty; Dashboard and Trips show km/h, °C, km and L/100 km.
 - **Show hints again** brings back the first-run card; **Reset all app data**, after two

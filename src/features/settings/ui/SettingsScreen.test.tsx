@@ -25,6 +25,15 @@ import { useDtcStore } from '@/shared/state/dtcStore';
 import { DOCS_URL } from '@/shared/lib/appInfo';
 import { buildReplayExport, type ReplayExportInput } from '../model/replayExport';
 import { resetAllAppData } from '@/features/backup';
+import {
+  TEST_REPORT_MESSAGE,
+  crashReportingReady,
+  getCrashReportingStatus,
+  setCrashReportingDsn,
+  setCrashReportingModuleLoader,
+  startCrashReporting,
+} from '@/shared/telemetry/crashReporting';
+import { PRIVACY_POLICY_URL } from '@/shared/lib/appInfo';
 import { SettingsScreen } from './SettingsScreen';
 
 // The real hook loads expo-file-system / expo-sharing with a variable-specifier dynamic import,
@@ -60,6 +69,7 @@ describe('SettingsScreen', () => {
     const order = [
       'General',
       'Connection',
+      'Privacy',
       'AI assistant (auto-diagnose)',
       'Notifications',
       'Data',
@@ -690,5 +700,94 @@ describe('Settings in the browser (plan 28)', () => {
     expect(screen.getByText('Simulator (no car)')).toBeTruthy();
     expect(screen.queryByText('Wi-Fi adapter')).toBeNull();
     expect(screen.queryByText('Classic Bluetooth')).toBeNull();
+  });
+});
+
+describe('Settings → Privacy: crash reports (plan 31)', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  const sdkDouble = () => ({
+    init: jest.fn(),
+    captureException: jest.fn(),
+    addBreadcrumb: jest.fn(),
+    close: jest.fn(),
+  });
+
+  it('a build without a crash-service address: off, disabled, "Unavailable in this build"', () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    renderWithProviders(<SettingsScreen />);
+    expect(screen.getByText('Send anonymous crash reports')).toBeTruthy();
+    expect(screen.getByTestId('crash-reports-unavailable')).toHaveTextContent(
+      'Unavailable in this build.',
+    );
+    fireEvent.press(screen.getByLabelText('Send anonymous crash reports: on'));
+    expect(alert).not.toHaveBeenCalled();
+    expect(useSettingsStore.getState().crashReports).toBe(false);
+  });
+
+  it('says what a report holds and never holds, and links the privacy policy', () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
+    renderWithProviders(<SettingsScreen />);
+    expect(screen.getByTestId('settings-privacy')).toHaveTextContent(
+      /the app removes your VIN, adapter name and address, and AI server address and key/,
+    );
+    // Native crashes skip the scrubber: the text says so, as the privacy policy does.
+    expect(screen.getByTestId('settings-privacy')).toHaveTextContent(
+      /system code is sent without that clean-up and could, rarely, include a Bluetooth adapter's address/,
+    );
+    expect(screen.getByTestId('settings-privacy')).toHaveTextContent(
+      /Reports never contain trip data or location/,
+    );
+    fireEvent.press(screen.getByText('Read the privacy policy'));
+    expect(open).toHaveBeenCalledWith(PRIVACY_POLICY_URL);
+  });
+
+  it('switching on asks first: Cancel keeps it off, Turn on switches it on; Off switches it off', () => {
+    setCrashReportingDsn('https://key@o1.ingest.de.sentry.io/2');
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+    renderWithProviders(<SettingsScreen />);
+    expect(screen.queryByTestId('crash-reports-unavailable')).toBeNull();
+
+    fireEvent.press(screen.getByLabelText('Send anonymous crash reports: on'));
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(alert.mock.calls[0][0]).toBe('Send anonymous crash reports?');
+    expect(alert.mock.calls[0][1]).toMatch(/the app removes your VIN/);
+    // Cancel only closes the dialog: still off.
+    const buttons = alert.mock.calls[0][2] as AlertButtons;
+    expect(buttons.map((b) => b.text)).toEqual(['Cancel', 'Turn on']);
+    expect(buttons[0].onPress).toBeUndefined();
+    expect(useSettingsStore.getState().crashReports).toBe(false);
+
+    fireEvent.press(screen.getByLabelText('Send anonymous crash reports: on'));
+    act(() => pressAlertButton(alert, 1, 'Turn on'));
+    expect(useSettingsStore.getState().crashReports).toBe(true);
+
+    fireEvent.press(screen.getByLabelText('Send anonymous crash reports: off'));
+    expect(useSettingsStore.getState().crashReports).toBe(false);
+  });
+
+  it('Send test crash report is disabled while off and sends one scrubbable event while on', async () => {
+    setCrashReportingDsn('https://key@o1.ingest.de.sentry.io/2');
+    const sdk = sdkDouble();
+    setCrashReportingModuleLoader(async () => sdk);
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+
+    renderWithProviders(<SettingsScreen />);
+    openDeveloper();
+    fireEvent.press(screen.getByText('Send test crash report'));
+    expect(sdk.captureException).not.toHaveBeenCalled();
+
+    useSettingsStore.setState({ crashReports: true });
+    await act(async () => {
+      await startCrashReporting(true);
+    });
+    expect(getCrashReportingStatus()).toBe('on');
+    await act(async () => {
+      fireEvent.press(screen.getByText('Send test crash report'));
+      await crashReportingReady();
+    });
+    await waitFor(() => expect(sdk.captureException).toHaveBeenCalledTimes(1));
+    expect((sdk.captureException.mock.calls[0][0] as Error).message).toBe(TEST_REPORT_MESSAGE);
+    expect(alert).toHaveBeenCalledWith('Test crash report', expect.stringMatching(/^Sent\./));
   });
 });

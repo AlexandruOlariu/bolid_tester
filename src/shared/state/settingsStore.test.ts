@@ -69,9 +69,18 @@ describe('settings defaults', () => {
     expect(useSettingsStore.getInitialState().autoSelectByVin).toBe(true);
   });
 
-  it('persists at schema version 7', () => {
-    expect(SETTINGS_VERSION).toBe(7);
-    expect(useSettingsStore.persist.getOptions().version).toBe(7);
+  it('persists at schema version 8', () => {
+    expect(SETTINGS_VERSION).toBe(8);
+    expect(useSettingsStore.persist.getOptions().version).toBe(8);
+  });
+
+  it('a fresh install sends no crash reports, and the choice is persisted (plan 31)', () => {
+    expect(useSettingsStore.getInitialState().crashReports).toBe(false);
+    const partialize = useSettingsStore.persist.getOptions().partialize!;
+    expect(partialize(useSettingsStore.getInitialState())).toHaveProperty('crashReports', false);
+    expect(
+      partialize({ ...useSettingsStore.getInitialState(), crashReports: true }),
+    ).toHaveProperty('crashReports', true);
   });
 
   it('a fresh install has the default Wi-Fi adapter endpoint, persisted (plan 26)', () => {
@@ -106,6 +115,7 @@ describe('migrateSettings', () => {
       autoReconnect: false,
       autoSelectByVin: true,
       wifi: DEFAULT_WIFI_ENDPOINT,
+      crashReports: false,
     });
   });
 
@@ -117,6 +127,7 @@ describe('migrateSettings', () => {
       autoReconnect: true,
       autoSelectByVin: true,
       wifi: DEFAULT_WIFI_ENDPOINT,
+      crashReports: false,
     });
     expect(migrateSettings(undefined, 1)).toEqual({
       adapterSource: 'ble',
@@ -124,17 +135,24 @@ describe('migrateSettings', () => {
       autoReconnect: true,
       autoSelectByVin: true,
       wifi: DEFAULT_WIFI_ENDPOINT,
+      crashReports: false,
     });
   });
 
   it('v2 → v4 keeps a stored auto-reconnect choice and defaults a missing one to on', () => {
     const blob = { adapterSource: 'mock' as const, injectedDtcs: ['P0420'], autoReconnect: false };
-    expect(migrateSettings(blob, 2)).toEqual({ ...blob, autoSelectByVin: true, wifi: WIFI });
+    expect(migrateSettings(blob, 2)).toEqual({
+      ...blob,
+      autoSelectByVin: true,
+      wifi: WIFI,
+      crashReports: false,
+    });
     expect(migrateSettings({ theme: 'light' as const }, 2)).toEqual({
       theme: 'light',
       autoReconnect: true,
       autoSelectByVin: true,
       wifi: WIFI,
+      crashReports: false,
     });
   });
 
@@ -145,11 +163,17 @@ describe('migrateSettings', () => {
       autoReconnect: false,
       theme: 'light' as const,
     };
-    expect(migrateSettings(blob, 3)).toEqual({ ...blob, autoSelectByVin: true, wifi: WIFI });
+    expect(migrateSettings(blob, 3)).toEqual({
+      ...blob,
+      autoSelectByVin: true,
+      wifi: WIFI,
+      crashReports: false,
+    });
     expect(migrateSettings({ ...blob, autoSelectByVin: false }, 3)).toEqual({
       ...blob,
       autoSelectByVin: false,
       wifi: WIFI,
+      crashReports: false,
     });
   });
 
@@ -168,35 +192,52 @@ describe('migrateSettings', () => {
       jsonMode: 'schema',
     });
     // a blob without an ai section stays without one (merge fills the defaults)
-    expect(migrateSettings({ theme: 'dark' as const }, 4)).toEqual({ theme: 'dark', wifi: WIFI });
+    expect(migrateSettings({ theme: 'dark' as const }, 4)).toEqual({
+      theme: 'dark',
+      wifi: WIFI,
+      crashReports: false,
+    });
   });
 
   it('v5 → v6 drops the dead units key and keeps everything else (plan 07)', () => {
     const blob = { theme: 'light' as const, pollIntervalMs: 500 };
-    expect(migrateSettings({ ...blob, units: 'metric' }, 5)).toEqual({ ...blob, wifi: WIFI });
+    expect(migrateSettings({ ...blob, units: 'metric' }, 5)).toEqual({
+      ...blob,
+      wifi: WIFI,
+      crashReports: false,
+    });
     expect(migrateSettings({ ...blob, units: 'metric' }, 1)).not.toHaveProperty('units');
-    expect(migrateSettings(blob, 5)).toEqual({ ...blob, wifi: WIFI });
+    expect(migrateSettings(blob, 5)).toEqual({ ...blob, wifi: WIFI, crashReports: false });
   });
 
   it('v6 → v7 fills the Wi-Fi endpoint and keeps a stored one (plan 26)', () => {
     const blob = { adapterSource: 'ble' as const, theme: 'light' as const };
-    expect(migrateSettings(blob, 6)).toEqual({ ...blob, wifi: WIFI });
+    expect(migrateSettings(blob, 6)).toEqual({ ...blob, wifi: WIFI, crashReports: false });
     const custom = { ...blob, wifi: { host: '192.168.4.1', port: 23 } };
-    expect(migrateSettings(custom, 6)).toEqual(custom);
+    expect(migrateSettings(custom, 6)).toEqual({ ...custom, crashReports: false });
     // A fresh copy: the frozen default is never handed out as mutable state.
     expect(migrateSettings(blob, 6).wifi).not.toBe(DEFAULT_WIFI_ENDPOINT);
   });
 
-  it('is the identity from v7 on', () => {
+  it('v7 → v8 adds crash reports, off, and never opts anyone in (plan 31)', () => {
+    const blob = { adapterSource: 'ble' as const, theme: 'light' as const, wifi: WIFI };
+    expect(migrateSettings(blob, 7)).toEqual({ ...blob, crashReports: false });
+    // A malformed value is not consent.
+    expect(migrateSettings({ ...blob, crashReports: 'yes' } as never, 7).crashReports).toBe(false);
+    expect(migrateSettings(undefined, 1).crashReports).toBe(false);
+  });
+
+  it('is the identity from v8 on', () => {
     const blob = {
       adapterSource: 'mock' as const,
       injectedDtcs: ['P0420'],
       theme: 'light' as const,
       ai: { ...DEFAULT_AI_SETTINGS, provider: 'local' as const, baseUrl: 'https://api.openai.com' },
+      crashReports: true,
     };
-    expect(migrateSettings(blob, 7)).toEqual(blob);
+    expect(migrateSettings(blob, 8)).toEqual(blob);
     const partial = { theme: 'dark' as const };
-    expect(migrateSettings(partial, 7)).toEqual(partial);
+    expect(migrateSettings(partial, 8)).toEqual(partial);
   });
 });
 
@@ -562,5 +603,41 @@ describe('adapter sources in the browser (plan 28)', () => {
     useSettingsStore.setState({ adapterSource: 'wifi' });
     setSettingsPlatform('web');
     expect(useSettingsStore.getState().adapterSource).toBe('ble');
+  });
+});
+
+describe('crash reports setting (plan 31)', () => {
+  beforeEach(() => {
+    files.clear();
+    useSettingsStore.setState(useSettingsStore.getInitialState(), true);
+  });
+
+  const writeBlob = (state: Record<string, unknown>, version: number) =>
+    files.set(SETTINGS_FILE, JSON.stringify({ state, version }));
+
+  it('a v7 blob rehydrates with crash reports off', async () => {
+    // Runtime state starts "on" (setState persists first): only the migration can turn it off.
+    useSettingsStore.setState({ crashReports: true });
+    writeBlob({ adapterSource: 'ble', theme: 'light', wifi: WIFI }, 7);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().crashReports).toBe(false);
+    expect(useSettingsStore.getState().theme).toBe('light');
+  });
+
+  it('a v8 blob keeps an explicit opt-in; a malformed value reads as off', async () => {
+    writeBlob({ adapterSource: 'ble', crashReports: true }, 8);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().crashReports).toBe(true);
+
+    writeBlob({ adapterSource: 'ble', crashReports: 'true' }, 8);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().crashReports).toBe(false);
+  });
+
+  it('setCrashReports writes the choice to the settings file', () => {
+    useSettingsStore.getState().setCrashReports(true);
+    expect(JSON.parse(files.get(SETTINGS_FILE) ?? '{}').state.crashReports).toBe(true);
+    useSettingsStore.getState().setCrashReports(false);
+    expect(JSON.parse(files.get(SETTINGS_FILE) ?? '{}').state.crashReports).toBe(false);
   });
 });

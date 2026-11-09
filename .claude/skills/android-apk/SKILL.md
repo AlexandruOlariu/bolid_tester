@@ -42,6 +42,7 @@ does **not** fix it — the SDK's bundled `ninja` isn't long-path-aware. Build t
    ```powershell
    Remove-Item -Recurse -Force "C:\b\android\app\.cxx" -ErrorAction SilentlyContinue
    cd C:\b\android
+   $env:SENTRY_DISABLE_AUTO_UPLOAD = "true"
    .\gradlew.bat assembleRelease --no-daemon
    ```
    Use `run_in_background: true` — a clean native build takes several minutes (NDK/CMake for
@@ -56,8 +57,13 @@ on a clean repeat build from the same junction you can skip it.
 No path limit — build in place:
 
 ```bash
-cd android && ./gradlew assembleRelease
+cd android && SENTRY_DISABLE_AUTO_UPLOAD=true ./gradlew assembleRelease
 ```
+
+**Always set `SENTRY_DISABLE_AUTO_UPLOAD=true`** for a local build: the `@sentry/react-native/expo`
+plugin (crash reports, plan 31) adds a source-map upload to every release build, and without a
+Sentry auth token and org that step fails the build. Only drop it when `SENTRY_AUTH_TOKEN` and
+`SENTRY_ORG` are set on purpose (see `docs/release.md` → Crash reports).
 
 ## Verify & report
 

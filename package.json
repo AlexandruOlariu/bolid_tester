@@ -24,7 +24,7 @@
     "version": "node scripts/check-version-sync.mjs --write && git add app.json",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"test/**/*.{ts,tsx}\" \"docs/**/*.md\"",
     "prebuild:android": "expo prebuild --platform android --clean",
-    "android:apk": "cd android && gradlew.bat assembleRelease",
+    "android:apk": "cd android && set SENTRY_DISABLE_AUTO_UPLOAD=true&& gradlew.bat assembleRelease",
     "android:clean": "cd android && gradlew.bat clean"
   },
   "keywords": [
@@ -38,6 +38,7 @@
   "license": "MIT",
   "dependencies": {
     "@expo/metro-runtime": "~56.0.21",
+    "@sentry/react-native": "~7.11.0",
     "@tamagui/config": "^1.144.4",
     "expo": "^56.0.9",
     "expo-dev-client": "~56.0.19",

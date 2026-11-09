@@ -39,5 +39,21 @@ describe('privacy policy (Settings → About ↔ docs/privacy-policy.md)', () =>
     expect(all).toContain('Expo update server');
     expect(all).toContain('Search the web');
     expect(all).toMatch(/no analytics/);
+    // Plan 31: the crash-reporting service, opt-in.
+    expect(all).toContain('Sentry');
+    expect(all).toContain('Crash reports are off unless you turn on');
+  });
+
+  it('describes crash reports: what is removed, where they go, retention and withdrawal (plan 31)', () => {
+    const section = PRIVACY_POLICY.find((s) => s.heading === 'Crash reports (optional)');
+    expect(section).toBeDefined();
+    const text = plain(section!.paragraphs.join(' '));
+    expect(text).toMatch(/EU region/);
+    expect(text).toMatch(/removes VINs, adapter names and addresses, server addresses, API keys/);
+    // Native crashes bypass the JS scrubber; the policy must say so rather than promise otherwise.
+    expect(text).toMatch(/system code or a built-in library is reported .* without that clean-up/);
+    expect(text).toMatch(/90 days/);
+    expect(text).toMatch(/consent/);
+    expect(text).toMatch(/turning the switch off/);
   });
 });

@@ -1418,7 +1418,7 @@
   },
   "core:obd/dtcDatabase/generic/p0-part4": {
     "path": "src/shared/obd-core/obd/dtcDatabase/generic/p0-part4.ts",
-    "summary": "exports P0_PART4",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain DTC descriptions, part 4: P0A00-P0AFF only (hybrid / electric propulsion: motor electronics, drive motors\u2026",
     "tokens": [
       "database",
       "dtc",
@@ -1481,7 +1481,7 @@
   },
   "core:obd/dtcDatabase/index": {
     "path": "src/shared/obd-core/obd/dtcDatabase/index.ts",
-    "summary": "exports DtcMake",
+    "summary": "DTC database (plan 05): description, system, subsystem and a severity hint for every fault code the app can show.",
     "tokens": [
       "database",
       "dtc"
@@ -1501,7 +1501,7 @@
   },
   "core:obd/dtcDatabase/manufacturer/vag": {
     "path": "src/shared/obd-core/obd/dtcDatabase/manufacturer/vag.ts",
-    "summary": "exports VAG_DTC_TEXTS",
+    "summary": "VAG (VW / Audi / \u0160koda / SEAT) manufacturer DTC texts \u2014 the single home for both VAG tables.",
     "tokens": [
       "database",
       "dtc",
@@ -1512,7 +1512,7 @@
   },
   "core:obd/dtcDatabase/manufacturer/vag-p1": {
     "path": "src/shared/obd-core/obd/dtcDatabase/manufacturer/vag-p1.ts",
-    "summary": "exports VAG_P1",
+    "summary": "VAG (VW / Audi / Seat / Skoda) manufacturer-specific powertrain DTC definitions, keyed by the SAE-format code (`P1xxx`; VAG `P3xxx` outside the gener\u2026",
     "tokens": [
       "database",
       "dtc",
@@ -1695,7 +1695,7 @@
   },
   "core:tp20/tp20": {
     "path": "src/shared/obd-core/tp20/tp20.ts",
-    "summary": "exports RawFrame",
+    "summary": "VW/VAG Transport Protocol 2.0 (TP2.0) \u2014 the channel layer that carries KWP2000 to PRE-UDS modules (cluster, comfort, gateway\u2026) on PQ-platform CAN car\u2026",
     "tests": [
       "src/shared/obd-core/tp20/tp20.test.ts"
     ],
@@ -3650,7 +3650,7 @@
   },
   "lib:scrub": {
     "path": "src/shared/lib/scrub.ts",
-    "summary": "Text scrubbing for anything that leaves the phone as a diagnostic file: the problem report (plan 32, `feedbackBundle.ts`) and \u2014 later \u2014 opt-in crash\u2026",
+    "summary": "Text scrubbing for anything that leaves the phone: the problem report (plan 32, `feedbackBundle.ts`) and the opt-in crash reports (plan 31: `scrubEve\u2026",
     "tests": [
       "src/shared/lib/scrub.test.ts"
     ],
@@ -4227,6 +4227,30 @@
       "vehicle"
     ],
     "type": "store"
+  },
+  "telemetry:crashReporting": {
+    "path": "src/shared/telemetry/crashReporting.ts",
+    "summary": "Opt-in crash reporting (plan 31).",
+    "tests": [
+      "src/shared/telemetry/crashReporting.test.ts"
+    ],
+    "tokens": [
+      "crash",
+      "reporting"
+    ],
+    "type": "service"
+  },
+  "telemetry:useCrashReporting": {
+    "path": "src/shared/telemetry/useCrashReporting.ts",
+    "summary": "App-shell wiring of the opt-in crash reporter (plan 31), mounted once by `src/app/_layout.tsx` as `<CrashReportingHost />`: - starts it with the stor\u2026",
+    "tests": [
+      "src/shared/telemetry/useCrashReporting.test.tsx"
+    ],
+    "tokens": [
+      "crash",
+      "reporting"
+    ],
+    "type": "service"
   },
   "transport:BleTransport": {
     "path": "src/shared/transports/ble/BleTransport.ts",

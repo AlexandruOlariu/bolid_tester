@@ -15,6 +15,7 @@ import {
 import config from '../../tamagui.config';
 import { setSettingsPlatform, useSettingsStore } from '@/shared/state/settingsStore';
 import { installGlobalErrorHandlers } from '@/shared/state/errorLogStore';
+import { CrashReportingHost } from '@/shared/telemetry/useCrashReporting';
 import {
   AlertDialog,
   AppLogo,
@@ -57,6 +58,10 @@ export default function RootLayout() {
     <TamaguiProvider config={config} defaultTheme={scheme}>
       <Theme name={scheme}>
         <View style={{ flex: 1 }}>
+          {/* Opt-in crash reports (plan 31): off by default, a no-op without a DSN; follows Settings →
+              Privacy and adds the screen / connection-status breadcrumbs. Headless, and a separate
+              component so its per-navigation re-render (usePathname) stays out of this layout. */}
+          <CrashReportingHost />
           {/* Root render-error boundary (F9): themed fallback + Retry so one bad screen can't crash the
             app. Inside the Theme so the fallback is themed; wraps the navigator (and EngineHost). */}
           <RootErrorBoundary>

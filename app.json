@@ -86,6 +86,13 @@
           "color": "#2bb673"
         }
       ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "project": "bolid-tester",
+          "url": "https://de.sentry.io/"
+        }
+      ],
       "./plugins/withReleaseSigning"
     ],
     "experiments": {

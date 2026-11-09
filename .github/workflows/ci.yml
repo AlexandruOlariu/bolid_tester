@@ -97,6 +97,18 @@ jobs:
         run: npx expo prebuild --platform android --no-install
         env:
           BOLID_VERSION_CODE: ${{ github.run_number }}
+      # Opt-in crash reports (plan 31, docs/release.md): source maps upload to Sentry only when the
+      # SENTRY_AUTH_TOKEN secret exists; without it the upload is switched off so the build still
+      # passes. The DSN is never committed — it reaches the JS bundle from the SENTRY_DSN secret as
+      # EXPO_PUBLIC_SENTRY_DSN (empty = the app's reporter stays a no-op).
+      - name: Sentry source-map upload switch
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          if [ -z "$SENTRY_AUTH_TOKEN" ]; then
+            echo "SENTRY_DISABLE_AUTO_UPLOAD=true" >> "$GITHUB_ENV"
+            echo "SENTRY_AUTH_TOKEN is not set; source maps will not be uploaded."
+          fi
       # Gradle caching must come AFTER prebuild — the gradle files don't exist until then.
       - name: Set up Gradle (with caching)
         uses: gradle/actions/setup-gradle@v4
@@ -107,6 +119,9 @@ jobs:
           BOLID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           BOLID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           BOLID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
       - name: Collect APK + AAB
         id: out
         run: |
@@ -169,6 +184,9 @@ jobs:
       - name: Publish EAS Update (production branch)
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          # The OTA bundle must carry the same DSN as the APK, or an update would silently turn
+          # crash reporting into a no-op (plan 31).
+          EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
         run: |
           if [ -z "$EXPO_TOKEN" ]; then
             echo "::warning::EXPO_TOKEN is not set; skipping the OTA publish (docs/release.md)."

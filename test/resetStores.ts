@@ -46,6 +46,7 @@ import { useAdapterHealthStore } from '@/features/adapter-health/model/adapterHe
 import { memoryFiles } from './mocks/fileSystem';
 import { setMockFocused, setMockSearchParams } from './mocks/router';
 import { resetMockWindow } from './mocks/window';
+import { resetCrashReporting } from '@/shared/telemetry/crashReporting';
 
 type AnyStore = UseBoundStore<StoreApi<any>> & {
   persist?: { clearStorage: () => void };
@@ -103,4 +104,6 @@ export function resetStores(): void {
   setMockSearchParams({});
   setMockFocused(true);
   resetMockWindow();
+  // Opt-in crash reports (plan 31): no DSN, no SDK double and the switch off again.
+  resetCrashReporting();
 }
