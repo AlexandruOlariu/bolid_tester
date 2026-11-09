@@ -26,6 +26,7 @@ import {
   DownloadCloud,
   FileStack,
   Archive,
+  MessageSquareWarning,
 } from 'lucide-react-native';
 import { CardGrid, Screen, appAlert } from '@/shared/ui';
 import { checkForUpdate, fetchAndReload } from '../api/updates';
@@ -64,6 +65,7 @@ const ICONS: Record<IconName, typeof LineChart> = {
   'heart-pulse': HeartPulse,
   archive: Archive,
   bug: Bug,
+  'message-square-warning': MessageSquareWarning,
   'download-cloud': DownloadCloud,
 };
 

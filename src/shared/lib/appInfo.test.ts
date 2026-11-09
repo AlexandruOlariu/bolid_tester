@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { APP_NAME, APP_VERSION } from './appInfo';
+import { APP_NAME, APP_VERSION, FEEDBACK_EMAIL, PRIVACY_POLICY_URL } from './appInfo';
 
 const root = join(__dirname, '..', '..', '..');
 const readJson = (file: string) => JSON.parse(readFileSync(join(root, file), 'utf8'));
@@ -28,5 +28,11 @@ describe('appInfo', () => {
     const eas = readJson('eas.json');
     expect(eas.build.preview.channel).toBe('preview');
     expect(eas.build.production.channel).toBe('production');
+  });
+
+  it('ships no feedback email address (the Email button stays hidden) and links the policy', () => {
+    expect(readJson('app.json').expo.extra?.feedbackEmail).toBeUndefined();
+    expect(FEEDBACK_EMAIL).toBeNull();
+    expect(PRIVACY_POLICY_URL).toMatch(/docs\/privacy-policy\.md$/);
   });
 });

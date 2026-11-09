@@ -184,6 +184,7 @@ export default function RootLayout() {
               <Tabs.Screen name="vin-decode" options={{ href: null, title: 'VIN decoder' }} />
               <Tabs.Screen name="maintenance" options={{ href: null, title: 'Maintenance log' }} />
               <Tabs.Screen name="error-log" options={{ href: null, title: 'Error log' }} />
+              <Tabs.Screen name="feedback" options={{ href: null, title: 'Report a problem' }} />
               <Tabs.Screen name="backup" options={{ href: null, title: 'Backup & restore' }} />
               <Tabs.Screen name="module-scan" options={{ href: null, title: 'Module scan' }} />
               <Tabs.Screen name="adaptations" options={{ href: null, title: 'Adaptations' }} />

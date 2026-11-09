@@ -2355,6 +2355,11 @@
     "documents"
   ],
   [
+    "doc:features/feedback",
+    "feature:feedback",
+    "documents"
+  ],
+  [
     "doc:features/history",
     "feature:history",
     "documents"
@@ -3477,6 +3482,61 @@
   [
     "feature:fault-codes",
     "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "lib:feedbackBundle",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:adapterLog",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "vehicle:registry",
     "imports"
   ],
   [
@@ -4635,6 +4695,21 @@
     "imports"
   ],
   [
+    "lib:feedbackBundle",
+    "doc:plans/32-feedback-log-bundle",
+    "named"
+  ],
+  [
+    "lib:feedbackBundle",
+    "lib:errorLog",
+    "imports"
+  ],
+  [
+    "lib:feedbackBundle",
+    "lib:scrub",
+    "imports"
+  ],
+  [
     "lib:import",
     "doc:plans/13-profile-labelpack-import-export",
     "named"
@@ -4947,6 +5022,16 @@
   [
     "screen:faults",
     "feature:fault-codes",
+    "serves"
+  ],
+  [
+    "screen:feedback",
+    "feature:feedback",
+    "serves"
+  ],
+  [
+    "screen:feedback",
+    "feature:module-scan",
     "serves"
   ],
   [

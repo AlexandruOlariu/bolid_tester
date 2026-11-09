@@ -22,7 +22,7 @@ User preferences first, then the developer and simulator controls in their own c
    Bluetooth only) the pairing note, then
    (simulator only) **Simulated vehicle**,
    **Injected DTCs** and **Simulator test controls**, then the **Adapter log** with the replay-fixture
-   export, and **Hints and app data** (**Show hints again**, **Reset all app data**). The simulator
+   export, **Problem report** (**Preview feedback bundle**), and **Hints and app data** (**Show hints again**, **Reset all app data**). The simulator
    banner (plan 01) stays the always-on indicator that the simulator is selected.
 7. **About** — version, build, privacy policy, documentation link.
 
@@ -102,6 +102,10 @@ Then **Disconnect** while a session is connected. The parts in detail:
     `meta.droppedEntries: N`. The file goes into
     `src/shared/obd-core/transport/fixtures/<vehicleId>/` — see
     [simulator.md → Replay fixtures](../simulator.md#replay-fixtures).
+  - **Problem report** (plan 32) — one button, **Preview feedback bundle**, that opens
+    `/feedback?preview=1`: [Report a problem](./feedback.md) with the redacted bundle already built,
+    so its size shows and a size regression is visible (the adapter log is capped at
+    `ADAPTER_LOG_CAPACITY` lines). Nothing is shared until a share button there is pressed.
   - **Show hints again** — `useOnboardingStore.getState().reset()`: every dismissed hint, the
     first-run card on the Connect tab included, shows again ("Hints are back: the first-run card
     shows on the Connect tab again."). The card comes back even when its three steps are already

@@ -1,7 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner } from 'tamagui';
-import { Trash2, Download, ChevronDown, ChevronRight, Bug } from 'lucide-react-native';
+import {
+  Trash2,
+  Download,
+  ChevronDown,
+  ChevronRight,
+  Bug,
+  MessageSquareWarning,
+} from 'lucide-react-native';
 import { Screen, appAlert } from '@/shared/ui';
 import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import type { ErrorSeverity, LoggedError } from '@/shared/lib/errorLog';
@@ -102,6 +110,7 @@ function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => 
 }
 
 export function ErrorLogScreen() {
+  const router = useRouter();
   const errors = useErrorLogStore((s) => s.errors);
   const remove = useErrorLogStore((s) => s.remove);
   const clear = useErrorLogStore((s) => s.clear);
@@ -134,6 +143,16 @@ export function ErrorLogScreen() {
 
   return (
     <Screen title="Error log" subtitle="Saved errors to review and export">
+      {/* Plan 32: the one-tap problem report bundles this log with the adapter log and device info. */}
+      <Button
+        size="$3"
+        alignSelf="flex-start"
+        onPress={() => router.push('/feedback')}
+        icon={() => <MessageSquareWarning size={16} color="#2bb673" />}
+        accessibilityLabel="Report a problem"
+      >
+        Report
+      </Button>
       <XStack gap="$2" alignItems="center" flexWrap="wrap">
         <Chip
           active={filter === 'all'}

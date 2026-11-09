@@ -24,6 +24,7 @@ const HIDDEN_ROUTES = [
   '/vin-decode',
   '/maintenance',
   '/error-log',
+  '/feedback',
   '/backup',
   '/module-scan',
   '/adaptations',

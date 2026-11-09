@@ -161,6 +161,13 @@ describe('SettingsScreen', () => {
     expect(screen.queryByText(/mph|°F|miles/i)).toBeNull();
   });
 
+  it('Preview feedback bundle opens Report a problem in preview mode (plan 32)', () => {
+    renderWithProviders(<SettingsScreen />);
+    openDeveloper();
+    fireEvent.press(screen.getByText('Preview feedback bundle'));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/feedback', params: { preview: '1' } });
+  });
+
   it('Show hints again brings back the dismissed first-run card', () => {
     useOnboardingStore.getState().dismiss(FIRST_RUN_HINT_ID);
     useOnboardingStore.getState().dismiss('charts-tip');

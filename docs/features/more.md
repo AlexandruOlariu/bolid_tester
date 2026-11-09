@@ -36,6 +36,7 @@ It owns no data; each entry routes to another feature's screen.
   | Tools       | Adapter health          | `/adapter-health` | [adapter-health](./adapter-health.md)           |
   |             | Backup & restore        | `/backup`         | [backup](./backup.md)                           |
   |             | Error log               | `/error-log`      | [error-log](./error-log.md)                     |
+  |             | Report a problem        | `/feedback`       | [feedback](./feedback.md)                       |
   |             | Check for updates       | — (action row)    | [release](../release.md)                        |
 
 - **Workshop** — header "WORKSHOP 🧪" and the blurb "Talks to control modules beyond the engine.
@@ -87,7 +88,7 @@ procedure are in [release.md](../release.md).
 
 ## Hidden routes and where they are reached
 
-`src/app/_layout.tsx` registers 25 hidden routes (`href: null`). 23 are More entries (above), each in
+`src/app/_layout.tsx` registers 26 hidden routes (`href: null`). 24 are More entries (above), each in
 exactly one section. The other two are reached elsewhere:
 
 - `/extended` — **Extended PIDs (experimental)**, linked from the **Info** tab
@@ -96,7 +97,9 @@ exactly one section. The other two are reached elsewhere:
 - `/trip-detail` — a trip's detail screen, opened by **Open** on a Trips row
   ([trip-recording](./trip-recording.md)).
 
-`/vin-decode` is a More entry (Ownership) and is also linked from Info.
+`/vin-decode` is a More entry (Ownership) and is also linked from Info. `/feedback` (Tools) is also
+opened by the **Report** button on the Error log screen and, in preview mode, from Settings →
+Developer & simulator → **Preview feedback bundle**.
 
 ## Acceptance
 

@@ -67,7 +67,7 @@ exercisable end-to-end without a car — and is what the core integration tests 
 
 ## Feature ↔ code map
 
-All 33 slices, grouped as in the [feature audit](./audit-2026-11.md#feature-inventory). Routes are
+All 34 slices, grouped as in the [feature audit](./audit-2026-11.md#feature-inventory). Routes are
 files in `src/app/` (expo-router); every hidden route is reached from **More** or **Info** (see
 [more](./features/more.md#hidden-routes-and-where-they-are-reached)). Two specs carry another name
 (`inspection` → `used-car-inspection`, `maintenance` → `maintenance-log`), and
@@ -89,6 +89,7 @@ files in `src/app/` (expo-router); every hidden route is reached from **More** o
 | `settings`               | `/settings` (Settings tab)                       | [`features/settings.md`](./features/settings.md)             |
 | `error-log`              | `/error-log`                                     | [`features/error-log.md`](./features/error-log.md)           |
 | `more`                   | `/more` (More tab)                               | [`features/more.md`](./features/more.md)                     |
+| `feedback`               | `/feedback` (More → Tools, Error log, Settings)  | [`features/feedback.md`](./features/feedback.md)             |
 | `onboarding`             | — (cards on Connect and Charts)                  | [`features/onboarding.md`](./features/onboarding.md)         |
 | `engine-host`            | — (headless, `_layout.tsx`)                      | [`features/engine-host.md`](./features/engine-host.md)       |
 

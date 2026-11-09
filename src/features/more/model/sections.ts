@@ -28,6 +28,7 @@ export type IconName =
   | 'heart-pulse'
   | 'archive'
   | 'bug'
+  | 'message-square-warning'
   | 'download-cloud';
 
 export interface MoreEntry {
@@ -255,6 +256,13 @@ export const MORE_SECTIONS: MoreSection[] = [
         subtitle: 'Saved errors to export & fix later',
         icon: 'bug',
         keywords: ['crash', 'bugs'],
+      },
+      {
+        route: '/feedback',
+        title: 'Report a problem',
+        subtitle: 'Send the maintainer a redacted log bundle',
+        icon: 'message-square-warning',
+        keywords: ['feedback', 'bug report', 'support', 'issue', 'logs'],
       },
       {
         route: null,

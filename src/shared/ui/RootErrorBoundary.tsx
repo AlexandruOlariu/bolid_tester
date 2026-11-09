@@ -53,7 +53,7 @@ export class RootErrorBoundary extends React.Component<Props, State> {
         </Text>
         <Paragraph theme="alt2" textAlign="center">
           A screen hit an unexpected error. Your saved data is safe and the error was logged. Try
-          again — if it keeps happening, export the log from More {'>'} Error log.
+          again, or report it from More {'>'} Report a problem.
         </Paragraph>
         <Text fontSize="$2" color="$color" opacity={0.7} textAlign="center">
           {error.message}

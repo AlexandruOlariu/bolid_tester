@@ -2151,6 +2151,16 @@
     ],
     "type": "doc"
   },
+  "doc:features/feedback": {
+    "path": "docs/features/feedback.md",
+    "summary": "Feature: feedback (Report a problem)",
+    "tokens": [
+      "feedback",
+      "problem",
+      "report"
+    ],
+    "type": "doc"
+  },
   "doc:features/history": {
     "path": "docs/features/history.md",
     "summary": "Feature: history",
@@ -3242,6 +3252,17 @@
     ],
     "type": "feature"
   },
+  "feature:feedback": {
+    "path": "src/features/feedback",
+    "summary": "One tap in **More \u2192 Tools \u2192 Report a problem** (`/feedback`, plan 32) builds a **redacted problem",
+    "tests": [
+      "src/features/feedback/ui/FeedbackScreen.test.tsx"
+    ],
+    "tokens": [
+      "feedback"
+    ],
+    "type": "feature"
+  },
   "feature:history": {
     "path": "src/features/history",
     "summary": "The **per-car timeline** ([plan 16](../plans/16-per-car-timeline.md)): one chronological view of",
@@ -3556,6 +3577,18 @@
     ],
     "type": "lib"
   },
+  "lib:feedbackBundle": {
+    "path": "src/shared/lib/feedbackBundle.ts",
+    "summary": "The problem-report bundle (plan 32): everything a maintainer needs to understand a problem \u2014 the error log, the adapter I/O log, app and device info,\u2026",
+    "tests": [
+      "src/shared/lib/feedbackBundle.test.ts"
+    ],
+    "tokens": [
+      "bundle",
+      "feedback"
+    ],
+    "type": "lib"
+  },
   "lib:hex": {
     "path": "src/shared/lib/hex.ts",
     "summary": "Hex <-> byte helpers.",
@@ -3607,6 +3640,17 @@
     ],
     "tokens": [
       "schemas"
+    ],
+    "type": "lib"
+  },
+  "lib:scrub": {
+    "path": "src/shared/lib/scrub.ts",
+    "summary": "Text scrubbing for anything that leaves the phone as a diagnostic file: the problem report (plan 32, `feedbackBundle.ts`) and \u2014 later \u2014 opt-in crash\u2026",
+    "tests": [
+      "src/shared/lib/scrub.test.ts"
+    ],
+    "tokens": [
+      "scrub"
     ],
     "type": "lib"
   },
@@ -3785,6 +3829,14 @@
     "summary": "Route screen 'faults' (expo-router).",
     "tokens": [
       "faults"
+    ],
+    "type": "screen"
+  },
+  "screen:feedback": {
+    "path": "src/app/feedback.tsx",
+    "summary": "The newest saved module scan as text, or null.",
+    "tokens": [
+      "feedback"
     ],
     "type": "screen"
   },
@@ -4328,6 +4380,9 @@
   "ui:RootErrorBoundary": {
     "path": "src/shared/ui/RootErrorBoundary.tsx",
     "summary": "App-wide React render error boundary (finding F9).",
+    "tests": [
+      "src/shared/ui/RootErrorBoundary.test.tsx"
+    ],
     "tokens": [
       "boundary",
       "error",

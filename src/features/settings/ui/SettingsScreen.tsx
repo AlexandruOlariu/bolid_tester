@@ -946,6 +946,7 @@ function WifiEndpointSection() {
  *  car, injected codes and link tests, the adapter log with the replay-fixture export, and the
  *  hints / reset controls. The simulator banner (plan 01) stays the always-on indicator. */
 function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const s = useSettingsStore();
   const garage = useGarageStore((st) => st.vehicles);
@@ -968,8 +969,8 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
       </XStack>
       {!open ? (
         <Paragraph theme="alt2" fontSize="$1">
-          Adapter source and simulator, adapter log and replay fixtures, show hints again, reset all
-          app data.
+          Adapter source and simulator, adapter log and replay fixtures, feedback bundle preview,
+          show hints again, reset all app data.
         </Paragraph>
       ) : (
         <SegGroup>
@@ -1064,6 +1065,22 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
             ) : null}
 
             <AdapterLogSection />
+
+            {/* Plan 32: opens Report a problem with the bundle already built, so its size shows. */}
+            <YStack gap="$2">
+              <SubLabel>Problem report</SubLabel>
+              <Button
+                size="$3"
+                alignSelf="flex-start"
+                onPress={() => router.push({ pathname: '/feedback', params: { preview: '1' } })}
+              >
+                Preview feedback bundle
+              </Button>
+              <Paragraph theme="alt2" fontSize="$1">
+                Opens Report a problem with the bundle built and its size shown, so a size
+                regression is visible (the adapter log is capped at {ADAPTER_LOG_CAPACITY} lines).
+              </Paragraph>
+            </YStack>
 
             <HintsAndResetSection resetAppData={resetAppData} />
           </YStack>

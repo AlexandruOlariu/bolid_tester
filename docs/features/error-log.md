@@ -43,6 +43,9 @@ logError({ source: 'my-feature', error: e, severity: 'warning', context: { id } 
   Warnings, each with a count). Each card is colour-coded by severity, shows the source, timestamp
   and message, and expands to reveal **context** and the **stack trace**. Per-error delete, a
   confirmed **Clear all**, and **Export** (shares the currently filtered set).
+- **Report** (top of the screen, plan 32) opens **More → Report a problem**
+  ([feedback](./feedback.md)), which bundles this log — redacted — with the adapter log, the app and
+  device info, the active vehicle and the last module scan, plus the user's description.
 - **Export** writes a file to the document directory and opens the OS share sheet (expo-sharing),
   in either **Markdown** (human-readable report) or **JSON** (full records); in the browser the
   file is downloaded instead (`saveTextFile` in `shared/lib/saveFile.ts`, plan 28 —
@@ -63,6 +66,15 @@ logError({ source: 'my-feature', error: e, severity: 'warning', context: { id } 
   failing-every-write persist can't flood the capped store) and `installGlobalErrorHandlers()`.
   `persistStorage` receives `logError` by injection (`setPersistLogger`) rather than importing it, to
   avoid a module-init cycle.
+
+## Relationship to the problem report
+
+The error log is the complete, unredacted local record and its **Export** shares it as is. The
+problem report ([feedback](./feedback.md)) is the one-tap way to send it to the maintainer: the same
+errors, with VINs masked, URLs and device ids scrubbed and secret context keys (`apiKey`, tokens)
+dropped, next to the adapter log and the device info the error log lacks. The root render-error
+boundary's fallback ("Something broke") says "Try again, or report it from More > Report a
+problem".
 
 ## Retention
 

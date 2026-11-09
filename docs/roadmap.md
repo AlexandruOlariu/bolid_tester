@@ -108,13 +108,13 @@ Goal: the manufacturer tier stops being illustrative on the reference car. Depen
 
 ### v1.0 — Store release
 
-|     | Feature                                                                         | Notes                                                                               |
-| --- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| ⬜  | **Play Store + App Store** · [plan 30](./plans/30-store-release-prep.md)        | Listings, screenshots, privacy policy, data-safety forms, review-ready builds       |
-| ⬜  | **Opt-in crash reporting** · [plan 31](./plans/31-opt-in-crash-reporting.md)    | Privacy-respecting, off by default; the error log stays the primary channel         |
-| ⬜  | **In-app feedback / log bundle** · [plan 32](./plans/32-feedback-log-bundle.md) | One tap: error log + adapter log + device info, redacted, to a share sheet or issue |
-| ⬜  | **Community data** · [plan 33](./plans/33-community-contribution.md)            | Documented contribution flow for profiles, label packs, DTC texts and tweaks        |
-| ⬜  | **Stability targets** · [plan 30](./plans/30-store-release-prep.md)             | Crash-free > 99.5 % on the simulator path and the three reference cars              |
+|     | Feature                                                                         | Notes                                                                                                                                                                                                                                                               |
+| --- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ⬜  | **Play Store + App Store** · [plan 30](./plans/30-store-release-prep.md)        | Listings, screenshots, privacy policy, data-safety forms, review-ready builds                                                                                                                                                                                       |
+| ⬜  | **Opt-in crash reporting** · [plan 31](./plans/31-opt-in-crash-reporting.md)    | Privacy-respecting, off by default; the error log stays the primary channel                                                                                                                                                                                         |
+| ✅  | **In-app feedback / log bundle** · [plan 32](./plans/32-feedback-log-bundle.md) | One tap in More → Report a problem: error log + adapter log + device info + vehicle + last module scan, redacted by default (VIN, adapter address, URLs, keys), to the share sheet, a prefilled GitHub issue or an email draft ([feedback](./features/feedback.md)) |
+| ⬜  | **Community data** · [plan 33](./plans/33-community-contribution.md)            | Documented contribution flow for profiles, label packs, DTC texts and tweaks                                                                                                                                                                                        |
+| ⬜  | **Stability targets** · [plan 30](./plans/30-store-release-prep.md)             | Crash-free > 99.5 % on the simulator path and the three reference cars                                                                                                                                                                                              |
 
 ### Beyond 1.0 — exploratory
 

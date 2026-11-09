@@ -23,7 +23,7 @@ and the code is written to match. When something changes, the docs change first 
 | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | [`PLAN.md`](./PLAN.md)                                         | The overall implementation plan (approved).                                                           |
 | [`architecture.md`](./architecture.md)                         | Layers, data flow, transport abstraction, feature-sliced layout.                                      |
-| [`phase2-mobile-app.md`](./phase2-mobile-app.md)               | Running the app on a dev machine, and the feature ↔ code map of all 33 slices.                        |
+| [`phase2-mobile-app.md`](./phase2-mobile-app.md)               | Running the app on a dev machine, and the feature ↔ code map of all 34 slices.                        |
 | [`web.md`](./web.md)                                           | The browser build: Web Bluetooth, browser support, what works on the web, build and Pages deploy.     |
 | [`obd2-reference.md`](./obd2-reference.md)                     | ELM327 AT commands, OBD2 modes/PIDs, DTC format, protocols.                                           |
 | [`adapter-vgate-icar-pro.md`](./adapter-vgate-icar-pro.md)     | The Vgate iCar Pro BLE adapter: facts, BLE behavior, limits.                                          |

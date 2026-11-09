@@ -5,6 +5,125 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 32 — Feedback and log bundle (2026-11-09)
+
+[Plan 32](./plans/32-feedback-log-bundle.md) landed: **More → Tools → Report a problem** builds a
+**redacted problem report** — error log, adapter I/O log, app and device info, active vehicle, last
+module scan and the user's description — and hands it to the OS share sheet (JSON bundle or Markdown
+summary), a prefilled GitHub issue or an email draft. The app sends nothing by itself. The plan has
+no deferred / owner section; roadmap ✅.
+
+- **Scrubbing (`src/shared/lib/scrub.ts`, new, core scope).** Plan 31 had not landed, so this plan
+  owns the file: `scrubText` (VIN → `***` + last 5, MAC / UUID → `<device-id>`, http(s) URLs →
+  `<url>`, `sk-…` / `Bearer …` → `<token>`, coordinate pairs → `<coords>`; idempotent), `maskVin`,
+  `maskDeviceId` (MAC keeps the maker prefix `AA:BB:CC:**:**:**`, anything else `<device-id>`),
+  `maskKnownVins`, `findVins`, `looksLikeVin`, `looksLikeVinInText` (a free-text VIN also needs a
+  letter outside A–F, so a 17-hex-digit CAN frame — `ATS0` + `ATH1`, 11-bit header, 7-byte payload
+  — is never masked). `scrubText(s, { keepIdentifiers })` skips only the VIN and MAC / UUID rules.
+  Plan 31 adds `scrubEvent` / `scrubBreadcrumb` here.
+- **Bundle core (`src/shared/lib/feedbackBundle.ts`, new, core scope).** `redactBundle` (schema 1),
+  `bundleToJson` (fixed key order, sorted context keys), `bundleToMarkdown` (header table,
+  description, newest 10 errors, last 40 adapter lines, scan report in `<details>` only when present),
+  `issueUrl` (body cut to 6 000 characters, then until the URL is ≤ 8 000, with "Summary truncated —
+  the full bundle is attached separately."), `mailtoUrl` (no log lines), `platformLabel`
+  ("Android 14 (API 34)"), `utf8ByteLength`, `formatBytes`. VIN masking in the adapter log:
+  `findVinsInAdapterLog` decodes every 17-byte ASCII run of the received traffic (so a VIN read
+  earlier but no longer in the session is still found) and `maskVinInAdapterLog` stars the hex of the
+  first 12 VIN bytes whether the reply is contiguous, multi-frame (`0:490201575657` /
+  `1:5A5A5A314B5A39` / `2:57393033333938` — the real simulator traffic), spaced with headers on, or
+  split mid-byte across BLE chunks. Error context: secret keys (`apiKey`, token, secret, password,
+  authorization) dropped, address keys (`*url*`, host, endpoint) → `<url>`, texts scrubbed.
+  **Keep VIN and adapter address** (`keepIdentifiers`, `redacted: false`) keeps only the VIN and the
+  device ids: secret keys are still dropped and URLs, tokens and coordinates still scrubbed
+  everywhere, so the privacy policy's "AI server addresses and keys are never included" holds.
+- **Feature slice `src/features/feedback/`.** `hooks/useFeedbackBundle.ts` (`collectBundleInput`
+  reads the error log, `adapterLogSnapshot()`, the session, `getActiveProfile()`, the garage VINs,
+  `adapterSource`, `APP_VERSION` / `APP_BUILD`, `Platform`, the locale; `shareJson` / `shareMarkdown`
+  write `bolid-feedback-<stamp>.json|md` through `saveTextFile` and open the share sheet;
+  `openIssue` / `email` use `Linking.openURL`; failures logged as `feedback/*`).
+  `ui/FeedbackScreen.tsx` (description ≤ 2 000 characters, live checklist, **Keep VIN and adapter
+  address** switch off by default, four buttons disabled while busy, "Thanks — bundle saved…" line,
+  bundle size, footer "Nothing is sent until you choose where to share it." + privacy-policy link).
+  Route `src/app/feedback.tsx` (hidden tab "Report a problem") hands in the last scan from the
+  module-scan slice (`module-scan/index.ts` now exports `useScanHistoryStore` and
+  `formatAutoScanReport`).
+- **Entry points.** More → Tools row (`MessageSquareWarning`, exists in lucide-react-native 1.17);
+  **Report** button on the Error log screen; Settings → Developer & simulator → **Preview feedback
+  bundle** (`/feedback?preview=1`, builds on open and shows the size); `RootErrorBoundary` fallback
+  now reads "Try again, or report it from More > Report a problem".
+- **App info.** `FEEDBACK_EMAIL` (from `app.json` `expo.extra.feedbackEmail`; not set, so the Email
+  button is hidden) and `PRIVACY_POLICY_URL` in `shared/lib/appInfo.ts`.
+- **Privacy policy.** New "Sharing a problem report" paragraph under Sharing and exports (in-app text
+  and `docs/privacy-policy.md`, kept in step by `privacyPolicy.test.ts`) plus the technical note.
+- **Tests (+4 suites).** `scrub.test.ts` (each rule with a near miss, idempotence, helpers),
+  `feedbackBundle.test.ts` (VIN in vehicle / error message / context / scan report / contiguous,
+  multi-frame and chunked `49 02` frames, VIN found only in the log, MAC masking, `apiKey` dropped,
+  `keepIdentifiers` keeps only the VIN and the MAC (secrets / URLs / tokens / coordinates still
+  removed), a 17-hex-digit CAN frame left alone, input not mutated, stable JSON, Markdown caps and `<details>`, issue URL ≤ 8 000
+  for 500 errors with multi-byte text, mailto without logs), UI `FeedbackScreen.test.tsx`
+  (simulator Golf + one error: counts, redacted JSON with no VIN / VIN hex / URL / key, keep switch
+  with the VIN but still no URL / key,
+  scan report in the Markdown, redacted issue URL, buttons disabled while busy, preview size) and
+  `RootErrorBoundary.test.tsx`; extended `sections.test.ts`, `MoreScreen.test.tsx`,
+  `ErrorLogScreen.test.tsx`, `SettingsScreen.test.tsx`, `appInfo.test.ts`.
+- **Docs.** New `docs/features/feedback.md` (UI / hooks / api / model / Redaction table /
+  Simulator / Acceptance); `error-log.md` (Report button, relationship), `more.md` (row, 26 hidden
+  routes), `settings.md` (Preview feedback bundle), `phase2-mobile-app.md` / `README.md` (34
+  slices), privacy policy, roadmap ✅.
+
+Review fixes:
+
+- **VIN in a headers-on log.** `findVinsInAdapterLog` now reduces each received line to its payload
+  (`rxPayloadHex`: frame index, 11-bit / 29-bit CAN ID + PCI bytes, K-line header / checksum /
+  `49 02 0N` prefix dropped), so a VIN only the log knows is found in `ATH1` multi-frame replies
+  (spaced or `ATS0`, chunked) and K-line replies too, not just in the headers-off `0:/1:/2:` form.
+- **No `URIError` from a cut emoji.** `oneLine` cuts through `cutAt` (no lone high surrogate in the
+  80-character title or the error / log lines), the URL builders encode through `encodeText`
+  (lone surrogate → U+FFFD), and the hook builds the issue / mailto URL inside `open`'s `try`, so a
+  failure is logged and shown instead of becoming an unhandled rejection.
+- **Switch reset per visit.** `/feedback` is a hidden tab that stays mounted: on blur
+  (`useIsFocused`) the screen turns **Keep VIN and adapter address** off and clears the note, and
+  clears the description once it was handed over (an unsent draft is kept).
+- Tests: headers-on 11-bit / 29-bit / `ATS0` chunked / K-line VIN discovery, emoji at the title and
+  error-line cut points, a lone surrogate in an error message, and the switch reset on blur.
+
+Second review fixes:
+
+- **No file written is logged.** `saveTextFile` returns null without throwing when the device has
+  no document directory; `share` now logs a `feedback/share` entry in that case too, so the
+  screen's "See More → Error log for details" note always finds one (UI test added).
+- **Docs.** `phase2-mobile-app.md` feature ↔ code map gains the `feedback` row (Tier A, after
+  `more`) and reads "All 34 slices", as does `docs/README.md`; `features/settings.md` lists the
+  Developer & simulator **Problem report** block (**Preview feedback bundle**) between the Adapter
+  log and Hints and app data.
+
+Deviations from the plan:
+
+- **No `expo-constants`.** The version and build come from the existing `APP_VERSION` / `APP_BUILD`
+  (`shared/lib/appInfo.ts`, read from `app.json`), as plan 29 did — no new dependency.
+- **Hook API.** `shareJson`, `shareMarkdown`, `openIssue` and `email` take the description (and the
+  switch) and build a fresh bundle each time, instead of `build()` first and argument-less actions;
+  a file is written per share (via `saveTextFile`, so the browser downloads it) rather than both
+  files at build time. `build()` is still exposed (preview).
+- **The GitHub issue body is always redacted**, even with **Keep VIN and adapter address** on: an
+  issue is public. Kept identifiers only go into the files the user shares.
+- **Last module scan via the route**, not read by the hook: features never import another feature's
+  store, so `src/app/feedback.tsx` passes `getLastScanReport` (the plan 07 `resetAppData` pattern).
+- **Wider redaction than listed.** VINs are also collected from the log traffic, the garage and the
+  adapter log origin; the log masking tolerates multi-frame / chunked replies; context keys for
+  tokens / passwords are dropped and address keys (`host`, `endpoint`) become `<url>`; the VIN rule
+  needs a letter and a digit (no 17-digit counters), and the token rule accepts `-` / `_` so
+  `sk-ant-…` keys match. `adapterSource` is typed as a string (it is now `mock` / `ble` / `wifi` /
+  `spp`).
+- **Privacy link** opens the published `docs/privacy-policy.md` (there is no in-app policy route;
+  the same text is in Settings → About).
+- **No "Send test error" button**: the plan's Simulator note assumes one exists; it does not and was
+  not added (errors are provoked with the ignition-off scenario or any failing flow).
+- The UI test mocks `saveTextFile` (the `ui` Jest project cannot run its variable-specifier
+  `import()`), as `AdapterHealthScreen.test.tsx` does.
+
+---
+
 ## Plan 29 — Adapter compatibility matrix (2026-11-09)
 
 [Plan 29](./plans/29-adapter-compatibility-matrix.md) landed: every adapter-health run can be shared

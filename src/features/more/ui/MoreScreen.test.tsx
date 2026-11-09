@@ -25,7 +25,13 @@ const SECTIONS: Record<string, string[]> = {
     'Service reset',
     'Bus sniffer',
   ],
-  tools: ['Adapter health', 'Backup & restore', 'Error log', 'Check for updates'],
+  tools: [
+    'Adapter health',
+    'Backup & restore',
+    'Error log',
+    'Report a problem',
+    'Check for updates',
+  ],
 };
 const ALL_TITLES = Object.values(SECTIONS).flat();
 

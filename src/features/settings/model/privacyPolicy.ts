@@ -38,6 +38,7 @@ export const PRIVACY_POLICY: PolicySection[] = [
     heading: 'Sharing and exports',
     paragraphs: [
       'Files leave the phone only when you share or export them yourself — a report, a capture, a fixture, a backup or the error log — and they go to the app you pick in the share sheet.',
+      'Sharing a problem report: More → Report a problem builds one file with the error log, the adapter log, the app version, the phone’s system version, the selected car and the last module scan, plus anything you type. The VIN and the adapter’s address are removed unless you turn on Keep VIN and adapter address, and AI server addresses and keys are never included. Nothing is sent until you choose where it goes: the share sheet, an email draft, or Open GitHub issue, which opens your browser on a new public issue on the project page with a summary filled in (always without the VIN and the adapter address); you see it and submit it yourself.',
       'A backup (Settings → Data → Backup & restore) is one plain-text file that you create and keep where you choose. It holds everything listed above, including your VINs, and is not encrypted, so keep it somewhere private. It never contains an AI API key.',
     ],
   },

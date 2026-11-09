@@ -5,6 +5,7 @@ import React from 'react';
 import { Platform } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
+import { mockPush } from '@test/mocks/router';
 import { buildLoggedError } from '@/shared/lib/errorLog';
 import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import { clearDialogs } from '@/shared/state/dialogStore';
@@ -75,5 +76,11 @@ describe('ErrorLogScreen in the browser', () => {
     fireEvent.press(screen.getByText('Clear'));
     fireEvent.press(screen.getByText('Clear all'));
     expect(useErrorLogStore.getState().errors).toHaveLength(0);
+  });
+
+  it('Report opens Report a problem (plan 32)', () => {
+    renderScreen();
+    fireEvent.press(screen.getByText('Report'));
+    expect(mockPush).toHaveBeenCalledWith('/feedback');
   });
 });
