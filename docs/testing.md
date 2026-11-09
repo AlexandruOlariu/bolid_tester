@@ -78,7 +78,14 @@ next to the screen (`src/features/<slug>/ui/<Screen>.test.tsx`). Tests that cann
 
 - `renderWithProviders(ui)`: the app's `TamaguiProvider` + dark `Theme`, as in `_layout.tsx`.
 - `connectSimulator({ vehicleId?, injectedDtcs? })`: sets the simulator settings and runs the real
-  `connect()`; the session is closed again after each test.
+  `connect()`; the session is closed again after each test (the global `afterEach` unmounts the
+  tree, then disconnects). Closing the session closes its ELM327 client (`Elm327Client.close()`,
+  plan W2): a read a screen started on mount and that is still queued (the DPF screen's Mode 22
+  refresh, a backup panel's re-compare) rejects at once with `Elm327ClosedError` instead of writing
+  to the dead link and timing out seconds later, after the test — no timer outlives the test and
+  nothing logs after it. A test that expects its own work to finish still awaits it (the DPF tests
+  wait for the refresh, the coding-backup tests wait for the shared work gate to be released, in
+  the test and in an `afterEach`), so a teardown never cuts work short by accident.
 - `mocks/router.ts`: the expo-router double. Assert navigation on `mockPush`; `setMockSearchParams`
   feeds `useLocalSearchParams`; a stand-in `Tabs` lists the visible tabs (`tab-<route>`) and the
   hidden routes (`hidden-<route>`).

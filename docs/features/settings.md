@@ -42,12 +42,25 @@ Developer and runtime settings.
     `hooks/useLogFixtureExport.ts` wraps) writes
     `bolid-replay-<vehicleId>-<flow>-<stamp>.json` and opens the share sheet: a `ReplayFixture`
     with `pairs`, `sequences` and `meta` — `source` (`car` on the real adapter, `simulator` in
-    simulator mode — read at export time, which is safe because a source switch clears the log and
-    a superseded link logs nothing more, so a simulator session can never pass for validation),
-    `vehicleId` (the registry id of the selected
-    profile, or of the simulated car — a garage car exports its base registry profile via
-    `fixtureVehicleId`, never a `user:` id, so it fits `fixtures/<vehicleId>/`), `flow`, `adapter` and `protocol` from the live session, and
-    `appVersion` (`APP_VERSION`). On success the copy reads "Saved <file>. Clear the log before
+    simulator mode), `vehicleId` (the registry id of the selected profile, or of the simulated car
+    — a garage car exports its base registry profile via `fixtureVehicleId`, never a `user:` id, so
+    it fits `fixtures/<vehicleId>/`), `flow`, `adapter` and `protocol`, and `appVersion`
+    (`APP_VERSION`). `source`, the simulated car, `adapter` and `protocol` come from **how the log
+    was recorded** (`useAdapterLogStore`'s `origin`, plan W2): the connect that produced the traffic
+    stamps its source and simulated car before its first command and adds the adapter version and
+    protocol once it succeeds, so the label survives a disconnect, another simulated car picked
+    afterwards, or a settings change behind the service's back (a restore) — a simulator session can
+    never pass for validation. A connect to another source, simulated car or BLE adapter (the
+    origin's `deviceId`) clears the log first (a fixture never mixes two recordings). A reconnect
+    on the same adapter that reaches another car — another VIN, or another negotiated protocol
+    when a VIN is missing (`noteAdapterLogLink`, which also stamps the session's `vin`) — drops the
+    earlier car's traffic and keeps only the new session's, so its link details never relabel the
+    previous car. A source switch clears the log too, and a superseded link logs nothing more. **Clear** drops the entries but keeps the origin (`clearAdapterLogEntries`):
+    only a connect writes to the log and it stamps the origin first, so the next flow recorded on
+    the live session after a Clear is still labelled by that session, and the next connect
+    re-stamps it. A connect also clears traffic no connect stamped before recording. Only such an
+    unstamped log (after a source switch reset the log, which then logs nothing) falls back to the
+    settings and live session at export time. On success the copy reads "Saved <file>. Clear the log before
     recording the next flow."; on failure it points at the error log, which always has a
     `settings/replay-export` entry for it. **Clear** puts the default hint back, and the "log is
     full" warning (next) replaces a saved message as soon as the log wraps further. The log keeps only the last
@@ -113,7 +126,8 @@ Developer and runtime settings.
 ## adapter I/O log (`shared/state/adapterLog.ts`)
 
 - The raw tx/rx traffic is a **module-level ring buffer** (fixed 300 entries, O(1) append), **not**
-  a zustand array. It counts the entries it overwrites (`dropped`, reset by **Clear**) and publishes
+  a zustand array. It counts the entries it overwrites (`dropped`, reset by **Clear**, which keeps the
+  recording's `origin`; a source switch resets both via `clearAdapterLog`) and publishes
   the count with the snapshot, so the replay-fixture export can warn that it starts mid-session. `connectionService.withLog` mirrors every tx command and rx chunk into it; a
   separate **throttled publish (~4 Hz, trailing flush)** snapshots the buffer into a tiny zustand
   store (`useAdapterLogStore`) that the UI subscribes to. This kills the per-chunk array copies +

@@ -10,7 +10,9 @@ Plan 25 built the tooling; the captures themselves come from the owner's on-car 
 - **CSV only** (`Share CSV` in the sniffer), never the raw dump — the CSV keeps every parsed frame
   plus the unparsed lines in its trailing `# raw:` block.
 - **Trimmed to the relevant window**: the header comment lines, the `t_ms,id,dlc,bytes` row and the
-  frames around the action (a few seconds before and after). Keep the `# note:` line — it says what
+  frames around the action (a few seconds before and after). For a TP2.0 (KWP) session keep the
+  channel setup on `0x200` and its `D0` answer in the window, even when it came earlier (see
+  **TP2.0** below). Keep the `# note:` line — it says what
   was done ("VCDS Group 121 basic settings ON then OFF, engine idle").
 - No VIN, no login codes: VCDS `2B` login requests carry the module's login code — cut those rows
   (the analyzer's report, Markdown or `--json`, cuts a `2B` request to its service byte, but the
@@ -48,7 +50,23 @@ through Node's type stripping (Node ≥ 22.18). The report has:
   channels and their `A3` keep-alive counts. TP2.0 frames are never parsed as ISO-TP. A capture
   trimmed past the channel setup still works: an id in `0x300`–`0x3FF` is a channel, and so is a
   `0x600`–`0x7FF` id (e.g. the tester's `0x740`) that sends a TP2.0-only opcode — `A0` / `A1` /
-  `A3` / `A4` / `A8`, or a `9x` / `Bx` ACK, which ISO-TP never sends.
+  `A3` / `A4` / `A8`, or a `9x` / `Bx` ACK, which ISO-TP never sends. Any other id pair (outside
+  `0x200`–`0x2FF` and the ISO-TP range `0x600`–`0x7FF`, where a single frame like `7E0 02 10 03`
+  would look like a TP2.0 data frame) counts as a channel once its frames answer each other the
+  TP2.0 way at least twice, each answer being the other id's next frame within 200 ms: a data
+  frame waiting for an ACK (`0x` / `1x`, sequence _n_) and the other id's one-byte `B(n+1)` ACK,
+  or a channel test `A3` and its `A1` parameters (plan W2). To keep a busy bus quiet, a direction
+  counts only when at least half of that side's answer-seeking frames were answered, and the
+  exchange must go both ways (each side's data acked) or include a channel test / disconnect: a
+  periodic one-byte broadcast after another id's frames is never a channel. Such inferred
+  channels (and a `0x300`–`0x3FF` id that sends a TP2.0-only opcode itself) carry a **Warning** in
+  the report (and in `tp20.warnings` with `--json`) when the capture has no setup: without the
+  `D0` answer the module a channel belongs to is unknown. An id pair whose only exchange is a lone
+  channel test / disconnect is too short for a channel: it is named in a warning and left out of
+  the summary. A single TP2.0-looking frame (a lone ACK or keep-alive whose other side was cut
+  off) is no evidence — a one-byte broadcast reads the same — so it is neither summarized nor
+  flagged, and a capture with no TP2.0 traffic gets no TP2.0 warning. **So keep the channel setup (`0x200` → `D0`) inside the trimmed window** — the report is
+  only certain about a channel when it sees it negotiated.
 - **CAN ids** — frames per id with first / last time.
 
 Only diagnostic ids (11-bit `0x600`–`0x7FF`, 29-bit `18DA…` / `18DB…`) are reassembled by default;

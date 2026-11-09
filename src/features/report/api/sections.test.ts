@@ -507,4 +507,56 @@ describe('collectReportSources', () => {
     );
     expect(onlyInspection.identity.lastSeenAt).toBe(T + 30);
   });
+
+  it('offline "last connection" also counts the in-memory fault read and each ranAt (plan W2)', () => {
+    // History says T-5, but a fault read at T+40 is still in memory after the disconnect.
+    const dtc = {
+      ...snapshot().dtc,
+      stored: [{ code: 'P0401', description: 'EGR' }],
+      lastReadAt: T + 40,
+      readFor: GOLF_CAR,
+    };
+    const read = collectReportSources(snapshot({ history: golfHistory, dtc }));
+    expect(read.identity).toMatchObject({ connected: false, lastSeenAt: T + 40 });
+
+    // Each stamp on its own, the others older: the newest always wins.
+    const battery = {
+      report: {
+        restingV: 12.5,
+        crankingDipV: 10.2,
+        chargingV: 14.1,
+        socPct: 85,
+        verdict: 'good',
+        notes: [],
+      } as never,
+      ranFor: GOLF_CAR,
+    };
+    const inspection = { report: inspectionReport, ranFor: GOLF_CAR };
+    const cases: [Partial<ReportStoreSnapshot>, number][] = [
+      [
+        {
+          dtc,
+          battery: { ...battery, ranAt: T + 50 },
+          inspection: { ...inspection, ranAt: T + 1 },
+        },
+        T + 50,
+      ],
+      [
+        {
+          dtc,
+          battery: { ...battery, ranAt: T + 1 },
+          inspection: { ...inspection, ranAt: T + 60 },
+        },
+        T + 60,
+      ],
+      [{ dtc: { ...dtc, lastReadAt: T + 70 }, battery: { ...battery, ranAt: T + 1 } }, T + 70],
+    ];
+    for (const [over, want] of cases) {
+      expect(
+        collectReportSources(snapshot({ history: golfHistory, ...over })).identity.lastSeenAt,
+      ).toBe(want);
+    }
+    // While connected there is no "last connection" — the session is live.
+    expect(collectReportSources(snapshot({ info, dtc })).identity.lastSeenAt).toBeNull();
+  });
 });

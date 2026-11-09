@@ -132,6 +132,13 @@ no-op.
   client, best-effort tears down the (dead) transport, and sets `sessionStore` to `disconnected` with
   an actionable error. A **manual** `disconnect()` detaches the watcher first, so it never takes the
   "link lost" path.
+- **No command outlives its session** (plan W2). `DiagnosticSession.disconnect()` closes the ELM327
+  client (`Elm327Client.close()`): the command in flight and every queued one reject at once with
+  `Elm327ClosedError` ("ELM327 link closed"), its timeout timer is cleared, a drain or monitor mode
+  ends, and later commands are refused before they write (`connect()` on the same session reopens
+  it). A screen's reads cut off by a disconnect therefore fail immediately instead of timing out
+  seconds later; the live-data poll loop does not log that error (the session is simply gone).
+  `MockTransport.write` rejects while disconnected, like `BleTransport`.
 - **Failed-connect teardown.** `connect()`'s catch does a best-effort `session.disconnect()` before
   rethrowing, so a probe failure (ignition off) leaves no GATT link, notify monitor, or attached
   client — a retry after failure works without an app restart.

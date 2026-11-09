@@ -172,8 +172,13 @@ See [simulator.md](../simulator.md).
   profile over an existing car: every field replaced, id / `createdAt` / code book kept, plan 13),
   `remove`, `setLearned`.
   It lives in shared state because EngineHost and services resolve profiles. Rehydration drops
-  records without a usable `user:` id, name or base, strips a malformed `learned` block (the car
-  stays, unlearned), and keeps a car added during hydration, writing the merged list back.
+  records without a usable `user:` id, name or base, and keeps a car added during hydration (the
+  persist `merge`: the file's cars first, deduplicated by id, then the ones added meanwhile),
+  writing the merged list back. The nested `learned` block is rebuilt field by field by
+  `sanitizeLearned` (plan W2): it is stripped (the car stays, unlearned) when the protocol is not a
+  known `ProtocolId`, `supportedPids` is not a string array, the VIN / calibration id has the wrong
+  type or `learnedAt` is not a number; a missing VIN / calibration id is repaired to null, a
+  non-string adapter version and unknown fields are left out.
 - `model/vehicleDraft.ts` — the editor's form model: `validateDraft`, `draftToVehicle`
   (unit-tested in `vehicleDraft.test.ts`).
 

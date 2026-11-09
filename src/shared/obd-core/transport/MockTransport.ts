@@ -202,6 +202,8 @@ export class MockTransport implements Transport {
   }
 
   async write(bytes: Uint8Array): Promise<void> {
+    // A closed link answers nothing, like BleTransport (which throws when not connected).
+    if (this.status !== 'connected') throw new Error('Simulator link is not connected');
     const cmd = bytesToString(bytes)
       .replace(/[\r\n]+$/g, '')
       .trim();

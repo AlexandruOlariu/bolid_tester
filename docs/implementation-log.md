@@ -5,6 +5,120 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Wave 2 follow-ups — review hardening for plans 02, 06, 15, 25 (2026-11-09)
+
+A small hardening pass (plan W2, kept outside the repo) for what independent reviewers left open
+after wave 2. Each item was checked against the current code first: several were already partly
+fixed by the wave-2 review commits, so the work below is what was still missing. No roadmap item
+(the pass has none) and nothing deferred to the car.
+
+- **Flaky UI tests / no work outliving a session (item 1).** Root cause, not just the two suites:
+  `DiagnosticSession.disconnect()` only _detached_ the ELM327 client, so a command in flight kept
+  its 5 s timeout timer and every queued command still went out (the client re-attached itself on
+  the next write) — and `MockTransport` kept answering after `disconnect()`. A screen's mount reads
+  (the DPF screen's Mode 22 refresh, a backup panel's re-compare) could therefore run on after the
+  test's teardown, time out, log after the test and keep a worker alive (the full run's "A worker
+  process has failed to exit gracefully" is gone). Now `Elm327Client.close()` (called by
+  `DiagnosticSession.disconnect()`) rejects the command in flight and every queued one at once with
+  the new `Elm327ClosedError` ("ELM327 link closed"), clears the timer, ends a drain or monitor
+  mode and refuses later commands before they write; `connect()` on the same session `reopen()`s
+  it. `MockTransport.write` rejects while disconnected, like `BleTransport`. EngineHost's poll loop
+  does not log `Elm327ClosedError` (the session is gone, not faulty). Tests: the coding-backup
+  tests wait for the shared work gate after **Create backup** (its `finally` releases the gate
+  after the save) and in an `afterEach`; the raised `jest.setTimeout(20_000)` is removed (each test
+  takes 1–1.6 s under a full parallel run, so the default 5 s applies) and the `waitFor` bounds
+  drop from 8 s to 4 s; the DPF wait drops to 4 s.
+- **Replay export provenance (item 2).** A source switch already cleared the adapter log (plan 18
+  review), but `adapter` / `protocol` / the simulated car were still read at export time — gone
+  after a disconnect, wrong after picking another simulated car. The log now records how it was
+  recorded: `AdapterLogOrigin` (`source`, `simulatedVehicleId`, `deviceId`, `adapter`,
+  `protocol`, `vin`) in
+  `shared/state/adapterLog.ts` (`beginAdapterLogRecording`, `noteAdapterLogLink`,
+  `adapterLogOrigin`, published as `useAdapterLogStore`'s `origin`). `connectionService` stamps it
+  before a connect's first command (the BLE device id on the car) and adds the link details on
+  success; a connect to another source, simulated car or BLE adapter — or onto traffic no connect
+  stamped — clears the log first, and a reconnect on the same adapter that reaches another car
+  (another VIN, or another protocol when a VIN is missing) drops the earlier car's traffic once it
+  succeeds (the log tracks where the latest connect began), so a fixture never mixes two
+  recordings. A failed connect to another car on the same adapter is the one case left: its
+  few init lines stay in the log (nothing identifies the car before the connect succeeds). Settings' **Clear** (the documented step between two flows) drops
+  only the entries (`clearAdapterLogEntries`) and keeps the origin, so a flow recorded on the live
+  session after a Clear is labelled by that session even when another simulated car is picked
+  meanwhile; a source switch / restore resets both (`clearAdapterLog`). Settings' export labels
+  the fixture from the origin and falls back to the current settings only for an unstamped log.
+- **Fixture check coverage (item 3).** The wrong-expectation test now gives **every**
+  `ReplayFixtureExpect` key a wrong value at once (typed `Required<…>`, so a new key does not
+  compile until it is covered) and requires one failure per key — `pendingDtcs` and
+  `freezeFrameCount` included.
+- **vehicle-docs-sync rules (item 4).** Both rules are one pure function,
+  `vehicleDocValidationProblems(markdown, expectedProtocol, carFixtures)` (`validatedOn.ts`); the
+  sync test runs it on every real doc and on synthetic CRLF docs that break the
+  `observedProtocol == expectedProtocol` rule, the fixtures ↔ "Validated on the car" rule both
+  ways, and a doc with no section (every broken rule reported at once).
+- **Garage store (item 5).** `sanitizeLearned` (now exported) rebuilds the nested `learned` block
+  field by field: dropped for an unknown protocol (not a `ProtocolId`), a missing / non-string
+  `supportedPids`, a VIN / calibration id of the wrong type or a non-numeric `learnedAt`; a missing
+  VIN / calibration id is repaired to null, a non-string adapter version and unknown fields are left
+  out, and `sanitizeGarage` stores the rebuilt block. A new test runs the persist `merge` directly
+  (file's cars first, deduped by id, cars added meanwhile appended, non-user records and bad
+  `learned` blocks dropped, a non-garage file keeps memory) next to the existing rehydration test.
+- **Report "last connection" (item 6).** `collectReportSources` already took the newest of the
+  printed sections' times; a new test pins each source of it offline — the in-memory fault read's
+  `lastReadAt`, the battery and inspection `ranAt` — and that it is null while connected.
+- **Capture analyzer (item 7).** `tp20PairChannels` infers a TP2.0 channel pair when the `D0`
+  setup was trimmed off: at least `TP20_MIN_PAIR_MATCHES` (2) exchanges where one id's next frame
+  within `TP20_PAIR_WINDOW_MS` (200 ms) answers the other's the TP2.0 way (a data frame waiting
+  for an ACK and the one-byte `B(n+1)` / `9(n+1)` ACK, `A3` / `A0` and the 6-byte `A1`, `A8` and
+  `A8`). To stay quiet on a busy bus, ids in `0x200`–`0x2FF` and the ISO-TP range `0x600`–`0x7FF`
+  are never paired (an ISO-TP single frame such as `7E0 02 10 03` looks like a TP2.0 data frame;
+  a TP2.0 side there is found by its own ACKs), a direction counts only when at least
+  `TP20_MIN_ANSWER_SHARE` (half) of that side's answer-seeking frames were answered, and the
+  exchange must go both ways or include a channel test / disconnect. `Tp20Summary.warnings`
+  (rendered as **Warning:** lines, in `--json` too) fire only on TP2.0 evidence: one says the
+  channels were inferred without a setup (the module is unknown) and names only channels found by
+  that inference or a `0x300`–`0x3FF` id that sends a TP2.0-only opcode itself — a plain ISO-TP /
+  OBD capture with a 0x3xx broadcast gets none; the other names an id pair whose only exchange is
+  a lone channel test / disconnect (too few for a channel). Single TP2.0-looking frames (a one-byte
+  broadcast or rolling counter reads as an ACK) are never flagged; [captures/README](./captures/README.md) tells owners to keep the channel setup
+  in the trimmed window.
+- **Docs.** [connection](./features/connection.md) (no command outlives its session),
+  [settings](./features/settings.md) (export provenance),
+  [vehicle-select](./features/vehicle-select.md) (merge + `sanitizeLearned`),
+  [report](./features/report.md) (last-connection sources), [captures/README](./captures/README.md),
+  [simulator](./simulator.md) (closed simulator, every expect key), [testing](./testing.md)
+  (teardown), [vehicles/README](./vehicles/README.md) (`vehicleDocValidationProblems`),
+  [architecture](./architecture.md) (close on disconnect).
+- **Tests (+39 tests: 1524 tests / 175 suites).** `Elm327Client.test.ts` (+3: in-flight and queued
+  commands reject at once with no timer left; refused until `reopen()`; monitor mode released),
+  `DiagnosticSession.test.ts` (+1: disconnect fails queued reads fast, reconnect works),
+  `MockTransport.test.ts` (+1), `DpfScreen.test.tsx` (+1: a refresh cut off by a disconnect ends
+  at once with one "ELM327 link closed" entry), `adapterLog.test.ts` (+10: Clear keeps the
+  origin; a connect clears unstamped traffic; another BLE adapter clears the log; a reconnect to
+  another car on the same adapter — another VIN, or another protocol without one — keeps only its
+  own traffic and wrap count),
+  `connectionService.test.ts` (+2), `SettingsScreen.test.tsx` (+1: a disconnected Golf log
+  exported after the settings moved to the real adapter and the Punto still says `simulator` /
+  Golf / `ELM327 v2.2` / CAN; +1: Clear during the Golf session, a `03` read, the Punto picked
+  meanwhile — still the Golf's fixture), `fixtures.replay.test.ts` (every expect key),
+  `vehicle-docs-sync.test.ts` (+4 synthetic, +3 per doc — one per documented car),
+  `garageStore.test.ts` (+2), `sections.test.ts` (+1), `captureAnalyzer.test.ts` (+9: a capture with its setup has no
+  warnings, the odd-id trimmed pair, a lone coincidence or a wrong ACK sequence is no channel and
+  no warning, a lone channel-test exchange is only a warning, a plain capture with a 0x3xx
+  broadcast gets no TP2.0 warning (a 0x3xx id with a TP2.0 opcode does), window / same id; the
+  committed capture plus 10 Hz look-alike broadcasts infers no channel and flags nothing; an
+  ISO-TP `7E0` request followed by a one-byte "ACK" broadcast stays ISO-TP and still pairs; a side
+  answered on fewer than half its asks does not count).
+- **Deviations.** Items 2–6 were partly in place already (log cleared on a source switch; a second
+  fixture test covering `pendingDtcs` / `freezeFrameCount`; synthetic rule tests; a rehydration test
+  running the merge; `ranAt` / `lastReadAt` already in `lastSeenAt`), so those items add the missing
+  hardening and tests rather than the fix the plan sketched. Item 1 is fixed in obd-core (close on
+  disconnect) instead of only in the two test files. For a real-adapter log the fixture's
+  `vehicleId` still comes from the selected car at export time: the VIN auto-select picks the
+  garage car _after_ the connect, so the connect-time selection would be the stale one. The plan's
+  "three consecutive green `npm run ci` runs" was checked locally: three runs in a row, green, with no post-teardown logs and no worker forced to exit. After the review fixes (Clear keeps the log's origin, stricter TP2.0 pair inference) the final three full runs in a row were green with no post-teardown logs and no worker forced to exit; one earlier run in that pass printed Jest's "a worker process has failed to exit gracefully" notice once, and `--detectOpenHandles` on the suites touched here shows no open handle.
+
+---
+
 ## Plan 23 — Security-access plugins (2026-11-09)
 
 [Plan 23](./plans/23-security-access-plugins.md) landed: a write that a UDS module protects with

@@ -15,6 +15,8 @@ import {
   reassembleCaptureIsoTp,
   renderReportMarkdown,
   summarizeTp20,
+  tp20PairChannels,
+  TP20_PAIR_WINDOW_MS,
   type CaptureFrame,
 } from './captureAnalyzer';
 
@@ -267,6 +269,167 @@ describe('summarizeTp20', () => {
   it('leaves a plain ISO-TP id in 0x600–0x7FF out of the TP2.0 channels', () => {
     const t = summarizeTp20([frame(0, '7E0 02 10 03'), frame(10, '7E8 02 50 03')]);
     expect(t.dataChannels).toEqual([]);
+    expect(t.warnings).toEqual([]);
+  });
+
+  it('a capture with its channel setup has no warnings', () => {
+    expect(summarizeTp20(parseCaptureCsv(syntheticCsv()).frames).warnings).toEqual([]);
+  });
+
+  // Plan W2: a trimmed capture whose channel ids are outside 0x300–0x3FF and 0x600–0x7FF (the ECU
+  // assigns them in the D0 answer, which was cut off). Only the id pair's TP2.0 exchanges remain.
+  const TRIMMED_ODD_IDS = [
+    frame(100, '4F0 10 00 02 21 01'), // tester → module: data, last packet, wants an ACK (seq 0)
+    frame(104, '5E0 B1'), // module ACKs with the next sequence number
+    frame(120, '5E0 10 00 04 61 01 0A 0B'), // module → tester: the answer (seq 0)
+    frame(124, '4F0 B1'), // tester ACKs
+    frame(500, '4F0 21 00 02 21 02'), // data, more to come, no ACK wanted (seq 1)
+    frame(1100, '4F0 A3'), // channel test
+    frame(1102, '5E0 A1 0F 8A FF 4A FF'), // its parameters answer
+    frame(1500, '5D0 05 AA BB CC DD EE'), // bus noise
+  ];
+
+  it('infers a channel pair outside the usual ranges from its TP2.0 exchanges', () => {
+    const t = summarizeTp20(TRIMMED_ODD_IDS);
+    expect(t.setupRequests).toEqual([]);
+    expect(t.dataChannels).toEqual([
+      { id: '4F0', frames: 4, keepAlives: 1 },
+      { id: '5E0', frames: 3, keepAlives: 0 },
+    ]);
+    expect(t.warnings).toEqual([
+      'No TP2.0 channel setup (0x200 → D0 answer) in this capture: the data channels (4F0, 5E0) ' +
+        'were inferred from their traffic, and the module they belong to is unknown. Keep the ' +
+        'channel setup in the trimmed window.',
+    ]);
+    // Never decoded as ISO-TP, not even with --all-ids (`21 00 02 …` would read as a consecutive
+    // frame, `10 00 02 …` as a first frame).
+    const r = analyzeCapture(
+      { header: {}, frames: TRIMMED_ODD_IDS, rawLines: [] },
+      { allIds: true },
+    );
+    expect(r.pairs.some((p) => ['4F0', '5E0'].includes(p.request.id))).toBe(false);
+    const md = renderReportMarkdown(r);
+    expect(md).toContain('  - channel 4F0: 4 frame(s), 1 keep-alive(s)');
+    expect(md).toContain('- **Warning:** No TP2.0 channel setup (0x200 → D0 answer)');
+  });
+
+  it('a single coincidental answer is no channel and no warning', () => {
+    // One data frame and one ACK: below TP20_MIN_PAIR_MATCHES and one-way, so nothing is inferred
+    // and nothing flagged (a one-byte broadcast after another id's frame reads the same).
+    const t = summarizeTp20([frame(100, '4F0 10 00 02 21 01'), frame(104, '5E0 B1')]);
+    expect(t.dataChannels).toEqual([]);
+    expect(t.warnings).toEqual([]);
+    // A wrong sequence number is no ACK of that frame either.
+    const wrongSeq = summarizeTp20([
+      frame(100, '4F0 10 00 02 21 01'),
+      frame(104, '5E0 B5'),
+      frame(300, '4F0 11 00 02 21 01'),
+      frame(304, '5E0 B7'),
+    ]);
+    expect(wrongSeq.dataChannels).toEqual([]);
+  });
+
+  it('a lone channel-test exchange is too short for a channel, only a warning to keep the setup', () => {
+    const t = summarizeTp20([frame(100, '4F0 A3'), frame(102, '5E0 A1 0F 8A FF 4A FF')]);
+    expect(t.dataChannels).toEqual([]);
+    expect(t.warnings).toEqual([
+      'Frames on 4F0, 5E0 look like a TP2.0 channel test / disconnect but are too few to be tied ' +
+        'to a channel, so they are not summarized as TP2.0. Keep the channel setup and both sides ' +
+        'of the channel in the trimmed window.',
+    ]);
+  });
+
+  it('a plain capture with a 0x3xx broadcast gets no TP2.0 warning', () => {
+    // 0x3xx ids still list as channels by convention, but with no TP2.0 opcode on them there is no
+    // evidence of a TP2.0 session, so nothing tells the owner to keep a setup that never existed.
+    const t = summarizeTp20([
+      frame(0, '7E0 02 01 0C'),
+      frame(10, '7E8 04 41 0C 1A F8'),
+      frame(20, '320 12 34 56 78'),
+      frame(120, '320 12 34 56 79'),
+      frame(130, '1A0 B3'),
+      frame(140, '480 93'),
+    ]);
+    expect(t.dataChannels).toEqual([{ id: '320', frames: 2, keepAlives: 0 }]);
+    expect(t.warnings).toEqual([]);
+    // A 0x3xx id that does send a TP2.0-only opcode is TP2.0 evidence.
+    const keepAlive = summarizeTp20([frame(0, '300 A3'), frame(5, '300 10 00 02 21 01')]);
+    expect(keepAlive.warnings).toHaveLength(1);
+    expect(keepAlive.warnings[0]).toMatch(/^No TP2.0 channel setup .* \(300\) were inferred/);
+  });
+
+  it('tp20PairChannels needs answers from the other id inside the window', () => {
+    // Late answers (> TP20_PAIR_WINDOW_MS) and answers from the same id do not count.
+    expect(
+      tp20PairChannels([
+        frame(0, '4F0 A3'),
+        frame(TP20_PAIR_WINDOW_MS + 1, '5E0 A1 0F 8A FF 4A FF'),
+        frame(1000, '4F0 A3'),
+        frame(1001, '4F0 A1 0F 8A FF 4A FF'),
+        frame(2000, '4F0 A3'),
+        frame(2001 + TP20_PAIR_WINDOW_MS, '5E0 A1 0F 8A FF 4A FF'),
+      ]),
+    ).toEqual(new Set());
+    expect(
+      tp20PairChannels([
+        frame(0, '4F0 A3'),
+        frame(2, '5E0 A1 0F 8A FF 4A FF'),
+        frame(1000, '4F0 A8'),
+        frame(1003, '5E0 A8'),
+      ]),
+    ).toEqual(new Set([0x4f0, 0x5e0]));
+  });
+
+  it('a busy bus of broadcasts that happen to look like data frames and ACKs is no channel', () => {
+    // The committed capture plus 10 Hz broadcasts: 4A0 always starts 0x02 (a "data frame, seq 2")
+    // and 5D0 is a one-byte 0x93 (an "ACK of seq 2") 20 ms later, and 5E0 a one-byte rolling
+    // counter 0x90–0x9F. One-way "ACKs" with no channel test are not a channel.
+    const base = parseCaptureCsv(syntheticCsv()).frames;
+    const end = base[base.length - 1].tMs;
+    const busy: CaptureFrame[] = [...base];
+    for (let t = 0, k = 0; t <= end; t += 100, k++) {
+      busy.push(frame(t + 3, '4A0 02 1F 00 3C 80 00 00 00'));
+      busy.push(frame(t + 23, '5D0 93'));
+      busy.push(frame(t + 47, `5E0 ${(0x90 | (k & 0x0f)).toString(16).toUpperCase()}`));
+      busy.push(frame(t + 61, `4B0 1${(k & 0x0f).toString(16).toUpperCase()} 22 00 00 00`));
+    }
+    expect(tp20PairChannels(busy)).toEqual(new Set());
+    const t = summarizeTp20(busy);
+    expect(t.dataChannels).toEqual([
+      { id: '300', frames: 4, keepAlives: 0 },
+      { id: '740', frames: 4, keepAlives: 3 },
+    ]);
+    // The one-byte broadcasts are neither summarized nor flagged as TP2.0.
+    expect(t.warnings).toEqual([]);
+  });
+
+  it('never pairs an ISO-TP diagnostic id, so its requests still decode', () => {
+    // `7E0 02 10 03` reads as a TP2.0 data frame with seq 2, and a broadcast `5D0 93` as its ACK.
+    const frames = [
+      frame(0, '7E0 02 10 03'),
+      frame(10, '7E8 06 50 03 00 32 01 F4'),
+      frame(50, '5D0 93'),
+      frame(300, '7E0 02 10 03'),
+      frame(310, '7E8 06 50 03 00 32 01 F4'),
+      frame(350, '5D0 93'),
+      frame(600, '7E0 02 10 03'),
+      frame(610, '7E8 06 50 03 00 32 01 F4'),
+      frame(650, '5D0 93'),
+    ];
+    expect(tp20PairChannels(frames)).toEqual(new Set());
+    const r = analyzeCapture({ header: {}, frames, rawLines: [] });
+    expect(r.tp20.dataChannels).toEqual([]);
+    expect(r.pairs.filter((p) => p.request.id === '7E0' && p.response?.id === '7E8')).toHaveLength(
+      3,
+    );
+  });
+
+  it('a direction counts only when most of its asks are answered', () => {
+    // 4F0 asks 10 times, 5E0 answers twice in each direction: a coincidence on a busy id.
+    const frames: CaptureFrame[] = [];
+    for (let i = 0; i < 10; i++) frames.push(frame(i * 1000, '4F0 A3'));
+    frames.push(frame(2, '5E0 A1 0F 8A FF 4A FF'), frame(1002, '5E0 A1 0F 8A FF 4A FF'));
+    expect(tp20PairChannels(frames)).toEqual(new Set());
   });
 });
 

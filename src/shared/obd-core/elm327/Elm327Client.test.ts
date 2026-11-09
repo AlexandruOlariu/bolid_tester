@@ -1,4 +1,4 @@
-import { DRAIN_GRACE_MS, Elm327Client, isRepeatSafe } from './Elm327Client';
+import { DRAIN_GRACE_MS, Elm327Client, Elm327ClosedError, isRepeatSafe } from './Elm327Client';
 import { MockTransport } from '../transport/MockTransport';
 import { buildScenario } from '../transport/scenarios';
 import { decodePid } from '../obd/pids';
@@ -286,6 +286,75 @@ describe('Elm327Client', () => {
       await c.command('0105');
       expect(tx.filter((x) => x === '' || x === 'ATI')).toEqual(['ATI']); // only before ATZ
       expect(tx.indexOf('ATI')).toBeLessThan(tx.indexOf('ATZ'));
+    });
+  });
+
+  describe('close() — no command outlives the session (plan W2)', () => {
+    /** A link that never answers, so a command only ends by its (long) timeout — or by close(). */
+    const silent = (): Transport => ({
+      status: 'connected',
+      connect: async () => undefined,
+      disconnect: async () => undefined,
+      write: async () => undefined,
+      onData: () => () => undefined,
+      onStatusChange: () => () => undefined,
+    });
+    afterEach(() => jest.useRealTimers());
+
+    it('rejects the command in flight and every queued one at once, leaving no timer', async () => {
+      jest.useFakeTimers();
+      const t = silent();
+      const tx = recordTx(t);
+      const c = new Elm327Client(t, { commandTimeoutMs: 60_000, wakeAfterIdleMs: 0 });
+      c.attach();
+      const first = c.raw('0100');
+      const second = c.raw('0105');
+      const firstErr = first.catch((e: unknown) => e);
+      const secondErr = second.catch((e: unknown) => e);
+      // Let the first command reach the link (it now waits on its 60 s timer).
+      for (let i = 0; i < 5; i++) await Promise.resolve();
+      expect(tx).toEqual(['0100']);
+      expect(jest.getTimerCount()).toBe(1);
+
+      c.close();
+      expect(await firstErr).toBeInstanceOf(Elm327ClosedError);
+      expect(await secondErr).toBeInstanceOf(Elm327ClosedError);
+      expect((await firstErr) as Error).toHaveProperty('message', 'ELM327 link closed');
+      // The queued command never went out, and the timeout timer is gone.
+      expect(tx).toEqual(['0100']);
+      expect(jest.getTimerCount()).toBe(0);
+      expect(c.isClosed).toBe(true);
+    });
+
+    it('refuses later commands and monitor mode until reopen()', async () => {
+      const t = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+      await t.connect();
+      const tx = recordTx(t);
+      const c = new Elm327Client(t, { commandTimeoutMs: 1000, wakeAfterIdleMs: 0 });
+      c.attach();
+      expect(await c.raw('ATE0')).toContain('OK');
+      c.close();
+      await expect(c.raw('ATI')).rejects.toBeInstanceOf(Elm327ClosedError);
+      await expect(c.startMonitor(() => undefined)).rejects.toBeInstanceOf(Elm327ClosedError);
+      expect(tx).toEqual(['ATE0']);
+
+      c.reopen();
+      c.attach();
+      expect(await c.raw('ATI')).toContain('ELM327');
+      expect(tx).toEqual(['ATE0', 'ATI']);
+    });
+
+    it('ends monitor mode, so the held queue rejects instead of hanging', async () => {
+      const t = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+      await t.connect();
+      const c = new Elm327Client(t, { commandTimeoutMs: 1000, wakeAfterIdleMs: 0 });
+      c.attach();
+      await c.startMonitor(() => undefined);
+      const queued = c.raw('0100');
+      c.close();
+      await expect(queued).rejects.toBeInstanceOf(Elm327ClosedError);
+      expect(c.monitoring).toBe(false);
+      await t.disconnect();
     });
   });
 

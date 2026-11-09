@@ -65,7 +65,9 @@ entries, odoKm, now)` (`computeDue`, sorted overdue → soon → ok → no recor
   - `identityFrom(profile, info, deviceName, fallback)` — `PROTOCOL_LABELS`, `decodeVin`
     (manufacturer, country, model year, check digit where mandatory), ELM version, voltage, PID
     count, calibration ID; offline: VIN / protocol from the fallback and `lastSeenAt` (the newest
-    time among the sections the report prints and the car's newest DTC / AI history entries).
+    time among the sections the report prints — the saved scan, the fault read's `lastReadAt` (live
+    or from history), the inspection's and battery check's `ranAt`, the AI summary — and the car's
+    newest DTC / AI history entries; each is covered by a test, plan W2).
   - `belongsToCar(vehicle, profileId, vin)` — a record carrying a VIN must match the car's VIN
     (`historyVehicleKey`); otherwise the profile id decides.
   - `collectReportSources(snapshot)` — the live in-memory results win, but only when they were

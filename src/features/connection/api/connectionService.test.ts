@@ -25,7 +25,7 @@ import * as scenarios from '@/shared/obd-core/transport/scenarios';
 import { MockTransport } from '@/shared/obd-core/transport/MockTransport';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
-import { adapterLogSnapshot } from '@/shared/state/adapterLog';
+import { adapterLogOrigin, adapterLogSnapshot, clearAdapterLog } from '@/shared/state/adapterLog';
 import {
   __sim,
   connect,
@@ -101,6 +101,38 @@ describe('switchAdapterSource', () => {
     await switchAdapterSource('mock');
     await connect();
     expect(useSessionStore.getState().status).toBe('connected');
+  });
+});
+
+describe('adapter log origin (plan W2)', () => {
+  it('stamps the simulator session that recorded the log, link details included', async () => {
+    clearAdapterLog();
+    await connect();
+    expect(adapterLogOrigin()).toEqual({
+      source: 'simulator',
+      simulatedVehicleId: useSettingsStore.getState().simulatedVehicleId,
+      adapter: 'ELM327 v2.2',
+      protocol: useSessionStore.getState().info?.protocol,
+      vin: useSessionStore.getState().info?.vin ?? undefined,
+    });
+    // A disconnect keeps the log and how it was recorded.
+    await disconnect();
+    expect(adapterLogSnapshot().length).toBeGreaterThan(0);
+    expect(adapterLogOrigin()?.adapter).toBe('ELM327 v2.2');
+  });
+
+  it('a connect to another simulated car clears the previous car’s log first', async () => {
+    clearAdapterLog();
+    useSettingsStore.setState({ simulatedVehicleId: 'golf-plus-2009-20tdi' });
+    await connect();
+    await disconnect();
+    useSettingsStore.setState({ simulatedVehicleId: 'fiat-punto-2008-12' });
+    const pending = connect();
+    // Cleared before the Punto's first command went out: nothing of the Golf's session is left.
+    expect(adapterLogSnapshot()).toEqual([]);
+    expect(adapterLogOrigin()?.simulatedVehicleId).toBe('fiat-punto-2008-12');
+    await pending;
+    expect(adapterLogSnapshot().some((e) => e.text === 'ATZ')).toBe(true);
   });
 });
 

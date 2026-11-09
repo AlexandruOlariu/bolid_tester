@@ -22,6 +22,8 @@ import { useCarBackupStore } from '../model/carBackupStore';
 import { CodingBackup } from './CodingBackup';
 
 const golf = getVehicleProfile('golf-plus-2009-20tdi');
+/** waitFor bound for a step that reads the simulated car (a backup, a compare, a restore). */
+const WAIT = { timeout: 4000 };
 const ch3001 = golf.adaptations!.find((c) => c.did === '3001')!;
 const ch3002 = golf.adaptations!.find((c) => c.did === '3002')!;
 
@@ -30,9 +32,12 @@ async function backupThenChange(opts: { also3002?: boolean; beforeExpand?: () =>
   await connectSimulator({ vehicleId: 'golf-plus-2009-20tdi' });
   renderWithProviders(<CodingBackup />);
   fireEvent.press(screen.getByText('Create backup'));
-  await waitFor(() => expect(useCarBackupStore.getState().backups).toHaveLength(1), {
-    timeout: 8000,
-  });
+  // Saved *and* finished: the create releases the shared work gate in its `finally`, after the
+  // save, so a compare pressed before that would be refused by the gate.
+  await waitFor(() => {
+    expect(useCarBackupStore.getState().backups).toHaveLength(1);
+    expect(useBackupWorkStore.getState().busy).toBe(false);
+  }, WAIT);
   // Change 3001 to 900 rpm through the same gated write the Adaptations screen uses.
   const session = useSessionStore.getState().session!;
   await act(async () => {
@@ -60,9 +65,7 @@ const isDisabled = (label: Node) => {
 async function compare() {
   const panel = screen.getByTestId('adaptation-restore-7E0');
   fireEvent.press(within(panel).getByText('Compare with car'));
-  await waitFor(() => expect(within(panel).getByTestId('restore-row-3001')).toBeTruthy(), {
-    timeout: 8000,
-  });
+  await waitFor(() => expect(within(panel).getByTestId('restore-row-3001')).toBeTruthy(), WAIT);
   return panel;
 }
 
@@ -71,8 +74,17 @@ describe('CodingBackup — adaptation restore', () => {
   // the matched host elements (and the Tamagui tree above them), ~0.6 s per poll. Polled while
   // the panel re-reads the car, that blocks the event loop, starves the simulator's replies and
   // made the restore tests take 5–7 s (and flake under a full parallel run). Count with
-  // `queryAllBy…().length` instead. The margins below are for a loaded CI machine.
-  jest.setTimeout(20_000);
+  // `queryAllBy…().length` instead. With that, and with no session work left running between
+  // tests (see the afterEach below), each test takes ~1–1.6 s even under a full parallel run, so
+  // the default 5 s test timeout applies; the waits use `WAIT` (below it, so a slow wait reports
+  // its own assertion rather than a bare test timeout).
+
+  // No backup work (a compare, a restore and its re-compare) may outlive its test: the global
+  // afterEach closes the session, and work cut off there would only fail half-way. Every test
+  // leaves the shared gate released before the teardown runs.
+  afterEach(async () => {
+    await waitFor(() => expect(useBackupWorkStore.getState().busy).toBe(false), WAIT);
+  });
 
   it('compares a backup with the car and lists restore / equal per channel', async () => {
     await backupThenChange();
@@ -116,12 +128,10 @@ describe('CodingBackup — adaptation restore', () => {
         expect(screen.getByTestId('adaptation-restore-message')).toHaveTextContent(
           'Write verified.',
         ),
-      { timeout: 8000 },
+      WAIT,
     );
     // The panel re-compares: both channels now equal.
-    await waitFor(() => expect(within(panel).queryAllByText('equal').length).toBe(2), {
-      timeout: 8000,
-    });
+    await waitFor(() => expect(within(panel).queryAllByText('equal').length).toBe(2), WAIT);
     // The current value was backed up into the adaptations store, and the car reads 850 again.
     expect(useAdaptationsStore.getState().backups[0]).toMatchObject({
       did: '3001',
@@ -147,11 +157,9 @@ describe('CodingBackup — adaptation restore', () => {
         expect(screen.getByTestId('adaptation-restore-message')).toHaveTextContent(
           'Restored 1 channel.',
         ),
-      { timeout: 8000 },
+      WAIT,
     );
-    await waitFor(() => expect(within(panel).queryAllByText('equal').length).toBe(2), {
-      timeout: 8000,
-    });
+    await waitFor(() => expect(within(panel).queryAllByText('equal').length).toBe(2), WAIT);
   });
 
   it('shows an out-of-bounds snapshot value as skipped with the bounds message', async () => {
@@ -189,7 +197,7 @@ describe('CodingBackup — adaptation restore', () => {
           expect(screen.getByTestId('adaptation-restore-message')).toHaveTextContent(
             'Stopped at 3001: Verify mismatch. Not restored: Idle speed offset (3001), EGR base duty (3002).',
           ),
-        { timeout: 8000 },
+        WAIT,
       );
       // The first failure stopped the run: 3002 was never written.
       expect(spy).toHaveBeenCalledTimes(1);
@@ -197,7 +205,7 @@ describe('CodingBackup — adaptation restore', () => {
       spy.mockRestore();
     }
     // The panel re-compares (holding the shared gate) and still offers both channels.
-    await waitFor(() => expect(useBackupWorkStore.getState().busy).toBe(false), { timeout: 8000 });
+    await waitFor(() => expect(useBackupWorkStore.getState().busy).toBe(false), WAIT);
     expect(within(panel).getByText('Restore all (2)')).toBeTruthy();
     expect(within(panel).getByText('2 adaptations differ')).toBeTruthy();
   });
@@ -270,7 +278,7 @@ describe('CodingBackup — adaptation restore', () => {
           expect(screen.getByTestId('adaptation-restore-message')).toHaveTextContent(
             'Failed: link lost',
           ),
-        { timeout: 8000 },
+        WAIT,
       );
       expect(within(panel).queryByTestId('restore-row-3001')).toBeNull();
       expect(useBackupWorkStore.getState().busy).toBe(false);

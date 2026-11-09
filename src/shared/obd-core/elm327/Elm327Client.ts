@@ -62,6 +62,14 @@ function nextRawCan(cmd: string, current: boolean): boolean {
   return current;
 }
 
+/** A command refused because the client was closed (the session disconnected). */
+export class Elm327ClosedError extends Error {
+  constructor() {
+    super('ELM327 link closed');
+    this.name = 'Elm327ClosedError';
+  }
+}
+
 export class Elm327Client {
   private buffer = '';
   private queue: Promise<unknown> = Promise.resolve();
@@ -95,20 +103,57 @@ export class Elm327Client {
   /** Resolves when the drain ends (prompt seen or `DRAIN_GRACE_MS` elapsed). */
   private drainPromise: Promise<void> | null = null;
   private finishDrain: (() => void) | null = null;
+  /** Set by `close()` (the session disconnected): every queued or later command rejects at once
+   *  instead of writing to a dead link and waiting out its timeout. Cleared by `reopen()`. */
+  private closed = false;
 
   constructor(
     private transport: Transport,
     private options: Elm327Options = {},
   ) {}
 
-  /** Begin listening to the transport (idempotent). */
+  /** Begin listening to the transport (idempotent; a no-op once closed). */
   attach(): void {
+    if (this.closed) return;
     if (!this.unsub) this.unsub = this.transport.onData(this.onData);
   }
 
   detach(): void {
     this.unsub?.();
     this.unsub = null;
+  }
+
+  /** Close the client because its link is gone (`DiagnosticSession.disconnect`): stop listening,
+   *  reject the command in flight now (not after its timeout), end a drain and monitor mode, and
+   *  make every queued or later command reject with `Elm327ClosedError` before it writes. So no
+   *  read a screen started can outlive the session — it fails at once, and leaves no timer behind.
+   *  Idempotent; `reopen()` undoes it for a session that connects again. */
+  close(): void {
+    this.closed = true;
+    this.detach();
+    const p = this.pending;
+    this.pending = null;
+    if (p) {
+      clearTimeout(p.timer);
+      p.reject(new Elm327ClosedError());
+    }
+    this.endDrain();
+    if (this.monitorListener) {
+      this.monitorListener = null;
+      this.monitorRelease?.();
+      this.monitorRelease = null;
+    }
+    this.buffer = '';
+  }
+
+  /** Accept commands again after `close()` (the session reconnects on the same transport). */
+  reopen(): void {
+    this.closed = false;
+  }
+
+  /** True after `close()` until `reopen()`. */
+  get isClosed(): boolean {
+    return this.closed;
   }
 
   /** Switch the default per-command timeout to a slower value (e.g. K-line links where Mode 03/04
@@ -165,6 +210,7 @@ export class Elm327Client {
   /** Send a raw command and resolve with the cleaned text response (without the prompt). */
   raw(cmd: string, timeoutMs?: number): Promise<string> {
     const run = async () => {
+      if (this.closed) throw new Elm327ClosedError();
       // A late reply to a timed-out command must be discarded before this one goes out.
       if (this.drainPromise) await this.drainPromise;
       if (this.needsWake()) {
@@ -172,6 +218,7 @@ export class Elm327Client {
         // A wake-up whose reply is late is drained like a timed-out command.
         if (this.drainPromise) await this.drainPromise;
       }
+      if (this.closed) throw new Elm327ClosedError();
       return this.exec(cmd, timeoutMs);
     };
     const next = this.queue.then(run, run);
@@ -305,6 +352,7 @@ export class Elm327Client {
    *  stopMonitor(). The command queue is held meanwhile — monitor mode owns the channel. */
   async startMonitor(listener: (line: string) => void, cmd = 'ATMA'): Promise<void> {
     if (this.monitorListener) return;
+    if (this.closed) throw new Elm327ClosedError();
     this.attach();
     const hold = new Promise<void>((res) => (this.monitorRelease = res));
     this.queue = this.queue.then(() => hold);

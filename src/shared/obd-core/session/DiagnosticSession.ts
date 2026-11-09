@@ -72,8 +72,10 @@ export class DiagnosticSession {
     return this.protocol;
   }
 
+  /** Close the link. Work still queued on the client (a screen's reads that outlive it) rejects at
+   *  once with `Elm327ClosedError` instead of writing to the dead link and timing out later. */
   async disconnect(): Promise<void> {
-    this.client.detach();
+    this.client.close();
     try {
       await this.transport.disconnect();
     } catch {
@@ -86,6 +88,7 @@ export class DiagnosticSession {
    *  protocol / voltage / PID bitmaps / VIN), so a failure can say how far the attempt got. */
   async connect(onStage?: (stage: ConnectProgressStage) => void): Promise<SessionInfo> {
     if (this.transport.status !== 'connected') await this.transport.connect();
+    this.client.reopen();
     this.client.attach();
     onStage?.('init');
     await this.client.init();

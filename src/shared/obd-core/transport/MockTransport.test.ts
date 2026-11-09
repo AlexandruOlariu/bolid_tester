@@ -70,6 +70,19 @@ describe('MockTransport status events', () => {
     expect(events).toEqual(['disconnected']);
   });
 
+  it('answers nothing once disconnected: a write rejects like a closed BLE link (plan W2)', async () => {
+    const t = new MockTransport(scenario);
+    await expect(t.write(stringToBytes('ATI\r'))).rejects.toThrow(/not connected/);
+    await t.connect();
+    expect(await ask(t, 'ATE0')).toContain('OK');
+    await t.disconnect();
+    const heard: string[] = [];
+    t.onData((b) => heard.push(bytesToString(b)));
+    await expect(t.write(stringToBytes('ATI\r'))).rejects.toThrow(/not connected/);
+    await new Promise((r) => setTimeout(r, 5));
+    expect(heard).toEqual([]);
+  });
+
   it('stops notifying after unsubscribe', async () => {
     const t = new MockTransport(scenario);
     const { events, unsub } = record(t);

@@ -111,3 +111,19 @@ export function validatedOnTableProblems(
   }
   return problems;
 }
+
+/** Both validation rules on one vehicle doc, exactly as `vehicle-docs-sync.test.ts` applies them to
+ *  every doc: the front-matter rule (`validationFrontMatterProblems`) and the "Validated on the
+ *  car" table rule (`validatedOnTableProblems`) against the car fixtures committed for that
+ *  vehicle. One pure function, so the synthetic-input tests prove the same path that guards the
+ *  real docs fails on bad data. Empty = the doc is in step. */
+export function vehicleDocValidationProblems(
+  markdown: string,
+  expectedProtocol: string,
+  carFixtures: string[],
+): string[] {
+  return [
+    ...validationFrontMatterProblems(parseFrontMatter(markdown), expectedProtocol),
+    ...validatedOnTableProblems(parseValidatedOnTable(markdown), carFixtures),
+  ];
+}

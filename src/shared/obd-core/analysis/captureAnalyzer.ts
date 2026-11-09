@@ -438,9 +438,13 @@ export interface Tp20Summary {
   setupRequests: { tMs: number; id: string; target: number; bytes: number[] }[];
   /** Setup responses (`0x201`–`0x2FF`, opcode D0 positive or D1–D8 negative). */
   setupResponses: { tMs: number; id: string; bytes: number[] }[];
-  /** Data-channel ids (negotiated in a setup response, in 0x300–0x3FF, or a 0x600–0x7FF id that
-   *  carries a TP2.0-only opcode) with frame counts and channel-test (`A3`) keep-alives. */
+  /** Data-channel ids (negotiated in a setup response, in 0x300–0x3FF, a 0x600–0x7FF id that
+   *  carries a TP2.0-only opcode, or an id pair outside 0x200–0x2FF and 0x600–0x7FF whose frames
+   *  answer each other the TP2.0 way — see `tp20PairChannels`) with frame counts and channel-test (`A3`) keep-alives. */
   dataChannels: { id: string; frames: number; keepAlives: number }[];
+  /** Plain-English cautions about what the capture cannot show (e.g. channels inferred because
+   *  the channel setup was trimmed off). Empty when there is nothing to say. */
+  warnings: string[];
 }
 
 const idNum = (id: string): number => (/^[0-9A-F]{3}$/i.test(id) ? parseInt(id, 16) : -1);
@@ -459,11 +463,116 @@ const isTp20Opcode = (b0: number | undefined): boolean =>
     b0 === 0xa4 ||
     b0 === 0xa8);
 
+/** How long after a TP2.0 frame the other side's answer may come (ACK, channel-test reply). */
+export const TP20_PAIR_WINDOW_MS = 200;
+/** Answered exchanges an id pair needs before it counts as a TP2.0 channel on pattern alone. */
+export const TP20_MIN_PAIR_MATCHES = 2;
+/** Share of one side's answer-seeking frames the other must answer for that direction to count. */
+export const TP20_MIN_ANSWER_SHARE = 0.5;
+
+/** The answer a TP2.0 frame `f` asks for, as a test on the other side's next frame, or null when
+ *  `f` asks for none: a data frame waiting for an ACK (opcode `0x` / `1x`, sequence `n`) is acked
+ *  by a one-byte `B(n+1)` (or `9(n+1)`, not ready); a channel test `A3` and a parameters request
+ *  `A0` are answered by `A1` parameters (6 bytes); a disconnect `A8` by `A8`. */
+function tp20AnswerTest(f: CaptureFrame): ((g: CaptureFrame) => boolean) | null {
+  const b0 = f.bytes[0];
+  if (b0 === undefined) return null;
+  const op = b0 >> 4;
+  if ((op === 0x0 || op === 0x1) && f.bytes.length >= 2) {
+    const next = ((b0 & 0x0f) + 1) & 0x0f;
+    return (g) =>
+      g.bytes.length === 1 && (g.bytes[0] === (0xb0 | next) || g.bytes[0] === (0x90 | next));
+  }
+  if ((b0 === 0xa3 && f.bytes.length === 1) || (b0 === 0xa0 && f.bytes.length === 6)) {
+    return (g) => g.bytes[0] === 0xa1 && g.bytes.length === 6;
+  }
+  if (b0 === 0xa8 && f.bytes.length === 1)
+    return (g) => g.bytes[0] === 0xa8 && g.bytes.length === 1;
+  return null;
+}
+
+/** TP2.0 channels recognised by their traffic alone, for a capture trimmed past the channel setup
+ *  whose ids fall outside 0x300–0x3FF. Ids in 0x200–0x2FF (setup) and 0x600–0x7FF (ISO-TP
+ *  diagnostics, where an ISO-TP single frame such as `7E0 02 01 0C` looks like a TP2.0 data frame)
+ *  are never paired: a TP2.0 side there is found by its own ACKs (`isTp20Opcode`). 29-bit ids
+ *  never are either. An id pair is a channel when all of these hold:
+ *  - one side's frames have been answered the TP2.0 way by the other (`tp20AnswerTest`: a data
+ *    frame and its one-byte ACK with the next sequence number, a channel test or parameters
+ *    request and its 6-byte parameters, a disconnect and its echo) within `TP20_PAIR_WINDOW_MS`,
+ *    by the other id's **next** frame, at least `TP20_MIN_PAIR_MATCHES` times;
+ *  - a direction counts only when at least half of the frames that side sent asking for an answer
+ *    got one from the other (`TP20_MIN_ANSWER_SHARE`) — a busy broadcast id asks often and is
+ *    answered by chance only now and then;
+ *  - the exchange is two-way (each side's data acked by the other, as every request / response on
+ *    a channel is) or includes a channel test / disconnect exchange. A one-way run of "ACKs" — a
+ *    periodic one-byte broadcast after another id's frames — is not enough.
+ *  ISO-TP never answers that way (its flow control is `3x` and at least 3 bytes). */
+export function tp20PairChannels(frames: CaptureFrame[]): Set<number> {
+  return tp20Pairs(frames).channels;
+}
+
+/** `tp20PairChannels`, plus the `partial` ids: a pair with a channel-test / disconnect exchange
+ *  (answered at least half the time, as above) that falls short of `TP20_MIN_PAIR_MATCHES` only —
+ *  a channel cut down to one exchange by the trim. Nothing weaker counts as TP2.0 evidence. */
+function tp20Pairs(frames: CaptureFrame[]): { channels: Set<number>; partial: Set<number> } {
+  const sorted = frames.slice().sort((a, b) => a.tMs - b.tMs);
+  const usable = (n: number) =>
+    n >= 0 && !(n >= 0x200 && n <= 0x2ff) && !(n >= 0x600 && n <= 0x7ff);
+  /** Frames per id that ask for an answer. */
+  const asks = new Map<number, number>();
+  /** Answered asks per ordered pair `from>to`, and whether any was a control exchange. */
+  const answered = new Map<string, { count: number; control: boolean }>();
+  for (let i = 0; i < sorted.length; i++) {
+    const f = sorted[i];
+    const n = idNum(f.id);
+    if (!usable(n)) continue;
+    const answers = tp20AnswerTest(f);
+    if (!answers) continue;
+    asks.set(n, (asks.get(n) ?? 0) + 1);
+    const seen = new Set<number>();
+    for (let j = i + 1; j < sorted.length && sorted[j].tMs - f.tMs <= TP20_PAIR_WINDOW_MS; j++) {
+      const g = sorted[j];
+      const m = idNum(g.id);
+      if (m === n || !usable(m) || seen.has(m)) continue;
+      seen.add(m); // only the other id's next frame can be the answer
+      if (!answers(g)) continue;
+      const key = `${n}>${m}`;
+      const a = answered.get(key) ?? { count: 0, control: false };
+      a.count += 1;
+      if (f.bytes[0] >> 4 >= 0xa) a.control = true;
+      answered.set(key, a);
+      break;
+    }
+  }
+  const out = new Set<number>();
+  const partial = new Set<number>();
+  const directions = new Map<string, { count: number; control: boolean; ways: number }>();
+  for (const [key, a] of answered) {
+    const [n, m] = key.split('>').map(Number);
+    if (a.count / (asks.get(n) ?? 1) < TP20_MIN_ANSWER_SHARE) continue;
+    const pair = n < m ? `${n}:${m}` : `${m}:${n}`;
+    const d = directions.get(pair) ?? { count: 0, control: false, ways: 0 };
+    d.count += a.count;
+    d.control ||= a.control;
+    d.ways += 1;
+    directions.set(pair, d);
+  }
+  for (const [pair, d] of directions) {
+    if (d.ways < 2 && !d.control) continue;
+    const into = d.count < TP20_MIN_PAIR_MATCHES ? partial : out;
+    for (const part of pair.split(':')) into.add(Number(part));
+  }
+  return { channels: out, partial };
+}
+
 /** Summarize VW TP2.0 traffic: channel setups on 0x200, their answers on 0x200 + module address,
  *  and the data channels with their `A3` keep-alive counts. A channel id comes from a D0 answer
  *  (bytes 2-3 the module's tx id, 4-5 the tester's), from 0x300–0x3FF, or — for a capture trimmed
  *  past the channel setup — from a 0x600–0x7FF id (e.g. the tester's 0x740) that sends a
- *  TP2.0-only opcode (`isTp20Opcode`). */
+ *  TP2.0-only opcode (`isTp20Opcode`), or from an id pair outside 0x200–0x2FF and 0x600–0x7FF
+ *  that answers each other the TP2.0 way (`tp20PairChannels`). Channels found from that evidence
+ *  without a setup, and an id pair with a lone channel-test / disconnect exchange too short to be
+ *  a channel, are reported in `warnings` (trim the capture with the setup kept). */
 export function summarizeTp20(frames: CaptureFrame[]): Tp20Summary {
   const setupRequests: Tp20Summary['setupRequests'] = [];
   const setupResponses: Tp20Summary['setupResponses'] = [];
@@ -481,10 +590,13 @@ export function summarizeTp20(frames: CaptureFrame[]): Tp20Summary {
       }
     }
   }
+  const negotiated = channelIds.size > 0;
   for (const f of frames) {
     const n = idNum(f.id);
     if (n >= 0x600 && n <= 0x7ff && isTp20Opcode(f.bytes[0])) channelIds.add(n);
   }
+  const pairs = tp20Pairs(frames);
+  for (const n of pairs.channels) channelIds.add(n);
   const stats = new Map<number, { frames: number; keepAlives: number }>();
   for (const f of frames) {
     const n = idNum(f.id);
@@ -497,7 +609,37 @@ export function summarizeTp20(frames: CaptureFrame[]): Tp20Summary {
   const dataChannels = [...stats.entries()]
     .sort((a, b) => a[0] - b[0])
     .map(([n, s]) => ({ id: idStr(n), ...s }));
-  return { setupRequests, setupResponses, dataChannels };
+  const warnings: string[] = [];
+  // Without a setup, warn only about channels found by TP2.0 evidence: the opcode / pairing
+  // inference above, or a 0x300–0x3FF id that sends a TP2.0-only opcode itself. A plain ISO-TP or
+  // OBD capture with some 0x3xx broadcast is no TP2.0 capture, so it gets no warning.
+  if (!negotiated) {
+    const inferred = new Set(channelIds);
+    for (const f of frames) {
+      const n = idNum(f.id);
+      if (n >= 0x300 && n <= 0x3ff && isTp20Opcode(f.bytes[0])) inferred.add(n);
+    }
+    const ids = dataChannels.filter((c) => inferred.has(idNum(c.id))).map((c) => c.id);
+    if (ids.length > 0) {
+      warnings.push(
+        'No TP2.0 channel setup (0x200 → D0 answer) in this capture: the data channels ' +
+          `(${ids.join(', ')}) were inferred from their traffic, and the module they belong to is ` +
+          'unknown. Keep the channel setup in the trimmed window.',
+      );
+    }
+  }
+  // An id pair with a lone channel-test / disconnect exchange (`tp20Pairs().partial`): likely a
+  // TP2.0 channel cut down to one exchange by the trim. Single TP2.0-looking frames are no evidence
+  // (a one-byte broadcast or rolling counter reads as an ACK), so they are never flagged.
+  const suspects = [...pairs.partial].filter((n) => !stats.has(n)).map(idStr);
+  if (suspects.length > 0) {
+    warnings.push(
+      `Frames on ${suspects.sort().join(', ')} look like a TP2.0 channel test / disconnect but ` +
+        'are too few to be tied to a channel, so they are not summarized as TP2.0. Keep the ' +
+        'channel setup and both sides of the channel in the trimmed window.',
+    );
+  }
+  return { setupRequests, setupResponses, dataChannels, warnings };
 }
 
 /** True for ids diagnostic traffic uses: 11-bit 0x600–0x7FF, 29-bit 18DAxxxx / 18DBxxxx. */
@@ -685,6 +827,7 @@ export function renderReportMarkdown(report: CaptureReport): string {
       out.push(`  - channel ${c.id}: ${c.frames} frame(s), ${c.keepAlives} keep-alive(s)`);
     }
   }
+  for (const w of t.warnings) out.push(`- **Warning:** ${w}`);
   out.push(
     '',
     '## CAN ids',

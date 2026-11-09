@@ -22,7 +22,12 @@ import { useGarageStore } from '@/shared/state/garageStore';
 import { simulatorSourceFor } from '@/shared/vehicles/resolve';
 import { isCan } from '@/shared/obd-core/obd/protocols';
 import { getActiveProfile } from '@/shared/state/activeProfile';
-import { appendAdapterLog, clearAdapterLog } from '@/shared/state/adapterLog';
+import {
+  appendAdapterLog,
+  beginAdapterLogRecording,
+  clearAdapterLog,
+  noteAdapterLogLink,
+} from '@/shared/state/adapterLog';
 import { logError } from '@/shared/state/errorLogStore';
 import { runReconnect, RECONNECT_DELAYS_MS } from './reconnect';
 import { pruneDrops, shouldAutoReconnect } from './flapGuard';
@@ -242,6 +247,13 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
         : null
       : { id: 'mock', name: `Simulator · ${simulatedVehicleId}` };
   link.beginAttempt(adapterSource === 'ble' ? 'bluetooth' : 'transport', attemptDevice);
+  // Stamp how the adapter log's traffic is recorded (plan W2) before the first write, so a replay
+  // fixture exported later is labelled by the session that produced it, not by the settings then.
+  beginAdapterLogRecording(
+    adapterSource === 'mock'
+      ? { source: 'simulator', simulatedVehicleId }
+      : { source: 'car', deviceId: target?.deviceId },
+  );
 
   let transport: Transport | undefined;
   let session: DiagnosticSession | undefined;
@@ -331,6 +343,11 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
     useLinkStore.getState().setLink(linkInfoOf(rawTransport));
     liveRawTransport = rawTransport;
     useSessionStore.getState().setConnected(session, info, device);
+    noteAdapterLogLink({
+      adapter: info.version,
+      protocol: info.protocol,
+      vin: info.vin ?? undefined,
+    });
     // Now that the link is up, watch for it dropping out from under us.
     watchStatus(transport);
   } catch (e) {

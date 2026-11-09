@@ -6,7 +6,7 @@ import { Screen } from '@/shared/ui';
 import { useSettingsStore, parseDtcList } from '@/shared/state/settingsStore';
 import {
   useAdapterLogStore,
-  clearAdapterLog,
+  clearAdapterLogEntries,
   ADAPTER_LOG_CAPACITY,
 } from '@/shared/state/adapterLog';
 import { useSessionStore } from '@/shared/state/sessionStore';
@@ -489,6 +489,7 @@ export function SettingsScreen() {
   const s = useSettingsStore();
   const log = useAdapterLogStore((st) => st.entries);
   const logDropped = useAdapterLogStore((st) => st.dropped);
+  const logOrigin = useAdapterLogStore((st) => st.origin);
   const status = useSessionStore((st) => st.status);
   const info = useSessionStore((st) => st.info);
   const selectedProfileId = useVehicleStore((st) => st.selectedProfileId);
@@ -501,20 +502,21 @@ export function SettingsScreen() {
   const monoFont = Platform.select({ ios: 'Courier', android: 'monospace', default: 'monospace' });
 
   // A simulator session is labelled as such (and with the simulated car), so it can never pass for
-  // an on-car validation fixture. The label is the source at export time; that matches the log
-  // because `switchAdapterSource` clears the log on every switch and a superseded link logs nothing.
+  // an on-car validation fixture. The label comes from how the log was recorded (its `origin`,
+  // stamped by the connect that produced it, plan W2) — not from the settings at export time, which
+  // may have changed since (a disconnect, another simulated car). Clear keeps the origin. Only a
+  // log no connect stamped (traffic logged after a source switch reset it — which the service
+  // never does) falls back to the current settings and session.
   const onExportFixture = async () => {
-    const simulator = s.adapterSource === 'mock';
+    const simulator = logOrigin ? logOrigin.source === 'simulator' : s.adapterSource === 'mock';
+    const simulatedVehicleId = logOrigin?.simulatedVehicleId ?? s.simulatedVehicleId;
     const saved = await exportFixture({
       log,
       flow: flowName,
-      vehicleId: fixtureVehicleId(
-        { simulator, simulatedVehicleId: s.simulatedVehicleId, selectedProfileId },
-        garage,
-      ),
+      vehicleId: fixtureVehicleId({ simulator, simulatedVehicleId, selectedProfileId }, garage),
       source: simulator ? 'simulator' : 'car',
-      adapter: info?.version,
-      protocol: info?.protocol,
+      adapter: logOrigin?.adapter ?? info?.version,
+      protocol: logOrigin?.protocol ?? info?.protocol,
       droppedEntries: logDropped,
       appVersion: APP_VERSION,
     });
@@ -528,7 +530,9 @@ export function SettingsScreen() {
     });
   };
   const onClearLog = () => {
-    clearAdapterLog();
+    // Entries only: the origin stays, so the next flow recorded on the live session (or the next
+    // connect, which re-stamps it) is still labelled by the session that produced it.
+    clearAdapterLogEntries();
     setExportStatus(null);
   };
 

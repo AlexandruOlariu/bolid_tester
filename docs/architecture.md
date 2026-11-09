@@ -52,6 +52,9 @@ Turns the byte pipe into a request/response command channel.
 - **Init sequence.** `ATZ → ATE0 → ATL0 → ATS0 → ATH0 → ATSP0` then probe `0100`. Adaptive timing
   (`ATAT1`). See [`obd2-reference.md`](./obd2-reference.md).
 - **Timeouts & retries** per command, with a longer timeout while the adapter is `SEARCHING...`.
+- **Close on disconnect.** `DiagnosticSession.disconnect()` calls `Elm327Client.close()`: the
+  command in flight and every queued one reject at once with `Elm327ClosedError`, so no read
+  outlives its session (see [connection](./features/connection.md)).
 
 ### 3. OBD2 layer (`src/shared/obd-core/obd`)
 

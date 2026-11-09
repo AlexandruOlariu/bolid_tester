@@ -2941,6 +2941,11 @@
   ],
   [
     "feature:engine-host",
+    "core:elm327/Elm327Client",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
     "core:obd/liveKeys",
     "imports"
   ],
@@ -4877,6 +4882,11 @@
   [
     "store:exchangeService",
     "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "store:garageStore",
+    "core:obd/protocols",
     "imports"
   ],
   [

@@ -6,6 +6,7 @@ import { ProtocolId } from '../obd/protocols';
 import { codeModule, serviceReset } from '../coding/udsCoding';
 import { Transport, TransportStatus } from '../transport/Transport';
 import { bytesToString, stringToBytes } from '../../lib/bytes';
+import { Elm327ClosedError } from '../elm327/Elm327Client';
 
 /** A transport that behaves like an ELM327 with no car attached: AT setup commands are answered by
  *  the chip, but the `0100` probe to the vehicle returns "UNABLE TO CONNECT" (ignition off / not
@@ -27,7 +28,10 @@ class NoVehicleTransport implements Transport {
     return () => undefined;
   }
   async write(bytes: Uint8Array): Promise<void> {
-    const cmd = bytesToString(bytes).replace(/[\r\n]+$/g, '').trim().toUpperCase();
+    const cmd = bytesToString(bytes)
+      .replace(/[\r\n]+$/g, '')
+      .trim()
+      .toUpperCase();
     const body = cmd.startsWith('AT') ? 'OK' : 'UNABLE TO CONNECT';
     const out = stringToBytes(body + '\r\r>');
     for (const l of [...this.listeners]) l(out);
@@ -106,9 +110,12 @@ describe('DiagnosticSession (integration via simulator)', () => {
     const profile = getVehicleProfile('golf-plus-2009-20tdi');
     expect(profile.knownFaults?.length).toBeGreaterThan(0);
     // No DTC override -> the scenario should expose the profile's real, persistent engine faults.
-    const session = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')), {
-      commandTimeoutMs: 1000,
-    });
+    const session = new DiagnosticSession(
+      new MockTransport(buildScenario('golf-plus-2009-20tdi')),
+      {
+        commandTimeoutMs: 1000,
+      },
+    );
     await session.connect();
     const stored = (await session.readDtcs('03')).map((d) => d.code);
     expect(stored).toEqual(expect.arrayContaining(['P2183', 'P2015']));
@@ -121,9 +128,12 @@ describe('DiagnosticSession (integration via simulator)', () => {
   });
 
   it('reads Mode 06 monitors on the Golf', async () => {
-    const session = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')), {
-      commandTimeoutMs: 1000,
-    });
+    const session = new DiagnosticSession(
+      new MockTransport(buildScenario('golf-plus-2009-20tdi')),
+      {
+        commandTimeoutMs: 1000,
+      },
+    );
     await session.connect();
     const results = await session.readMode06('01');
     expect(results.length).toBeGreaterThan(0);
@@ -134,9 +144,12 @@ describe('DiagnosticSession (integration via simulator)', () => {
   it('reads an experimental ABS module sensor on the Golf via custom addressing', async () => {
     const profile = getVehicleProfile('golf-plus-2009-20tdi');
     const sensor = profile.moduleSensors![0];
-    const session = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')), {
-      commandTimeoutMs: 1000,
-    });
+    const session = new DiagnosticSession(
+      new MockTransport(buildScenario('golf-plus-2009-20tdi')),
+      {
+        commandTimeoutMs: 1000,
+      },
+    );
     await session.connect();
     await session.setHeader(sensor.reqHeader);
     await session.setRxFilter(sensor.rxFilter);
@@ -148,9 +161,12 @@ describe('DiagnosticSession (integration via simulator)', () => {
   it('codes a module on the Golf simulator: backup -> write -> verify', async () => {
     const profile = getVehicleProfile('golf-plus-2009-20tdi');
     const mod = profile.codingModules![0];
-    const session = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')), {
-      commandTimeoutMs: 1000,
-    });
+    const session = new DiagnosticSession(
+      new MockTransport(buildScenario('golf-plus-2009-20tdi')),
+      {
+        commandTimeoutMs: 1000,
+      },
+    );
     await session.connect();
     await session.setHeader(mod.reqHeader);
     await session.setRxFilter(mod.rxFilter);
@@ -171,9 +187,12 @@ describe('DiagnosticSession (integration via simulator)', () => {
   it('resets the service interval on the Golf simulator (routine)', async () => {
     const profile = getVehicleProfile('golf-plus-2009-20tdi');
     const sr = profile.serviceReset!;
-    const session = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')), {
-      commandTimeoutMs: 1000,
-    });
+    const session = new DiagnosticSession(
+      new MockTransport(buildScenario('golf-plus-2009-20tdi')),
+      {
+        commandTimeoutMs: 1000,
+      },
+    );
     await session.connect();
     await session.setHeader(sr.reqHeader);
     await session.setRxFilter(sr.rxFilter);
@@ -227,6 +246,28 @@ describe('DiagnosticSession (integration via simulator)', () => {
     expect(await passat.readExtended('1701')).toBeNull();
   });
 
+  it('disconnect() fails the reads still queued at once, and a reconnect works again (plan W2)', async () => {
+    // A screen's mount reads (e.g. the DPF screen's Mode 22 refresh) can outlive the session: they
+    // must fail at disconnect, not write to the closed link and time out seconds later.
+    const session = new DiagnosticSession(
+      new MockTransport(buildScenario('golf-plus-2009-20tdi')),
+      { commandTimeoutMs: 60_000, firstCommandTimeoutMs: 60_000 },
+    );
+    await session.connect();
+    const reads = ['1701', '1702', '1703'].map((did) =>
+      session.readExtended(did).catch((e: unknown) => e),
+    );
+    const started = Date.now();
+    await session.disconnect();
+    for (const r of await Promise.all(reads)) expect(r).toBeInstanceOf(Elm327ClosedError);
+    expect(Date.now() - started).toBeLessThan(1000);
+    await expect(session.readExtended('1701')).rejects.toBeInstanceOf(Elm327ClosedError);
+
+    await session.connect();
+    expect(await session.readExtended('1701')).toEqual([0x04, 0xb0]);
+    await session.disconnect();
+  });
+
   // Multi-ECU (functional, headers off): a real adapter returns one line per responding ECU. The
   // Punto profile is seeded as a multi-ECU car (transport/scenarios.ts). These pin the Phase 3 / F4
   // fix — the second ECU's `43`/bitmap must never fold into the first ECU's data.
@@ -236,7 +277,9 @@ describe('DiagnosticSession (integration via simulator)', () => {
         storedDtcs: ['P0301'],
         secondaryEcus: [{ supportedPids: ['0104', '010C'], storedDtcs: ['U0100'] }],
       });
-      const session = new DiagnosticSession(new MockTransport(scenario), { commandTimeoutMs: 1000 });
+      const session = new DiagnosticSession(new MockTransport(scenario), {
+        commandTimeoutMs: 1000,
+      });
       await session.connect();
       const stored = (await session.readDtcs('03')).map((d) => d.code).sort();
       expect(stored).toEqual(['P0301', 'U0100']);
@@ -247,7 +290,9 @@ describe('DiagnosticSession (integration via simulator)', () => {
         storedDtcs: ['U0100', 'P0401'],
         secondaryEcus: [{ supportedPids: ['0104'], storedDtcs: ['U0100'] }],
       });
-      const session = new DiagnosticSession(new MockTransport(scenario), { commandTimeoutMs: 1000 });
+      const session = new DiagnosticSession(new MockTransport(scenario), {
+        commandTimeoutMs: 1000,
+      });
       await session.connect();
       const stored = (await session.readDtcs('03')).map((d) => d.code).sort();
       expect(stored).toEqual(['P0401', 'U0100']); // U0100 reported twice, surfaced once
@@ -269,7 +314,9 @@ describe('DiagnosticSession (integration via simulator)', () => {
       const scenario = buildScenario('fiat-punto-2008-12', {
         secondaryEcus: [{ supportedPids: ['0104', '0131'] }],
       });
-      const session = new DiagnosticSession(new MockTransport(scenario), { commandTimeoutMs: 1000 });
+      const session = new DiagnosticSession(new MockTransport(scenario), {
+        commandTimeoutMs: 1000,
+      });
       const info = await session.connect();
       expect(info.supportedPids).toContain('0131');
       for (const p of getVehicleProfile('fiat-punto-2008-12').supportedPids) {

@@ -20,6 +20,7 @@ import { resolveProfile, simulatorSourceFor } from '@/shared/vehicles/resolve';
 import {
   garageExportJson,
   sanitizeGarage,
+  sanitizeLearned,
   useGarageStore,
   type NewUserVehicle,
 } from './garageStore';
@@ -152,6 +153,107 @@ describe('garageStore', () => {
       profileId: 'generic',
       overrides: {},
     });
+  });
+
+  it('sanitizeLearned validates every field: drops the untrustworthy, repairs the rest (plan W2)', () => {
+    const ok = {
+      protocol: 'ISO_15765_4_CAN_11_500',
+      supportedPids: ['010C', '010D'],
+      vin: 'WVWZZZ1KZAW003398',
+      calibrationId: null,
+      adapterVersion: 'ELM327 v2.2',
+      learnedAt: 5,
+    };
+    expect(sanitizeLearned(ok)).toEqual(ok);
+    // Dropped: nothing a reader could index safely.
+    for (const bad of [
+      null,
+      [],
+      'x',
+      { ...ok, protocol: 'CAN_FD_9000' },
+      { ...ok, protocol: 7 },
+      { ...ok, supportedPids: undefined },
+      { ...ok, supportedPids: '010C' },
+      { ...ok, supportedPids: ['010C', 12] },
+      { ...ok, vin: 42 },
+      { ...ok, calibrationId: {} },
+      { ...ok, learnedAt: '2026-11-09' },
+      { ...ok, learnedAt: undefined },
+    ]) {
+      expect(sanitizeLearned(bad)).toBeUndefined();
+    }
+    // Repaired: a missing VIN / calibration id is null, a bad adapter version and unknown fields
+    // are left out, and the PID list is a copy.
+    const { vin: _v, calibrationId: _c, ...noIds } = ok;
+    const repaired = sanitizeLearned({ ...noIds, adapterVersion: 2, extra: 'x' });
+    expect(repaired).toEqual({
+      protocol: ok.protocol,
+      supportedPids: ok.supportedPids,
+      vin: null,
+      calibrationId: null,
+      learnedAt: 5,
+    });
+    expect(repaired?.supportedPids).not.toBe(ok.supportedPids);
+    // sanitizeGarage stores the repaired block, not the raw one.
+    const [car] = sanitizeGarage({
+      vehicles: [
+        {
+          id: 'user:r',
+          name: 'R',
+          baseProfileId: 'generic',
+          fuel: 'petrol',
+          createdAt: 1,
+          updatedAt: 1,
+          learned: { ...noIds, extra: 'x' },
+        },
+      ],
+    });
+    expect(car.learned).toEqual({
+      ...noIds,
+      adapterVersion: ok.adapterVersion,
+      vin: null,
+      calibrationId: null,
+    });
+    expect(simulatorSourceFor('user:r', [car]).profileId).toBe('generic');
+  });
+
+  it('the persist merge keeps cars added meanwhile, dedupes by id and sanitizes the file', () => {
+    const merge = useGarageStore.persist.getOptions().merge!;
+    const stored = {
+      id: 'user:stored',
+      name: 'Stored',
+      baseProfileId: 'generic',
+      fuel: 'diesel' as const,
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    const added = { ...stored, id: 'user:added', name: 'Added meanwhile' };
+    const current = {
+      ...useGarageStore.getState(),
+      vehicles: [{ ...stored, name: 'Stale' }, added],
+    };
+    const merged = merge(
+      {
+        vehicles: [
+          stored,
+          { id: 'golf-plus-2009-20tdi', name: 'x', baseProfileId: 'generic' },
+          { ...stored, id: 'user:bad-learned', learned: { protocol: 'AUTO' } },
+        ],
+      },
+      current,
+    ) as { vehicles: { id: string; name: string; learned?: unknown }[] };
+    // The file's copy of a car wins over the in-memory one with the same id; the car added during
+    // the read is appended; the non-user record is dropped; the bad learned block is stripped.
+    expect(merged.vehicles.map((v) => [v.id, v.name])).toEqual([
+      ['user:stored', 'Stored'],
+      ['user:bad-learned', 'Stored'],
+      ['user:added', 'Added meanwhile'],
+    ]);
+    expect('learned' in merged.vehicles[1]).toBe(false);
+    // A file that is not a garage at all keeps what is in memory.
+    expect(
+      (merge(undefined, current) as { vehicles: { id: string }[] }).vehicles.map((v) => v.id),
+    ).toEqual(['user:stored', 'user:added']);
   });
 
   it('sanitizeGarage keeps well-formed discovered modules and drops the rest (plan 25)', () => {

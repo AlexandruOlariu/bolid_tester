@@ -7,6 +7,7 @@ import {
   parseValidatedOnTable,
   validatedOnTableProblems,
   validationFrontMatterProblems,
+  vehicleDocValidationProblems,
 } from './validatedOn';
 import { readFixtureFiles } from '../obd-core/transport/fixtureFiles';
 import { confirmationProblems } from './confirmation';
@@ -37,6 +38,13 @@ describe('vehicle docs ↔ code sync', () => {
     it(`${p.id}: an observed protocol, once recorded, is the profile's expected protocol`, () => {
       // Both fields stay empty until the car is validated; the rule itself is unit-tested below.
       expect(validationFrontMatterProblems(readFrontMatter(file), p.expectedProtocol)).toEqual([]);
+    });
+
+    it(`${p.id}: the doc passes both validation rules (the function the synthetic tests prove)`, () => {
+      const md = fs.readFileSync(file, 'utf8');
+      expect(
+        vehicleDocValidationProblems(md, p.expectedProtocol, carFixturesFor(p.id, fixtures)),
+      ).toEqual([]);
     });
 
     it(`${p.id}: every confirmed item has a valid date and committed evidence`, () => {
@@ -190,6 +198,70 @@ describe('validatedOnTableProblems + carFixturesFor', () => {
     expect(validatedOnTableProblems(null, [])).toEqual(['no "Validated on the car" section']);
     expect(validatedOnTableProblems([], [])).toEqual([
       'the "Validated on the car" table has no rows',
+    ]);
+  });
+});
+
+// Whole synthetic vehicle docs through the same function the per-vehicle checks above run: the
+// real docs are all still the unvalidated template, so only bad synthetic input proves the rules
+// fail (plan W2).
+describe('vehicleDocValidationProblems (synthetic docs)', () => {
+  const CAN = 'ISO_15765_4_CAN_11_500';
+  const doc = (fm: { observedProtocol: string; validatedOn: string }, rows: string[]) =>
+    [
+      '---',
+      'id: golf-plus-2009-20tdi',
+      `expectedProtocol: ${CAN}`,
+      `observedProtocol: ${fm.observedProtocol}`,
+      `validatedOn: ${fm.validatedOn}`,
+      '---',
+      '',
+      '# Golf',
+      '',
+      '## Validated on the car',
+      '',
+      '| Date | App build | Adapter | Flow | Result | Fixture |',
+      '| ---- | --------- | ------- | ---- | ------ | ------- |',
+      ...rows,
+      '',
+      '## Notes',
+    ].join('\r\n');
+  const PLACEHOLDER = '| _not yet validated_ |  |  |  |  |  |';
+  const CONNECT_ROW = '| 2026-12-01 | 0.2.0 | Vgate | connect | ok | `connect.json` |';
+  const EMPTY_FM = { observedProtocol: '', validatedOn: '' };
+  const VALIDATED_FM = { observedProtocol: CAN, validatedOn: '2026-12-01' };
+
+  it('passes the unvalidated template and a consistent validated doc', () => {
+    expect(vehicleDocValidationProblems(doc(EMPTY_FM, [PLACEHOLDER]), CAN, [])).toEqual([]);
+    expect(
+      vehicleDocValidationProblems(doc(VALIDATED_FM, [CONNECT_ROW]), CAN, ['connect.json']),
+    ).toEqual([]);
+  });
+
+  it('fails when the observed protocol is not the expected one', () => {
+    const md = doc({ observedProtocol: 'ISO_9141_2', validatedOn: '2026-12-01' }, [CONNECT_ROW]);
+    expect(vehicleDocValidationProblems(md, CAN, ['connect.json'])).toEqual([
+      `observedProtocol ISO_9141_2 is not the profile's expectedProtocol ${CAN}`,
+    ]);
+  });
+
+  it('fails when a committed car fixture has no row, or a row names an uncommitted one', () => {
+    expect(
+      vehicleDocValidationProblems(doc(EMPTY_FM, [PLACEHOLDER]), CAN, ['connect.json']),
+    ).toEqual(['car fixture connect.json is not listed in the table']);
+    expect(vehicleDocValidationProblems(doc(VALIDATED_FM, [CONNECT_ROW]), CAN, [])).toEqual([
+      'row names connect.json, which is not a committed car fixture',
+    ]);
+  });
+
+  it('fails a doc without the section, and reports every broken rule at once', () => {
+    const noSection = ['---', `observedProtocol: ISO_9141_2`, 'validatedOn: ', '---', '# Car'].join(
+      '\n',
+    );
+    expect(vehicleDocValidationProblems(noSection, CAN, [])).toEqual([
+      `observedProtocol ISO_9141_2 is not the profile's expectedProtocol ${CAN}`,
+      'validatedOn and observedProtocol must be set together',
+      'no "Validated on the car" section',
     ]);
   });
 });

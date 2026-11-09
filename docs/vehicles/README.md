@@ -45,7 +45,11 @@ session by the procedure in [testing.md → Recording results](../testing.md#rec
 One row per flow. The last column names the committed car fixture
 (`src/shared/obd-core/transport/fixtures/<id>/<flow>.json`, file name or link). The sync test
 requires every car fixture (`meta.source: 'car'`) under the vehicle's folder to be listed, and every
-listed file to exist. **Simulator fixtures (`sim-*.json`) are not validation:** they are recorded
+listed file to exist. Both rules (this table and the front-matter rule above) are one pure function,
+`vehicleDocValidationProblems(markdown, expectedProtocol, carFixtures)` in
+`src/shared/vehicles/validatedOn.ts`; the sync test runs it on every real doc and on synthetic docs
+that break each rule, so a rule that stopped failing would be caught while every real doc is still
+the unvalidated template (plan W2). **Simulator fixtures (`sim-*.json`) are not validation:** they are recorded
 from the simulator to prove the pipeline and never appear in this table. See
 [simulator.md → Replay fixtures](../simulator.md#replay-fixtures).
 

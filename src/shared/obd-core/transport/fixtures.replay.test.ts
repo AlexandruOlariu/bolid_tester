@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { readFixtureFiles } from './fixtureFiles';
 import { checkReplayFixture } from './fixtureCheck';
-import { ReplayFixture } from './logReplay';
+import { ReplayFixture, ReplayFixtureExpect } from './logReplay';
 import { VEHICLE_REGISTRY } from '../../vehicles';
 import { parseValidatedOnTable } from '../../vehicles/validatedOn';
 
@@ -50,22 +50,25 @@ describe('committed replay fixtures', () => {
     });
   }
 
-  it('a wrong expectation is reported, not silently passed', async () => {
+  it('a wrong expectation is reported, not silently passed — every expectation key', async () => {
     const golf = files.find((f) => f.rel === 'golf-plus-2009-20tdi/sim-clear.json');
     expect(golf).toBeDefined();
-    const wrong: ReplayFixture = {
-      ...(golf as { fixture: ReplayFixture }).fixture,
-      expect: {
-        protocol: 'ISO_9141_2',
-        vin: 'WRONGVIN000000000',
-        supportedPidCount: 1,
-        storedDtcs: ['P0001'],
-        pendingDtcs: ['P0002'],
-        milOn: false,
-        storedDtcsAfterClear: ['P2183'],
-      },
+    // `Required<…>`: a key added to ReplayFixtureExpect fails to compile here until this test gives
+    // it a wrong value, so no expectation can be silently ignored by checkReplayFixture.
+    const wrongExpect: Required<ReplayFixtureExpect> = {
+      protocol: 'ISO_9141_2',
+      vin: 'WRONGVIN000000000',
+      supportedPidCount: 1,
+      storedDtcs: ['P0001'],
+      pendingDtcs: ['P0002'],
+      milOn: false,
+      freezeFrameCount: 9,
+      storedDtcsAfterClear: ['P2183'],
     };
-    const failures = await checkReplayFixture(wrong);
+    const failures = await checkReplayFixture({
+      ...(golf as { fixture: ReplayFixture }).fixture,
+      expect: wrongExpect,
+    });
     expect(failures.map((f) => f.split(':')[0])).toEqual([
       'protocol',
       'vin',
@@ -73,8 +76,18 @@ describe('committed replay fixtures', () => {
       'milOn',
       'storedDtcs',
       'pendingDtcs',
+      'freezeFrameCount',
       'storedDtcsAfterClear',
     ]);
+    expect([...failures.map((f) => f.split(':')[0])].sort()).toEqual(
+      Object.keys(wrongExpect).sort(),
+    );
+    expect(failures).toContainEqual(
+      expect.stringMatching(/^pendingDtcs: expected \[P0002\], replayed \[/),
+    );
+    expect(failures).toContainEqual(
+      expect.stringMatching(/^freezeFrameCount: expected 9, replayed \d+$/),
+    );
   });
 
   it('a wrong freeze-frame count or pending list is reported too', async () => {

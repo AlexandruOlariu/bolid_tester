@@ -13,6 +13,7 @@ import {
   type UserVehicle,
 } from '@/shared/vehicles/userVehicle';
 import { sanitizeLoginCodes } from '@/shared/vehicles/loginBook';
+import { PROTOCOL_LABELS, type ProtocolId } from '@/shared/obd-core/obd/protocols';
 
 export const GARAGE_VERSION = 1;
 
@@ -41,23 +42,39 @@ function bump(prev: number): number {
 }
 
 const isStringOrNull = (x: unknown): x is string | null => x === null || typeof x === 'string';
+const KNOWN_PROTOCOLS = new Set<string>(Object.keys(PROTOCOL_LABELS));
 
-/** A persisted learned identity, or undefined when it is missing or malformed (readers index
- *  `learned.supportedPids` / `learned.protocol` without further checks). */
-function sanitizeLearned(raw: unknown): LearnedIdentity | undefined {
-  if (!raw || typeof raw !== 'object') return undefined;
-  const l = raw as Partial<LearnedIdentity>;
+/** A persisted learned identity, rebuilt field by field, or undefined when it cannot be trusted
+ *  (readers index `learned.supportedPids` / `learned.protocol` without further checks, and the
+ *  simulator replays them). Dropped: not an object, a protocol that is not a known `ProtocolId`, no
+ *  `supportedPids` string array, a VIN / calibration id of the wrong type, no finite `learnedAt`.
+ *  Repaired: a missing VIN / calibration id becomes null, a non-string adapter version is left out,
+ *  and unknown fields are not carried over. */
+export function sanitizeLearned(raw: unknown): LearnedIdentity | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const l = raw as Record<string, unknown>;
+  const vin = l.vin === undefined ? null : l.vin;
+  const calibrationId = l.calibrationId === undefined ? null : l.calibrationId;
   if (
     typeof l.protocol !== 'string' ||
+    !KNOWN_PROTOCOLS.has(l.protocol) ||
     !Array.isArray(l.supportedPids) ||
     !l.supportedPids.every((p) => typeof p === 'string') ||
-    !isStringOrNull(l.vin) ||
-    !isStringOrNull(l.calibrationId) ||
-    typeof l.learnedAt !== 'number'
+    !isStringOrNull(vin) ||
+    !isStringOrNull(calibrationId) ||
+    typeof l.learnedAt !== 'number' ||
+    !Number.isFinite(l.learnedAt)
   ) {
     return undefined;
   }
-  return l as LearnedIdentity;
+  return {
+    protocol: l.protocol as ProtocolId,
+    supportedPids: [...(l.supportedPids as string[])],
+    vin,
+    calibrationId,
+    ...(typeof l.adapterVersion === 'string' ? { adapterVersion: l.adapterVersion } : {}),
+    learnedAt: l.learnedAt,
+  };
 }
 
 /** The car with its code book (plan 22) reduced to well-formed entries, or without one. */
@@ -102,7 +119,7 @@ export function sanitizeGarage(persisted: unknown): UserVehicle[] {
     }
     const learned = sanitizeLearned(car.learned);
     if (learned) {
-      out.push(car);
+      out.push({ ...car, learned });
     } else {
       const { learned: _dropped, ...rest } = car;
       out.push(rest);

@@ -24,6 +24,7 @@ import {
   deriveDiagnosticEvents,
   diffReadiness,
   DiagSnapshot,
+  Elm327ClosedError,
   LiveValue,
   isCan,
 } from '@/shared/obd-core';
@@ -48,8 +49,10 @@ import { decodeExtendedSnapshot } from './extendedSnapshot';
 let lastPollErrorMsg: string | null = null;
 let lastExtendedErrorMsg: string | null = null;
 
-/** Log the first of each distinct poll error per phase (see the dedupe note above). */
+/** Log the first of each distinct poll error per phase (see the dedupe note above). A sweep cut
+ *  short because the session disconnected (`Elm327ClosedError`) is not a fault and is not logged. */
 function logPollError(source: 'live-data' | 'live-data/extended', e: unknown): void {
+  if (e instanceof Elm327ClosedError) return;
   const msg = e instanceof Error ? e.message : String(e);
   if (source === 'live-data') {
     if (msg === lastPollErrorMsg) return;

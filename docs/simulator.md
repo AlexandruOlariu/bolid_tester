@@ -129,6 +129,9 @@ speed; non-zero to emulate K-line in the UI).
 
 - `simulateDisconnect()` — an unsolicited link drop (adapter pulled, out of range); drives the
   link-loss path, auto-reconnect and the flap guard. Settings → Developer → **Simulate a link drop**.
+- A disconnected simulator answers nothing: `write()` rejects ("Simulator link is not connected")
+  until `connect()`, like `BleTransport` without a device (plan W2), so no stray command can be
+  answered after a session closed.
 - `dropResponses(n, { includeAt? })` — the next `n` non-AT commands get **no reply at all** (not
   even a prompt), so the client times out; drives the timeout, drain-until-prompt and diagnostics
   paths. With `includeAt: true` AT commands count too — Settings → Developer → **Fail next connect:
@@ -191,7 +194,10 @@ that got no reply are skipped.
   `supportedPidCount` expectation on it is reported as a failure, since nothing in the file can
   confirm it. For `storedDtcsAfterClear` the checker sends `04`, moves the `03` cursor to the last
   recorded reply (`ReplayTransport.skipToLast`) and reads it. A car fixture must also be listed in its vehicle doc's "Validated on the
-  car" table ([vehicles/README.md](./vehicles/README.md#validated-on-the-car)).
+  car" table ([vehicles/README.md](./vehicles/README.md#validated-on-the-car)). The checker's own
+  test gives **every** `expect` key a wrong value at once (typed `Required<ReplayFixtureExpect>`,
+  so a new key does not compile until it is covered, plan W2) and requires one failure per key,
+  `pendingDtcs` and `freezeFrameCount` included.
 - `sim-fixtures.freshness.test.ts` re-records the simulator and fails when a committed
   `sim-*.json` differs, is missing or is stale. After changing a profile, a scenario or the
   simulator, run `npm run fixtures:sim` and commit the result.

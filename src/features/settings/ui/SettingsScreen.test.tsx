@@ -5,10 +5,12 @@ import { mockPush } from '@test/mocks/router';
 import { connectSimulator } from '@test/simulator';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { disconnect } from '@/features/connection/api/connectionService';
 import { APP_VERSION } from '@/shared/lib/appInfo';
 import { setAiFetch } from '@/shared/ai';
 import {
   ADAPTER_LOG_CAPACITY,
+  adapterLogSnapshot,
   appendAdapterLog,
   clearAdapterLog,
   useAdapterLogStore,
@@ -131,6 +133,74 @@ describe('SettingsScreen', () => {
     expect(fixture.pairs['0100']).toMatch(/^4100/);
     expect(fixture.sequences).toBeDefined();
     expect(fixture.meta?.droppedEntries).toBeUndefined();
+  });
+
+  it('labels the export by how the log was recorded, not by the settings at export time (plan W2)', async () => {
+    clearAdapterLog();
+    await connectSimulator({ vehicleId: 'golf-plus-2009-20tdi' });
+    await waitFor(() =>
+      expect(useAdapterLogStore.getState().entries.some((e) => e.text === '0904')).toBe(true),
+    );
+    // Disconnect (the session info is gone), then the settings change behind the log's back: another
+    // simulated car and the real adapter (e.g. a restored settings file). The log still holds the
+    // simulated Golf's session.
+    await act(async () => {
+      await disconnect();
+    });
+    useSettingsStore.setState({ adapterSource: 'ble', simulatedVehicleId: 'fiat-punto-2008-12' });
+    useVehicleStore.setState({ selectedProfileId: 'passat-b55-19tdi' });
+    renderWithProviders(<SettingsScreen />);
+
+    fireEvent.changeText(screen.getByLabelText('Flow name'), 'connect');
+    fireEvent.press(screen.getByText('Export as replay fixture'));
+
+    await waitFor(() => expect(mockExportFixture).toHaveBeenCalledTimes(1));
+    const { fixture } = buildReplayExport(mockExportFixture.mock.calls[0][0]);
+    expect(fixture.meta).toMatchObject({
+      source: 'simulator',
+      vehicleId: 'golf-plus-2009-20tdi',
+      flow: 'connect',
+      adapter: 'ELM327 v2.2',
+      protocol: 'ISO_15765_4_CAN_11_500',
+    });
+  });
+
+  it('Clear during a session keeps the label of the session for the next flow (plan W2)', async () => {
+    clearAdapterLog();
+    await connectSimulator({ vehicleId: 'golf-plus-2009-20tdi' });
+    await waitFor(() =>
+      expect(useAdapterLogStore.getState().entries.some((e) => e.text === '0904')).toBe(true),
+    );
+    renderWithProviders(<SettingsScreen />);
+    // The documented workflow: Clear, run the next flow on the same session, export it. Meanwhile
+    // another simulated car is picked (a plain setting: the Golf session keeps running).
+    fireEvent.press(screen.getByText('Clear'));
+    await waitFor(() => expect(useAdapterLogStore.getState().entries).toEqual([]));
+    await act(async () => {
+      await useSessionStore.getState().session?.readDtcs('03');
+    });
+    useSettingsStore.setState({ simulatedVehicleId: 'fiat-punto-2008-12' });
+    // The read is done; wait for the throttled publish to carry all of it (the `03` reply too).
+    await waitFor(() => {
+      const { entries } = useAdapterLogStore.getState();
+      expect(entries.some((e) => e.text === '03')).toBe(true);
+      expect(entries).toEqual(adapterLogSnapshot());
+    });
+
+    fireEvent.changeText(screen.getByLabelText('Flow name'), 'faults');
+    fireEvent.press(screen.getByText('Export as replay fixture'));
+
+    await waitFor(() => expect(mockExportFixture).toHaveBeenCalledTimes(1));
+    const { fixture } = buildReplayExport(mockExportFixture.mock.calls[0][0]);
+    expect(fixture.meta).toMatchObject({
+      source: 'simulator',
+      vehicleId: 'golf-plus-2009-20tdi',
+      flow: 'faults',
+      adapter: 'ELM327 v2.2',
+      protocol: 'ISO_15765_4_CAN_11_500',
+    });
+    expect(fixture.pairs['0904']).toBeUndefined(); // the Clear dropped the connect
+    expect(fixture.pairs['03']).toBeDefined();
   });
 
   it('a real-adapter log exports as a car fixture for the selected vehicle', async () => {
