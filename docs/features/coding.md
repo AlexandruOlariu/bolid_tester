@@ -157,12 +157,61 @@ bytes, hex} | null, adaptations: [{did, name, unit?, raw, value}] }] }`. Pure di
   safety net, like `scanHistoryStore`). **Export/share** as `.json`.
 - **Restore is per-module and gated.** Coding restore is exactly the existing gated coding write
   (`useCoding.write(codingModule, snapshotBytes)` → backup + verify), behind unlock + confirm.
-  **Adaptation restore is manual in v1** (read-only in the backup UI, with a pointer to the
-  Adaptations screen): each adaptation write is bounds-checked and module-specific in the adaptations
-  feature, and reaching into it from the backup UI would duplicate that gating — deferred rather than
-  half-built.
+- **Adaptation restore (plan 24).** Each module block with adaptation values has **Compare with
+  car**:
+  1. `useAdaptationRestore.readCurrent(module)` reads every profile channel of that module fresh
+     (reusing the adaptations feature's `readChannel`) plus the module's long coding when the
+     snapshot has one, keyed by DID.
+  2. `planAdaptationRestore(snapshot, channels, current, { unlockable })` (pure,
+     `api/adaptationRestore.ts`) decides per channel, in this order: no `(reqHeader, did)` channel
+     in the current profile → **`no-channel`** (“not in profile”); the backup could not read it →
+     **`no-snapshot-raw`** (“not in backup”); the snapshot bytes fail the shared bounds guard
+     (`adaptationBoundsError`: wrong width, or outside `min`/`max`) → **`out-of-bounds`**, shown
+     with the bounds message — refused, never clamped, because a later profile revision may have
+     tightened the bounds; `ch.security` and not unlockable → **`locked`** (no seed/key ships, so
+     every security channel is locked until plan 23's plugins land); current bytes equal the
+     snapshot bytes → **`equal`** (greyed); otherwise **`restore`**. `summarizeRestorePlan` counts
+     them.
+  3. A header line from `restoreHeadline(snapshot, currentModuleFromReads(...), diff, items)`,
+     e.g. “2 adaptations differ, coding unchanged”. The adaptation count comes from the plan rows on
+     raw bytes (the same comparison the rows use), so it never disagrees with them: a channel the
+     profile no longer declares, the backup could not read, or the car did not answer for counts as
+     “N not compared”, never as a difference; the coding part comes from `diffBackupModule`. Then
+     one row per channel: name (DID) · backup → car now (decoded with unit) · action chip, and the
+     skip reason under skipped rows.
+  4. Per row **Restore** asks inline (“Write 850 rpm to Idle speed offset (DID 3001)? A backup of
+     the current value is taken first.”); **Restore all (N)** lists the N channels and writes them
+     one by one with progress, stopping at the first failure and naming the channels not restored.
+     After any write the panel compares again.
+  - **Gating.** These are adaptation writes, so they use the **adaptations unlock**
+    (`adaptationsStore.unlocked`), not the coding one; while it is off the Restore buttons are
+    disabled with “Locked — unlock adaptations on the Adaptations screen…”, and the hook re-reads
+    the unlock at write time so it fails closed. Every write goes through the adaptations feature's
+    `writeChannel` (bounds re-checked there → `codeModule`: read backup → `10 03` → `2E` → re-read
+    verify, `resetAddressing()` in `finally`); the replaced value is pushed onto
+    `adaptationsStore.backups`, so it can be restored again from the Adaptations screen.
+  - **CAN only**, like the Adaptations screen: on a non-CAN link Compare is disabled (“Connect to the
+    car over CAN…”) and the hook refuses to read or write.
+  - **Same car only.** `backupVehicleMismatch(backup.vehicle, { profileId, vin })` blocks every
+    restore of a snapshot (coding and adaptations) when it was taken under another profile / garage
+    car, or when both VINs are known and differ; the expanded snapshot shows why. Compare and export
+    stay available.
+  - **One action at a time.** Creating a backup, restoring a module's coding and comparing /
+    restoring adaptation channels all take one shared, non-persisted gate (`backupWorkStore`), so
+    two of them never interleave `ATSH` / `2E` sequences on the session (which has no lock of its
+    own); an action started meanwhile is refused and the buttons show **Busy…**. A compare or write
+    that throws (e.g. the link drops inside `resetAddressing`) is logged and shown as “Failed: …”
+    and the stale table is dropped.
+  - Out of scope: channels on modules the current profile no longer declares (shown as
+    `no-channel`) and TP2.0/KWP channels.
 - UI: a **Backup** section on `CodingScreen` — create, expandable snapshots (per-module coding hex +
-  adaptation values), export, delete, and per-module gated coding restore.
+  adaptation values), export, delete, per-module gated coding restore, and the adaptation compare /
+  restore panel (`ui/AdaptationRestorePanel.tsx`).
+- The flow is tested end to end on the simulated Golf (`adaptationRestore.integration.test.ts`:
+  change `3001` to 900, plan → `3001` restore / `3002` equal, restore → 850; a 1024 rpm snapshot is
+  refused by the planner and by `writeChannel`) and on screen (`ui/CodingBackup.test.tsx`).
+  **On-car pending:** the first real use on the Golf is a no-op restore (backup, Compare → all
+  `equal`), then a one-step change restored and re-read — see plan 24's deferred section.
 
 ## Behavior
 

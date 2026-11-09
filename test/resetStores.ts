@@ -27,6 +27,10 @@ import { useScanStore } from '@/features/connection/model/scanStore';
 import { useMaintenanceStore } from '@/features/maintenance/model/maintenanceStore';
 import { useTripStore } from '@/features/trip-recording/model/tripStore';
 import { useAiDiagnoseStore } from '@/features/ai-diagnose/model/aiDiagnoseStore';
+import { useCarBackupStore } from '@/features/coding/model/carBackupStore';
+import { useCodingStore } from '@/features/coding/model/codingStore';
+import { useBackupWorkStore } from '@/features/coding/model/backupWorkStore';
+import { useAdaptationsStore } from '@/features/adaptations/model/adaptationsStore';
 import { memoryFiles } from './mocks/fileSystem';
 import { setMockFocused, setMockSearchParams } from './mocks/router';
 
@@ -52,6 +56,10 @@ const STORES: AnyStore[] = [
   useScanStore,
   useChartsStore,
   useAiDiagnoseStore,
+  useCarBackupStore,
+  useCodingStore,
+  useBackupWorkStore,
+  useAdaptationsStore,
 ];
 
 /** Each store's state (actions included) captured at module load, before any test touched it. */

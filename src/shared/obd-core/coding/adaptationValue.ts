@@ -37,3 +37,30 @@ export function encodeAdaptationValue(value: number, s: AdaptationScaling): numb
   for (let i = s.byteCount - 1; i >= 0; i--) out.push((n >> (8 * i)) & 0xff);
   return out;
 }
+
+/** The part of a channel the write guard needs: scaling plus the display bounds. A profile's
+ *  `AdaptationChannel` satisfies it structurally. */
+export interface AdaptationBounds extends AdaptationScaling {
+  min?: number;
+  max?: number;
+  unit?: string;
+}
+
+/** The single bounds guard every adaptation write passes through (the Adaptations screen, the
+ *  backup restore, any future path). Non-null = a plain-English refusal: the raw bytes are not the
+ *  channel's width, or they decode outside its min/max. Never clamps — the caller refuses. */
+export function adaptationBoundsError(ch: AdaptationBounds, raw: number[]): string | null {
+  if (raw.length !== ch.byteCount) {
+    return `Value has ${raw.length} byte${raw.length === 1 ? '' : 's'}; this channel takes ${ch.byteCount}.`;
+  }
+  if (ch.min === undefined && ch.max === undefined) return null;
+  const value = decodeAdaptationRaw(raw, ch);
+  const shown = `${value}${ch.unit ? ' ' + ch.unit : ''}`;
+  if (ch.min !== undefined && value < ch.min) {
+    return `Value ${shown} is below the channel minimum (${ch.min}).`;
+  }
+  if (ch.max !== undefined && value > ch.max) {
+    return `Value ${shown} is above the channel maximum (${ch.max}).`;
+  }
+  return null;
+}

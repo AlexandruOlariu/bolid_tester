@@ -1,7 +1,7 @@
 {
   "concept:adaptation-channels": {
     "path": null,
-    "summary": "VCDS-style adaptation channels: numeric module values read via 22, written via 2E with backup+verify and display-bounds. Label packs (part-number-key\u2026",
+    "summary": "VCDS-style adaptation channels: numeric module values read via 22, written via 2E with backup+verify; one bounds guard (core adaptationBoundsError: w\u2026",
     "tokens": [
       "adaptation",
       "backup",
@@ -10,6 +10,7 @@
       "channels",
       "label",
       "pack",
+      "restore",
       "vcds",
       "write"
     ],
@@ -2740,7 +2741,10 @@
     "path": "src/features/coding",
     "summary": "**Custom coding** = changing a control module's configuration (\"long coding\" / adaptation) rather",
     "tests": [
-      "src/features/coding/api/carBackup.test.ts"
+      "src/features/coding/api/adaptationRestore.integration.test.ts",
+      "src/features/coding/api/adaptationRestore.test.ts",
+      "src/features/coding/api/carBackup.test.ts",
+      "src/features/coding/ui/CodingBackup.test.tsx"
     ],
     "tokens": [
       "coding"

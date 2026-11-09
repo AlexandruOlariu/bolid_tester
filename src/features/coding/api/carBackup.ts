@@ -85,7 +85,13 @@ export function buildCarBackup(input: BuildCarBackupInput): CarBackup {
       name: m.name,
       partNumber: m.partNumber,
       softwareVersion: m.softwareVersion,
-      coding: m.coding ? { did: m.coding.did, bytes: m.coding.bytes.slice(), hex: bytesToHexString(m.coding.bytes) } : null,
+      coding: m.coding
+        ? {
+            did: m.coding.did,
+            bytes: m.coding.bytes.slice(),
+            hex: bytesToHexString(m.coding.bytes),
+          }
+        : null,
       adaptations: (m.adaptations ?? []).map((a) => ({ ...a, raw: a.raw ? a.raw.slice() : null })),
     })),
   };
@@ -119,15 +125,45 @@ export function diffBackupModule(from: CarBackupModule, to: CarBackupModule): Ba
     };
   }
   const deltas: BackupAdaptationDelta[] = [];
-  const dids = new Set([...from.adaptations.map((a) => a.did), ...to.adaptations.map((a) => a.did)]);
+  const dids = new Set([
+    ...from.adaptations.map((a) => a.did),
+    ...to.adaptations.map((a) => a.did),
+  ]);
   for (const did of dids) {
     const a = from.adaptations.find((x) => x.did === did);
     const b = to.adaptations.find((x) => x.did === did);
     if ((a?.value ?? null) !== (b?.value ?? null)) {
-      deltas.push({ did, name: b?.name ?? a?.name ?? did, before: a?.value ?? null, after: b?.value ?? null });
+      deltas.push({
+        did,
+        name: b?.name ?? a?.name ?? did,
+        before: a?.value ?? null,
+        after: b?.value ?? null,
+      });
     }
   }
   return { reqHeader: to.reqHeader, name: to.name, codingChanged, adaptationDeltas: deltas };
+}
+
+/** Why a snapshot must not be restored onto the car that is selected / connected now, or null when
+ *  it may (plan 24 review). A backup records the profile id (a garage car's own `user:` id) and the
+ *  VIN it was taken from; restoring car A's coding or learned values onto car B — even one with the
+ *  same profile — is refused. Blocks when the profile ids differ, or when both VINs are known and
+ *  differ (compared case- and whitespace-insensitively). An unknown VIN on either side does not
+ *  block on its own. Pure. */
+export function backupVehicleMismatch(
+  backupVehicle: HistoryVehicle,
+  live: { profileId: string; vin: string | null | undefined },
+): string | null {
+  if (backupVehicle.id && backupVehicle.id !== live.profileId) {
+    return `This backup was taken from ${backupVehicle.label || backupVehicle.id}, not the car selected now — restore is blocked. Select that car to restore it.`;
+  }
+  const norm = (v: string | null | undefined) => (v ?? '').replace(/\s+/g, '').toUpperCase();
+  const a = norm(backupVehicle.vin);
+  const b = norm(live.vin);
+  if (a && b && a !== b) {
+    return `This backup was taken from VIN …${a.slice(-5)}, but the connected car reports VIN …${b.slice(-5)} — restore is blocked.`;
+  }
+  return null;
 }
 
 export interface CarBackupSummary {

@@ -5,6 +5,92 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 24 — Adaptation restore from a full-car backup (2026-11-09)
+
+[Plan 24](./plans/24-adaptation-restore.md) landed: the "clone my car" snapshot now restores
+**adaptation channels** as well as coding — per channel or per module, behind the adaptations unlock,
+through the same bounds guard and backup → write → verify path every other adaptation write uses,
+with a backup-vs-car comparison first. Everything above the plan's deferred section is shipped and
+exercised in the simulator; **on-car pending**: the first real use on the Golf is a no-op restore
+(backup, Compare → all `equal`), then a one-step change restored and re-read, recorded in the
+vehicle doc.
+
+- **Core (`obd-core/coding/adaptationValue.ts`).** `AdaptationBounds` (scaling + `min` / `max` /
+  `unit`) and `adaptationBoundsError(ch, raw)` — the single write guard: refuses raw bytes that are
+  not `byteCount` wide, or decode (signed-aware) below `min` / above `max`; never clamps.
+  `adaptationService.checkBounds` is now a one-line wrapper over it, so `writeChannel` and the
+  restore planner share one implementation.
+- **Planner (`features/coding/api/adaptationRestore.ts`, pure).** `planAdaptationRestore(snapshot,
+liveChannels, current, { unlockable })` → `RestorePlanItem[]` with the plan's rules in order:
+  `no-channel` → `no-snapshot-raw` → `out-of-bounds` (bounds message as `reason`) → `locked` →
+  `equal` (byte-for-byte) → `restore`; values decoded with the live channel's scaling.
+  `summarizeRestorePlan` (restore count + every skip reason, zero-filled), `noSecurityUnlock`
+  (default: `ch => !ch.security`), `currentModuleFromReads` (fresh reads shaped as a
+  `CarBackupModule` via `buildCarBackup`) and `restoreHeadline` ("2 adaptations differ, coding
+  unchanged" from `diffBackupModule`).
+- **Hook (`hooks/useAdaptationRestore.ts`).** `readCurrent(module)` reads every profile channel of
+  the module through `readChannel` (plus the module's long coding when the snapshot has one, keyed
+  by its coding DID, `resetAddressing()` in `finally`); `plan`; `restoreOne(item)` /
+  `restoreAll(items, onProgress?)` write through `writeChannel`, push the replaced value onto
+  `adaptationsStore.backups` (so the Adaptations screen can undo a restore), log failures, and stop
+  at the first failure. The adaptations unlock is re-read from the store at write time (fails
+  closed); `writeChannel` re-checks bounds and refuses security channels.
+- **UI (`ui/AdaptationRestorePanel.tsx`, in `CodingBackup.tsx`).** The informational "restore them
+  from the Adaptations screen" paragraph is replaced by **Compare with car** → headline + one row
+  per channel (name (DID) · backup → car now with units · chip: restore / equal / not in profile /
+  not in backup / out of bounds / locked; equal rows greyed; skip reason shown), per-row
+  **Restore** with the inline confirm ("Write 850 rpm to Idle speed offset (DID 3001)? A backup of
+  the current value is taken first."), **Restore all (N)** with the list, progress and "Not
+  restored: …" on failure; re-compares after every write. Locked → buttons disabled plus "Locked —
+  unlock adaptations on the Adaptations screen…"; press handlers also check the gate.
+- **Simulator.** No new scenario fields (`2E` on channel DIDs is already accepted via
+  `adaptationSeeds` → `coding`).
+- **Tests (+40 tests incl. the review follow-ups, +3 suites: 1051 tests / 129 suites).** `adaptationValue.test.ts` (inside /
+  edges / below / above / scaled / no bounds / wrong width / signed), `adaptationRestore.test.ts`
+  (every skip reason, header matching, failed current read → restore, locked vs unlockable, bounds
+  before lock, summary counts, headline variants), `adaptationRestore.integration.test.ts`
+  (simulated Golf: 850 → 900 → plan `3001` restore / `3002` equal → restore verified → 850; a 1024
+  rpm snapshot refused by the planner and by `writeChannel`, car untouched),
+  `ui/CodingBackup.test.tsx` (Create backup → change 3001 → Compare shows `850 rpm → 900 rpm ·
+restore` and `3002 · equal`; locked → disabled + explanation; unlocked Restore → "Write verified.",
+  both rows equal, backup recorded, car reads 850; Restore all; out-of-bounds row with the bounds
+  message and no Restore). `test/resetStores.ts` now also resets the car-backup, coding and
+  adaptations stores.
+- **Docs.** `features/coding.md` (6b.8: restore flow, skip reasons, gating, tests, on-car pending),
+  `features/adaptations.md` (shared bounds guard; the backup screen writes through the same service
+  and unlock), `vcds-parity-roadmap.md` 6b.8, `roadmap.md` (✅, on-car pending). Context graph:
+  `concept:adaptation-channels` updated; graph rebuilt.
+- **Deviations.** (1) Plan 23 (security-access plugins) has not landed, so there is no
+  `resolveSeedToKey` to pass into `writeChannel`: the hook plans with `noSecurityUnlock` and
+  `writeChannel` keeps refusing security channels — they always show as `locked`. (2)
+  `adaptationBoundsError` also refuses raw bytes whose length is not the channel's `byteCount`
+  (fail closed for a snapshot taken under an older profile revision); such values plan as
+  `out-of-bounds`. (3) `readCurrent` also reads the module's long coding (keyed by its coding DID)
+  so the header can say "coding unchanged / changed" as the plan's example does; the planner ignores
+  that key. (4) `restoreAll` takes an optional `onProgress(done, total)` for the progress line, and
+  the hook also returns `unlocked` and `connected` for the UI. (5) The restore UI is its own
+  component (`AdaptationRestorePanel.tsx`) rendered from `CodingBackup.tsx`'s module block, and a
+  component test was added beyond the plan's test list to cover the acceptance checks on screen.
+- **Review follow-ups.** (a) The panel and hook now require a **CAN** session (`available =
+!!session && isCan(session.currentProtocol)`, as `useAdaptations` does) instead of any session;
+  the hook returns `available` in place of `connected`, and `readCurrent` returns `null` when it
+  cannot read. (b) New non-persisted `model/backupWorkStore.ts` — one shared gate (`tryBegin` /
+  `end`) taken by backup create, the module block's coding restore, and adaptation compare /
+  restore, so they never interleave addressing and writes; a second action is refused with "Another
+  module read or write is still running…". This is a Backup-section gate, not a session-wide lock:
+  `DiagnosticSession` still has none, so the Coding module editor / Adaptations screen are not
+  serialized against it (pre-existing, unchanged). (c) `backupVehicleMismatch(backup.vehicle,
+{ profileId, vin })` in `api/carBackup.ts`: a snapshot taken under another profile / garage car,
+  or with a different known VIN, shows a warning and every restore in it (coding and adaptations)
+  is disabled; compare / export still work. (d) The panel's compare / restore handlers catch
+  rejections (logged, "Failed: …", stale table dropped), and every press handler re-checks its gate.
+  (e) `restoreHeadline` now takes the plan items and counts byte-level differences only among
+  channels with both a snapshot and a live read; the rest is "N not compared", so the headline
+  matches the rows. (f) Tests: Restore all stopping at the first failure ("Stopped at 3001: …
+  Not restored: Idle speed offset (3001), EGR base duty (3002).", `writeChannel` called once),
+  non-CAN, VIN mismatch, the shared gate, a throwing compare (`CodingBackup.test.tsx`);
+  `backupVehicleMismatch` (`carBackup.test.ts`); headline vs rows (`adaptationRestore.test.ts`).
+
 ## Plan 19 — AI provider presets, follow-up questions, guide citations (2026-11-09)
 
 [Plan 19](./plans/19-ai-provider-presets.md) landed: the AI assistant works with a **local server**,

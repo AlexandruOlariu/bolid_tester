@@ -3,7 +3,7 @@
  *  codeModule, verify re-read, restore path. Channels demanding SecurityAccess stay read-only
  *  unless the profile supplies a real seed/key algorithm — none ship by default. */
 
-import { DiagnosticSession, codeModule, decodeAdaptationRaw } from '@/shared/obd-core';
+import { DiagnosticSession, adaptationBoundsError, codeModule } from '@/shared/obd-core';
 import type { AdaptationChannel } from '@/shared/vehicles';
 
 export async function readChannel(
@@ -49,7 +49,9 @@ export async function writeChannel(
     return {
       ok: res.verified,
       backup: res.backup,
-      message: res.verified ? 'Write verified.' : 'Write sent but verification failed — check the value.',
+      message: res.verified
+        ? 'Write verified.'
+        : 'Write sent but verification failed — check the value.',
     };
   } catch (e) {
     return { ok: false, message: `Failed: ${(e as Error).message}` };
@@ -58,19 +60,9 @@ export async function writeChannel(
   }
 }
 
-/** Non-null = human-readable refusal when the raw bytes decode outside the channel's min/max. */
+/** Non-null = human-readable refusal when the raw bytes are the wrong width or decode outside the
+ *  channel's min/max. A thin wrapper over the core guard (`adaptationBoundsError`) so every write
+ *  path — this screen and the backup restore — shares one implementation. */
 export function checkBounds(ch: AdaptationChannel, raw: number[]): string | null {
-  if (ch.min === undefined && ch.max === undefined) return null;
-  const value = decodeAdaptationRaw(raw, {
-    byteCount: ch.byteCount,
-    scale: ch.scale,
-    offset: ch.offset,
-  });
-  if (ch.min !== undefined && value < ch.min) {
-    return `Value ${value}${ch.unit ? ' ' + ch.unit : ''} is below the channel minimum (${ch.min}).`;
-  }
-  if (ch.max !== undefined && value > ch.max) {
-    return `Value ${value}${ch.unit ? ' ' + ch.unit : ''} is above the channel maximum (${ch.max}).`;
-  }
-  return null;
+  return adaptationBoundsError(ch, raw);
 }

@@ -49,6 +49,15 @@ temperatures, `120` EGR / injection) are illustrative until a capture confirms t
 - `useAdaptations()` — CAN + profile gating, bounds validation, backup/restore, label enrichment.
 - **AdaptationsScreen** — unlock switch (off = read-only), per channel: current value, read,
   numeric editor with explicit before→after confirm, restore-from-backup and restore-known-default.
+- **Bounds guard.** `checkBounds` is a one-line wrapper over the core
+  `adaptationBoundsError(ch, raw)` (`obd-core/coding/adaptationValue.ts`): non-null when the raw
+  bytes are not `byteCount` wide or decode outside `min`/`max`. `writeChannel` applies it to every
+  write, whoever calls it.
+- **Restore from a full-car backup.** Coding → Backup can also write channels (plan 24, see
+  [coding](./coding.md#full-backup--clone-my-car-6b8)): it plans per channel against a fresh read
+  and sends each restore through this feature's `writeChannel` — same bounds guard, backup and
+  verify — behind **this feature's unlock** (`adaptationsStore.unlocked`). The replaced values land
+  in `adaptationsStore.backups`, so the Adaptations screen can undo a restore.
 
 ## Acceptance
 

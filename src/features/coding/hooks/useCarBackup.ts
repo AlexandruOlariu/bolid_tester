@@ -5,7 +5,7 @@ import { vehicleLabel, type VehicleProfile } from '@/shared/vehicles';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
-// Reuse the adaptations feature's READ path only (no writes) — do not modify that feature.
+// Reuse the adaptations feature's read path (the restore writes live in useAdaptationRestore).
 import { readChannel } from '@/features/adaptations/api/adaptationService';
 import {
   buildCarBackup,
@@ -14,6 +14,7 @@ import {
   type CarBackupAdaptation,
 } from '../api/carBackup';
 import { useCarBackupStore } from '../model/carBackupStore';
+import { useBackupWorkStore } from '../model/backupWorkStore';
 
 interface ModuleSpec {
   reqHeader: string;
@@ -58,7 +59,7 @@ function moduleSpecs(profile: VehicleProfile): ModuleSpec[] {
 
 /** Full coding backup ("clone my car"): read every profile-declared module's coding + adaptation
  *  channel values into a dated snapshot; export as JSON. Restore is per-module through the existing
- *  gated coding write (see CodingBackup UI); adaptation restore is manual in v1. */
+ *  gated coding write and adaptation channels through useAdaptationRestore (see CodingBackup UI). */
 export function useCarBackup() {
   const session = useSessionStore((s) => s.session);
   const profile = useActiveProfile();
@@ -70,6 +71,9 @@ export function useCarBackup() {
 
   const create = useCallback(async (): Promise<CarBackup | null> => {
     if (!session) return null;
+    // Shared Backup-section gate: never read modules while a restore / compare drives the bus.
+    const gate = useBackupWorkStore.getState();
+    if (!gate.tryBegin()) return null;
     setCreating(true);
     try {
       const modules: CarBackupModuleInput[] = [];
@@ -135,6 +139,7 @@ export function useCarBackup() {
       return null;
     } finally {
       setCreating(false);
+      gate.end();
     }
   }, [session, specs, profile, save]);
 

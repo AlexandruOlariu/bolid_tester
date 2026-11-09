@@ -60,7 +60,7 @@ From `docs/improvement-plan-2026-07.md` → "Phase 6b — VCDS parity, next tier
   `docs/features/coding.md`.
 - **6b.8 Full coding backup ("clone my car")** (✅) — one-tap snapshot of every declared module's
   coding + adaptation values → dated JSON, capped store, export/share, per-module gated coding
-  restore (adaptation restore manual in v1). `features/coding/api/carBackup.ts`; `docs/features/coding.md`.
+  restore (adaptation channels restore per channel or per module since plan 24). `features/coding/api/carBackup.ts`; `docs/features/coding.md`.
 - **6b.10 Bus wake / tester-present broadcast** (✅) — best-effort functional `3E 00` burst before a
   module scan, fully swallowed. `obd-core/uds/testerPresent.ts`; `docs/features/module-scan.md`.
 
