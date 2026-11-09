@@ -9,11 +9,21 @@ import { logError } from '@/shared/state/errorLogStore';
 
 const NOTIFICATIONS_MODULE = 'expo-notifications';
 
+type ModuleLoader = () => Promise<any>;
+const defaultLoader: ModuleLoader = () => import(NOTIFICATIONS_MODULE);
+let moduleLoader: ModuleLoader = defaultLoader;
+
+/** Test seam: replace how expo-notifications is loaded (Jest cannot run the dynamic import); pass
+ *  nothing to restore the real loader. */
+export function setNotificationsModuleLoader(loader?: ModuleLoader): void {
+  moduleLoader = loader ?? defaultLoader;
+}
+
 /** Load expo-notifications, or null when it is simply not installed (tests / web). A missing module is
  *  an expected no-op and must NOT be logged; only a present-but-failing API call is a real failure. */
 async function loadNotifications(): Promise<any> {
   try {
-    return await import(NOTIFICATIONS_MODULE);
+    return await moduleLoader();
   } catch {
     return null;
   }
@@ -51,7 +61,12 @@ export async function notify(ev: Omit<NotifEvent, 'id' | 'ts'> & { id?: string }
       trigger: null,
     });
   } catch (e) {
-    logError({ source: 'notifications', error: e, severity: 'warning', context: { category: event.category } });
+    logError({
+      source: 'notifications',
+      error: e,
+      severity: 'warning',
+      context: { category: event.category },
+    });
   }
 }
 
@@ -70,12 +85,50 @@ export async function scheduleAt(title: string, body: string, date: Date): Promi
   }
 }
 
+/** The OS notification permission as the app shows it: `denied` means the system will not prompt
+ *  again (iOS asks exactly once; a denial is fixed only in the Settings app), `unknown` that it is
+ *  undetermined or cannot be read. */
+export type NotificationPermission = 'unknown' | 'granted' | 'denied';
+
+interface PermissionResponse {
+  status?: string;
+  granted?: boolean;
+  canAskAgain?: boolean;
+}
+
+function toPermission(res: PermissionResponse | undefined): NotificationPermission {
+  if (!res) return 'unknown';
+  if (res.granted || res.status === 'granted') return 'granted';
+  if (res.status === 'denied' && res.canAskAgain !== true) return 'denied';
+  return 'unknown';
+}
+
+/** Read the live permission without ever showing a system prompt (plan 09). */
+export async function readNotificationPermission(): Promise<NotificationPermission> {
+  const Notifications = await loadNotifications();
+  if (!Notifications) return 'unknown';
+  try {
+    return toPermission(await Notifications.getPermissionsAsync());
+  } catch (e) {
+    logError({ source: 'notifications/permission', error: e, severity: 'warning' });
+    return 'unknown';
+  }
+}
+
+/** Ask for permission — at most one system prompt (plan 09): already granted resolves true and a
+ *  permission the OS will not ask for again resolves false, both without calling
+ *  `requestPermissionsAsync` (which on iOS would silently do nothing). iOS asks for alerts and
+ *  sounds only; the app sets no badge. */
 export async function requestNotificationPermission(): Promise<boolean> {
   const Notifications = await loadNotifications();
   if (!Notifications) return false;
   try {
-    const { status } = await Notifications.requestPermissionsAsync();
-    return status === 'granted';
+    const current = toPermission(await Notifications.getPermissionsAsync());
+    if (current !== 'unknown') return current === 'granted';
+    const res = await Notifications.requestPermissionsAsync({
+      ios: { allowAlert: true, allowSound: true, allowBadge: false },
+    });
+    return toPermission(res) === 'granted';
   } catch (e) {
     logError({ source: 'notifications/permission', error: e, severity: 'warning' });
     return false;

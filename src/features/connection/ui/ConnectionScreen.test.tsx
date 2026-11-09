@@ -38,6 +38,34 @@ describe('ConnectionScreen', () => {
     expect(screen.queryByText('Connect to simulator')).toBeNull();
   });
 
+  describe('iOS (plan 09)', () => {
+    afterEach(() => jest.restoreAllMocks());
+
+    it('shows the iOS scan hint and no Android-only connect-by-address panel or copy', () => {
+      jest.replaceProperty(Platform, 'OS', 'ios');
+      useSettingsStore.setState({ adapterSource: 'ble' });
+      renderWithProviders(<ConnectionScreen />);
+
+      expect(screen.getByTestId('ios-scan-hint')).toHaveTextContent(
+        /iOS does not pair OBD2 BLE adapters in Settings/,
+      );
+      expect(screen.queryByText('Connect by address')).toBeNull();
+      expect(screen.queryByPlaceholderText('AA:BB:CC:DD:EE:FF')).toBeNull();
+      expect(screen.queryByText(/Android/)).toBeNull();
+      expect(screen.getByText(/No devices yet/)).toBeTruthy();
+    });
+
+    it('Android keeps connect-by-address and shows no iOS hint', () => {
+      jest.replaceProperty(Platform, 'OS', 'android');
+      useSettingsStore.setState({ adapterSource: 'ble' });
+      renderWithProviders(<ConnectionScreen />);
+
+      expect(screen.getByText('Connect by address')).toBeTruthy();
+      expect(screen.queryByTestId('ios-scan-hint')).toBeNull();
+      expect(screen.getByText(/Android’s Bluetooth settings/)).toBeTruthy();
+    });
+  });
+
   it('shows the session error in the error panel', () => {
     useSettingsStore.setState({ adapterSource: 'mock' });
     useSessionStore.setState({ status: 'error', error: 'No response from the adapter (ATZ)' });

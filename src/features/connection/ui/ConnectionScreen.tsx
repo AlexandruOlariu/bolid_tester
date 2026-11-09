@@ -200,9 +200,19 @@ export function ConnectionScreen() {
             ))}
             {!scanning && devices.length === 0 ? (
               <Paragraph theme="alt2" fontSize="$3">
-                No devices yet. Plug in the adapter, switch the ignition on, then scan. If the
-                adapter is already paired in Android’s Bluetooth settings it may have stopped
-                advertising — “Forget” it there first, or connect by address below.
+                {Platform.OS === 'android'
+                  ? 'No devices yet. Plug in the adapter, switch the ignition on, then scan. If the ' +
+                    'adapter is already paired in Android’s Bluetooth settings it may have stopped ' +
+                    'advertising — “Forget” it there first, or connect by address below.'
+                  : 'No devices yet. Plug in the adapter, switch the ignition on, then scan.'}
+              </Paragraph>
+            ) : null}
+            {/* iOS exposes CoreBluetooth UUIDs, not MAC addresses, so there is no connect-by-address
+                panel; a Bluetooth LE adapter is never paired in iOS Settings (plan 09). */}
+            {Platform.OS === 'ios' ? (
+              <Paragraph theme="alt2" fontSize="$2" testID="ios-scan-hint">
+                If the adapter is not listed, turn it off and on; iOS does not pair OBD2 BLE
+                adapters in Settings.
               </Paragraph>
             ) : null}
           </YStack>

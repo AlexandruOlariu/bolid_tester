@@ -26,8 +26,12 @@
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "Bolid Tester connects to your OBD2 Bluetooth adapter to read vehicle diagnostics.",
         "NSBluetoothPeripheralUsageDescription": "Bolid Tester connects to your OBD2 Bluetooth adapter to read vehicle diagnostics.",
-        "NSLocalNetworkUsageDescription": "Bolid Tester connects to a Wi-Fi OBD2 adapter on your local network."
-      }
+        "NSLocalNetworkUsageDescription": "Bolid Tester connects to a Wi-Fi OBD2 adapter on your local network.",
+        "NSLocationWhenInUseUsageDescription": "Bolid Tester records a GPS track alongside OBD2 data while you record a trip.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "buildNumber": "1",
+      "_comment": "iOS (plan 09, docs/phase2-mobile-app.md#ios): BLE needs no MFi, so the Vgate connects over CoreBluetooth with no pairing in Settings. buildNumber is only the seed: eas.json sets appVersionSource remote and the production profile auto-increments it on EAS. Location is when-in-use only (trip GPS track); the expo-location plugin below removes the Always / motion strings. ITSAppUsesNonExemptEncryption false: the app uses only the OS HTTPS stack (exempt), so TestFlight skips the export-compliance question."
     },
     "android": {
       "package": "com.bolidtester.app",
@@ -63,6 +67,23 @@
         {
           "isBackgroundEnabled": false,
           "neverForLocation": true
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Bolid Tester records a GPS track alongside OBD2 data while you record a trip.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "motionUsagePermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#2bb673"
         }
       ],
       "./plugins/withReleaseSigning"

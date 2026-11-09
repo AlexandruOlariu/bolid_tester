@@ -34,7 +34,10 @@ Initializing… / Connected / Error` with an icon and colour per `ConnState`;
     Bluetooth shows the blocking panel "Bluetooth adapters are not supported in this browser"
     (`web-bt-unsupported`) with **Use the simulator** (see [Web Bluetooth](#web-bluetooth-browser--plan-28));
   - otherwise (Bluetooth) the `BluetoothPrompt` banner when the radio is not ready, **Scan for
-    adapters**, the device list, on Android **Connect by address**, a small **Using a Wi-Fi
+    adapters**, the device list, on Android **Connect by address** (on iOS instead the hint
+    `ios-scan-hint` "If the adapter is not listed, turn it off and on; iOS does not pair OBD2 BLE
+    adapters in Settings." — iOS exposes CoreBluetooth UUIDs, not MACs; the empty-list text names
+    Android's Bluetooth settings only on Android, plan 09), a small **Using a Wi-Fi
     adapter instead?** link that switches the source to Wi-Fi and, on Android only, **Using a
     classic Bluetooth (3.0) adapter instead?**.
   - The subtitle follows the source ("Pair with your OBD2 Bluetooth adapter" / "Connect to your
@@ -93,7 +96,9 @@ no-op.
 
 - `useScan()` — `{ scanning, devices, start, stop }`. `start()` requests the BLE permissions,
   guards on the radio being `PoweredOn` (so a powered-off adapter fails with clear guidance, not a
-  raw error), merges already-connected adapters, then scans for 12 s (`SCAN_TIMEOUT_MS`). `devices`
+  raw error; `scanBlockedMessage(state, os)` reports `Unauthorized` as a permission problem — on
+  iOS "Allow Bluetooth for Bolid Tester in Settings → Bolid Tester", since iOS has no runtime
+  request — and `Unknown` / `Resetting` as "not ready yet", plan 09), merges already-connected adapters, then scans for 12 s (`SCAN_TIMEOUT_MS`). `devices`
   is sorted likely adapters first, then by RSSI.
 - `useConnect()` — `{ status, error, adapterSource, busy, connect(target?), disconnect() }`.
   `connect` calls `connectionService.connect` and, once the session is `connected`, pushes
@@ -173,7 +178,10 @@ no-op.
    (`BleManager.enable()`; iOS points to Control Center), **unauthorized** → "Open settings",
    **unsupported** → guidance to use the simulator. The banner clears itself the moment the radio
    comes on (state subscription).
-1. Request BLE permissions (Android 12+ scan/connect; iOS usage description).
+1. Request BLE permissions (Android 12+ scan/connect). On iOS `requestBlePermissions()` resolves
+   `true` at once without touching `PermissionsAndroid`: the OS shows its own prompt (text from
+   `NSBluetoothAlwaysUsageDescription`) on first CoreBluetooth use, and a denial arrives as
+   `State.Unauthorized` (plan 09).
 2. Scan (or, on Android, enter the adapter's address); the user picks a device. There is no
    auto-connect on launch; only auto-reconnect after a drop (below) reuses the last target.
 3. `BleTransport` connects, **discovers** services/characteristics, selects the notify + write pair.

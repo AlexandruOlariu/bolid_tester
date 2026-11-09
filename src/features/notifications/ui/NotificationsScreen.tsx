@@ -1,9 +1,9 @@
 import React from 'react';
 import { YStack, XStack, Paragraph, H4, Switch, Button } from 'tamagui';
 import { Screen } from '@/shared/ui';
-import { requestNotificationPermission } from '@/shared/notify';
 import { useNotificationsStore } from '../model/notificationsStore';
 import { useNotifications } from '../hooks/useNotifications';
+import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import type { NotifCategory } from '@/shared/obd-core';
 
 const CATEGORIES: { key: NotifCategory; label: string }[] = [
@@ -17,22 +17,35 @@ const CATEGORIES: { key: NotifCategory; label: string }[] = [
 export function NotificationsScreen() {
   useNotifications();
   const prefs = useNotificationsStore((s) => s.prefs);
-  const permission = useNotificationsStore((s) => s.permission);
-  const setPermission = useNotificationsStore((s) => s.setPermission);
+  const { permission, request, canOpenSettings, openSettings } = useNotificationPermission();
   const toggleCategory = useNotificationsStore((s) => s.toggleCategory);
   const reminders = useNotificationsStore((s) => s.reminders);
 
   return (
     <Screen title="Notifications" subtitle="Local, on-device — no account required">
-      {permission !== 'granted' ? (
-        <Button
-          theme="green"
-          onPress={async () => setPermission((await requestNotificationPermission()) ? 'granted' : 'denied')}
-        >
+      {permission === 'granted' ? (
+        <Paragraph theme="alt2">Notifications enabled.</Paragraph>
+      ) : permission === 'denied' ? (
+        canOpenSettings ? (
+          <YStack gap="$2" testID="notifications-denied">
+            <Paragraph theme="alt2">
+              Notifications are turned off for Bolid Tester. The phone will not ask again — turn
+              them on in the system settings.
+            </Paragraph>
+            <Button theme="green" onPress={openSettings}>
+              Open settings
+            </Button>
+          </YStack>
+        ) : (
+          <Paragraph theme="alt2" testID="notifications-denied-web">
+            Notifications are blocked or not available in this browser. Allow them in the browser’s
+            site settings for this page. On iPhone, add Bolid Tester to the Home Screen first.
+          </Paragraph>
+        )
+      ) : (
+        <Button theme="green" onPress={() => void request()}>
           Enable notifications
         </Button>
-      ) : (
-        <Paragraph theme="alt2">Notifications enabled.</Paragraph>
       )}
 
       <YStack gap="$2">

@@ -11,6 +11,7 @@ export { Toast } from './Toast';
 export { AlertDialog } from './AlertDialog';
 export { appAlert } from './appAlert';
 export { useLayoutClass } from './useLayoutClass';
+export { monoFontFamily } from './monoFont';
 export {
   classify,
   isTwoPane,

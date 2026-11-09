@@ -3981,6 +3981,11 @@
   ],
   [
     "feature:notifications",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:notifications",
     "store:persistStorage",
     "imports"
   ],

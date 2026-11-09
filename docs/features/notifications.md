@@ -40,7 +40,14 @@ the OS notification centre and as in-app banners. Three sources feed it: **thres
 ## UI
 
 - **NotificationsScreen** (or a Settings section):
-  - **Permission** prompt + status; deep-link to OS settings if denied.
+  - **Permission** prompt + status; deep-link to OS settings if denied. The live state is read on
+    open without prompting; **Enable notifications** shows the system prompt at most once, and once
+    the OS will not ask again (iOS after the first denial) the screen shows "Notifications are
+    turned off for Bolid Tester…" (`notifications-denied`) with **Open settings**
+    (`Linking.openSettings()`) instead (plan 09). On web (PWA) there is no settings page to open
+    and react-native-web's `Linking` has no `openSettings`, so a denial (browser blocked, or no
+    Notification API, e.g. iOS Safari outside a Home Screen app) shows browser wording
+    (`notifications-denied-web`) and no button.
   - **Per-category toggles**: alerts (by severity), connection events, diagnostic events, trip saved,
     maintenance.
   - **Quiet hours** + a global mute.
@@ -49,7 +56,13 @@ the OS notification centre and as in-app banners. Three sources feed it: **thres
 
 ## hooks
 
-- `useNotificationPermission()` — request/read permission status.
+- `useNotificationPermission()` — `{ permission, request, canOpenSettings, openSettings }`: reads the live status
+  on mount (`readNotificationPermission`, never prompts), `request` calls
+  `requestNotificationPermission` (skips `requestPermissionsAsync` when already granted or when
+  the OS will not ask again; iOS asks for alerts + sounds, no badge) and stores the result.
+  `canOpenSettings` is false on web (`openSettings` is then a no-op).
+  `shared/notify` maps the OS answer to `unknown | granted | denied` (`denied` = status denied and
+  `canAskAgain` false). `setNotificationsModuleLoader` is the Jest seam for the dynamic import.
 - `useNotificationPrefs()` — persisted per-category toggles + quiet hours.
 - `useMaintenanceReminders()` — CRUD reminders; schedule/cancel OS notifications.
 

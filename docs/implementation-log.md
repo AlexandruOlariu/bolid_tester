@@ -5,6 +5,109 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 09 — iOS via EAS: config, code checks, docs (2026-11-09)
+
+[Plan 09](./plans/09-ios-eas.md) steps 1, 2 and 5 landed: the iOS app config and EAS profiles are
+ready, the eight iOS code checks are done (each tested or verified), and
+[phase2-mobile-app.md → iOS](./phase2-mobile-app.md#ios-plan-09) holds the build / submit commands,
+the credential notes and the iPhone validation checklist. No iOS build has been run (no Apple
+account here): steps 3–4 and acceptance items 1–6 are the owner's (plan § Deferred). Roadmap ✅,
+on-device pending.
+
+- **`app.json`.** `ios.buildNumber: "1"`; `infoPlist` gains `NSLocationWhenInUseUsageDescription`
+  ("Bolid Tester records a GPS track alongside OBD2 data while you record a trip.") and
+  `ITSAppUsesNonExemptEncryption: false`; plugins `expo-location` (same when-in-use text; Always,
+  Always-and-when-in-use and motion strings `false`, so prebuild writes none; no background
+  location on either platform) and `expo-notifications` (`color: "#2bb673"`), both before
+  `./plugins/withReleaseSigning`, which stays last. `react-native-ble-plx` keeps
+  `isBackgroundEnabled: false`. `npx expo config --type introspect` confirms the resulting
+  Info.plist: the four usage strings, no Always-location key, no `UIBackgroundModes`.
+- **`eas.json`.** `cli.appVersionSource: "remote"`; `ios: { simulator: false }` on `development`
+  and `preview` (internal distribution to registered devices); `production` keeps `autoIncrement`
+  - channel `production`; `submit.production.ios: {}`.
+- **Code checks.**
+  1. Connect screen: on iOS a hint under the device list (`ios-scan-hint`, "If the adapter is not
+     listed, turn it off and on; iOS does not pair OBD2 BLE adapters in Settings."); the empty-list
+     text mentions Android's Bluetooth settings and "connect by address below" on Android only.
+     Connect by address and the classic-Bluetooth link stay Android-only.
+  2. `BluetoothPrompt` already sent `State.Unauthorized` to `Linking.openSettings()` with iOS
+     wording, and points to Control Center (no Turn-on button) when the radio is off on iOS; now
+     covered by `BluetoothPrompt.test.tsx`. New in `useScan`: `scanBlockedMessage(state, os)`, so
+     a scan started while `Unauthorized` reports a permission problem (on iOS "Allow Bluetooth for
+     Bolid Tester in Settings → Bolid Tester") instead of "Bluetooth is off", and `Unknown` /
+     `Resetting` say "not ready yet".
+  3. `permissions.ts`: `requestBlePermissions`, `requestClassicBluetoothPermissions` and
+     `checkClassicBluetoothPermissions` return `true` before touching `PermissionsAndroid` off
+     Android. Before, the Android permission list (`PermissionsAndroid.PERMISSIONS…`) was built
+     first and the platform checked afterwards.
+  4. `BleTransport` already sent `requestMTU` on Android only (existing test kept).
+  5. Fonts: Tamagui's v3 `$mono` token is a CSS fallback stack (`"ui-monospace", "SFMono-Regular",
+…`) on native too, which iOS cannot resolve. `tamagui.config.ts` now overrides `fonts.mono.family`
+     with `monoFontFamily(Platform.OS)` (new `src/shared/ui/monoFont.ts`: `Menlo` on iOS, `monospace`
+     on Android, the stack on web). The error-log and connection-diagnostics screens use it too
+     (they had `Courier` on iOS).
+  6. Safe areas: checked: `Screen` keeps `edges={['bottom']}` and the tab navigator sets
+     `headerShown: true` for every route, hidden ones included. No change.
+  7. Notifications: there was no permission read, only a request that would do nothing after an
+     iOS denial (iOS prompts once). `shared/notify` now has `readNotificationPermission()` (never
+     prompts) and a `requestNotificationPermission()` that skips the request when the permission
+     is already granted or the OS will not ask again (iOS asks for alerts + sounds, no badge). New
+     `useNotificationPermission()` (named by the notifications spec) reads the live state on
+     mount. The Notifications screen shows **Open settings** after a denial (the spec's
+     "deep-link to OS settings if denied", missing until now). On web the hook reports
+     `canOpenSettings: false` (react-native-web's `Linking` has no `openSettings`, and
+     expo-notifications also reports `denied` when the browser has no Notification API), so the
+     screen shows browser wording (`notifications-denied-web`) and no button (review fix).
+     `setNotificationsModuleLoader` is the Jest seam: Jest cannot run the dynamic import.
+  8. Sharing: checked: every export writes to `documentDirectory` and calls `expo-sharing`,
+     which opens the iOS share sheet. No change.
+- **Tests (+6 suites).** `iosConfig.test.ts` (usage strings, export compliance, location plugin
+  without Always / background, notifications + BLE plugins, signing plugin last, EAS profiles),
+  `monoFont.test.ts`, `tamaguiFonts.test.tsx` (`$mono` resolves to one installed family on the native
+  test platform; fails on the old config with the CSS stack), `BluetoothPrompt.test.tsx`,
+  `useScan.test.tsx`, `NotificationsScreen.test.tsx` (existing grant read without prompting; one
+  prompt then Open settings; a denial on record; a web denial without Open settings; a grant); extended `permissions.test.ts` (on iOS
+  `PermissionsAndroid` access throws in the mock; fails on the old code) and
+  `ConnectionScreen.test.tsx` (iOS hint, no connect-by-address and no "Android" text on iOS;
+  Android unchanged).
+- **Docs.** `phase2-mobile-app.md` § iOS (config table, EAS profiles, commands, credentials,
+  TestFlight group, the eight platform differences, validation checklist);
+  `adapter-vgate-icar-pro.md` (iOS ids are CoreBluetooth UUIDs, not MACs; iOS negotiates the MTU);
+  `features/connection.md` (iOS hint, `scanBlockedMessage`, iOS permissions);
+  `features/notifications.md` (permission flow, `useNotificationPermission`);
+  `vehicles/golf-plus-2009-20tdi.md` (App build column names the platform; the first iPhone
+  session adds fixture `ios-connect`); roadmap ✅ (on-device pending).
+
+Deviations:
+
+- **No notification `icon`.** The plan suggested `"icon": "./assets/icon.png"` for
+  `expo-notifications`. That file is the full-colour 1024 px app icon, and Android draws a
+  notification icon as a white silhouette of its alpha channel, so it would show a white square.
+  Only `color` is set; a monochrome notification icon can come with store prep (plan 30).
+- **`appVersionSource: "remote"`.** The plan put `autoIncrement` on `production` and
+  `buildNumber: "1"` in `app.json`. With the default local version source, EAS writes the
+  incremented number into the local `app.json` and someone has to commit it. Remote keeps it on
+  EAS, so `buildNumber` is only the starting value. This also applies to Android EAS builds; the
+  store Android build is still the Gradle CI build, whose versionCode is the run number.
+- **`ios.simulator: false` also on `development`**, so the dev client installs on the test iPhone.
+- **Plan's `useNotificationPermission` "already requests" did not exist.** The hook was created (the
+  notifications spec named it) rather than only confirmed.
+- **Golf "Validated on" row not added.** The table must list exactly the committed car fixtures
+  (`vehicle-docs-sync.test.ts`), and there is no iOS fixture yet. The doc says how the iPhone
+  session records its platform and the `ios-connect` fixture instead.
+
+Observations for the owner session (not changed):
+
+- No `setNotificationHandler` is installed anywhere, so a notification raised while the app is in
+  the foreground is not presented as a banner (on either platform). Check it on the iPhone with an
+  alert; adding a handler is a one-line follow-up in `shared/notify`.
+- App Transport Security is not set in `app.json`. Introspection fills in a stand-in Info.plist, so
+  the real value comes from the prebuild template. The local-AI presets (plan 19) call a LAN server
+  over plain HTTP, so check on the iPhone that Diagnose (AI) can reach an `http://` local server.
+  The Wi-Fi adapter uses a raw TCP socket, which ATS does not cover.
+
+---
+
 ## Plan 32 — Feedback and log bundle (2026-11-09)
 
 [Plan 32](./plans/32-feedback-log-bundle.md) landed: **More → Tools → Report a problem** builds a

@@ -65,6 +65,11 @@ Advertised device names seen on these adapters include `IOS-Vlink`, `Vlink`, `VE
 `V-LINK`. The scan screen lists everything and lets the user pick; we can pre-filter by these name
 hints and by the presence of a serial-like service.
 
+On **iOS** (plan 09) the scanned device id is a CoreBluetooth UUID that iOS generates per phone, not
+the adapter's MAC address, so the Connect screen has no "connect by address" field there. The
+adapter is never paired in iOS Settings; if it does not show up in the scan, power-cycle it (unplug
+for 10 s). iOS negotiates the MTU itself (`requestMTU` is sent on Android only).
+
 ## ELM327 quirks handled in the client
 
 - **Half-duplex.** One command at a time; we queue and wait for the `>` prompt.

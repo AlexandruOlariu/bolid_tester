@@ -46,8 +46,86 @@ For cloud builds without a Mac, use EAS (profiles in `eas.json`):
 ```bash
 npm i -g eas-cli
 eas build -p android --profile preview   # APK
-eas build -p ios --profile preview       # needs an Apple account
+eas build -p ios --profile preview       # needs an Apple account — see iOS below
 ```
+
+### iOS (plan 09)
+
+The Vgate iCar Pro is a **Bluetooth LE** adapter, so an iPhone reaches it through CoreBluetooth with
+no Apple MFi certificate and no pairing in iOS Settings
+([adapter-vgate-icar-pro.md](./adapter-vgate-icar-pro.md)). iOS is built only on EAS (no Mac
+needed); nothing here has been run on an iPhone yet — the owner steps are at the end.
+
+**Config (`app.json`, checked by `src/shared/lib/iosConfig.test.ts`).**
+
+| Key                                                    | Value / why                                                                                                                      |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `ios.bundleIdentifier`                                 | `com.bolidtester.app` (same as the Android package)                                                                              |
+| `ios.buildNumber`                                      | `"1"`, only the seed: `eas.json` `cli.appVersionSource: "remote"` keeps the build number on EAS, `production` auto-increments it |
+| `NSBluetoothAlwaysUsageDescription` (+ `…Peripheral…`) | the Bluetooth prompt text                                                                                                        |
+| `NSLocationWhenInUseUsageDescription`                  | "Bolid Tester records a GPS track alongside OBD2 data while you record a trip." (when-in-use only)                               |
+| `NSLocalNetworkUsageDescription`                       | the Local Network prompt for a Wi-Fi adapter (plan 26)                                                                           |
+| `ITSAppUsesNonExemptEncryption: false`                 | only the OS HTTPS stack is used (exempt), so TestFlight skips the export-compliance question                                     |
+| plugin `expo-location`                                 | the same when-in-use text; the Always and motion strings set to `false` so prebuild writes none; no background location          |
+| plugin `expo-notifications`                            | `color: "#2bb673"`; local notifications only (no push server)                                                                    |
+| plugin `react-native-ble-plx`                          | `isBackgroundEnabled: false`: no `bluetooth-central` background mode for App Review to question                                  |
+
+**EAS profiles (`eas.json`).** `development` (dev client) and `preview` are internal distribution
+builds for real devices (`ios.simulator: false`); `production` is the TestFlight / App Store build
+(`autoIncrement`, channel `production`). Credentials: let EAS manage the distribution certificate
+and the provisioning profiles (answer yes when `eas build` asks, or run `eas credentials`).
+
+```bash
+eas login                                   # the owner's Expo account (plan 08 created the project)
+eas device:create                           # internal builds only: scan the QR code on the iPhone
+eas build -p ios --profile preview          # install from the link EAS prints
+eas build -p ios --profile production       # TestFlight / App Store build
+eas submit -p ios --latest                  # upload to App Store Connect (creates the app record if asked)
+```
+
+TestFlight: in App Store Connect add an external group "Bolid testers" and attach the processed
+build (the first external build goes through Beta App Review).
+
+**Platform differences the code handles (plan 09 code checks).**
+
+1. Connect screen: **Connect by address** is Android-only (iOS exposes CoreBluetooth UUIDs, not
+   MACs); on iOS the device list shows "If the adapter is not listed, turn it off and on; iOS does
+   not pair OBD2 BLE adapters in Settings." Classic Bluetooth (SPP) is hidden on iOS (plan 27).
+2. A denied Bluetooth prompt arrives as ble-plx `State.Unauthorized`: the banner reads "Allow
+   Bluetooth for Bolid Tester in Settings" with **Open settings** (`Linking.openSettings()`), and a
+   scan started in that state says the same instead of "Bluetooth is off". iOS has no API to turn
+   the radio on, so there is no **Turn on Bluetooth** button; the banner points to Control Center.
+3. `requestBlePermissions()` (and the Classic Bluetooth pair) resolve `true` at once on iOS and
+   never touch `PermissionsAndroid`; the OS prompts on first CoreBluetooth use.
+4. `BleTransport` passes `requestMTU: 247` on Android only; iOS negotiates the MTU itself and the
+   negotiated value is read back from `device.mtu`.
+5. Fonts: Tamagui's `$mono` token ships a CSS fallback stack that iOS cannot resolve; it is
+   overridden per platform (`Menlo` on iOS, `monospace` on Android, the stack on web;
+   `src/shared/ui/monoFont.ts`).
+6. Safe areas: `Screen` uses `edges={['bottom']}` and every tab, hidden routes included, has
+   `headerShown: true`, so the navigator header covers the notch / Dynamic Island.
+7. Notifications: iOS shows its permission prompt once. More → Notifications reads the live state
+   on open, prompts at most once, and after a denial offers **Open settings** instead of a dead
+   **Enable** button.
+8. Sharing: every export writes to `documentDirectory` and opens `expo-sharing`, which is the iOS
+   share sheet (the web build downloads instead, plan 28).
+
+**Validation checklist (owner, on an iPhone; plan 09 § Deferred).**
+
+- [ ] Simulator mode: open every tab and three hidden routes (e.g. Trips, Error log, Vehicle
+      report); export the error log and check the iOS share sheet opens.
+- [ ] The Bluetooth prompt shows the configured text. Deny it once: the Connect banner offers
+      **Open settings** and a scan reports a permission problem; allow it in Settings and scan.
+- [ ] Real adapter: Connect → **Scan for adapters** → the Vgate appears (`IOS-Vlink` / `Vlink`) →
+      Connected → **Live** shows RPM on the Golf → **Faults** reads the codes.
+- [ ] Record a 1-minute trip with Location allowed (the prompt shows the configured text): the
+      trip has a GPS track and its CSV opens the share sheet.
+- [ ] Notifications: **Enable notifications** prompts once; after a denial **Open settings** shows.
+- [ ] No Android-only UI (Connect by address, classic Bluetooth, "Turn on Bluetooth") and no
+      `PermissionsAndroid` / `requestMTU` entry in More → Error log.
+- [ ] Settings → Adapter log → export the connect session as a replay fixture named `ios-connect`
+      (plan 02) and add a row to the Golf's "Validated on the car" table with the platform in the
+      App build column (e.g. `0.5.0 iOS 18`).
 
 ## Using the app
 

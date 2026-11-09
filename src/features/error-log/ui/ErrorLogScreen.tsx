@@ -10,7 +10,7 @@ import {
   Bug,
   MessageSquareWarning,
 } from 'lucide-react-native';
-import { Screen, appAlert } from '@/shared/ui';
+import { Screen, appAlert, monoFontFamily } from '@/shared/ui';
 import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import type { ErrorSeverity, LoggedError } from '@/shared/lib/errorLog';
 import { useErrorLogExport } from '../hooks/useErrorLogExport';
@@ -42,7 +42,7 @@ function Chip({ active, label, onPress }: { active: boolean; label: string; onPr
 function ErrorCard({ e, onRemove }: { e: LoggedError; onRemove: (id: string) => void }) {
   const [open, setOpen] = useState(false);
   const color = SEVERITY_COLOR[e.severity];
-  const monoFont = Platform.select({ ios: 'Courier', android: 'monospace', default: 'monospace' });
+  const monoFont = monoFontFamily(Platform.OS);
   const hasDetail = !!e.stack || !!e.context;
 
   return (

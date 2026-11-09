@@ -3177,6 +3177,8 @@
       "src/features/connection/api/flapGuard.test.ts",
       "src/features/connection/api/reconnect.test.ts",
       "src/features/connection/hooks/usePairedAdapters.test.tsx",
+      "src/features/connection/hooks/useScan.test.tsx",
+      "src/features/connection/ui/BluetoothPrompt.test.tsx",
       "src/features/connection/ui/ConnectionScreen.test.tsx",
       "src/features/connection/ui/DeviceRow.test.tsx"
     ],
@@ -3359,6 +3361,9 @@
   "feature:notifications": {
     "path": "src/features/notifications",
     "summary": "A single **local notification** layer (no server, no push tokens) that surfaces important events to",
+    "tests": [
+      "src/features/notifications/ui/NotificationsScreen.test.tsx"
+    ],
     "tokens": [
       "notifications"
     ],
@@ -4467,6 +4472,18 @@
     "tokens": [
       "class",
       "layout"
+    ],
+    "type": "ui"
+  },
+  "ui:monoFont": {
+    "path": "src/shared/ui/monoFont.ts",
+    "summary": "The monospace font family per platform (plan 09).",
+    "tests": [
+      "src/shared/ui/monoFont.test.ts"
+    ],
+    "tokens": [
+      "font",
+      "mono"
     ],
     "type": "ui"
   },

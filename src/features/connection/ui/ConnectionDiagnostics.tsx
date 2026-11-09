@@ -7,6 +7,7 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useAdapterLogStore } from '@/shared/state/adapterLog';
 import { logError } from '@/shared/state/errorLogStore';
+import { monoFontFamily } from '@/shared/ui';
 import type { BluetoothState } from '../hooks/useBluetoothState';
 import {
   diagnoseFailure,
@@ -49,7 +50,7 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
   const deviceId = useLinkStore((s) => s.device?.id ?? null);
   const deviceName = useLinkStore((s) => s.device?.name ?? null);
   const [open, setOpen] = useState(false);
-  const monoFont = Platform.select({ ios: 'Courier', android: 'monospace', default: 'monospace' });
+  const monoFont = monoFontFamily(Platform.OS);
 
   // Only this attempt's traffic: an older session's commands would mislead the classifier.
   const logTail = useMemo(

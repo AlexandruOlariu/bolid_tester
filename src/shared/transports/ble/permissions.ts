@@ -4,8 +4,13 @@
  *  - Classic Bluetooth / SPP (plan 27; bonded list + RFCOMM connect, no scanning): Android 12+
  *    needs BLUETOOTH_CONNECT only; older Android needs no runtime permission at all (the install-time
  *    BLUETOOTH / BLUETOOTH_ADMIN from the library's manifest cover it), so it never prompts there.
- *  iOS permission is declared in app.json (NSBluetoothAlwaysUsageDescription). */
+ *  iOS (plan 09): there is no runtime request API — iOS shows the Bluetooth prompt (text from
+ *  NSBluetoothAlwaysUsageDescription in app.json) the first time CoreBluetooth is used, and a denial
+ *  surfaces as ble-plx `State.Unauthorized`. So every function here resolves `true` at once off
+ *  Android, before `PermissionsAndroid` is touched at all. */
 import { Platform, PermissionsAndroid, type Permission } from 'react-native';
+
+const isAndroid = () => Platform.OS === 'android';
 
 function androidVersion(): number {
   return typeof Platform.Version === 'number'
@@ -30,7 +35,7 @@ function classicPermissions(): Permission[] {
 
 /** Whether every permission in `perms` is granted — never shows a system prompt. */
 async function checkAll(perms: Permission[]): Promise<boolean> {
-  if (Platform.OS !== 'android' || perms.length === 0) return true;
+  if (perms.length === 0) return true;
   try {
     const granted = await Promise.all(perms.map((p) => PermissionsAndroid.check(p)));
     return granted.every(Boolean);
@@ -41,7 +46,7 @@ async function checkAll(perms: Permission[]): Promise<boolean> {
 
 /** Ask for every permission in `perms` (one system dialog); true when all are granted. */
 async function requestAll(perms: Permission[]): Promise<boolean> {
-  if (Platform.OS !== 'android' || perms.length === 0) return true;
+  if (perms.length === 0) return true;
   try {
     const res = await PermissionsAndroid.requestMultiple(perms);
     return perms.every((p) => res[p] === PermissionsAndroid.RESULTS.GRANTED);
@@ -51,6 +56,7 @@ async function requestAll(perms: Permission[]): Promise<boolean> {
 }
 
 export async function requestBlePermissions(): Promise<boolean> {
+  if (!isAndroid()) return true;
   return requestAll(blePermissions());
 }
 
@@ -58,11 +64,13 @@ export async function requestBlePermissions(): Promise<boolean> {
  *  passive re-reads (e.g. on app resume): a prompt pauses the activity, and its resume must not
  *  trigger another prompt. Always true before Android 12. */
 export async function checkClassicBluetoothPermissions(): Promise<boolean> {
+  if (!isAndroid()) return true;
   return checkAll(classicPermissions());
 }
 
 /** Ask for the Classic Bluetooth permission (BLUETOOTH_CONNECT, "Nearby devices") on Android 12+;
  *  resolves true without a prompt on older Android and on other platforms. */
 export async function requestClassicBluetoothPermissions(): Promise<boolean> {
+  if (!isAndroid()) return true;
   return requestAll(classicPermissions());
 }

@@ -114,6 +114,9 @@ See [`../features/extended-pids.md`](../features/extended-pids.md) and the `exte
 Filled in after each on-car session ([testing.md → Recording results](../testing.md#recording-results)).
 One row per flow; the Fixture column names the committed car fixture in
 `src/shared/obd-core/transport/fixtures/<id>/`. Simulator fixtures (`sim-*.json`) never count.
+The App build column names the platform too (e.g. `0.5.0 Android 14`, `0.5.0 iOS 18`); the first
+iPhone session (plan 09, checklist in [phase2-mobile-app.md → iOS](../phase2-mobile-app.md#ios-plan-09))
+adds its `connect` flow as fixture `ios-connect`.
 
 | Date                | App build | Adapter | Flow | Result | Fixture |
 | ------------------- | --------- | ------- | ---- | ------ | ------- |

@@ -17,7 +17,19 @@ const rn = {
     ),
   },
 };
-jest.mock('react-native', () => rn);
+// On iOS `PermissionsAndroid` must never be touched (plan 09): the mock's getter throws there, so an
+// iOS call that even reads `PermissionsAndroid.PERMISSIONS` fails the test.
+const iosTouches: string[] = [];
+jest.mock('react-native', () => ({
+  Platform: rn.Platform,
+  get PermissionsAndroid() {
+    if (rn.Platform.OS !== 'android') {
+      iosTouches.push(rn.Platform.OS);
+      throw new Error(`PermissionsAndroid used on ${rn.Platform.OS}`);
+    }
+    return rn.PermissionsAndroid;
+  },
+}));
 
 import {
   checkClassicBluetoothPermissions,
@@ -30,6 +42,7 @@ const { PERMISSIONS } = rn.PermissionsAndroid;
 beforeEach(() => {
   rn.Platform.OS = 'android';
   rn.Platform.Version = 31;
+  iosTouches.length = 0;
 });
 
 describe('Classic Bluetooth permissions', () => {
@@ -79,5 +92,16 @@ describe('BLE permissions', () => {
     await expect(requestBlePermissions()).resolves.toBe(true);
     await expect(requestClassicBluetoothPermissions()).resolves.toBe(true);
     expect(rn.PermissionsAndroid.requestMultiple).not.toHaveBeenCalled();
+  });
+
+  it('on iOS resolves true at once without touching PermissionsAndroid (plan 09)', async () => {
+    // iOS reports a string version ("17.4"); the OS raises the Bluetooth prompt itself on first use.
+    rn.Platform.OS = 'ios';
+    rn.Platform.Version = '17.4';
+    await expect(requestBlePermissions()).resolves.toBe(true);
+    await expect(requestClassicBluetoothPermissions()).resolves.toBe(true);
+    await expect(checkClassicBluetoothPermissions()).resolves.toBe(true);
+    expect(iosTouches).toEqual([]);
+    expect(rn.PermissionsAndroid.check).not.toHaveBeenCalled();
   });
 });

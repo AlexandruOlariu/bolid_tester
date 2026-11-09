@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
 import { State } from 'react-native-ble-plx';
 import {
   getBleManager,
@@ -16,7 +17,32 @@ const PERMISSION_DENIED_MSG =
   'Bluetooth permission denied. Allow “Nearby devices” (Android 12+) or Location (Android 11 and ' +
   'below) for Bolid Tester in system settings, turn Bluetooth on, then scan again.';
 
+/** iOS has no runtime permission request: a denied Bluetooth prompt shows up as ble-plx
+ *  `State.Unauthorized`, fixed only in the Settings app (plan 09). */
+const IOS_PERMISSION_DENIED_MSG =
+  'Bluetooth permission denied. Allow Bluetooth for Bolid Tester in Settings → Bolid Tester, then ' +
+  'scan again.';
+
 const BLUETOOTH_OFF_MSG = 'Bluetooth is off. Turn Bluetooth on, then scan again.';
+
+const BLUETOOTH_SETTLING_MSG = 'Bluetooth is not ready yet. Wait a moment, then scan again.';
+
+/** Why a scan cannot start in this radio state, or null when it can. A denied permission is not
+ *  reported as "Bluetooth is off" (on iOS that is the only way a denial surfaces). Exported for
+ *  tests. */
+export function scanBlockedMessage(state: State, os: string): string | null {
+  switch (state) {
+    case State.PoweredOn:
+      return null;
+    case State.Unauthorized:
+      return os === 'ios' ? IOS_PERMISSION_DENIED_MSG : PERMISSION_DENIED_MSG;
+    case State.Unknown:
+    case State.Resetting:
+      return BLUETOOTH_SETTLING_MSG;
+    default:
+      return BLUETOOTH_OFF_MSG;
+  }
+}
 
 /** Drive a BLE scan, filling the scan store. Sorts likely adapters first by RSSI. */
 export function useScan() {
@@ -46,10 +72,11 @@ export function useScan() {
     }
     // The radio can turn off between the button check and here — fail with clear guidance instead of
     // a raw "BluetoothLE is powered off" scan error.
-    if ((await getBleManager().state()) !== State.PoweredOn) {
+    const blocked = scanBlockedMessage(await getBleManager().state(), Platform.OS);
+    if (blocked) {
       setScanning(false);
-      useSessionStore.getState().setError(BLUETOOTH_OFF_MSG);
-      logError({ source: 'connection/scan', error: BLUETOOTH_OFF_MSG, severity: 'warning' });
+      useSessionStore.getState().setError(blocked);
+      logError({ source: 'connection/scan', error: blocked, severity: 'warning' });
       return;
     }
     useSessionStore.getState().setError(null);
