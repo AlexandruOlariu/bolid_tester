@@ -4,8 +4,8 @@ import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Switch } from '
 import { Share2, FileText } from 'lucide-react-native';
 import { Screen, ValueCard } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
-import { getVehicleProfile, vehicleLabel } from '@/shared/vehicles';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
+import { curatedProfileId, vehicleLabel } from '@/shared/vehicles';
 import { matchFaultGuide } from '@/shared/vehicles/faultGuides';
 import { formatDtcReport, buildDtcReportHtml, type DtcCheckReport } from '@/shared/lib/dtcReport';
 import { vagCodeForDtc, type Dtc } from '@/shared/obd-core/obd/dtc';
@@ -216,7 +216,9 @@ function FreezeFrameView({ ff }: { ff: FreezeFrame }) {
 export function FaultCodesScreen() {
   const status = useSessionStore((s) => s.status);
   const info = useSessionStore((s) => s.info);
-  const selectedProfileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
+  // Fault guides are curated per registry profile; a garage car uses its base profile's guides.
+  const guideProfileId = curatedProfileId(profile);
   const { stored, pending, permanent, readiness, freezeFrames, loading, error, refresh, clear } =
     useDtcs();
   const { exportReport, busy: exporting } = useDtcExport();
@@ -225,7 +227,6 @@ export function FaultCodesScreen() {
   // Snapshot the current read as the normalised report shape, shared by both the Markdown export and
   // the HTML "send to my mechanic" report. `protocol` is HTML-only (ignored by the Markdown renderer).
   const buildCheck = (): DtcCheckReport => {
-    const profile = getVehicleProfile(selectedProfileId);
     const supported = readiness ? readiness.monitors.filter((m) => m.supported) : [];
     return {
       ts: Date.now(),
@@ -298,21 +299,21 @@ export function FaultCodesScreen() {
       <Section
         title="Stored"
         codes={stored}
-        profileId={selectedProfileId}
+        profileId={guideProfileId}
         freezeFrames={freezeFrames}
         onOpenDetail={setDetail}
       />
       <Section
         title="Pending"
         codes={pending}
-        profileId={selectedProfileId}
+        profileId={guideProfileId}
         freezeFrames={freezeFrames}
         onOpenDetail={setDetail}
       />
       <Section
         title="Permanent"
         codes={permanent}
-        profileId={selectedProfileId}
+        profileId={guideProfileId}
         freezeFrames={freezeFrames}
         onOpenDetail={setDetail}
       />
@@ -348,7 +349,7 @@ export function FaultCodesScreen() {
       </XStack>
       <DtcDetailSheet
         dtc={detail}
-        profileId={selectedProfileId}
+        profile={profile}
         freezeFrames={freezeFrames}
         onClose={() => setDetail(null)}
       />

@@ -2,9 +2,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import { isCan } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile } from '@/shared/vehicles';
 import type { GuidedRoutine } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import {
   checkInterlocks,
   checkInterlocksDuringRun,
@@ -26,14 +25,14 @@ const TICK_MS = 1500;
  *  restores default addressing. */
 export function useRoutines() {
   const session = useSessionStore((s) => s.session);
-  const profileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const store = useRoutinesStore();
   const timers = useRef<{ tick?: ReturnType<typeof setInterval> }>({});
   const ticking = useRef(false);
 
-  const profile = getVehicleProfile(profileId);
   const routines = profile.routines ?? [];
-  const available = !!session && routines.length > 0 && isCan(session?.currentProtocol ?? 'UNKNOWN');
+  const available =
+    !!session && routines.length > 0 && isCan(session?.currentProtocol ?? 'UNKNOWN');
 
   const clearTimers = () => {
     if (timers.current.tick) clearInterval(timers.current.tick);
@@ -100,12 +99,16 @@ export function useRoutines() {
           }
         }, TICK_MS);
       } catch (e) {
-        logError({ source: 'routines', error: e, context: { routine: routine.name, id: routine.id } });
+        logError({
+          source: 'routines',
+          error: e,
+          context: { routine: routine.name, id: routine.id },
+        });
         await stop(routine, 'error', describeRoutineFailure(e, routine));
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable; profile.extendedPids derives from the listed profileId
-    [session, store.unlocked, profileId, stop],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable; profile is the memoised active profile, so editing a garage car re-creates this
+    [session, store.unlocked, profile, stop],
   );
 
   // Safety: never leave a routine running when the screen unmounts.
@@ -118,8 +121,8 @@ export function useRoutines() {
       }
       clearTimers();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- routines derives from the listed profileId; cleanup reads it via getState at unmount
-  }, [session, profileId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- routines derives from the listed profile (memoised active profile, re-keyed when a garage car is edited); activeId is read via getState at unmount
+  }, [session, profile]);
 
   return { available, routines, start, stop };
 }

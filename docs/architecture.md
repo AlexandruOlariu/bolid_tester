@@ -100,7 +100,8 @@ It owns the engines that must run whatever screen is on top: the single demand-d
 alert evaluation, diagnostic / connection notifications, trip sampling and the readiness coach. It
 is the only slice the rule allows to read several features' stores; everything else that two
 features need belongs in `src/shared/*`. The code does not match that yet: 19 slices import another
-feature, 16 of them only `vehicle-select`'s `vehicleStore`. The
+feature, 16 of them only `vehicle-select` (its `vehicleStore` or the active-profile helpers, both
+now re-exports of `src/shared/state/`). The
 [engine-host spec](./features/engine-host.md#the-composition-rule) lists them. New code should
 not add to the list.
 
@@ -114,6 +115,21 @@ not add to the list.
 [Zustand](https://github.com/pmndrs/zustand) stores hold connection state, the live-data snapshot,
 and the DTC list. The `DiagnosticSession` pushes updates into these stores; hooks read from them.
 Keeping stores thin and the logic in the core means the logic is testable without React.
+
+Shared stores (`src/shared/state/`), used by several features:
+
+- `sessionStore` — connection status and the live `DiagnosticSession` + `SessionInfo` (in memory);
+- `settingsStore` — adapter source, simulator, polling, auto-reconnect, VIN auto-select, theme, AI
+  (`bolid.settings`);
+- `garageStore` — the user's garage cars (`UserVehicle[]`, `bolid.garage`);
+- `vehicleStore` — the selected vehicle id (`bolid.vehicle`); `activeProfile.ts` resolves it over the
+  registry and the garage by `resolveProfile` (`getActiveProfile` / `useActiveProfile`, see
+  [vehicle-select](./features/vehicle-select.md));
+- `dtcStore`, `historyStore` (`bolid.history`), `errorLogStore` (`bolid.errors`) and the
+  `adapterLog` ring buffer.
+
+Per-feature stores live in their slice's `model/`. Persisted stores use `fileStateStorage`, a
+`bolid.<area>` name, an explicit version and a `migrate` when the shape changes.
 
 ## Error handling & resilience
 

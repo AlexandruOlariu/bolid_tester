@@ -5,6 +5,7 @@ device, replay it, and export it. This turns the live snapshot into durable hist
 the Settings **adapter I/O log**, which is raw bytes for debugging, not decoded data for analysis.
 
 ## What it records
+
 - A **session header**: start/end time, selected profile, VIN, negotiated protocol.
 - A **sample stream**: for each poll tick, a timestamped row of the effective PID set's decoded
   values (the same snapshot the dashboard renders).
@@ -15,10 +16,19 @@ the Settings **adapter I/O log**, which is raw bytes for debugging, not decoded 
   recording is never blocked.
 
 ## UI
+
 - **TripScreen** — a record/stop control with a live "N samples" indicator, plus the list of saved
   trips (date, duration, sample count, distance if speed was logged, marker count). Each row has
   **Open** (lazy-loads the samples from the CSV and shows how many were read), **Share CSV** (OS
   share sheet), and **Delete** (removes the summary and its CSV). The list survives app restart.
+- **Per-car filter** (plan 06): once trips from more than one car exist, chips above the list
+  ("All cars (N)", then one per car with its count) filter it. A trip records the active car as
+  `TripSummary.vehicleId` (registry or garage id); trips recorded before the garage existed have
+  none and group by `header.profileId` (the profile that was selected — every trip has always
+  recorded it), only a summary with neither lists under **Unknown car**, and a deleted garage
+  car's trips list under **Removed car**.
+  When the filtered car loses its last trip (or only one car is left, which hides the chips) the
+  filter falls back to **All cars**, so the list never sticks on an empty filter.
 - When a trip has a **GPS track**, its opened detail additionally shows the GPS distance and the
   OBD-vs-GPS average-speed delta (a classic odometer/clone sanity check).
 - Displayed distances and speeds honour the Settings **units** choice (metric/imperial), converted at
@@ -26,6 +36,7 @@ the Settings **adapter I/O log**, which is raw bytes for debugging, not decoded 
   canonical metric.
 
 ## hooks / feature API (`hooks/useTripRecorder.ts`)
+
 - `useTripRecorder()` — a no-op kept for screen API stability; sample accumulation is owned app-wide
   by `EngineHost` (see Behavior).
 - `stopRecording()` — stops the GPS capture and attaches its track (if any), builds the finished trip,
@@ -42,6 +53,7 @@ project builds and unit-tests without them present — the same dependency-toler
 `useDtcExport` / `useErrorLogExport`.
 
 ## GPS track (`api/trackRecorder.ts`)
+
 - `startTrackCapture()` — wired to the **Record** button. Dynamically imports `expo-location` (variable
   specifier, mirroring `shared/notify`), requests **foreground** permission, and `watchPositionAsync`
   at balanced accuracy (~5 s / ~25 m), accumulating `TrackPoint[]` (`{ t, lat, lon, speed }`, speed in
@@ -52,9 +64,11 @@ project builds and unit-tests without them present — the same dependency-toler
   warning is logged (`logError`) and recording continues unaffected — the trip simply carries no track.
 
 ## model (`model/tripStore.ts`)
+
 - The **in-progress** recording (`samples`, `markers`) lives in memory only — a transient firehose
   that becomes a CSV on stop.
-- What **persists** across launches is a lightweight `TripSummary[]` (`{ header, stats, markerCount }`
+- What **persists** across launches is a lightweight `TripSummary[]` (`{ header, stats, markerCount,
+vehicleId? }`
   — NOT the samples), via the shared file storage under key `bolid.trips`. The full sample grid is
   read back from `trip-<id>.csv` on demand. This keeps the persisted JSON small regardless of drive
   length, and file I/O stays out of the store (no native imports).
@@ -64,6 +78,7 @@ project builds and unit-tests without them present — the same dependency-toler
   CSV is already on disk regardless).
 
 ## CSV (`shared/obd-core/analysis/trip.ts`)
+
 - `toCsv(trip)` — `t_ms,iso` prefix + one column per PID (union, sorted); empty cell = `null`. When the
   trip has a GPS track, a `#TRACK` section (`t_ms,iso,lat,lon,speed`) is appended after the samples.
 - `fromCsv(csv)` — the inverse for the value grid (header + markers are not in the CSV; they live in
@@ -75,6 +90,7 @@ project builds and unit-tests without them present — the same dependency-toler
   in the trip summary, so the detail view reads it without re-loading the track. All unit-tested.
 
 ## Behavior
+
 - **Sample accumulation is hosted app-wide by `EngineHost`** (mounted once in `_layout.tsx`): while
   `tripStore.recording`, each poll sweep appends a sample and the trip's effective PID set is added to
   the poll union — so a trip records fully even after the Trip screen unmounts and with no live screen
@@ -85,6 +101,7 @@ project builds and unit-tests without them present — the same dependency-toler
   aborting the trip.
 
 ## Acceptance
+
 - A simulator drive can be recorded, persisted, and its summary reopened after app restart; opening a
   trip lazy-loads its samples from the CSV; sharing exports the CSV; deleting removes both the summary
   and the CSV file.

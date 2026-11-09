@@ -1,0 +1,195 @@
+import React, { useState } from 'react';
+import { Sheet, YStack, XStack, Text, Paragraph, Button, Input, TextArea } from 'tamagui';
+import { useGarageStore } from '@/shared/state/garageStore';
+import { VEHICLE_PROFILES, type UserVehicle } from '@/shared/vehicles';
+import {
+  FUELS,
+  draftFromVehicle,
+  draftToVehicle,
+  emptyDraft,
+  validateDraft,
+  type VehicleDraft,
+} from '../model/vehicleDraft';
+import { useGarageExport } from '../hooks/useGarageExport';
+
+/** Add or edit a garage car (plan 06): name, year, fuel, the built-in profile it inherits from and
+ *  notes. `vehicle` null + `open` = add a new car; a vehicle = edit it. The footer shares the whole
+ *  garage as JSON. See docs/features/vehicle-select.md. */
+export function VehicleEditorSheet({
+  open,
+  vehicle,
+  onClose,
+  onSaved,
+}: {
+  open: boolean;
+  vehicle: UserVehicle | null;
+  onClose: () => void;
+  /** Called with the saved car (new or updated). */
+  onSaved?: (v: UserVehicle) => void;
+}) {
+  return (
+    <Sheet
+      modal
+      open={open}
+      onOpenChange={(o: boolean) => {
+        if (!o) onClose();
+      }}
+      snapPoints={[90]}
+      dismissOnSnapToBottom
+    >
+      <Sheet.Overlay />
+      <Sheet.Handle />
+      <Sheet.Frame padding="$4">
+        <Sheet.ScrollView>
+          {open ? (
+            <EditorBody
+              key={vehicle?.id ?? 'new'}
+              vehicle={vehicle}
+              onClose={onClose}
+              onSaved={onSaved}
+            />
+          ) : null}
+        </Sheet.ScrollView>
+      </Sheet.Frame>
+    </Sheet>
+  );
+}
+
+export function EditorBody({
+  vehicle,
+  onClose,
+  onSaved,
+}: {
+  vehicle: UserVehicle | null;
+  onClose: () => void;
+  onSaved?: (v: UserVehicle) => void;
+}) {
+  const [draft, setDraft] = useState<VehicleDraft>(() =>
+    vehicle ? draftFromVehicle(vehicle) : emptyDraft(),
+  );
+  const [showErrors, setShowErrors] = useState(false);
+  const { exportGarage, busy } = useGarageExport();
+  const errors = validateDraft(draft);
+  const set = (patch: Partial<VehicleDraft>) => setDraft((d) => ({ ...d, ...patch }));
+
+  const save = () => {
+    if (Object.keys(errors).length > 0) {
+      setShowErrors(true);
+      return;
+    }
+    const fields = draftToVehicle(draft);
+    const garage = useGarageStore.getState();
+    if (vehicle) {
+      garage.update(vehicle.id, fields);
+      const saved = useGarageStore.getState().vehicles.find((v) => v.id === vehicle.id);
+      if (saved) onSaved?.(saved);
+    } else {
+      onSaved?.(garage.add(fields));
+    }
+    onClose();
+  };
+
+  const err = (k: keyof VehicleDraft) =>
+    showErrors && errors[k] ? (
+      <Paragraph color="$red10" fontSize="$2">
+        {errors[k]}
+      </Paragraph>
+    ) : null;
+
+  return (
+    <YStack gap="$3" paddingBottom="$6">
+      <Text fontWeight="800" fontSize="$6">
+        {vehicle ? 'Edit car' : 'Add a car'}
+      </Text>
+
+      <YStack gap="$1">
+        <Paragraph fontWeight="700">Name</Paragraph>
+        <Input
+          value={draft.name}
+          onChangeText={(name) => set({ name })}
+          placeholder="e.g. Dacia Logan 2015"
+          accessibilityLabel="Car name"
+        />
+        {err('name')}
+      </YStack>
+
+      <YStack gap="$1">
+        <Paragraph fontWeight="700">Year</Paragraph>
+        <Input
+          value={draft.year}
+          onChangeText={(year) => set({ year: year.replace(/\D/g, '').slice(0, 4) })}
+          keyboardType="numeric"
+          placeholder="e.g. 2015"
+          accessibilityLabel="Model year"
+        />
+        {err('year')}
+      </YStack>
+
+      <YStack gap="$1">
+        <Paragraph fontWeight="700">Fuel</Paragraph>
+        <XStack gap="$2" flexWrap="wrap">
+          {FUELS.map((f) => (
+            <Button
+              key={f.value}
+              size="$2"
+              theme={draft.fuel === f.value ? 'green' : 'gray'}
+              onPress={() => set({ fuel: f.value })}
+            >
+              {f.label}
+            </Button>
+          ))}
+        </XStack>
+      </YStack>
+
+      <YStack gap="$1">
+        <Paragraph fontWeight="700">Base profile</Paragraph>
+        <Paragraph theme="alt2" fontSize="$2">
+          Everything the app does not learn from the car comes from this built-in profile. Auto /
+          Generic works for any OBD2 car; a specific profile also brings its experimental,
+          car-specific readings and tools — pick one only for that exact car.
+        </Paragraph>
+        <YStack gap="$2">
+          {VEHICLE_PROFILES.map((p) => (
+            <Button
+              key={p.id}
+              size="$3"
+              justifyContent="flex-start"
+              theme={draft.baseProfileId === p.id ? 'green' : 'gray'}
+              onPress={() => set({ baseProfileId: p.id })}
+            >
+              {p.name}
+            </Button>
+          ))}
+        </YStack>
+        {err('baseProfileId')}
+      </YStack>
+
+      <YStack gap="$1">
+        <Paragraph fontWeight="700">Notes</Paragraph>
+        <TextArea
+          value={draft.notes}
+          onChangeText={(notes) => set({ notes })}
+          placeholder="Engine code, quirks, anything you want to remember"
+          accessibilityLabel="Notes"
+        />
+      </YStack>
+
+      <XStack gap="$3">
+        <Button flex={1} onPress={onClose}>
+          Cancel
+        </Button>
+        <Button flex={1} theme="green" onPress={save}>
+          Save
+        </Button>
+      </XStack>
+
+      <Button size="$3" theme="gray" onPress={() => void exportGarage()} disabled={busy}>
+        Share garage as JSON
+      </Button>
+      <Paragraph theme="alt2" fontSize="$1">
+        Shares every car in your garage as a JSON file. Importing a garage file comes in a later
+        version.
+      </Paragraph>
+    </YStack>
+  );
+}

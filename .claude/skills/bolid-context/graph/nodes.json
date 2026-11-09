@@ -326,6 +326,28 @@
     ],
     "type": "concept"
   },
+  "concept:garage-learned-profiles": {
+    "path": null,
+    "summary": "Garage (plan 06): user cars (UserVehicle, user: ids) in shared garageStore, learned from SessionInfo (VIN, protocol, PID set, cal id) or added by han\u2026",
+    "tokens": [
+      "active",
+      "auto-select",
+      "base",
+      "garage",
+      "learn",
+      "learned",
+      "maintenance",
+      "mycar",
+      "per-car",
+      "profile",
+      "profiles",
+      "resolve",
+      "user",
+      "vehicle",
+      "vin"
+    ],
+    "type": "concept"
+  },
   "concept:guided-routines": {
     "path": null,
     "summary": "Output tests (UDS 2F) and basic settings (UDS 31) as guided routines with live interlocks (engine/speed) + keep-alive; includes forced DPF regen. Gat\u2026",
@@ -2662,6 +2684,7 @@
     "path": "src/features/engine-host",
     "summary": "The headless **engine host**: one component, mounted once at the app root, that owns every",
     "tests": [
+      "src/features/engine-host/EngineHost.test.tsx",
       "src/features/engine-host/pollPids.test.ts"
     ],
     "tokens": [
@@ -2749,6 +2772,10 @@
   "feature:maintenance": {
     "path": "src/features/maintenance",
     "summary": "Maintenance feature (screen + hooks + model).",
+    "tests": [
+      "src/features/maintenance/model/maintenanceStore.test.ts",
+      "src/features/maintenance/ui/MaintenanceScreen.test.tsx"
+    ],
     "tokens": [
       "maintenance"
     ],
@@ -2867,7 +2894,9 @@
     "path": "src/features/trip-recording",
     "summary": "Record a drive as a typed **time-series** of live PIDs (plus DTC snapshots), persist it on the",
     "tests": [
-      "src/features/trip-recording/api/trackRecorder.test.ts"
+      "src/features/trip-recording/api/trackRecorder.test.ts",
+      "src/features/trip-recording/model/tripStore.test.ts",
+      "src/features/trip-recording/ui/TripScreen.test.tsx"
     ],
     "tokens": [
       "recording",
@@ -2889,8 +2918,11 @@
   },
   "feature:vehicle-select": {
     "path": "src/features/vehicle-select",
-    "summary": "Choose which vehicle profile to use (or **Auto / Generic**).",
+    "summary": "Choose the **active car**: a car from **My garage** (cars you added on this phone) or a **built-in",
     "tests": [
+      "src/features/vehicle-select/api/garageExportFile.test.ts",
+      "src/features/vehicle-select/api/learnVehicle.test.ts",
+      "src/features/vehicle-select/model/vehicleDraft.test.ts",
       "src/features/vehicle-select/ui/VehicleSelectScreen.test.tsx"
     ],
     "tokens": [
@@ -3263,6 +3295,15 @@
     ],
     "type": "service"
   },
+  "store:activeProfile": {
+    "path": "src/shared/state/activeProfile.ts",
+    "summary": "The active vehicle profile (plan 06): `vehicleStore.selectedProfileId` resolved over the registry and the garage (`resolveProfile`).",
+    "tokens": [
+      "active",
+      "profile"
+    ],
+    "type": "store"
+  },
   "store:adapterLog": {
     "path": "src/shared/state/adapterLog.ts",
     "summary": "Adapter I/O log \u2014 a module-level ring buffer for the raw tx/rx traffic between the app and the ELM327, decoupled from React state on the hot path.",
@@ -3301,6 +3342,17 @@
     "tokens": [
       "event",
       "log"
+    ],
+    "type": "store"
+  },
+  "store:garageStore": {
+    "path": "src/shared/state/garageStore.ts",
+    "summary": "\"My garage\" (plan 06): the cars the user added on this phone \u2014 learned from a live connection or entered by hand.",
+    "tests": [
+      "src/shared/state/garageStore.test.ts"
+    ],
+    "tokens": [
+      "garage"
     ],
     "type": "store"
   },
@@ -3355,6 +3407,14 @@
     ],
     "tokens": [
       "settings"
+    ],
+    "type": "store"
+  },
+  "store:vehicleStore": {
+    "path": "src/shared/state/vehicleStore.ts",
+    "summary": "The selected vehicle id (`bolid.vehicle` v1): a registry profile id or a garage `user:` id.",
+    "tokens": [
+      "vehicle"
     ],
     "type": "store"
   },
@@ -3510,11 +3570,34 @@
     ],
     "type": "vehicle"
   },
+  "vehicle:resolve": {
+    "path": "src/shared/vehicles/resolve.ts",
+    "summary": "Resolve any vehicle id the app stores \u2014 a registry profile id or a garage `user:` id \u2014 into the runtime `VehicleProfile` every feature reads (plan 06\u2026",
+    "tests": [
+      "src/shared/vehicles/resolve.test.ts"
+    ],
+    "tokens": [
+      "resolve"
+    ],
+    "type": "vehicle"
+  },
   "vehicle:types": {
     "path": "src/shared/vehicles/types.ts",
     "summary": "Vehicle profile types.",
     "tokens": [
       "types"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:userVehicle": {
+    "path": "src/shared/vehicles/userVehicle.ts",
+    "summary": "User vehicles (\"My garage\", plan 06): cars the user added on this phone, either learned from a live connection (VIN, protocol, supported-PID set, cal\u2026",
+    "tests": [
+      "src/shared/vehicles/userVehicle.test.ts"
+    ],
+    "tokens": [
+      "user",
+      "vehicle"
     ],
     "type": "vehicle"
   },

@@ -2,19 +2,17 @@ import { useCallback } from 'react';
 import { isCan, isKLine, Mode05Result, Mode06Result } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { useSensorTestStore, ModuleReading } from '../model/sensorTestStore';
 
 /** Standard Mode 06 + experimental, CAN-only module sensor reads (e.g. ABS wheel speed). */
 export function useSensorTests() {
   const session = useSessionStore((s) => s.session);
-  const profileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const setMode06 = useSensorTestStore((s) => s.setMode06);
   const setMode05 = useSensorTestStore((s) => s.setMode05);
   const setModuleReadings = useSensorTestStore((s) => s.setModuleReadings);
 
-  const profile = getVehicleProfile(profileId);
   const canModuleSensors =
     !!profile.moduleSensors?.length && isCan(session?.currentProtocol ?? 'UNKNOWN');
   const kline = isKLine(session?.currentProtocol ?? 'UNKNOWN');
@@ -62,5 +60,11 @@ export function useSensorTests() {
     }
   }, [session, profile, canModuleSensors, kline, setMode06, setMode05, setModuleReadings]);
 
-  return { refresh, canModuleSensors, kline, fuel: profile.fuel, hasMode06: !!profile.mode06Tests?.length };
+  return {
+    refresh,
+    canModuleSensors,
+    kline,
+    fuel: profile.fuel,
+    hasMode06: !!profile.mode06Tests?.length,
+  };
 }

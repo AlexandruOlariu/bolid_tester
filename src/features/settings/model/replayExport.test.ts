@@ -1,4 +1,5 @@
-import { buildReplayExport, replayFileName, slugify } from './replayExport';
+import { buildReplayExport, fixtureVehicleId, replayFileName, slugify } from './replayExport';
+import type { UserVehicle } from '@/shared/vehicles';
 import type { LoggedIo } from '@/shared/obd-core';
 
 const log: LoggedIo[] = [
@@ -71,5 +72,34 @@ describe('replay fixture export', () => {
     expect(replayFileName('', 'x', now)).toBe(
       'bolid-replay-vehicle-x-2026-11-09T10-20-30-456Z.json',
     );
+  });
+});
+
+describe('fixtureVehicleId', () => {
+  const golfCar: UserVehicle = {
+    id: 'user:golf',
+    name: 'My Golf',
+    fuel: 'diesel',
+    baseProfileId: 'golf-plus-2009-20tdi',
+    createdAt: 1,
+    updatedAt: 1,
+  };
+  const garage = [golfCar];
+  const ids = (simulator: boolean, simulatedVehicleId: string, selectedProfileId: string) =>
+    fixtureVehicleId({ simulator, simulatedVehicleId, selectedProfileId }, garage);
+
+  it('keeps a registry id as-is', () => {
+    expect(ids(true, 'fiat-punto-2008-12', 'user:golf')).toBe('fiat-punto-2008-12');
+    expect(ids(false, 'user:golf', 'passat-b55-19tdi')).toBe('passat-b55-19tdi');
+  });
+
+  it('files a garage car under its base registry profile, never a user: id', () => {
+    expect(ids(true, 'user:golf', 'generic')).toBe('golf-plus-2009-20tdi');
+    expect(ids(false, 'generic', 'user:golf')).toBe('golf-plus-2009-20tdi');
+  });
+
+  it('an unknown garage id falls back to generic', () => {
+    expect(ids(true, 'user:gone', 'generic')).toBe('generic');
+    expect(ids(false, 'generic', 'user:gone')).toBe('generic');
   });
 });

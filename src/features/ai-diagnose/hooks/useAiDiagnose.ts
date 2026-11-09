@@ -2,8 +2,7 @@ import { useCallback } from 'react';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useHistoryStore } from '@/shared/state/historyStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
-import { getVehicleProfile } from '@/shared/vehicles';
+import { getActiveProfile, useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import type { DiagnosisOptions } from '@/shared/obd-core';
 import { useAiDiagnoseStore } from '../model/aiDiagnoseStore';
 import * as diagnoseService from '../api/diagnoseService';
@@ -14,7 +13,7 @@ import * as diagnoseService from '../api/diagnoseService';
 export function useAiDiagnose() {
   const status = useSessionStore((s) => s.status);
   // The selected car's DTC make, so a focused code reads the same as on the Faults screen.
-  const make = getVehicleProfile(useVehicleStore((s) => s.selectedProfileId)).make;
+  const make = useActiveProfile().make;
   const {
     phase,
     progress,
@@ -50,7 +49,7 @@ export function useAiDiagnose() {
         setReport(r, n);
         useHistoryStore.getState().addAiRun({
           vehicle: {
-            id: useVehicleStore.getState().selectedProfileId,
+            id: getActiveProfile().id,
             label: snapshot.vehicle?.label ?? 'Unknown vehicle',
             vin: snapshot.vin,
           },

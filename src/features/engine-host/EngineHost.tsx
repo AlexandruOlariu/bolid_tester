@@ -6,7 +6,8 @@
  *   - alert evaluation + OS notifications on new warn/critical, with default-rule seeding,
  *   - diagnostic/connection notifications fed by REAL state (milOn/dtcCount from the fault-codes
  *     store, plus connect/disconnect transitions), and the setNotifPrefs sync,
- *   - trip sample accumulation while recording.
+ *   - trip sample accumulation while recording,
+ *   - the connect-time VIN auto-select of a garage car (plan 06).
  *
  *  It renders nothing. Being the composition host, it is the one place allowed to read several
  *  features' stores at once (the same cross-store pattern the old per-screen hooks already used);
@@ -26,8 +27,9 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { logError } from '@/shared/state/errorLogStore';
 import { notify, setNotifPrefs } from '@/shared/notify';
-import { getVehicleProfile } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { livePidFilter } from '@/shared/vehicles';
+import { getActiveProfile } from '@/features/vehicle-select/api/activeProfile';
+import { autoSelectGarageCarForVin } from '@/features/vehicle-select/api/learnVehicle';
 import { useLiveDataStore } from '@/features/live-data/model/liveDataStore';
 import { useAlertsStore } from '@/features/alerts/model/alertsStore';
 import { useNotificationsStore } from '@/features/notifications/model/notificationsStore';
@@ -78,6 +80,17 @@ export function EngineHost(): null {
       setRules(defaultRules(info.supportedPids));
   }, [info, rules.length, setRules]);
 
+  // VIN auto-select (plan 06): every new connection's SessionInfo is checked once against the
+  // garage — reconnecting a car you added selects it again (Settings → "Recognise my cars by VIN").
+  useEffect(() => {
+    if (!info?.vin) return;
+    try {
+      autoSelectGarageCarForVin(info.vin);
+    } catch (e) {
+      logError({ source: 'vehicle-select/auto-select', error: e, severity: 'warning' });
+    }
+  }, [info]);
+
   // Keep the shared notifier in sync with the user's prefs at startup and on every change.
   const prefs = useNotificationsStore((s) => s.prefs);
   useEffect(() => {
@@ -120,10 +133,7 @@ export function EngineHost(): null {
     const loop = async () => {
       if (cancelled) return;
       const recording = useTripStore.getState().recording;
-      const profile = getVehicleProfile(useVehicleStore.getState().selectedProfileId);
-      const effective = session.effectivePids(
-        profile.id === 'generic' ? undefined : profile.supportedPids,
-      );
+      const effective = session.effectivePids(livePidFilter(getActiveProfile()));
       const pids = computePollPids({
         registrations: useLiveDataStore.getState().registrations,
         alertPids: enabledRulePids(useAlertsStore.getState().rules),

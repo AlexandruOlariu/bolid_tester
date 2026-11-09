@@ -3,9 +3,8 @@ import { YStack, XStack, Text, Paragraph, Card, Button, Spinner, H4 } from 'tama
 import { Screen, ValueCard } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { isCan } from '@/shared/obd-core';
-import { getVehicleProfile } from '@/shared/vehicles';
 import { logError } from '@/shared/state/errorLogStore';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { useLiveData } from '@/features/live-data';
 
 /** Mode 01 PIDs grouped into human sections. PIDs the ECU doesn't support simply never appear. */
@@ -32,16 +31,15 @@ interface InjectionReading {
 export function SensorReadingsScreen() {
   const status = useSessionStore((s) => s.status);
   const session = useSessionStore((s) => s.session);
-  const selectedId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const { values, polling } = useLiveData();
 
   // Memoised so `readInjection` keeps its identity across renders: the mount effect below must
   // run once per session / profile, not after every live-data update (each run is five Mode 22
   // requests on a half-duplex adapter that EngineHost's poll loop also uses).
   const injectionPids = useMemo(
-    () =>
-      (getVehicleProfile(selectedId).extendedPids ?? []).filter((p) => p.category === 'injection'),
-    [selectedId],
+    () => (profile.extendedPids ?? []).filter((p) => p.category === 'injection'),
+    [profile],
   );
   const canInjection = injectionPids.length > 0 && isCan(session?.currentProtocol ?? 'UNKNOWN');
 

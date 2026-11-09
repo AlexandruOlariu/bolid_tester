@@ -2,20 +2,18 @@ import { useCallback } from 'react';
 import { assessDpf, isCan, DpfInput } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { useDpfStore, DpfValue } from '../model/dpfStore';
 
 /** Read the active profile's diesel/DPF Mode 22 PIDs (CAN only) and interpret them via assessDpf. */
 export function useDpf() {
   const session = useSessionStore((s) => s.session);
-  const profileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const values = useDpfStore((s) => s.values);
   const report = useDpfStore((s) => s.report);
   const running = useDpfStore((s) => s.running);
   const set = useDpfStore((s) => s.set);
 
-  const profile = getVehicleProfile(profileId);
   const dieselPids = (profile.extendedPids ?? []).filter(
     (p) => p.category === 'dpf' || p.category === 'diesel',
   );
@@ -46,8 +44,8 @@ export function useDpf() {
       logError({ source: 'dpf', error: e, severity: 'warning' });
       set({ running: false });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, profileId, set]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- dieselPids derives from the listed profile (memoised active profile)
+  }, [session, profile, set]);
 
   return { available, values, report, running, refresh };
 }

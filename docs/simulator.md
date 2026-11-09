@@ -59,7 +59,12 @@ Built from the vehicle registry + overrides:
 - `passat-b55-19tdi` — KWP2000 fast, 9 PIDs, real VIN `WVWZZZ3BZ4E342958` in scenario data,
   **no MAF/oil/fuel-rate**, slower timing, Mode 09 VIN often absent.
 
-Tests and the in-app Settings picker select a scenario. Latency is configurable (≈0 ms in tests for
+Tests and the in-app Settings picker select a scenario. The picker also lists the user's **garage
+cars** (plan 06): `simulatorSourceFor(id, garage)` (`src/shared/vehicles/resolve.ts`) simulates a
+garage car from its base profile with `buildScenario(base, { vin, supportedPids, calibrationId })`
+taken from its learned identity, so a car learned from the simulated Golf reconnects with the same
+VIN and PID set (and is recognised by the VIN auto-select). `resolve.test.ts` and
+`learnVehicle.test.ts` cover it. Latency is configurable (≈0 ms in tests for
 speed; non-zero to emulate K-line in the UI).
 
 ## Quirks toggles
@@ -95,12 +100,12 @@ session (or a simulator recording) runs through the real `DiagnosticSession` in 
 
 ### Format (`ReplayFixture`)
 
-| Field       | Meaning                                                                                                                                                                                                                                                                                                                                                           |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pairs`     | command (upper case, no spaces) → the **first** reply to it. Prompt stripped; a multi-line reply keeps its lines joined with `\r` (the ELM327's own separator), so several ECUs' lines and ISO-TP segment lines replay exactly.                                                                                                                                   |
-| `sequences` | command → **every** reply, in order — only for commands whose reply changed during the session (a clear flow: `03` → codes, `04` → `44`, `03` → none; the Passat's first `0100` carries `SEARCHING...`). Commands that always got the same reply are omitted.                                                                                                     |
-| `meta`      | `source` (`simulator` \| `car`), `vehicleId` (registry id or `user:<id>`), `flow` (`connect`, `live`, `faults`, `clear`, `inspection`, `battery`, `extended`, `module-scan`, `sniffer` or custom), `adapter` (ATI), `protocol`, `appVersion`, `droppedEntries` (only when the Settings log wrapped before the export: the file then starts mid-session), `notes`. |
-| `expect`    | What a replay must produce; each field is asserted only when present: `protocol`, `vin` (string or `null`), `supportedPidCount`, `storedDtcs`, `pendingDtcs`, `milOn`, `freezeFrameCount`, `storedDtcsAfterClear` (clear flows: the **last** recorded `03` answer, however many `03` reads came before the `04`).                                                 |
+| Field       | Meaning                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pairs`     | command (upper case, no spaces) → the **first** reply to it. Prompt stripped; a multi-line reply keeps its lines joined with `\r` (the ELM327's own separator), so several ECUs' lines and ISO-TP segment lines replay exactly.                                                                                                                                                                |
+| `sequences` | command → **every** reply, in order — only for commands whose reply changed during the session (a clear flow: `03` → codes, `04` → `44`, `03` → none; the Passat's first `0100` carries `SEARCHING...`). Commands that always got the same reply are omitted.                                                                                                                                  |
+| `meta`      | `source` (`simulator` \| `car`), `vehicleId` (registry id; a garage car exports its base profile's id), `flow` (`connect`, `live`, `faults`, `clear`, `inspection`, `battery`, `extended`, `module-scan`, `sniffer` or custom), `adapter` (ATI), `protocol`, `appVersion`, `droppedEntries` (only when the Settings log wrapped before the export: the file then starts mid-session), `notes`. |
+| `expect`    | What a replay must produce; each field is asserted only when present: `protocol`, `vin` (string or `null`), `supportedPidCount`, `storedDtcs`, `pendingDtcs`, `milOn`, `freezeFrameCount`, `storedDtcsAfterClear` (clear flows: the **last** recorded `03` answer, however many `03` reads came before the `04`).                                                                              |
 
 `ReplayTransport.write` answers from a command's `sequences` entry first (one reply per send,
 repeating the last one when exhausted), then from `pairs`, then `OK` (AT) / `NO DATA` (OBD).

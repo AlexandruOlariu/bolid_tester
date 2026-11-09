@@ -3,6 +3,7 @@ import { ActivityIndicator, Animated, Easing, StyleSheet, Text } from 'react-nat
 import { AppLogo } from './AppLogo';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useHistoryStore } from '@/shared/state/historyStore';
+import { useGarageStore } from '@/shared/state/garageStore';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { useMaintenanceStore } from '@/features/maintenance/model/maintenanceStore';
 
@@ -21,6 +22,7 @@ const PERSISTED = [
   useSettingsStore,
   useHistoryStore,
   useVehicleStore,
+  useGarageStore,
   useMaintenanceStore,
 ] as unknown as Hydratable[];
 

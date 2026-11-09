@@ -3,7 +3,7 @@ import { Linking, Share } from 'react-native';
 import { router } from 'expo-router';
 import { Sheet, YStack, XStack, Text, Paragraph, Button } from 'tamagui';
 import { Sparkles, Search, Share2 } from 'lucide-react-native';
-import { getVehicleProfile } from '@/shared/vehicles';
+import { curatedProfileId, type VehicleProfile } from '@/shared/vehicles';
 import { matchFaultGuide } from '@/shared/vehicles/faultGuides';
 import { vagCodeForDtc, type Dtc } from '@/shared/obd-core/obd/dtc';
 import type { FreezeFrame } from '@/shared/obd-core/session/DiagnosticSession';
@@ -22,13 +22,14 @@ import { CodeFreezeFrame, GuideLinks } from './DtcGuideParts';
  *  actions. See docs/features/fault-codes.md § "Detail sheet". */
 export function DtcDetailSheet({
   dtc,
-  profileId,
+  profile,
   freezeFrames,
   onClose,
 }: {
   /** The code to show; null keeps the sheet closed. */
   dtc: Dtc | null;
-  profileId: string;
+  /** The active car (registry or garage profile). */
+  profile: VehicleProfile;
   freezeFrames: FreezeFrame[];
   onClose: () => void;
 }) {
@@ -49,7 +50,7 @@ export function DtcDetailSheet({
           {dtc ? (
             <DtcDetailBody
               dtc={dtc}
-              profileId={profileId}
+              profile={profile}
               freezeFrames={freezeFrames}
               onClose={onClose}
             />
@@ -62,21 +63,24 @@ export function DtcDetailSheet({
 
 function DtcDetailBody({
   dtc,
-  profileId,
+  profile,
   freezeFrames,
   onClose,
 }: {
   dtc: Dtc;
-  profileId: string;
+  profile: VehicleProfile;
   freezeFrames: FreezeFrame[];
   onClose: () => void;
 }) {
-  const profile = getVehicleProfile(profileId);
   const vehicleName = profile.id === 'generic' ? undefined : profile.name;
   const detail = buildDtcDetail(dtc.code, dtc.description, profile.make);
   const { info } = detail;
   const sev = SEVERITY_META[info.severity];
-  const guide = matchFaultGuide(profileId, info.code, vagCodeForDtc(info.code) || undefined);
+  const guide = matchFaultGuide(
+    curatedProfileId(profile),
+    info.code,
+    vagCodeForDtc(info.code) || undefined,
+  );
 
   const explainWithAi = () => {
     onClose();

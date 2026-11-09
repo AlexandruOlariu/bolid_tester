@@ -13,13 +13,28 @@ const STATUS_COLOR: Record<string, string> = {
 
 function dueText(d: DueInfo): string {
   const parts: string[] = [];
-  if (d.dueInKm != null) parts.push(d.dueInKm < 0 ? `${Math.abs(d.dueInKm)} km over` : `in ${d.dueInKm} km`);
-  if (d.dueInDays != null) parts.push(d.dueInDays < 0 ? `${Math.abs(d.dueInDays)} d over` : `in ${d.dueInDays} d`);
+  if (d.dueInKm != null)
+    parts.push(d.dueInKm < 0 ? `${Math.abs(d.dueInKm)} km over` : `in ${d.dueInKm} km`);
+  if (d.dueInDays != null)
+    parts.push(d.dueInDays < 0 ? `${Math.abs(d.dueInDays)} d over` : `in ${d.dueInDays} d`);
   return parts.join(' · ') || 'no history yet';
 }
 
+/** Each car keeps its own logbook (plan 06): the body is keyed by the active car, so switching cars
+ *  also resets the odometer field to that car's value. */
 export function MaintenanceScreen() {
-  const { items, due, odoKm, setOdometer, addEntry } = useMaintenance();
+  const m = useMaintenance();
+  return <MaintenanceBody key={m.vehicleKey} {...m} />;
+}
+
+function MaintenanceBody({
+  vehicleLabel,
+  items,
+  due,
+  odoKm,
+  setOdometer,
+  addEntry,
+}: ReturnType<typeof useMaintenance>) {
   const [odoText, setOdoText] = useState(odoKm != null ? String(odoKm) : '');
   const [selected, setSelected] = useState(items[0]?.id ?? '');
 
@@ -33,12 +48,22 @@ export function MaintenanceScreen() {
 
   return (
     <Screen title="Maintenance log" subtitle="Odometer is entered by you — it isn't an OBD2 value.">
+      <Paragraph theme="alt2" size="$2">
+        Logbook for <Text fontWeight="800">{vehicleLabel}</Text>. Each car keeps its own logbook —
+        switch cars on the Vehicle screen.
+      </Paragraph>
       <Card bordered padding="$3" gap="$2">
         <Paragraph theme="alt2" size="$2">
           Current odometer (km)
         </Paragraph>
         <XStack gap="$2" alignItems="center">
-          <Input flex={1} value={odoText} onChangeText={setOdoText} keyboardType="numeric" placeholder="e.g. 215000" />
+          <Input
+            flex={1}
+            value={odoText}
+            onChangeText={setOdoText}
+            keyboardType="numeric"
+            placeholder="e.g. 215000"
+          />
           <Button onPress={saveOdo}>Save</Button>
         </XStack>
       </Card>

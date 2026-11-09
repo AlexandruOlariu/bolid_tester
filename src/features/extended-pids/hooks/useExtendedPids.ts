@@ -1,9 +1,9 @@
 import { useCallback, useState } from 'react';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile, type ExtendedPid } from '@/shared/vehicles';
+import { type ExtendedPid } from '@/shared/vehicles';
 import { isCan } from '@/shared/obd-core/obd/protocols';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 
 export interface ExtendedReading {
   did: string;
@@ -18,8 +18,7 @@ export interface ExtendedReading {
 export function useExtendedPids() {
   const session = useSessionStore((s) => s.session);
   const info = useSessionStore((s) => s.info);
-  const selectedId = useVehicleStore((s) => s.selectedProfileId);
-  const profile = getVehicleProfile(selectedId);
+  const profile = useActiveProfile();
   const pids: ExtendedPid[] = profile.extendedPids ?? [];
   const supported = Boolean(profile.extendedPids?.length) && !!info && isCan(info.protocol);
 

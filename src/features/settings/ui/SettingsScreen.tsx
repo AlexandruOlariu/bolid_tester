@@ -9,12 +9,13 @@ import {
   ADAPTER_LOG_CAPACITY,
 } from '@/shared/state/adapterLog';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { useGarageStore } from '@/shared/state/garageStore';
 import { VEHICLE_PROFILES } from '@/shared/vehicles';
 import { normalizeBaseUrl } from '@/shared/obd-core';
 import { listModels, AiClientError } from '@/shared/ai';
 import { logError } from '@/shared/state/errorLogStore';
 import { useLogFixtureExport } from '../hooks/useLogFixtureExport';
-import { DEFAULT_FLOW_NAME } from '../model/replayExport';
+import { DEFAULT_FLOW_NAME, fixtureVehicleId } from '../model/replayExport';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { connectionService } from '@/features/connection';
 import { APP_NAME, APP_VERSION } from '@/shared/lib/appInfo';
@@ -370,6 +371,7 @@ export function SettingsScreen() {
   const status = useSessionStore((st) => st.status);
   const info = useSessionStore((st) => st.info);
   const selectedProfileId = useVehicleStore((st) => st.selectedProfileId);
+  const garage = useGarageStore((st) => st.vehicles);
   const [flowName, setFlowName] = useState(DEFAULT_FLOW_NAME);
   // The outcome of the last export, with the log's `dropped` count at that moment. It gives way to
   // the default hint on Clear, and to the "log is full" warning as soon as the log wraps further,
@@ -385,7 +387,10 @@ export function SettingsScreen() {
     const saved = await exportFixture({
       log,
       flow: flowName,
-      vehicleId: simulator ? s.simulatedVehicleId : selectedProfileId,
+      vehicleId: fixtureVehicleId(
+        { simulator, simulatedVehicleId: s.simulatedVehicleId, selectedProfileId },
+        garage,
+      ),
       source: simulator ? 'simulator' : 'car',
       adapter: info?.version,
       protocol: info?.protocol,
@@ -446,7 +451,21 @@ export function SettingsScreen() {
                     onPress={() => s.setSimulatedVehicle(p.id)}
                   />
                 ))}
+                {garage.map((v) => (
+                  <Seg
+                    key={v.id}
+                    active={s.simulatedVehicleId === v.id}
+                    label={v.name}
+                    onPress={() => s.setSimulatedVehicle(v.id)}
+                  />
+                ))}
               </XStack>
+              {garage.length > 0 ? (
+                <Paragraph theme="alt2" fontSize="$1">
+                  A garage car is simulated from its base profile, with the VIN and supported PIDs
+                  learned from it.
+                </Paragraph>
+              ) : null}
             </SegGroup>
           </YStack>
 
@@ -502,6 +521,32 @@ export function SettingsScreen() {
               On by default; pauses after 3 drops in a minute. When the connection drops
               unexpectedly, reconnect to the same device with backoff (2 s, 5 s, 10 s — up to 3
               attempts). Cancelled the moment you disconnect or connect manually.
+            </Paragraph>
+          </YStack>
+        </SegGroup>
+      </YStack>
+
+      <YStack gap="$2">
+        <SectionLabel>Recognise my cars by VIN</SectionLabel>
+        <SegGroup>
+          <YStack gap="$2">
+            <XStack gap="$2" alignItems="center">
+              <Paragraph flex={1}>Select a garage car when its VIN connects</Paragraph>
+              <Seg
+                active={s.autoSelectByVin}
+                label="On"
+                onPress={() => s.setAutoSelectByVin(true)}
+              />
+              <Seg
+                active={!s.autoSelectByVin}
+                label="Off"
+                onPress={() => s.setAutoSelectByVin(false)}
+              />
+            </XStack>
+            <Paragraph theme="alt2" fontSize="$1">
+              On by default. When the connected car's VIN (vehicle identification number) matches a
+              car you added from a connection, that car becomes the active vehicle. Built-in
+              profiles are only suggested on the Vehicle screen.
             </Paragraph>
           </YStack>
         </SegGroup>

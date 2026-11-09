@@ -50,6 +50,8 @@ export interface SettingsState {
   /** Automatically retry the last device with backoff after an unexpected link drop. Default on
    *  (plan 12); connectionService's flap guard pauses it after 3 drops in a minute. */
   autoReconnect: boolean;
+  /** On connect, select the garage car whose learned VIN matches the car's VIN. Default on (plan 06). */
+  autoSelectByVin: boolean;
   theme: ThemePref;
   ai: AiSettings;
   setAdapterSource: (s: AdapterSource) => void;
@@ -58,6 +60,7 @@ export interface SettingsState {
   setUnits: (u: UnitSystem) => void;
   setPollInterval: (ms: number) => void;
   setAutoReconnect: (v: boolean) => void;
+  setAutoSelectByVin: (v: boolean) => void;
   setTheme: (t: ThemePref) => void;
   setAi: (patch: Partial<AiSettings>) => void;
 }
@@ -88,14 +91,15 @@ export function parseDtcList(text: string): string[] {
 }
 
 /** Persisted settings schema version. v2 = production defaults (real adapter, no injected DTC);
- *  v3 = auto-reconnect on by default (plan 12). */
-export const SETTINGS_VERSION = 3;
+ *  v3 = auto-reconnect on by default (plan 12); v4 = VIN auto-select of garage cars (plan 06). */
+export const SETTINGS_VERSION = 4;
 
 /** Step a persisted blob up to `SETTINGS_VERSION`. Each step only fills *missing* fields with the new
  *  default — an explicit stored choice always survives (a tester who chose the simulator, or turned
  *  auto-reconnect off, must not be flipped under them).
  *   - v1 → v2: production defaults (`adapterSource: 'ble'`, `injectedDtcs: []`).
- *   - v2 → v3: `autoReconnect: true`. */
+ *   - v2 → v3: `autoReconnect: true`.
+ *   - v3 → v4: `autoSelectByVin: true`. */
 export function migrateSettings(persisted: unknown, fromVersion: number): Partial<SettingsState> {
   let p = { ...((persisted ?? {}) as Partial<SettingsState>) };
   if (fromVersion < 2) {
@@ -103,6 +107,9 @@ export function migrateSettings(persisted: unknown, fromVersion: number): Partia
   }
   if (fromVersion < 3) {
     p = { ...p, autoReconnect: p.autoReconnect ?? true };
+  }
+  if (fromVersion < 4) {
+    p = { ...p, autoSelectByVin: p.autoSelectByVin ?? true };
   }
   return p;
 }
@@ -120,6 +127,8 @@ export const useSettingsStore = create<SettingsState>()(
       // On by default (plan 12): a drop on the Live tab reconnects on its own; the flap guard in
       // connectionService pauses it after 3 drops in a minute.
       autoReconnect: true,
+      // On by default (plan 06): reconnecting a car you added to the garage selects it again.
+      autoSelectByVin: true,
       theme: 'dark',
       ai: DEFAULT_AI_SETTINGS,
       setAdapterSource: (adapterSource) => set({ adapterSource }),
@@ -128,6 +137,7 @@ export const useSettingsStore = create<SettingsState>()(
       setUnits: (units) => set({ units }),
       setPollInterval: (pollIntervalMs) => set({ pollIntervalMs }),
       setAutoReconnect: (autoReconnect) => set({ autoReconnect }),
+      setAutoSelectByVin: (autoSelectByVin) => set({ autoSelectByVin }),
       setTheme: (theme) => set({ theme }),
       setAi: (patch) =>
         set((s) => {
@@ -152,6 +162,7 @@ export const useSettingsStore = create<SettingsState>()(
         units: s.units,
         pollIntervalMs: s.pollIntervalMs,
         autoReconnect: s.autoReconnect,
+        autoSelectByVin: s.autoSelectByVin,
         theme: s.theme,
         ai: redactApiKey(s.ai),
       }),

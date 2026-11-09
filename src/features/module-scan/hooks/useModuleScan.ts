@@ -14,8 +14,8 @@ import {
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile, vehicleLabel } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { vehicleLabel } from '@/shared/vehicles';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { scanModule, clearModule } from '../api/moduleScanService';
 import { useModuleScanStore } from '../model/moduleScanStore';
 import { useScanHistoryStore, buildSavedScan } from '../model/scanHistoryStore';
@@ -45,10 +45,9 @@ async function busWake(session: DiagnosticSession, proto: ProtocolId): Promise<v
  *  CAN-only; K-line cars keep the engine-only Fault codes screen. */
 export function useModuleScan() {
   const session = useSessionStore((s) => s.session);
-  const profileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const store = useModuleScanStore();
 
-  const profile = getVehicleProfile(profileId);
   const modules = profile.modules ?? [];
   const proto = session?.currentProtocol ?? 'UNKNOWN';
   const available = !!session && modules.length > 0 && isCan(proto);
@@ -97,8 +96,8 @@ export function useModuleScan() {
       store.setProgress(null);
       store.setRunning(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; modules/proto/profile derive from the listed session+profileId
-  }, [session, profileId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; modules/proto derive from the listed session+profile (the memoised active profile, so editing a garage car re-creates this)
+  }, [session, profile]);
 
   const clearOne = useCallback(
     async (address: string) => {
@@ -114,8 +113,8 @@ export function useModuleScan() {
         store.setRunning(false);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; modules derive from the listed session+profileId
-    [session, profileId],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; modules derive from the listed session+profile (memoised active profile)
+    [session, profile],
   );
 
   const scanGateway = useCallback(async () => {
@@ -161,8 +160,8 @@ export function useModuleScan() {
     } finally {
       store.setRunning(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; profile/tp20Modules derive from the listed session+profileId
-  }, [session, profileId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable zustand actions; tp20Modules derive from the listed session+profile (memoised active profile)
+  }, [session, profile]);
 
   return { available, canScanTp20, modules, proto, scanAll, clearOne, scanGateway };
 }

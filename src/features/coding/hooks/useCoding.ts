@@ -18,23 +18,20 @@ import type { CodingModule } from '@/shared/vehicles';
 import { findLabelPack, codingBitLabels } from '@/shared/labels';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { useCodingStore } from '../model/codingStore';
 
 /** SAFETY: read→backup→write→verify, gated on unlock + CAN. Never writes without a stored backup. */
 export function useCoding() {
   const session = useSessionStore((s) => s.session);
-  const profileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const unlocked = useCodingStore((s) => s.unlocked);
   const current = useCodingStore((s) => s.current);
   const setCurrent = useCodingStore((s) => s.setCurrent);
   const addBackup = useCodingStore((s) => s.addBackup);
   const setLastResult = useCodingStore((s) => s.setLastResult);
 
-  const profile = getVehicleProfile(profileId);
-  const available =
-    !!profile.codingModules?.length && isCan(session?.currentProtocol ?? 'UNKNOWN');
+  const available = !!profile.codingModules?.length && isCan(session?.currentProtocol ?? 'UNKNOWN');
   // Stable per-profile so the `[modules]`-keyed callbacks below (moduleForPreset) don't re-create on
   // every render — `?? []` would otherwise mint a fresh array each pass (react-hooks/exhaustive-deps).
   const modules = useMemo(() => profile.codingModules ?? [], [profile]);
@@ -63,7 +60,11 @@ export function useCoding() {
         if (bytes) setCurrent(mod.module, bytes);
         return bytes;
       } catch (e) {
-        logError({ source: 'coding/read', error: e, context: { module: mod.module, did: mod.codingDid } });
+        logError({
+          source: 'coding/read',
+          error: e,
+          context: { module: mod.module, did: mod.codingDid },
+        });
         return null;
       } finally {
         await session.resetAddressing();
@@ -79,7 +80,13 @@ export function useCoding() {
   };
 
   /** Set a masked field (e.g. a nibble) in place, immutably, and store it as the working value. */
-  const setField = (mod: CodingModule, bytes: number[], byte: number, mask: number, value: number) => {
+  const setField = (
+    mod: CodingModule,
+    bytes: number[],
+    byte: number,
+    mask: number,
+    value: number,
+  ) => {
     const cur = bytes[byte] ?? 0;
     const next = setByte(bytes, byte, (cur & ~mask) | (value & mask));
     setCurrent(mod.module, next);
@@ -113,7 +120,11 @@ export function useCoding() {
         setLastResult(res.verified ? 'Write verified.' : 'Write sent but verification failed.');
         return res.verified;
       } catch (e) {
-        logError({ source: 'coding/write', error: e, context: { module: mod.module, did: mod.codingDid } });
+        logError({
+          source: 'coding/write',
+          error: e,
+          context: { module: mod.module, did: mod.codingDid },
+        });
         setLastResult(`Failed: ${(e as Error).message}`);
         return false;
       } finally {

@@ -17,10 +17,10 @@ import {
   type Dtc,
 } from '@/shared/obd-core';
 import { chatCompletion } from '@/shared/ai';
-import { getVehicleProfile, vehicleLabel, type VehicleProfile } from '@/shared/vehicles';
+import { vehicleLabel, type VehicleProfile } from '@/shared/vehicles';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { getActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { logError } from '@/shared/state/errorLogStore';
 
 export interface AnalysisOutcome {
@@ -50,7 +50,7 @@ export async function gatherSnapshot(): Promise<DiagnosticSnapshot> {
   const { session, info } = useSessionStore.getState();
   if (!session) throw new Error('Not connected to a vehicle.');
 
-  const profile = getVehicleProfile(useVehicleStore.getState().selectedProfileId);
+  const profile = getActiveProfile();
   const modes = profile.dtcModes;
   // Same make-aware descriptions as the Faults screen (VAG / Fiat text for P1xxx codes).
   const describe = (list: Dtc[]) => list.map((d) => toDtc(d.code, profile.make));

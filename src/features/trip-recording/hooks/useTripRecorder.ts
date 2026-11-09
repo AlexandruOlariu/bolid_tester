@@ -47,7 +47,8 @@ export async function stopRecording(): Promise<Trip> {
   try {
     const FileSystem = await import('expo-file-system' as string);
     const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
-    if (dir) await FileSystem.writeAsStringAsync(`${dir}${tripCsvName(trip.header.id)}`, toCsv(trip));
+    if (dir)
+      await FileSystem.writeAsStringAsync(`${dir}${tripCsvName(trip.header.id)}`, toCsv(trip));
   } catch (e) {
     // file system unavailable — record why the CSV didn't save. The summary still persists below,
     // but opening the trip later will find no samples.
@@ -59,7 +60,12 @@ export async function stopRecording(): Promise<Trip> {
     });
   }
   const stats = tripStats(trip);
-  useTripStore.getState().finish({ header: trip.header, stats, markerCount: trip.markers.length });
+  useTripStore.getState().finish({
+    header: trip.header,
+    stats,
+    markerCount: trip.markers.length,
+    vehicleId: profileId,
+  });
   void notify({
     category: 'trip',
     severity: 'info',
@@ -81,7 +87,12 @@ export async function loadTripSamples(header: TripHeader): Promise<TripSample[]>
     if (!info.exists) return [];
     return fromCsv(await FileSystem.readAsStringAsync(uri));
   } catch (e) {
-    logError({ source: 'trip-recording', error: e, severity: 'warning', context: { phase: 'csv-read', tripId: header.id } });
+    logError({
+      source: 'trip-recording',
+      error: e,
+      severity: 'warning',
+      context: { phase: 'csv-read', tripId: header.id },
+    });
     return [];
   }
 }
@@ -94,7 +105,12 @@ export async function deleteTrip(id: string): Promise<void> {
     if (dir) await FileSystem.deleteAsync(`${dir}${tripCsvName(id)}`, { idempotent: true });
   } catch (e) {
     // Orphaning a CSV is not fatal — log and still remove the list entry.
-    logError({ source: 'trip-recording', error: e, severity: 'warning', context: { phase: 'csv-delete', tripId: id } });
+    logError({
+      source: 'trip-recording',
+      error: e,
+      severity: 'warning',
+      context: { phase: 'csv-delete', tripId: id },
+    });
   }
   useTripStore.getState().removeTrip(id);
 }
@@ -115,7 +131,12 @@ export async function shareTrip(header: TripHeader): Promise<string | null> {
     }
     return uri;
   } catch (e) {
-    logError({ source: 'trip-recording/share', error: e, severity: 'warning', context: { tripId: header.id } });
+    logError({
+      source: 'trip-recording/share',
+      error: e,
+      severity: 'warning',
+      context: { tripId: header.id },
+    });
     return null;
   }
 }

@@ -5,6 +5,152 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 06 — Garage and learned profiles (2026-11-09)
+
+[Plan 06](./plans/06-garage-learned-profiles.md) landed: users keep several cars, learn one from a
+live connection or add it by hand, and every per-car feature follows the active car. The plan has
+no deferred or owner section.
+
+- **Core (pure, core-typechecked).** `src/shared/vehicles/userVehicle.ts`: `UserVehicle`,
+  `LearnedIdentity`, `buildUserProfile` (identity from the user record, learned protocol / PIDs /
+  VIN pattern, the experimental arrays only from a non-generic base, never `knownFaults`),
+  `learnedFromSessionInfo`, `defaultVehicleName` ("Volkswagen 2009"), `makeForVin`,
+  `pickVehicleForVin`, `isUserVehicleId`, `curatedProfileId`. `resolve.ts`: `resolveProfile(id,
+garage)` (registry → garage car on its base → `generic`) and `simulatorSourceFor(id, garage)`.
+  `VehicleProfile` gains an optional `baseProfileId`; `vehicleLabel` does not repeat a year a garage
+  name already carries.
+- **Store.** `src/shared/state/garageStore.ts` (`bolid.garage` v1): `add` / `update` / `remove` /
+  `setLearned`, a sanitising `merge`, `garageExportJson`. Added to the splash hydration gate and the
+  UI-test store reset.
+- **Active profile.** `src/shared/state/activeProfile.ts` (re-exported by
+  `features/vehicle-select/api/activeProfile.ts`): `getActiveProfile()` / `useActiveProfile()` with
+  a shared one-entry cache. `vehicleStore` moved to `src/shared/state/vehicleStore.ts` alongside it
+  (`model/vehicleStore.ts` re-exports it; same `bolid.vehicle` v1 file). Every former
+  `getVehicleProfile(selectedProfileId)` site moved to them: EngineHost, `dtcService`,
+  `diagnoseService`, `useAiDiagnose`, `useLiveData`, `DashboardScreen`, `SensorReadingsScreen`,
+  `FaultCodesScreen` / `DtcDetailSheet`, and the adaptations, coding (+ car backup), dpf,
+  extended-pids, module-scan, routines, sensor-tests and service-reset hooks. `grep
+"getVehicleProfile(useVehicleStore"` returns nothing.
+- **Learn this car.** `api/learnVehicle.ts`: `learnFromConnectedCar({ existingId?, baseProfileId? })`,
+  `deleteGarageVehicle` (falls back to `generic` when selected, resets the simulated vehicle to the
+  car's base when it was simulated; history, scans and trips are kept)
+  and `autoSelectGarageCarForVin`.
+- **VIN auto-select.** `settings.autoSelectByVin` (default on), settings **v4** via
+  `migrateSettings` (v3 → v4 fills it, keeps every v3 field); Settings → "Recognise my cars by VIN".
+  EngineHost checks each new `SessionInfo` and selects the matching garage car ("Car recognised"
+  info notification).
+- **Per-car stores.** `maintenanceStore` → **v2** `byVehicle` buckets keyed `vin:<VIN>` (learned
+  garage car, with its `id:` key as an alias) or `id:<profile id>`. The v1 migration moves the
+  global logbook under the car selected at upgrade; when the vehicle store has not hydrated yet it
+  is parked under `legacy:v1` and adopted once both stores have. Tested from the exact v1 file shape
+  in both hydration orders; the vehicle selection is untouched. `MaintenanceScreen` shows whose
+  logbook it is and is keyed by car. `TripSummary.vehicleId` (set on stop) + per-car filter chips
+  on the Trips screen (older trips group by their `header.profileId`, "Removed car" for a deleted
+  garage car).
+  History, scans and the dashboard layout needed no shape change.
+- **UI.** `VehicleSelectScreen`: garage recognition card, **My garage** (copy, **Add from connected
+  car** — disabled with a hint when not connected — **Add manually**, cards with VIN suffix / year /
+  fuel / protocol / PID count, **Edit** / **Delete** with an `Alert` confirm, long-press edits),
+  **Built-in profiles**. `VehicleEditorSheet` (name, year, fuel, base profile, notes; **Share garage
+  as JSON** footer via `useGarageExport`); form rules in `model/vehicleDraft.ts`.
+- **Simulator.** The Settings simulated-vehicle picker lists garage cars; `connectionService`
+  builds a garage car's scenario from its base with the learned VIN, PID set and calibration id
+  (`simulatorSourceFor`). A car learned from the simulated Golf reconnects with the same VIN and PIDs.
+- **Tests (60 new, 8 new suites).** `userVehicle.test.ts`, `resolve.test.ts` (incl. the learned-Golf
+  reconnect through `MockTransport`), `garageStore.test.ts`, `maintenanceStore.test.ts` (v1 file →
+  v2 in both hydration orders, per-car isolation, alias fold), `learnVehicle.test.ts` (through the
+  real `connectionService`: learn the Golf, history under its VIN, Punto not auto-selected and added
+  as a second car, garage car as the simulated vehicle, delete fallback), `tripStore.test.ts`,
+  `EngineHost.test.tsx` (auto-select on / off / other VIN), `MaintenanceScreen.test.tsx`, plus new
+  cases in `VehicleSelectScreen.test.tsx` and `settingsStore.test.ts` (v4). 819 tests / 110 suites.
+- **Docs.** [vehicle-select](./features/vehicle-select.md) rewritten (garage, learn, editor,
+  resolution, auto-select, export, simulator); [vehicles/README](./vehicles/README.md) "User
+  vehicles vs registry profiles"; [maintenance-log](./features/maintenance-log.md) "Per-car
+  logbook" + migration; [architecture](./architecture.md) shared-store list with `garageStore`;
+  [settings](./features/settings.md) (v4, the new toggle, garage cars in the picker);
+  [trip-recording](./features/trip-recording.md) (filter, `vehicleId`);
+  [engine-host](./features/engine-host.md) (engine 6, composition list back at 19 slices);
+  [simulator](./simulator.md). Context graph: new `garage-learned-profiles` concept.
+
+**Review fixes.**
+
+- Live PID filter: a garage car on the generic base (added by hand, nothing learned) was cut down
+  to generic's 18-PID placeholder list, because EngineHost / `useLiveData` / `DashboardScreen`
+  tested `profile.id === 'generic'`. They now call `livePidFilter(profile)` (`userVehicle.ts`): no
+  filter for any generic-based profile, the curated or learned list otherwise.
+- `useModuleScan`, `useRoutines` and `useDpf` key their callbacks / the routine safety cleanup on
+  the memoised `profile` instead of `profile.id`, so editing a garage car's base re-creates them
+  (no `clearModule` against the old base's module list, no unmount cleanup over a stale routine
+  list).
+- `deleteGarageVehicle` also resets `settings.simulatedVehicleId` to the car's base registry
+  profile when the deleted car was the simulated one.
+- Replay-fixture export writes a registry id (`fixtureVehicleId` in `model/replayExport.ts`: the
+  simulated car's `simulatorSourceFor` profile, or `curatedProfileId` of the selected car), never a
+  `user:` id, so exported fixtures fit `fixtures/<vehicleId>/`. Supersedes plan 02's "registry id
+  or `user:<id>`" note.
+- `tripCarKey` falls back to `header.profileId` (always recorded) before "Unknown car", so trips
+  recorded before the garage keep their grouping.
+- `vehicleDraft.test.ts` covers the editor's form rules (year range / format, base profile,
+  trimming, round-trip). 840 tests / 113 suites.
+
+**Deviations.**
+
+- VIN auto-select runs in **EngineHost** (an effect on `SessionInfo`), not inside
+  `connectionService.connectInternal`: the plan's placement would add a new connection →
+  vehicle-select import, which the composition rule forbids; EngineHost is the sanctioned place.
+- Settings is **v4**, not v3: plan 12 already took v3 for `autoReconnect`.
+- The simulator branch keys off the **simulated vehicle** (`settings.simulatedVehicleId`, which may
+  now be a garage id), not the selected vehicle. With the selected vehicle the acceptance step
+  "switch the simulated vehicle to the Punto" would still simulate the Golf garage car.
+- `pickVehicleForVin(vin, vehicles)` drops the plan's third `profiles` argument: registry profiles
+  are never auto-selected, the Vehicle screen keeps suggesting them via `suggestProfilesForVin`.
+- `VehicleProfile.baseProfileId` (optional) is new, so fault guides (curated per registry id) follow
+  a garage car's base (`curatedProfileId`); `DtcDetailSheet` now takes the `profile` instead of a
+  `profileId`.
+- New cars also get `year` from the VIN's model-year character when it is encoded; a learned car
+  stores the calibration id, which the simulator replays too.
+- Maintenance key details beyond the plan: the `id:` alias for a car learned after its logbook was
+  started, and the `legacy:v1` parking key for the async hydration race.
+- `vehicleStore` and the active-profile helpers live in `src/shared/state/`, not in the
+  vehicle-select slice the plan names; the old paths re-export them. The per-car logbook needs the
+  active car, and importing it from vehicle-select would have added `maintenance` to the
+  feature → feature list. `maintenance` imports the shared paths, so the list stays at 19 slices;
+  the other 16 readers can switch the same way (left as is to keep this change small).
+- ECU count (mentioned in the roadmap row) is not learned: `SessionInfo` does not report one and the
+  plan's `LearnedIdentity` has no field for it. Import of a garage file stays plan 13.
+
+**Review fixes.**
+
+- _Garage export did nothing on a device._ `useGarageExport` loaded the root `expo-file-system`,
+  which on this SDK (56) has no `documentDirectory` and throws for `writeAsStringAsync`, so the
+  export returned null without logging. The write + share now lives in
+  `vehicle-select/api/garageExportFile.ts` (`saveGarageExport`). It uses `expo-file-system/legacy`
+  and logs a `vehicle-select/export` warning on every null, including "no document directory".
+  `garageExportFile.test.ts` mocks only the legacy module, so a root import fails it. The UI test
+  now presses the button and checks that the garage is handed to the export.
+- _Duplicate garage cars._ **Add from connected car** always added a new car, even when the
+  connected VIN already belonged to one. It now reads **Re-learn from connected car** in that case
+  and calls `learnFromConnectedCar({ existingId })`, which refreshes the car in place.
+- _Stuck trip filter._ When the filtered car lost its last trip, the chip row could disappear and
+  leave an empty list with no way to clear the filter. The filter now falls back to **All cars**
+  (`TripScreen.test.tsx`).
+- _New feature → feature import._ `maintenance` read `vehicle-select`; `vehicleStore` and
+  `activeProfile` moved to `src/shared/state/` (see the deviation above).
+- 825 tests / 112 suites after the review fixes.
+- _Malformed `learned` block crashed the Vehicle screen and simulator connect._ `sanitizeGarage`
+  checked only id / name / base, so a hand-edited record whose `learned` had no `supportedPids`
+  array reached `GarageCard` and `simulatorSourceFor`, which read `learned.supportedPids.length`.
+  It now validates `learned` (protocol, string PID array, VIN / calibration id string or null,
+  `learnedAt`) and strips a malformed one, keeping the car as unlearned.
+- _Rehydration merge untested, and it lost the stored cars._ The test named for the merge only
+  called `sanitizeGarage`. A new test adds a car while `persist.rehydrate()` is reading and checks
+  both cars survive in memory and on disk. It found a real loss: the add rewrote the file with only
+  the new car, and zustand does not write after hydration unless it migrated, so the stored cars
+  were gone on the next launch. `merge` now flags that case and an `onFinishHydration` listener
+  writes the merged list back. 842 tests / 113 suites.
+
+---
+
 ## Plan 04 — Doc debt zero (2026-11-09)
 
 [Plan 04](./plans/04-doc-debt.md) landed: every slice under `src/features` has a spec, the 1:1

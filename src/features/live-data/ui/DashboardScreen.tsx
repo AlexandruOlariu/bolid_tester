@@ -4,13 +4,23 @@ import { ArrowUp, ArrowDown, Eye, EyeOff, Sliders, Check, RotateCcw } from 'luci
 import { Screen, Gauge, ValueCard } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
-import { getVehicleProfile } from '@/shared/vehicles';
+import { livePidFilter } from '@/shared/vehicles';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { convert, displayUnit, type UnitSystem } from '@/shared/lib/units';
-import { fuelEconomyFromValues, FUEL_ECONOMY_PIDS, type FuelEconomyResult } from '@/shared/obd-core';
+import {
+  fuelEconomyFromValues,
+  FUEL_ECONOMY_PIDS,
+  type FuelEconomyResult,
+} from '@/shared/obd-core';
 import { useLiveData } from '../hooks/useLiveData';
 import { useDashboardLayoutStore } from '../model/dashboardLayoutStore';
-import { itemId, orderItems, visibleItems, isHidden, type DashboardItem } from '../model/dashboardLayout';
+import {
+  itemId,
+  orderItems,
+  visibleItems,
+  isHidden,
+  type DashboardItem,
+} from '../model/dashboardLayout';
 
 /** Built-in arc gauges (canonical/metric bounds; converted at display time). */
 const GAUGES: { pid: string; label: string; min: number; max: number; unit: string }[] = [
@@ -71,7 +81,15 @@ function FuelEconomyCard({ result, units }: { result: FuelEconomyResult; units: 
 }
 
 /** One gauge with unit conversion applied. */
-function GaugeItem({ pid, units, value }: { pid: string; units: UnitSystem; value: number | null }) {
+function GaugeItem({
+  pid,
+  units,
+  value,
+}: {
+  pid: string;
+  units: UnitSystem;
+  value: number | null;
+}) {
   const g = GAUGE_BY_PID.get(pid)!;
   const val = convert(value, g.unit, units);
   return (
@@ -105,7 +123,8 @@ function CardItem({
 export function DashboardScreen() {
   const status = useSessionStore((s) => s.status);
   const session = useSessionStore((s) => s.session);
-  const selectedId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
+  const selectedId = profile.id;
   const units = useSettingsStore((s) => s.units);
 
   const layout = useDashboardLayoutStore((s) => s.byProfile[selectedId]);
@@ -118,13 +137,16 @@ export function DashboardScreen() {
   // available to un-hide in edit mode even while they aren't being polled.
   const effective = useMemo(() => {
     if (!session) return [];
-    const profile = getVehicleProfile(selectedId);
-    return session.effectivePids(profile.id === 'generic' ? undefined : profile.supportedPids);
-  }, [session, selectedId]);
+    return session.effectivePids(livePidFilter(profile));
+  }, [session, profile]);
 
   // Candidate items: the built-in gauges first, then a card per non-gauge supported PID.
   const candidates: DashboardItem[] = useMemo(() => {
-    const gauges = GAUGES.map((g) => ({ id: itemId('gauge', g.pid), pid: g.pid, kind: 'gauge' as const }));
+    const gauges = GAUGES.map((g) => ({
+      id: itemId('gauge', g.pid),
+      pid: g.pid,
+      kind: 'gauge' as const,
+    }));
     const cards = effective
       .filter((pid) => !GAUGE_PIDS.has(pid))
       .map((pid) => ({ id: itemId('card', pid), pid, kind: 'card' as const }));
@@ -150,13 +172,14 @@ export function DashboardScreen() {
     return out;
   }, [values]);
 
-  const profile = getVehicleProfile(selectedId);
   const fuel = useMemo(() => fuelEconomyFromValues(numeric, profile.fuel), [numeric, profile.fuel]);
 
   if (status !== 'connected') {
     return (
       <Screen title="Live data">
-        <Paragraph theme="alt2">Not connected. Connect an adapter or the simulator first.</Paragraph>
+        <Paragraph theme="alt2">
+          Not connected. Connect an adapter or the simulator first.
+        </Paragraph>
       </Screen>
     );
   }
@@ -167,7 +190,12 @@ export function DashboardScreen() {
     <Screen title="Live data" subtitle="Streaming the parameters this ECU supports">
       <XStack justifyContent="flex-end" gap="$2">
         {editing ? (
-          <Button size="$2" theme="gray" icon={<RotateCcw size={16} />} onPress={() => reset(selectedId)}>
+          <Button
+            size="$2"
+            theme="gray"
+            icon={<RotateCcw size={16} />}
+            onPress={() => reset(selectedId)}
+          >
             Reset
           </Button>
         ) : null}
@@ -192,8 +220,8 @@ export function DashboardScreen() {
             const hidden = isHidden(item.id, layout);
             const label =
               item.kind === 'gauge'
-                ? GAUGE_BY_PID.get(item.pid)?.label ?? item.pid
-                : values[item.pid]?.name ?? item.pid;
+                ? (GAUGE_BY_PID.get(item.pid)?.label ?? item.pid)
+                : (values[item.pid]?.name ?? item.pid);
             return (
               <XStack
                 key={item.id}
@@ -206,7 +234,10 @@ export function DashboardScreen() {
                 opacity={hidden ? 0.5 : 1}
               >
                 <Text flex={1} numberOfLines={1}>
-                  {label} <Text theme="alt2" fontSize="$1">{item.kind === 'gauge' ? 'gauge' : item.pid}</Text>
+                  {label}{' '}
+                  <Text theme="alt2" fontSize="$1">
+                    {item.kind === 'gauge' ? 'gauge' : item.pid}
+                  </Text>
                 </Text>
                 <Button
                   size="$2"

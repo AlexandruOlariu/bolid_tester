@@ -3,9 +3,8 @@ import { isCan, decodeAdaptationRaw, encodeAdaptationValue } from '@/shared/obd-
 import { findLabelPack, adaptationLabel } from '@/shared/labels';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile } from '@/shared/vehicles';
 import type { AdaptationChannel } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { readChannel, writeChannel } from '../api/adaptationService';
 import { useAdaptationsStore } from '../model/adaptationsStore';
 import { useModuleScanStore } from '@/features/module-scan/model/moduleScanStore';
@@ -14,15 +13,15 @@ import { useModuleScanStore } from '@/features/module-scan/model/moduleScanStore
  *  restore. Unlock-gated like coding. */
 export function useAdaptations() {
   const session = useSessionStore((s) => s.session);
-  const profileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const store = useAdaptationsStore();
   // Best-effort label enrichment from the live-scanned part number (module-scan results), so the
   // same channel shows its label-pack description when the pack matches the real module.
   const scanResults = useModuleScanStore((s) => s.results);
 
-  const profile = getVehicleProfile(profileId);
   const channels = profile.adaptations ?? [];
-  const available = !!session && channels.length > 0 && isCan(session?.currentProtocol ?? 'UNKNOWN');
+  const available =
+    !!session && channels.length > 0 && isCan(session?.currentProtocol ?? 'UNKNOWN');
 
   const packFor = useCallback(
     (ch: AdaptationChannel) => {
@@ -84,7 +83,10 @@ export function useAdaptations() {
             source: 'adaptations/write',
             error: res.message,
             severity: 'warning',
-            context: { did: ch.did, newRaw: newRaw.map((b) => b.toString(16).padStart(2, '0')).join('') },
+            context: {
+              did: ch.did,
+              newRaw: newRaw.map((b) => b.toString(16).padStart(2, '0')).join(''),
+            },
           });
         store.setLastResult(res.message);
         return res.ok;

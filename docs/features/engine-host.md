@@ -61,6 +61,12 @@ cannot unmount it without also showing the fallback.
    Failures log `source: 'readiness-coach'`. A second effect calls `coachStore.reset()` as soon as
    the status leaves `connected`, so coach mode never resumes silently on the next connection. See
    [fault-codes](./fault-codes.md).
+6. **VIN auto-select** (plan 06) — on every new `SessionInfo` with a VIN it calls
+   `autoSelectGarageCarForVin(vin)` from `vehicle-select`: when `settings.autoSelectByVin` is on and
+   the VIN equals a garage car's learned VIN, that car becomes the active vehicle ("Car recognised"
+   info notification). It lives here, not in `connectionService`, so the connection slice does not
+   gain a feature import. Failures log `source: 'vehicle-select/auto-select'`. See
+   [vehicle-select](./vehicle-select.md#vin-auto-select).
 
 ## Demand-driven PID set
 
@@ -85,13 +91,16 @@ The [architecture](../architecture.md#ui-feature-sliced) rule is that features i
 (`vehicle-select`, `live-data`, `alerts`, `notifications`, `trip-recording`, the `fault-codes`
 coach store) is its job, so it is allowed to read them all.
 
-The rest of the code does not follow the rule yet. As of 2026-11-09, 19 other slices import another
-feature (production code, tests excluded):
+The rest of the code does not follow the rule yet. As of 2026-11-09 (after plan 06), 19 other
+slices import another feature (production code, tests excluded):
 
-- 16 read `vehicle-select`'s `vehicleStore` (the selected profile), which acts as a shared store
-  but lives in a feature: adaptations, ai-diagnose, can-sniffer, coding, dpf, extended-pids,
+- 16 read `vehicle-select` — its `model/vehicleStore` (the selected id) or, since plan 06, its
+  `api/activeProfile` (`getActiveProfile` / `useActiveProfile`, the selection resolved over the
+  registry and the garage): adaptations, ai-diagnose, can-sniffer, coding, dpf, extended-pids,
   fault-codes, live-data, module-scan, onboarding, routines, sensor-readings, sensor-tests,
-  service-reset, settings, trip-recording;
+  service-reset, settings, trip-recording. Since plan 06 both modules live in `src/shared/state/`
+  (`vehicleStore.ts`, `activeProfile.ts`) and the vehicle-select paths only re-export them, so each
+  of these is fixed by switching the import to the shared path; `maintenance` already does;
 - 8 other imports: adaptations → `module-scan` store, coding → `adaptations` service,
   connection → `onboarding` (`FirstRunCard`), history → `fault-codes` (`useDtcExport`),
   live-charts → `live-data` store and `onboarding` (`HintCard`), sensor-readings → `live-data`

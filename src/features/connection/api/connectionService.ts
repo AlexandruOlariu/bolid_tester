@@ -18,6 +18,8 @@ import { getBleManager } from '@/shared/transports/ble/manager';
 import { requestBlePermissions } from '@/shared/transports/ble/permissions';
 import { useSettingsStore, type AdapterSource } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { useGarageStore } from '@/shared/state/garageStore';
+import { simulatorSourceFor } from '@/shared/vehicles/resolve';
 import { appendAdapterLog, clearAdapterLog } from '@/shared/state/adapterLog';
 import { logError } from '@/shared/state/errorLogStore';
 import { runReconnect, RECONNECT_DELAYS_MS } from './reconnect';
@@ -258,7 +260,11 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
       // The in-app injector is the single source of truth for simulated faults: it sets the stored
       // codes and pins pending/permanent empty, so a profile's seeded knownFaults can't leak past the
       // user's choice (e.g. "None" really means none, even for a profile with pending/permanent faults).
-      const scenario = buildScenario(simulatedVehicleId, {
+      // A garage car as the simulated vehicle (plan 06) simulates its base profile with the learned
+      // VIN / supported-PID set on top, so a car learned in the simulator reconnects as itself.
+      const sim = simulatorSourceFor(simulatedVehicleId, useGarageStore.getState().vehicles);
+      const scenario = buildScenario(sim.profileId, {
+        ...sim.overrides,
         storedDtcs: injectedDtcs,
         pendingDtcs: [],
         permanentDtcs: [],

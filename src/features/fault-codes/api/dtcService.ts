@@ -1,7 +1,7 @@
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useHistoryStore } from '@/shared/state/historyStore';
-import { getVehicleProfile, vehicleLabel } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { vehicleLabel } from '@/shared/vehicles';
+import { getActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import type { DtcResult } from '@/shared/state/dtcStore';
 import { toDtc, type Dtc, type DtcMake } from '@/shared/obd-core/obd/dtc';
 
@@ -17,7 +17,7 @@ export function describeForMake(list: Dtc[], make: DtcMake | undefined): Dtc[] {
 export async function readAll(): Promise<DtcResult | null> {
   const { session, info } = useSessionStore.getState();
   if (!session) return null;
-  const profile = getVehicleProfile(useVehicleStore.getState().selectedProfileId);
+  const profile = getActiveProfile();
   const modes = profile.dtcModes;
   const describe = (list: Dtc[]) => describeForMake(list, profile.make);
   const stored = describe(modes.includes('03') ? await session.readDtcs('03') : []);

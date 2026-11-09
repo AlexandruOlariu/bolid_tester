@@ -1,11 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button, Spinner } from 'tamagui';
 import { Screen } from '@/shared/ui';
 import type { TripSample } from '@/shared/obd-core';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { convert } from '@/shared/lib/units';
-import { useTripStore } from '../model/tripStore';
-import { useTripRecorder, stopRecording, loadTripSamples, deleteTrip, shareTrip } from '../hooks/useTripRecorder';
+import { useGarageStore } from '@/shared/state/garageStore';
+import { isUserVehicleId, vehicleLabel } from '@/shared/vehicles';
+import { resolveProfile } from '@/shared/vehicles/resolve';
+import { tripCarKey, tripCars, UNKNOWN_TRIP_CAR, useTripStore } from '../model/tripStore';
+import {
+  useTripRecorder,
+  stopRecording,
+  loadTripSamples,
+  deleteTrip,
+  shareTrip,
+} from '../hooks/useTripRecorder';
 import { startTrackCapture } from '../api/trackRecorder';
 
 export function TripScreen() {
@@ -15,6 +24,32 @@ export function TripScreen() {
   const samples = useTripStore((s) => s.samples);
   const trips = useTripStore((s) => s.trips);
   const units = useSettingsStore((s) => s.units);
+  const garage = useGarageStore((s) => s.vehicles);
+  // Per-car filter (plan 06): one chip per car that has trips, plus "All cars".
+  const [carKey, setCarKey] = useState<string>('all');
+  const cars = useMemo(
+    () =>
+      tripCars(trips).map((c) => ({
+        ...c,
+        label:
+          c.key === UNKNOWN_TRIP_CAR
+            ? 'Unknown car'
+            : isUserVehicleId(c.key) && !garage.some((v) => v.id === c.key)
+              ? 'Removed car'
+              : vehicleLabel(resolveProfile(c.key, garage)),
+      })),
+    [trips, garage],
+  );
+  // The chips only show with two or more cars. A filter whose car has no trips left (its last trip
+  // was deleted) or that has no chip row any more falls back to "All cars", so the list never
+  // sticks on an empty, unclearable filter.
+  const activeKey =
+    carKey !== 'all' && cars.length > 1 && cars.some((c) => c.key === carKey) ? carKey : 'all';
+  // Drop the stale choice too, so the filter does not spring back when that car records again.
+  useEffect(() => {
+    if (carKey !== activeKey) setCarKey('all');
+  }, [carKey, activeKey]);
+  const shown = activeKey === 'all' ? trips : trips.filter((t) => tripCarKey(t) === activeKey);
 
   // Display-time unit conversion: obd-core keeps canonical metric (km, km/h); we only relabel/convert
   // when rendering, per the user's units setting. See shared/lib/units.ts.
@@ -58,7 +93,9 @@ export function TripScreen() {
   return (
     <Screen title="Trips" subtitle="Record live data and export it">
       <XStack gap="$2" alignItems="center">
-        <Paragraph flex={1}>{recording ? `Recording… ${samples.length} samples` : 'Not recording'}</Paragraph>
+        <Paragraph flex={1}>
+          {recording ? `Recording… ${samples.length} samples` : 'Not recording'}
+        </Paragraph>
         {recording ? (
           <Button theme="red" onPress={() => void stopRecording()}>
             Stop
@@ -81,16 +118,48 @@ export function TripScreen() {
       <YStack gap="$2">
         <H4>Saved trips</H4>
         {trips.length === 0 ? <Paragraph theme="alt2">No trips yet.</Paragraph> : null}
-        {trips.map(({ header, stats, markerCount }) => (
-          <YStack key={header.id} gap="$2" borderColor="$borderColor" borderWidth={1} borderRadius="$3" padding="$2">
+        {cars.length > 1 ? (
+          <XStack gap="$2" flexWrap="wrap">
+            <Button
+              size="$2"
+              theme={activeKey === 'all' ? 'green' : 'gray'}
+              onPress={() => setCarKey('all')}
+            >
+              {`All cars (${trips.length})`}
+            </Button>
+            {cars.map((c) => (
+              <Button
+                key={c.key}
+                size="$2"
+                theme={activeKey === c.key ? 'green' : 'gray'}
+                onPress={() => setCarKey(c.key)}
+              >
+                {`${c.label} (${c.count})`}
+              </Button>
+            ))}
+          </XStack>
+        ) : null}
+        {shown.map(({ header, stats, markerCount }) => (
+          <YStack
+            key={header.id}
+            gap="$2"
+            borderColor="$borderColor"
+            borderWidth={1}
+            borderRadius="$3"
+            padding="$2"
+          >
             <Paragraph>
-              {new Date(header.startedAt).toLocaleString()} · {(stats.durationMs / 1000).toFixed(0)} s ·{' '}
-              {stats.sampleCount} samples
+              {new Date(header.startedAt).toLocaleString()} · {(stats.durationMs / 1000).toFixed(0)}{' '}
+              s · {stats.sampleCount} samples
               {stats.distanceKm != null ? ` · ${fmtDistance(stats.distanceKm)}` : ''}
               {markerCount > 0 ? ` · ${markerCount} marker${markerCount === 1 ? '' : 's'}` : ''}
             </Paragraph>
             <XStack gap="$2" alignItems="center">
-              <Button size="$2" onPress={() => void open(header.id)} disabled={loadingId === header.id}>
+              <Button
+                size="$2"
+                onPress={() => void open(header.id)}
+                disabled={loadingId === header.id}
+              >
                 {openId === header.id ? 'Close' : 'Open'}
               </Button>
               <Button size="$2" onPress={() => void shareTrip(header)}>
@@ -118,7 +187,9 @@ export function TripScreen() {
                       <Paragraph theme="alt2" fontSize="$2">
                         Avg speed OBD {fmtSpeed(stats.gps.obdAvgSpeedKmh)} vs GPS{' '}
                         {fmtSpeed(stats.gps.avgSpeedKmh)}
-                        {stats.gps.speedDeltaKmh != null ? ` (Δ ${fmtSpeed(stats.gps.speedDeltaKmh)})` : ''}
+                        {stats.gps.speedDeltaKmh != null
+                          ? ` (Δ ${fmtSpeed(stats.gps.speedDeltaKmh)})`
+                          : ''}
                       </Paragraph>
                     ) : null}
                   </>

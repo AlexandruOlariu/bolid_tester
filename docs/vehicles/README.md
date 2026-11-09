@@ -82,6 +82,29 @@ There is always a built-in **`generic`** profile (`id: generic`). It declares **
 and `expectedProtocol: AUTO`; the app discovers everything from the car's supported-PID bitmaps at
 runtime. Use it for any car without a dedicated profile.
 
+## User vehicles vs registry profiles
+
+The profiles in this folder are the **registry**: curated, documented, versioned with the app and
+checked by the `vehicle-docs-sync` test. Users do not need one to diagnose their car. Since
+[plan 06](../plans/06-garage-learned-profiles.md) they keep their own cars in **My garage**
+(Vehicle screen), either learned from a live connection or entered by hand — see
+[vehicle-select](../features/vehicle-select.md#garage-cars-and-learned-profiles).
+
+- A garage car (`UserVehicle`, `src/shared/vehicles/userVehicle.ts`) has a `user:` id, a name,
+  optional year / make / notes, a fuel and a **`baseProfileId`** — the registry profile it inherits
+  from (`generic` by default). When learned it also stores the observed protocol, Mode 01 PID set,
+  VIN and calibration id.
+- At runtime `buildUserProfile(car, base)` produces an ordinary `VehicleProfile`: identity from the
+  car, protocol and PIDs from the learned data when present, everything else from the base. The
+  per-car experimental arrays (Mode 22 PIDs, modules, coding, adaptations, routines, service reset,
+  module sensors, Mode 06, gateway list) are inherited **only from a non-generic base**; known faults
+  and the on-car checklist never are.
+- Garage cars live on the phone (`bolid.garage`) and have **no Markdown here**. The sync test applies
+  to the registry only; nothing in this folder changes when a user adds a car.
+- When a user's car deserves curated data (extended PIDs, modules, a fault history), it graduates
+  into the registry by the steps below; sharing a learned profile as a starting point is
+  [plan 13](../plans/13-profile-labelpack-import-export.md).
+
 ## How to add a vehicle
 
 1. Copy an existing `vehicles/<car>.md`, set the front-matter and write the sections.

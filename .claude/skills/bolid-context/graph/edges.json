@@ -2076,11 +2076,6 @@
   ],
   [
     "feature:adaptations",
-    "vehicle:registry",
-    "imports"
-  ],
-  [
-    "feature:adaptations",
     "vehicle:types",
     "imports"
   ],
@@ -2366,6 +2361,11 @@
   ],
   [
     "feature:connection",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:connection",
     "store:sessionStore",
     "imports"
   ],
@@ -2387,6 +2387,11 @@
   [
     "feature:connection",
     "transport:permissions",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "vehicle:resolve",
     "imports"
   ],
   [
@@ -2417,11 +2422,6 @@
   [
     "feature:dpf",
     "store:sessionStore",
-    "imports"
-  ],
-  [
-    "feature:dpf",
-    "vehicle:registry",
     "imports"
   ],
   [
@@ -2506,7 +2506,7 @@
   ],
   [
     "feature:engine-host",
-    "vehicle:registry",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -2557,11 +2557,6 @@
   [
     "feature:extended-pids",
     "store:sessionStore",
-    "imports"
-  ],
-  [
-    "feature:extended-pids",
-    "vehicle:registry",
     "imports"
   ],
   [
@@ -2632,6 +2627,16 @@
   [
     "feature:fault-codes",
     "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -2756,7 +2761,7 @@
   ],
   [
     "feature:live-data",
-    "vehicle:registry",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -2771,7 +2776,37 @@
   ],
   [
     "feature:maintenance",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
     "store:persistStorage",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "store:vehicleStore",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -2981,11 +3016,6 @@
   ],
   [
     "feature:routines",
-    "vehicle:registry",
-    "imports"
-  ],
-  [
-    "feature:routines",
     "vehicle:types",
     "imports"
   ],
@@ -3020,11 +3050,6 @@
     "imports"
   ],
   [
-    "feature:sensor-readings",
-    "vehicle:registry",
-    "imports"
-  ],
-  [
     "feature:sensor-tests",
     "core:obd/mode05",
     "imports"
@@ -3055,11 +3080,6 @@
     "imports"
   ],
   [
-    "feature:sensor-tests",
-    "vehicle:registry",
-    "imports"
-  ],
-  [
     "feature:service-reset",
     "core:coding/udsCoding",
     "imports"
@@ -3087,11 +3107,6 @@
   [
     "feature:service-reset",
     "store:sessionStore",
-    "imports"
-  ],
-  [
-    "feature:service-reset",
-    "vehicle:registry",
     "imports"
   ],
   [
@@ -3136,6 +3151,11 @@
   ],
   [
     "feature:settings",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "store:sessionStore",
     "imports"
   ],
@@ -3147,6 +3167,16 @@
   [
     "feature:settings",
     "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "vehicle:resolve",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -3191,6 +3221,11 @@
   ],
   [
     "feature:trip-recording",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
     "store:persistStorage",
     "imports"
   ],
@@ -3202,6 +3237,21 @@
   [
     "feature:trip-recording",
     "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "vehicle:resolve",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -3236,7 +3286,22 @@
   ],
   [
     "feature:vehicle-select",
-    "store:persistStorage",
+    "service:notify",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "store:garageStore",
     "imports"
   ],
   [
@@ -3246,7 +3311,32 @@
   ],
   [
     "feature:vehicle-select",
+    "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "store:vehicleStore",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
     "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "vehicle:resolve",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -3650,6 +3740,41 @@
     "imports"
   ],
   [
+    "store:activeProfile",
+    "doc:plans/13-profile-labelpack-import-export",
+    "named"
+  ],
+  [
+    "store:activeProfile",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "store:vehicleStore",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "vehicle:registry",
+    "named"
+  ],
+  [
+    "store:activeProfile",
+    "vehicle:resolve",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
     "store:dtcStore",
     "core:obd/dtc",
     "imports"
@@ -3677,6 +3802,21 @@
   [
     "store:eventLog",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "store:garageStore",
+    "doc:plans/06-garage-learned-profiles",
+    "named"
+  ],
+  [
+    "store:garageStore",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "store:garageStore",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -3740,6 +3880,11 @@
     "imports"
   ],
   [
+    "store:vehicleStore",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
     "transport:BleTransport",
     "core:transport/Transport",
     "imports"
@@ -3772,6 +3917,11 @@
   [
     "ui:AppSplash",
     "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "ui:AppSplash",
+    "store:garageStore",
     "imports"
   ],
   [
@@ -3906,7 +4056,32 @@
   ],
   [
     "vehicle:registry",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "vehicle:registry",
     "vehicle:vinSuggest",
+    "imports"
+  ],
+  [
+    "vehicle:resolve",
+    "core:transport/MockTransport",
+    "imports"
+  ],
+  [
+    "vehicle:resolve",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "vehicle:resolve",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "vehicle:resolve",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -3922,6 +4097,36 @@
   [
     "vehicle:types",
     "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "vehicle:userVehicle",
+    "core:obd/dtcDatabase/index",
+    "imports"
+  ],
+  [
+    "vehicle:userVehicle",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "vehicle:userVehicle",
+    "core:obd/vinDecode",
+    "imports"
+  ],
+  [
+    "vehicle:userVehicle",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "vehicle:userVehicle",
+    "doc:plans/23-security-access-plugins",
+    "named"
+  ],
+  [
+    "vehicle:userVehicle",
+    "vehicle:types",
     "imports"
   ],
   [

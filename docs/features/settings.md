@@ -11,7 +11,9 @@ Developer and runtime settings.
     `connectionService.switchAdapterSource()`, so switching disconnects any session built for the
     other source (a simulator session never survives under the real adapter, or vice versa) and
     clears the adapter log, so the log never mixes or carries over traffic from the other source. In
-    simulator mode a picker chooses which car to emulate (generic / Golf / Punto / Passat).
+    simulator mode a picker chooses which car to emulate (generic / Golf / Punto / Passat, then the
+    garage cars). A garage car is emulated from its base profile with its learned VIN, PIDs and
+    calibration id on top (plan 06, see [vehicle-select](./vehicle-select.md#simulator)).
   - **Injected DTCs** (simulator only) — **None** (default), **P0299**, **P0299+P0401**, or
     **Custom…**, which reveals a text field taking comma-separated codes. Each code must be a letter
     `P`/`C`/`B`/`U`, a first digit `0`–`3`, then three hex digits (`/^[PCBU][0-3][0-9A-F]{3}$/i` —
@@ -29,6 +31,11 @@ Developer and runtime settings.
   - **Auto-reconnect** On / Off — copy: "On by default; pauses after 3 drops in a minute", then the
     backoff (2 s, 5 s, 10 s — up to 3 attempts) and that a manual disconnect / connect cancels it.
     See [connection](./connection.md#auto-reconnect-on-by-default-with-a-flap-guard).
+  - **Recognise my cars by VIN** On / Off (plan 06) — copy: "Select a garage car when its VIN
+    connects", "On by default. When the connected car's VIN (vehicle identification number) matches
+    a car you added from a connection, that car becomes the active vehicle. Built-in profiles are
+    only suggested on the Vehicle screen." See
+    [vehicle-select](./vehicle-select.md#vin-auto-select).
   - **Adapter log** — live log of adapter I/O (sent commands ↔ raw responses) with **Clear**, a
     **Flow name** field (default `session`) and **Export as replay fixture** (plan 02). The export
     (`model/replayExport.ts` → `api/replayFixtureFile.ts`, through `expo-file-system/legacy`, which
@@ -37,8 +44,9 @@ Developer and runtime settings.
     with `pairs`, `sequences` and `meta` — `source` (`car` on the real adapter, `simulator` in
     simulator mode — read at export time, which is safe because a source switch clears the log and
     a superseded link logs nothing more, so a simulator session can never pass for validation),
-    `vehicleId` (the selected
-    profile, or the simulated car), `flow`, `adapter` and `protocol` from the live session, and
+    `vehicleId` (the registry id of the selected
+    profile, or of the simulated car — a garage car exports its base registry profile via
+    `fixtureVehicleId`, never a `user:` id, so it fits `fixtures/<vehicleId>/`), `flow`, `adapter` and `protocol` from the live session, and
     `appVersion` (`APP_VERSION`). On success the copy reads "Saved <file>. Clear the log before
     recording the next flow."; on failure it points at the error log, which always has a
     `settings/replay-export` entry for it. **Clear** puts the default hint back, and the "log is
@@ -88,10 +96,11 @@ Developer and runtime settings.
 ## model
 
 - `settingsStore` (Zustand, **persisted**): `adapterSource`, `simulatedVehicleId`, `injectedDtcs`,
-  `units`, `pollIntervalMs`, `autoReconnect`, `theme`, and the `ai` config (server URL, model,
+  `units`, `pollIntervalMs`, `autoReconnect`, `autoSelectByVin`, `theme`, and the `ai` config (server URL, model,
   structured-output mode, timeout, key). It no longer holds the adapter I/O log (see above).
-- Persisted as `bolid.settings` at **version 3**. Defaults: `adapterSource: 'ble'`,
-  `simulatedVehicleId: 'golf-plus-2009-20tdi'`, `injectedDtcs: []`, `autoReconnect: true`.
+- Persisted as `bolid.settings` at **version 4**. Defaults: `adapterSource: 'ble'`,
+  `simulatedVehicleId: 'golf-plus-2009-20tdi'`, `injectedDtcs: []`, `autoReconnect: true`,
+  `autoSelectByVin: true`. `simulatedVehicleId` may be a registry id or a garage `user:` id.
 - **Migrations** (`migrateSettings`, pure and unit-tested; each step only fills _missing_ fields, so
   an explicit stored choice always survives):
   - **v1 → v2** (plan 01): a v1 blob keeps its explicit `adapterSource` and `injectedDtcs` — a tester
@@ -101,7 +110,9 @@ Developer and runtime settings.
     explicit `false`) is kept; a blob without the field, and every fresh install, gets `true`.
     Because v2's `partialize` always wrote `autoReconnect`, upgraded installs keep whatever they had
     (the old default was `false`) — only fresh installs and partial blobs get it on.
-  - From v3 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults.
+  - **v3 → v4** (plan 06): `autoSelectByVin: p.autoSelectByVin ?? true`. No earlier version wrote
+    the field, so every upgraded install and every fresh install gets it on; every v3 field is kept.
+  - From v4 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults.
 - **Known limitation:** v1's `partialize` always wrote `adapterSource` and `injectedDtcs`, so every
   real v1 file carries them — including installs that never chose anything and just persisted the
   old defaults (`'mock'`, `['P0299']`). The migration cannot tell those apart from a deliberate

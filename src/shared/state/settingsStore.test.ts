@@ -1,4 +1,4 @@
-/** Production defaults + the settings migrations (v1 → v2 plan 01, v2 → v3 plan 12). settingsStore pulls in
+/** Production defaults + the settings migrations (v1 → v2 plan 01, v2 → v3 plan 12, v3 → v4 plan 06). settingsStore pulls in
  *  persistStorage -> expo-file-system (ESM, not transformed for the node test env), so the file system
  *  is mocked with an in-memory map; that also lets the persist round-trip below exercise the real
  *  `migrate` wiring, not just the pure helper. */
@@ -33,55 +33,77 @@ describe('settings defaults', () => {
     expect(useSettingsStore.getInitialState().autoReconnect).toBe(true);
   });
 
-  it('persists at schema version 3', () => {
-    expect(SETTINGS_VERSION).toBe(3);
-    expect(useSettingsStore.persist.getOptions().version).toBe(3);
+  it('a fresh install auto-selects garage cars by VIN (plan 06)', () => {
+    expect(useSettingsStore.getInitialState().autoSelectByVin).toBe(true);
+  });
+
+  it('persists at schema version 4', () => {
+    expect(SETTINGS_VERSION).toBe(4);
+    expect(useSettingsStore.persist.getOptions().version).toBe(4);
   });
 });
 
 describe('migrateSettings', () => {
-  it('v1 → v3 keeps an explicit simulator choice, its injected codes and auto-reconnect', () => {
+  it('v1 → v4 keeps an explicit simulator choice, its injected codes and auto-reconnect', () => {
     expect(
       migrateSettings({ adapterSource: 'mock', injectedDtcs: ['P0299'], autoReconnect: false }, 1),
     ).toEqual({
       adapterSource: 'mock',
       injectedDtcs: ['P0299'],
       autoReconnect: false,
+      autoSelectByVin: true,
     });
   });
 
-  it('v1 → v3 fills missing fields with the production defaults', () => {
+  it('v1 → v4 fills missing fields with the production defaults', () => {
     expect(migrateSettings({ theme: 'dark' }, 1)).toEqual({
       theme: 'dark',
       adapterSource: 'ble',
       injectedDtcs: [],
       autoReconnect: true,
+      autoSelectByVin: true,
     });
     expect(migrateSettings(undefined, 1)).toEqual({
       adapterSource: 'ble',
       injectedDtcs: [],
       autoReconnect: true,
+      autoSelectByVin: true,
     });
   });
 
-  it('v2 → v3 keeps a stored auto-reconnect choice and defaults a missing one to on', () => {
+  it('v2 → v4 keeps a stored auto-reconnect choice and defaults a missing one to on', () => {
     const blob = { adapterSource: 'mock' as const, injectedDtcs: ['P0420'], autoReconnect: false };
-    expect(migrateSettings(blob, 2)).toEqual(blob);
+    expect(migrateSettings(blob, 2)).toEqual({ ...blob, autoSelectByVin: true });
     expect(migrateSettings({ theme: 'light' as const }, 2)).toEqual({
       theme: 'light',
       autoReconnect: true,
+      autoSelectByVin: true,
     });
   });
 
-  it('is the identity from v3 on', () => {
+  it('v3 → v4 adds VIN auto-select (on) and keeps every v3 field', () => {
+    const blob = {
+      adapterSource: 'mock' as const,
+      injectedDtcs: ['P0420'],
+      autoReconnect: false,
+      theme: 'light' as const,
+    };
+    expect(migrateSettings(blob, 3)).toEqual({ ...blob, autoSelectByVin: true });
+    expect(migrateSettings({ ...blob, autoSelectByVin: false }, 3)).toEqual({
+      ...blob,
+      autoSelectByVin: false,
+    });
+  });
+
+  it('is the identity from v4 on', () => {
     const blob = {
       adapterSource: 'mock' as const,
       injectedDtcs: ['P0420'],
       theme: 'light' as const,
     };
-    expect(migrateSettings(blob, 3)).toEqual(blob);
+    expect(migrateSettings(blob, 4)).toEqual(blob);
     const partial = { theme: 'dark' as const };
-    expect(migrateSettings(partial, 3)).toEqual(partial);
+    expect(migrateSettings(partial, 4)).toEqual(partial);
   });
 });
 
@@ -127,6 +149,16 @@ describe('persisted v1 blob rehydration', () => {
     writeBlob({ adapterSource: 'ble', injectedDtcs: [], theme: 'light' }, 2);
     await useSettingsStore.persist.rehydrate();
     expect(useSettingsStore.getState().autoReconnect).toBe(true);
+  });
+
+  it('a v3 blob (no VIN auto-select field yet) gets it on and keeps its other choices', async () => {
+    useSettingsStore.setState({ autoSelectByVin: false });
+    writeBlob({ adapterSource: 'mock', injectedDtcs: [], autoReconnect: false }, 3);
+    await useSettingsStore.persist.rehydrate();
+    const s = useSettingsStore.getState();
+    expect(s.autoSelectByVin).toBe(true);
+    expect(s.adapterSource).toBe('mock');
+    expect(s.autoReconnect).toBe(false);
   });
 });
 

@@ -2,18 +2,16 @@ import { useCallback } from 'react';
 import { serviceReset, isCan, isKLine, isModuleUnreachableError } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { useServiceResetStore } from '../model/serviceResetStore';
 
 /** Run the profile's service-interval reset (cluster UDS routine/adaptation). CAN-only, gated. */
 export function useServiceReset() {
   const session = useSessionStore((s) => s.session);
-  const profileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const setRunning = useServiceResetStore((s) => s.setRunning);
   const setLastResult = useServiceResetStore((s) => s.setLastResult);
 
-  const profile = getVehicleProfile(profileId);
   const descriptor = profile.serviceReset;
   const proto = session?.currentProtocol ?? 'UNKNOWN';
   // UDS descriptors need CAN; KWP descriptors need a K-line link.
@@ -58,7 +56,9 @@ export function useServiceReset() {
           context: { transport, module: descriptor.module, method: descriptor.method },
         });
       }
-      setLastResult(res.ok ? 'Service interval reset — confirm on the cluster.' : 'Reset did not complete.');
+      setLastResult(
+        res.ok ? 'Service interval reset — confirm on the cluster.' : 'Reset did not complete.',
+      );
       return res.ok;
     } catch (e) {
       const msg = (e as Error).message;

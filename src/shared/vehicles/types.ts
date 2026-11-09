@@ -211,6 +211,9 @@ export interface KnownFault {
 
 export interface VehicleProfile {
   id: string;
+  /** Set only on a garage car's runtime profile (plan 06): the registry profile it inherits from.
+   *  Per-car curated data keyed by registry id (fault guides) follows it. */
+  baseProfileId?: string;
   name: string;
   year: number;
   engine: string;

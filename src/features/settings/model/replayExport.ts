@@ -3,6 +3,8 @@
  *  plus a file name that carries the vehicle and the flow. Pure, so it is unit-tested without the
  *  file system. The committed-fixture rules are in docs/simulator.md → "Replay fixtures". */
 import { fixtureFromLog, LoggedIo, ReplayFixture, ReplayFixtureMeta } from '@/shared/obd-core';
+import { curatedProfileId, type UserVehicle } from '@/shared/vehicles';
+import { resolveProfile, simulatorSourceFor } from '@/shared/vehicles/resolve';
 
 /** Default flow name in the Settings field. */
 export const DEFAULT_FLOW_NAME = 'session';
@@ -11,6 +13,7 @@ export interface ReplayExportInput {
   log: LoggedIo[];
   /** Flow name typed in Settings (`connect`, `faults`, …); blank → `session`. */
   flow: string;
+  /** Registry id (see `fixtureVehicleId`). */
   vehicleId: string;
   /** `simulator` when the log came from the in-app simulator: such a file is never validation. */
   source: ReplayFixtureMeta['source'];
@@ -22,6 +25,19 @@ export interface ReplayExportInput {
   droppedEntries?: number;
   appVersion: string;
   now?: Date;
+}
+
+/** The registry id a fixture is filed under (`fixtures/<vehicleId>/`, checked against the folder
+ *  name and the vehicle doc by `fixtures.replay.test.ts`). A garage car (`user:` id, plan 06)
+ *  exports its base registry profile: what the simulator ran for a simulated garage car, and the
+ *  curated profile behind the selected one on the car. */
+export function fixtureVehicleId(
+  opts: { simulator: boolean; simulatedVehicleId: string; selectedProfileId: string },
+  garage: UserVehicle[],
+): string {
+  return opts.simulator
+    ? simulatorSourceFor(opts.simulatedVehicleId, garage).profileId
+    : curatedProfileId(resolveProfile(opts.selectedProfileId, garage));
 }
 
 /** Lower-case kebab slug safe for a file name: `Module scan!` → `module-scan`. */
