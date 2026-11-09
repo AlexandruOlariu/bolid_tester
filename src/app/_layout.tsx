@@ -1,5 +1,5 @@
 import React from 'react';
-import { useColorScheme, View } from 'react-native';
+import { Platform, useColorScheme, View } from 'react-native';
 import { Tabs } from 'expo-router';
 import { TamaguiProvider, Theme, XStack, Text } from 'tamagui';
 import {
@@ -13,7 +13,7 @@ import {
   LayoutGrid,
 } from 'lucide-react-native';
 import config from '../../tamagui.config';
-import { useSettingsStore } from '@/shared/state/settingsStore';
+import { setSettingsPlatform, useSettingsStore } from '@/shared/state/settingsStore';
 import { installGlobalErrorHandlers } from '@/shared/state/errorLogStore';
 import { AppLogo, RootErrorBoundary, useLayoutClass, usesSideRail } from '@/shared/ui';
 import { AppSplash } from '@/shared/ui/AppSplash';
@@ -22,6 +22,9 @@ import { SimulatorBanner } from '@/features/connection';
 
 // Capture uncaught errors & unhandled rejections into the in-app error log, once, at app start.
 installGlobalErrorHandlers();
+// Tell the settings store its platform, so a stored Classic Bluetooth source (Android only) falls
+// back to Bluetooth LE on iOS — before or after the settings file hydrates (plan 27).
+setSettingsPlatform(Platform.OS);
 
 const ACCENT = '#2bb673';
 const INACTIVE = '#8B949E';

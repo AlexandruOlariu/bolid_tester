@@ -171,6 +171,56 @@ describe('diagnoseFailure', () => {
     expect(stageLabel('transport', 'ble')).toBe('Bluetooth link');
   });
 
+  it('spp: a paired adapter whose serial port does not open → power-cycle / other app (plan 27)', () => {
+    const spp = { ...base, adapterSource: 'spp' as const, btState: 'checking' as const };
+    for (const error of [
+      'Could not open the Classic Bluetooth adapter 00:1D:A5:68:98:8B: read failed, socket might closed or timeout, read ret: -1',
+      'Could not open the Classic Bluetooth adapter 00:1D:A5:68:98:8B: Connection refused',
+      'Could not open the Classic Bluetooth adapter 00:1D:A5:68:98:8B: Service discovery failed',
+      'Auto-reconnect failed after 3 attempts. Last error: bt socket closed, read return: -1',
+    ]) {
+      const d = diagnoseFailure({ ...spp, error });
+      expect(d.stage).toBe('transport');
+      expect(d.explanation).toBe('The adapter is paired but not reachable.');
+      expect(d.suggestions.join(' ')).toMatch(/power-cycle/i);
+      expect(d.suggestions.join(' ')).toContain('Torque');
+    }
+    // The same text on a BLE or Wi-Fi link is not the SPP diagnosis.
+    expect(diagnoseFailure({ ...base, error: 'read failed, socket closed' }).title).toBe(
+      'Connection failed',
+    );
+    // A denied BLUETOOTH_CONNECT prompt is still the permission rule on SPP.
+    expect(diagnoseFailure({ ...spp, error: 'Bluetooth permission denied' }).title).toBe(
+      'Bluetooth permission needed',
+    );
+    // An adapter that opened its port but ignored ATZ is the init rule, with SPP advice.
+    expect(
+      diagnoseFailure({
+        ...spp,
+        error: 'ELM327 timeout after 5000ms for "ATZ"',
+        logTail: [tx('ATZ')],
+      }).suggestions.join(' '),
+    ).toContain('other OBD2 app');
+    expect(stageLabel('transport', 'spp')).toBe('Classic Bluetooth link');
+    expect(stageLabel('init', 'spp')).toBe('Adapter start-up');
+  });
+
+  it('the report names the Classic Bluetooth source (plan 27)', () => {
+    const diagnosis = diagnoseFailure({ ...base, adapterSource: 'spp', error: 'socket closed' });
+    const report = formatDiagnosticsReport({
+      diagnosis,
+      error: 'socket closed',
+      logTail: [],
+      link: null,
+      reached: 'transport',
+      deviceId: '00:1D:A5:68:98:8B',
+      deviceName: 'OBDII',
+      adapterSource: 'spp',
+    });
+    expect(report).toContain('Adapter source: Classic Bluetooth adapter');
+    expect(report).toContain('Stage: Classic Bluetooth link (transport)');
+  });
+
   it('never suggests more than four things', () => {
     const inputs: DiagnoseInput[] = [
       { ...base, btState: 'poweredOff' },

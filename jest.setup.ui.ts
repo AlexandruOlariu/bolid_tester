@@ -40,6 +40,8 @@ jest.mock('react-native-ble-plx', () => {
 // Permissions resolve granted, so a scan or connect gets past the prompt deterministically.
 jest.mock('@/shared/transports/ble/permissions', () => ({
   requestBlePermissions: jest.fn(async () => true),
+  requestClassicBluetoothPermissions: jest.fn(async () => true),
+  checkClassicBluetoothPermissions: jest.fn(async () => true),
 }));
 
 // --- Filesystem + the tolerant (variable-specifier) native imports. --------------------------------

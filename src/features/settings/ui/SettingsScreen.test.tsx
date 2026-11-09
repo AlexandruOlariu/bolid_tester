@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Linking } from 'react-native';
+import { Alert, Linking, Platform } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { mockPush } from '@test/mocks/router';
@@ -637,5 +637,33 @@ describe('Settings → Wi-Fi adapter (plan 26)', () => {
 
     fireEvent.changeText(screen.getByLabelText('Wi-Fi adapter host'), '10.0.0.6');
     expect(useSettingsStore.getState().wifi).toEqual({ host: '10.0.0.6', port: 23 });
+  });
+});
+
+describe('Settings → Classic Bluetooth (plan 27)', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it('on Android, the Classic Bluetooth segment selects the SPP source and explains pairing', async () => {
+    jest.replaceProperty(Platform, 'OS', 'android');
+    useSettingsStore.setState({ adapterSource: 'ble' });
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
+    expect(screen.queryByTestId('settings-spp')).toBeNull();
+
+    fireEvent.press(screen.getByText('Classic Bluetooth'));
+
+    await waitFor(() => expect(useSettingsStore.getState().adapterSource).toBe('spp'));
+    expect(screen.getByTestId('settings-spp')).toHaveTextContent(/PIN 1234 or 0000/);
+    expect(screen.getByTestId('settings-spp')).toHaveTextContent(/bus sniffer is not available/);
+    expect(screen.queryByTestId('settings-wifi')).toBeNull();
+  });
+
+  it('on iOS, there is no Classic Bluetooth segment', () => {
+    jest.replaceProperty(Platform, 'OS', 'ios');
+    useSettingsStore.setState({ adapterSource: 'ble' });
+    renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
+    openDeveloper();
+    expect(screen.getByText('Wi-Fi adapter')).toBeTruthy();
+    expect(screen.queryByText('Classic Bluetooth')).toBeNull();
   });
 });

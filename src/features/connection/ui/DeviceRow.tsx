@@ -23,7 +23,13 @@ export function DeviceRow({ device, onConnect, disabled }: DeviceRowProps) {
             {device.rssi != null ? ` · ${device.rssi} dBm` : ''}
           </Paragraph>
         </YStack>
-        <Button size="$3" theme="green" onPress={onConnect} disabled={disabled}>
+        <Button
+          size="$3"
+          theme="green"
+          onPress={onConnect}
+          disabled={disabled}
+          accessibilityLabel={`Connect to ${device.name ?? device.id}`}
+        >
           Connect
         </Button>
       </XStack>

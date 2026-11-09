@@ -3,7 +3,7 @@ import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
 import { Screen, VerificationBadge } from '@/shared/ui';
 import { diagModuleKey } from '@/shared/vehicles';
 import { vagModuleName, vagNativeDtcText } from '@/shared/obd-core';
-import { useModuleScan } from '../hooks/useModuleScan';
+import { useModuleScan, TP20_MONITOR_UNAVAILABLE } from '../hooks/useModuleScan';
 import { useModuleScanStore, ModuleScanResult } from '../model/moduleScanStore';
 import { ScanHistorySection } from './ScanHistorySection';
 import { DiscoverySection } from './DiscoverySection';
@@ -137,6 +137,7 @@ export function ModuleScanScreen() {
   const {
     available,
     canScanTp20,
+    tp20MonitorUnavailable,
     canDiscover,
     isGarageCar,
     discovery: discovered,
@@ -209,10 +210,16 @@ export function ModuleScanScreen() {
             module. On a real generic ELM327 this is timing-sensitive and may not work on every
             adapter.
           </Paragraph>
-          <Button disabled={running} onPress={scanGateway}>
-            {running ? 'Scanning…' : 'Scan gateway (TP2.0)'}
-          </Button>
-          {tp20Error ? (
+          {tp20MonitorUnavailable ? (
+            <Paragraph fontWeight="700" size="$2">
+              {TP20_MONITOR_UNAVAILABLE}
+            </Paragraph>
+          ) : (
+            <Button disabled={running} onPress={scanGateway}>
+              {running ? 'Scanning…' : 'Scan gateway (TP2.0)'}
+            </Button>
+          )}
+          {tp20Error && tp20Error !== TP20_MONITOR_UNAVAILABLE ? (
             <Paragraph color="$red10" size="$2">
               ⚠ {tp20Error}
             </Paragraph>

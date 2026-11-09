@@ -1,13 +1,14 @@
 import React from 'react';
 import { YStack, XStack, Paragraph, Button, Input } from 'tamagui';
 import { Screen } from '@/shared/ui';
+import { MONITOR_UNAVAILABLE_MESSAGE } from '@/shared/obd-core';
 import { useSnifferStore } from '../model/snifferStore';
 import { useSniffer } from '../hooks/useSniffer';
 
 const hex = (b: number[]) => b.map((x) => x.toString(16).padStart(2, '0').toUpperCase()).join(' ');
 
 export function SnifferScreen() {
-  const { available, start, stop, exportCsv, exportRaw, exporting } = useSniffer();
+  const { available, canMonitor, start, stop, exportCsv, exportRaw, exporting } = useSniffer();
   const running = useSnifferStore((s) => s.running);
   const stats = useSnifferStore((s) => s.stats);
   const totalFrames = useSnifferStore((s) => s.totalFrames);
@@ -49,7 +50,22 @@ export function SnifferScreen() {
           accessibilityLabel="Capture note"
         />
       </YStack>
-      {available ? (
+      {available && !canMonitor ? (
+        <YStack
+          gap="$1"
+          backgroundColor="$color2"
+          borderRadius="$3"
+          padding="$3"
+          testID="sniffer-unavailable"
+        >
+          <Paragraph fontWeight="700">{MONITOR_UNAVAILABLE_MESSAGE}.</Paragraph>
+          <Paragraph theme="alt2" size="$2">
+            Classic Bluetooth adapters hand over each reply only when the adapter’s “&gt;” prompt
+            arrives, and the bus monitor streams without one. Use a Bluetooth LE or Wi-Fi adapter to
+            sniff the bus; every other screen works over this adapter.
+          </Paragraph>
+        </YStack>
+      ) : available ? (
         <Button theme={running ? 'red' : 'green'} onPress={() => (running ? stop() : start())}>
           {running ? `Stop (${totalFrames} frames)` : 'Start monitoring'}
         </Button>

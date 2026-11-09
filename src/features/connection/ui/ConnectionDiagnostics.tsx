@@ -31,8 +31,9 @@ function radioState(bt: BluetoothState): BtRadioState {
 
 /** Shown under the error panel on the Connect screen whenever the session is in `error`: what went
  *  wrong (a stage + plain-English explanation), what to try, and — under a collapsible "Details" —
- *  this attempt's adapter-log tail, the negotiated BLE link (or the Wi-Fi socket) and the device, with **Copy details**
- *  (OS share sheet) and **Open error log**. The rules live in the pure `diagnoseFailure`. */
+ *  this attempt's adapter-log tail, the negotiated BLE link (or the Wi-Fi socket / the Classic
+ *  Bluetooth serial port) and the device, with **Copy details** (OS share sheet) and **Open error
+ *  log**. The rules live in the pure `diagnoseFailure`. */
 export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
   const router = useRouter();
   const status = useSessionStore((s) => s.status);
@@ -149,6 +150,11 @@ export function ConnectionDiagnostics({ bt }: { bt: BluetoothState }) {
                 {kind === 'wifi' ? (
                   <Text fontSize="$2" color="$placeholderColor">
                     Link: Wi-Fi (TCP socket){deviceId ? ` to ${deviceId}` : ''}
+                  </Text>
+                ) : null}
+                {kind === 'spp' ? (
+                  <Text fontSize="$2" color="$placeholderColor">
+                    Link: Classic Bluetooth (serial port){deviceId ? ` to ${deviceId}` : ''}
                   </Text>
                 ) : null}
               </YStack>

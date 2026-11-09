@@ -147,6 +147,13 @@ speed; non-zero to emulate K-line in the UI).
   (`socketOverBridge(bridgeToMock(buildScenario('golf-plus-2009-20tdi')))`) is the Wi-Fi example:
   `TcpTransport.session.integration.test.ts` connects, identifies the Golf (CAN 11/500, VIN, 16
   PIDs) and reads `03` over it. Not exported from the obd-core barrel; no protocol change.
+  `shared/transports/spp/testing/fakeSppModule.ts` is the Classic Bluetooth example (plan 27):
+  `sppDeviceOverBridge(bridge)` forwards every write to the simulator and hands the simulator's
+  output back **one message per `>` with the `>` stripped**, exactly like
+  `react-native-bluetooth-classic`'s `delimiter: '>'` framing, so
+  `SppTransport.session.integration.test.ts` only identifies the Golf and reads `03` if the
+  transport re-appends every prompt. `FakeSppModule` also scripts the bonded list, the radio state
+  and the library's device-disconnected event.
 
 ## Replay fixtures
 

@@ -38,9 +38,12 @@ export const STAGE_LABELS: Record<ConnectStage, string> = {
   identify: 'Reading car details',
 };
 
-/** The stage chip's label for `source`: the link stage of a Wi-Fi adapter is its Wi-Fi link. */
+/** The stage chip's label for `source`: the link stage of a Wi-Fi adapter is its Wi-Fi link, of a
+ *  Classic Bluetooth adapter its classic Bluetooth link. */
 export function stageLabel(stage: ConnectStage, source: AdapterSource): string {
-  return stage === 'transport' && source === 'wifi' ? 'Wi-Fi link' : STAGE_LABELS[stage];
+  if (stage === 'transport' && source === 'wifi') return 'Wi-Fi link';
+  if (stage === 'transport' && source === 'spp') return 'Classic Bluetooth link';
+  return STAGE_LABELS[stage];
 }
 
 /** Socket errors that mean the phone cannot reach the adapter's address at all: TcpTransport's
@@ -58,6 +61,23 @@ const WIFI_UNREACHABLE_DIAGNOSIS: FailureDiagnosis = {
     'Check the adapter’s address: most use 192.168.0.10, port 35000 (Settings → Developer & simulator → Adapter source).',
     'Turn mobile data off, so the phone does not send the connection over the mobile network instead.',
     'On iPhone, allow Local Network for Bolid Tester (Settings → Privacy & Security → Local Network).',
+  ],
+};
+
+/** RFCOMM socket failures on Android ("read failed, socket might closed or timeout", "Connection
+ *  refused", "Service discovery failed"): the adapter is paired, but its serial port did not open
+ *  (plan 27). */
+const SPP_UNREACHABLE = /socket|read failed|connection refused|service discovery failed/i;
+
+const SPP_UNREACHABLE_DIAGNOSIS: FailureDiagnosis = {
+  stage: 'transport',
+  title: 'Can’t open the Classic Bluetooth adapter',
+  explanation: 'The adapter is paired but not reachable.',
+  suggestions: [
+    'Power-cycle the adapter: unplug it for 10 seconds, plug it back in, then reconnect.',
+    'Make sure no other app (e.g. Torque) holds the connection — close it, or turn its auto-connect off.',
+    'Keep the phone close to the adapter, with the ignition on.',
+    'Still failing? Unpair the adapter in Android Settings → Bluetooth, pair it again (PIN 1234 or 0000), then refresh the list.',
   ],
 };
 
@@ -110,6 +130,7 @@ const isObdCommand = (cmd: string | null) => cmd !== null && /^[0-9A-F]{2,}$/.te
 export function diagnoseFailure(input: DiagnoseInput): FailureDiagnosis {
   const error = input.error ?? '';
   const wifi = input.adapterSource === 'wifi';
+  const spp = input.adapterSource === 'spp';
   const linkName = wifi ? 'Wi-Fi link' : 'Bluetooth link';
   const last = lastTx(input.logTail);
   const timeout = /timeout|timed out/i.test(error);
@@ -130,6 +151,9 @@ export function diagnoseFailure(input: DiagnoseInput): FailureDiagnosis {
   // 1b. Wi-Fi (plan 26): the socket never opened — wrong network or wrong address.
   if (wifi && WIFI_UNREACHABLE.test(error)) return WIFI_UNREACHABLE_DIAGNOSIS;
 
+  // 1c. Classic Bluetooth (plan 27): paired, but the RFCOMM socket did not open.
+  if (spp && SPP_UNREACHABLE.test(error)) return SPP_UNREACHABLE_DIAGNOSIS;
+
   // 2. Connected over BLE, but no serial-over-BLE characteristic pair (BleTransport's error).
   if (/No suitable notify/i.test(error)) {
     return {
@@ -137,10 +161,10 @@ export function diagnoseFailure(input: DiagnoseInput): FailureDiagnosis {
       title: 'Not a Bluetooth LE serial adapter',
       explanation:
         'This device does not expose the serial-over-BLE characteristics an ELM327 uses — it may be ' +
-        'a classic Bluetooth (SPP) adapter, which the app cannot use yet.',
+        'a classic Bluetooth (SPP) adapter, which connects as a paired device instead.',
       suggestions: [
         'Check that you picked the OBD2 adapter, not another nearby device.',
-        'Check the adapter is a Bluetooth LE (“4.0”) model — a classic Bluetooth (“3.0”) one is not supported yet.',
+        'A classic Bluetooth (“3.0”) adapter: on Android, pair it in the phone’s Bluetooth settings and choose Classic Bluetooth (Settings → Developer & simulator → Adapter source). iPhones cannot use classic adapters.',
         'Scan again and pick the adapter by name (Vlink, OBDII, VEEPEAK…).',
       ],
     };
@@ -162,7 +186,9 @@ export function diagnoseFailure(input: DiagnoseInput): FailureDiagnosis {
         'Move the phone closer to the adapter.',
         wifi
           ? 'Still failing? Check the phone is still on the adapter’s Wi-Fi network.'
-          : 'Still failing? Remove the adapter from the phone’s Bluetooth list and scan again.',
+          : spp
+            ? 'Still failing? Close any other OBD2 app that may hold the adapter, then reconnect.'
+            : 'Still failing? Remove the adapter from the phone’s Bluetooth list and scan again.',
       ],
     };
   }
@@ -239,6 +265,7 @@ export function diagnoseFailure(input: DiagnoseInput): FailureDiagnosis {
 const SOURCE_LABELS: Record<AdapterSource, string> = {
   ble: 'Bluetooth adapter',
   wifi: 'Wi-Fi adapter',
+  spp: 'Classic Bluetooth adapter',
   mock: 'Simulator',
 };
 

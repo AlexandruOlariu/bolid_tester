@@ -125,6 +125,46 @@
     "relates"
   ],
   [
+    "concept:classic-bluetooth-spp",
+    "concept:connection-lifecycle",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "core:transport/Transport",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "core:transport/testing/bridge",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "doc:plans/27-bluetooth-spp-transport",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "feature:can-sniffer",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "feature:connection",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "transport:SppTransport",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "transport:adapterNames",
+    "relates"
+  ],
+  [
     "concept:coding-tweaks-backup",
     "concept:adaptation-channels",
     "relates"
@@ -1910,6 +1950,11 @@
     "imports"
   ],
   [
+    "core:tp20/elmRawCan",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
     "core:tp20/fakeTp20Bus",
     "core:tp20/tp20",
     "imports"
@@ -1932,6 +1977,11 @@
   [
     "core:tp20/fakeTp20Bus",
     "transport:fakeSocket",
+    "named"
+  ],
+  [
+    "core:tp20/fakeTp20Bus",
+    "transport:fakeSppModule",
     "named"
   ],
   [
@@ -2811,6 +2861,11 @@
   ],
   [
     "feature:can-sniffer",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
     "feature:vehicle-select",
     "imports"
   ],
@@ -2992,6 +3047,11 @@
   [
     "feature:connection",
     "transport:BleTransport",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "transport:SppTransport",
     "imports"
   ],
   [
@@ -5265,6 +5325,26 @@
     "imports"
   ],
   [
+    "transport:SppTransport",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "transport:SppTransport",
+    "doc:plans/27-bluetooth-spp-transport",
+    "named"
+  ],
+  [
+    "transport:SppTransport",
+    "lib:bytes",
+    "imports"
+  ],
+  [
+    "transport:SppTransport",
+    "transport:adapterNames",
+    "imports"
+  ],
+  [
     "transport:TcpTransport",
     "core:transport/Transport",
     "imports"
@@ -5292,6 +5372,31 @@
   [
     "transport:fakeSocket",
     "transport:TcpTransport",
+    "imports"
+  ],
+  [
+    "transport:fakeSppModule",
+    "core:transport/testing/bridge",
+    "imports"
+  ],
+  [
+    "transport:fakeSppModule",
+    "doc:plans/27-bluetooth-spp-transport",
+    "named"
+  ],
+  [
+    "transport:fakeSppModule",
+    "lib:bytes",
+    "imports"
+  ],
+  [
+    "transport:fakeSppModule",
+    "transport:SppTransport",
+    "imports"
+  ],
+  [
+    "transport:manager",
+    "transport:adapterNames",
     "imports"
   ],
   [

@@ -14,6 +14,26 @@ The user's adapter:
   ISO 14230-4 KWP2000, ISO 15765-4 CAN 11/29-bit at 250/500 kbps).
 - Has an auto-sleep feature (low power when the car is off).
 
+### BLE vs classic variants of common adapters
+
+Many adapter families ship in two radio variants that look alike and share a name, so check the
+box or listing before buying:
+
+| Marking                                     | Radio                       | In Bolid Tester                                                                             |
+| ------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------- |
+| "Bluetooth 4.0", "BLE", "iOS + Android"     | Bluetooth Low Energy (GATT) | **Bluetooth LE** source — scan, no pairing; Android and iOS                                 |
+| "Bluetooth 3.0", "Bluetooth 2.0", "Android" | Classic Bluetooth (SPP)     | **Classic Bluetooth** source — pair in Android settings (PIN 1234 / 0000); **Android only** |
+| "WiFi", network `WiFi_OBDII`                | Wi-Fi (TCP)                 | **Wi-Fi adapter** source — `192.168.0.10:35000`; Android and iOS                            |
+
+- The **Vgate iCar Pro** is sold as both "Bluetooth 4.0" (BLE — this doc) and older "Bluetooth 3.0"
+  / Wi-Fi models; Veepeak's **OBDCheck BLE** is BLE while the plain **Mini** is classic; cheap
+  blue "ELM327 mini" clones named `OBDII` / `OBD2` are almost always classic SPP.
+- A classic adapter never shows up in a BLE scan, and on iPhone it cannot be used at all: iOS lets
+  apps open classic Bluetooth accessories only through Apple's MFi programme, which ELM327 clones
+  are not part of. Some "dual" adapters advertise both radios; use the BLE side.
+- The classic link has one app-side limit: the bus sniffer (`ATMA`) is unavailable over it (see
+  [connection § Classic Bluetooth](./features/connection.md#classic-bluetooth-spp-android--plan-27)).
+
 ## What it can do (and our app targets)
 
 - Read **live data** (Mode 01), **read & clear fault codes** (Modes 03/04/07), **freeze frame**

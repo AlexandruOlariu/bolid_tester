@@ -307,13 +307,14 @@ def build_shared(g):
             else:
                 add_filenode(f"core:{sub}", "core", p)
 
-    # lib / state(store) / ui / transports(ble, tcp)
+    # lib / state(store) / ui / transports(ble, tcp, spp)
     for sub, prefix, ntype in (
         ("lib", "lib", "lib"),
         ("state", "store", "store"),
         ("ui", "ui", "ui"),
         ("transports/ble", "transport", "transport"),
         ("transports/tcp", "transport", "transport"),
+        ("transports/spp", "transport", "transport"),
     ):
         d = root / sub
         if not d.is_dir():
@@ -322,6 +323,13 @@ def build_shared(g):
             if p.stem == "index":
                 continue
             add_filenode(f"{prefix}:{p.stem}", ntype, p)
+
+    # transport helpers shared by every radio (e.g. adapterNames.ts), at the transports/ root
+    tdir = root / "transports"
+    if tdir.is_dir():
+        for p in sorted(tdir.glob("*.ts")):
+            if ".test." not in p.name and p.stem != "index":
+                add_filenode(f"transport:{p.stem}", "transport", p)
 
     # ai / notify: collapse each directory to a single service node
     for sub, nid, default in (

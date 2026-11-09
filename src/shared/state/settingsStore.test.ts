@@ -35,8 +35,11 @@ import {
   DEFAULT_AI_SETTINGS,
   hydrateApiKey,
   migrateSettings,
+  isAdapterSourceSupported,
   parseDtcList,
+  setSettingsPlatform,
   SETTINGS_VERSION,
+  SPP_FALLBACK_NOTICE,
   useSettingsStore,
 } from './settingsStore';
 import { setSecureStoreModule } from './secureApiKey';
@@ -457,5 +460,70 @@ describe('Wi-Fi adapter endpoint (plan 26)', () => {
       host: '192.168.4.1',
       port: 23,
     });
+  });
+});
+
+describe('Classic Bluetooth source on iOS (plan 27)', () => {
+  beforeEach(() => {
+    files.clear();
+    useSettingsStore.setState(useSettingsStore.getInitialState(), true);
+  });
+  afterEach(() => setSettingsPlatform(null));
+
+  const writeBlob = (state: Record<string, unknown>, version: number) =>
+    files.set(SETTINGS_FILE, JSON.stringify({ state, version }));
+
+  it('only Android supports the Classic Bluetooth source', () => {
+    expect(isAdapterSourceSupported('spp', 'android')).toBe(true);
+    expect(isAdapterSourceSupported('spp', 'ios')).toBe(false);
+    expect(isAdapterSourceSupported('spp', 'web')).toBe(false);
+    expect(isAdapterSourceSupported('ble', 'ios')).toBe(true);
+    expect(isAdapterSourceSupported('wifi', 'ios')).toBe(true);
+  });
+
+  it('a stored spp source survives hydration on Android', async () => {
+    setSettingsPlatform('android');
+    writeBlob({ adapterSource: 'spp' }, SETTINGS_VERSION);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().adapterSource).toBe('spp');
+    expect(useSettingsStore.getState().adapterSourceNotice).toBeNull();
+  });
+
+  it('a stored spp source falls back to Bluetooth LE on iOS, with a one-time notice', async () => {
+    setSettingsPlatform('ios');
+    writeBlob({ adapterSource: 'spp' }, SETTINGS_VERSION);
+    await useSettingsStore.persist.rehydrate();
+    const s = useSettingsStore.getState();
+    expect(s.adapterSource).toBe('ble');
+    expect(s.adapterSourceNotice).toBe(SPP_FALLBACK_NOTICE);
+    // The fallback is written back by hydration itself (no other setting change needed), so the
+    // next launch reads 'ble' and the notice is truly one-time; the notice is runtime only.
+    const saved = JSON.parse(files.get(SETTINGS_FILE) ?? '{}').state;
+    expect(saved.adapterSource).toBe('ble');
+    expect(saved).not.toHaveProperty('adapterSourceNotice');
+    s.dismissAdapterSourceNotice();
+    expect(useSettingsStore.getState().adapterSourceNotice).toBeNull();
+    // Next cold start: the file already says 'ble', so no notice comes back.
+    useSettingsStore.setState(useSettingsStore.getInitialState(), true);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().adapterSource).toBe('ble');
+    expect(useSettingsStore.getState().adapterSourceNotice).toBeNull();
+  });
+
+  it('falls back when the platform is learned after hydration', async () => {
+    writeBlob({ adapterSource: 'spp' }, SETTINGS_VERSION);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().adapterSource).toBe('spp');
+    setSettingsPlatform('ios');
+    expect(useSettingsStore.getState().adapterSource).toBe('ble');
+    expect(useSettingsStore.getState().adapterSourceNotice).toBe(SPP_FALLBACK_NOTICE);
+  });
+
+  it('leaves every other source alone on iOS', async () => {
+    setSettingsPlatform('ios');
+    writeBlob({ adapterSource: 'wifi' }, SETTINGS_VERSION);
+    await useSettingsStore.persist.rehydrate();
+    expect(useSettingsStore.getState().adapterSource).toBe('wifi');
+    expect(useSettingsStore.getState().adapterSourceNotice).toBeNull();
   });
 });

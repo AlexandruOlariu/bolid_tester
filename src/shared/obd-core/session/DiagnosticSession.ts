@@ -2,7 +2,7 @@
  *  Talks to an ELM327 over any Transport. See docs/architecture.md. */
 
 import { Elm327Client, Elm327Options } from '../elm327/Elm327Client';
-import { Transport } from '../transport/Transport';
+import { Transport, canStreamMonitor, MONITOR_UNAVAILABLE_MESSAGE } from '../transport/Transport';
 import { ProtocolId, isKLine, isCan, functionalHeader } from '../obd/protocols';
 import { chunkPids, buildMultiPidRequest, parseMultiPidResponse } from '../obd/multiPid';
 import { decodeIupr, IuprReport } from '../obd/iupr';
@@ -378,9 +378,18 @@ export class DiagnosticSession {
     return decodeMode06(r.bytes);
   }
 
+  /** Whether this link can stream the bus monitor (`ATMA`). False over Classic Bluetooth SPP, whose
+   *  library only delivers prompt-terminated messages (plan 27); the sniffer screen explains that
+   *  instead of offering Start. */
+  get canMonitor(): boolean {
+    return canStreamMonitor(this.transport);
+  }
+
   /** Start the CAN sniffer: headers on, then ATMA streaming raw frames to the listener. The
-   *  command channel is exclusively the monitor's until stopSniffer(). */
+   *  command channel is exclusively the monitor's until stopSniffer(). Rejects with
+   *  `MONITOR_UNAVAILABLE_MESSAGE` (before sending anything) when the link cannot stream it. */
   async startSniffer(onLine: (line: string) => void): Promise<void> {
+    if (!this.canMonitor) throw new Error(MONITOR_UNAVAILABLE_MESSAGE);
     await this.client.raw('ATH1');
     await this.client.startMonitor(onLine);
   }

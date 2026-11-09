@@ -178,7 +178,10 @@
       "tokens": ["fuel","economy","consumption","l100km","maf","units","metric"] },
     { "id": "wifi-adapter",
       "summary": "Wi-Fi ELM327 (WiFi_OBDII class, plan 26): the adapter is its own access point and a raw TCP byte pipe on 192.168.0.10:35000. TcpTransport (shared/transports/tcp) over react-native-tcp-socket (variable-specifier import, injected TcpSocketFactory), 5 s connect timeout, unsolicited close -> disconnected so link loss / auto-reconnect work as on BLE. Settings adapterSource 'wifi' + wifi {host, port} (v7); no BLE permission or BleManager. Android warns the network has no internet (choose Stay connected, mobile data off); iOS 14+ asks for Local Network access (NSLocalNetworkUsageDescription). Tested through bridgeToMock (obd-core/transport/testing/bridge) with a fake socket.",
-      "tokens": ["wifi","wi-fi","tcp","socket","35000","192.168.0.10","wifi_obdii","network","local","lan","adapter","endpoint"] }
+      "tokens": ["wifi","wi-fi","tcp","socket","35000","192.168.0.10","wifi_obdii","network","local","lan","adapter","endpoint"] },
+    { "id": "classic-bluetooth-spp",
+      "summary": "Classic Bluetooth SPP ELM327 ('Bluetooth 3.0', plan 27), Android only: iOS opens classic accessories only via MFi, which ELM327 clones lack, so the source is hidden there and a stored 'spp' falls back to 'ble' (settingsStore.setSettingsPlatform + merge, one-time notice). SppTransport (shared/transports/spp) over react-native-bluetooth-classic 1.73.0-rc.17 (variable-specifier loader, injected SppModuleLike): connectToDevice(mac, {delimiter:'>', charset:'ascii'}); the library hands over one message per '>' with it stripped, so the transport re-appends the prompt. Hence Transport.capabilities = {monitor:false}: ATMA cannot stream, DiagnosticSession.startSniffer / Elm327Client.startMonitor refuse with MONITOR_UNAVAILABLE_MESSAGE. Bonded devices only (pair in Android settings, PIN 1234/0000), no scan; RFCOMM errors (socket / read failed) -> 'paired but not reachable' diagnosis. Tested with sppDeviceOverBridge (re-chunks the simulator by '>').",
+      "tokens": ["spp","classic","bluetooth","rfcomm","serial","paired","bonded","pin","mfi","delimiter","prompt","monitor","capabilities","atma","3.0"] }
   ],
   "links": [
     ["concept:wifi-adapter", "transport:TcpTransport", "relates"],
@@ -187,6 +190,14 @@
     ["concept:wifi-adapter", "concept:connection-lifecycle", "relates"],
     ["concept:wifi-adapter", "feature:connection", "relates"],
     ["concept:wifi-adapter", "doc:plans/26-wifi-tcp-transport", "relates"],
+    ["concept:classic-bluetooth-spp", "transport:SppTransport", "relates"],
+    ["concept:classic-bluetooth-spp", "transport:adapterNames", "relates"],
+    ["concept:classic-bluetooth-spp", "core:transport/Transport", "relates"],
+    ["concept:classic-bluetooth-spp", "core:transport/testing/bridge", "relates"],
+    ["concept:classic-bluetooth-spp", "concept:connection-lifecycle", "relates"],
+    ["concept:classic-bluetooth-spp", "feature:connection", "relates"],
+    ["concept:classic-bluetooth-spp", "feature:can-sniffer", "relates"],
+    ["concept:classic-bluetooth-spp", "doc:plans/27-bluetooth-spp-transport", "relates"],
     ["concept:live-value-keys", "core:obd/liveKeys", "relates"],
     ["concept:live-value-keys", "feature:engine-host", "relates"],
     ["concept:live-value-keys", "feature:live-charts", "relates"],

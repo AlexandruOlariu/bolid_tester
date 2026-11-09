@@ -18,7 +18,8 @@ User preferences first, then the developer and simulator controls in their own c
 5. **Data** — backup & restore, label packs, security-access plugins.
 6. **Developer & simulator** — **collapsed on open**: the header (a button labelled
    "Developer & simulator. Show" / "… Hide") shows **Show** and a one-line summary; pressing it
-   reveals, in one card: **Adapter source**, then (Wi-Fi only) **Wi-Fi adapter address**, then
+   reveals, in one card: **Adapter source**, then (Wi-Fi only) **Wi-Fi adapter address**, (Classic
+   Bluetooth only) the pairing note, then
    (simulator only) **Simulated vehicle**,
    **Injected DTCs** and **Simulator test controls**, then the **Adapter log** with the replay-fixture
    export, and **Hints and app data** (**Show hints again**, **Reset all app data**). The simulator
@@ -28,8 +29,9 @@ User preferences first, then the developer and simulator controls in their own c
 Then **Disconnect** while a session is connected. The parts in detail:
 
 - **Developer & simulator** parts:
-  - **Adapter source** toggle — **Real adapter (Bluetooth)** (default), **Wi-Fi adapter** (plan 26)
-    or **Simulator (no car)**. The simulator is an explicit opt-in and, while it is on, an amber **simulator banner** stays visible on every screen
+  - **Adapter source** toggle — **Real adapter (Bluetooth)** (default), **Wi-Fi adapter** (plan 26),
+    **Classic Bluetooth** (plan 27; the segment exists **only on Android** — `Platform.OS ===
+'android'` — because iOS cannot open non-MFi classic accessories) or **Simulator (no car)**. The simulator is an explicit opt-in and, while it is on, an amber **simulator banner** stays visible on every screen
     (see [connection](./connection.md#simulator-banner)). The segments call
     `connectionService.switchAdapterSource()`, so switching disconnects any session built for the
     other source (a simulator session never survives under the real adapter, or vice versa) and
@@ -48,6 +50,10 @@ Then **Disconnect** while a session is connected. The parts in detail:
     from the default.
     The Connect screen shows the address and connects to it (see
     [connection](./connection.md#wi-fi-adapters-tcp-plan-26)).
+  - **Classic Bluetooth note** (Classic Bluetooth only, `testID="settings-spp"`) — pair the adapter
+    in Android Settings → Bluetooth first (usually "OBDII", PIN 1234 or 0000), then pick it on the
+    Connect tab; the bus sniffer is not available over classic Bluetooth (see
+    [connection](./connection.md#classic-bluetooth-spp-android--plan-27)).
   - **Injected DTCs** (simulator only) — **None** (default), **P0299**, **P0299+P0401**, or
     **Custom…**, which reveals a text field taking comma-separated codes. Each code must be a letter
     `P`/`C`/`B`/`U`, a first digit `0`–`3`, then three hex digits (`/^[PCBU][0-3][0-9A-F]{3}$/i` —
@@ -216,13 +222,14 @@ Then **Disconnect** while a session is connected. The parts in detail:
 
 ## model
 
-- `settingsStore` (Zustand, **persisted**): `adapterSource` (`'mock' | 'ble' | 'wifi'`),
+- `settingsStore` (Zustand, **persisted**): `adapterSource` (`'mock' | 'ble' | 'wifi' | 'spp'`),
   `simulatedVehicleId`, `injectedDtcs`, `pollIntervalMs`, `autoReconnect`, `autoSelectByVin`,
   `theme`, `wifi: { host, port }` (the Wi-Fi adapter endpoint, plan 26; `setWifi(patch)` ignores a
   patch that would make it invalid), and the `ai` config
   (`provider`, server URL, model, structured-output mode, timeout, `remembered` per-provider URL /
   model / mode, and the current provider's key in runtime state only). It no longer holds the
-  adapter I/O log (see above).
+  adapter I/O log (see above). Runtime only (never persisted): `adapterSourceNotice` +
+  `dismissAdapterSourceNotice()` — the one-time notice when a stored source was replaced (below).
 - **API keys (finding F8, per provider since plan 19)** live only in the OS keystore
   (`shared/state/secureApiKey.ts`, expo-secure-store), one slot per provider:
   `bolid.ai.apiKey.<provider>` (`apiKeyStoreKey`). `partialize` writes `ai` through `redactApiKey`,
@@ -260,6 +267,16 @@ Then **Disconnect** while a session is connected. The parts in detail:
   - From v7 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults
     (and infers `provider` if a blob somehow lacks a valid one), and keeps the current `wifi` when a
     restored or hand-edited file carries an unusable one (`isValidEndpoint`).
+  - **Platform fallback** (plan 27, no version bump — the shape did not change): Classic Bluetooth
+    is Android only (`isAdapterSourceSupported(source, os)`). The root layout calls
+    `setSettingsPlatform(Platform.OS)` at startup; `merge` then turns a stored `'spp'` on any other
+    platform (a backup restored from an Android phone onto an iPhone) into `'ble'` and sets
+    `adapterSourceNotice` ("Classic Bluetooth adapters work only on Android, so the app switched to
+    Bluetooth LE…", shown once on the Connect screen). If hydration finished before the platform
+    was known, `setSettingsPlatform` applies the same fallback itself. A fallback made in `merge`
+    is written back by `onRehydrateStorage` (zustand's persist rewrites the file after hydration
+    only when a migration ran), so the next launch reads `'ble'` and the notice does not return.
+    With no platform set (tests) nothing is replaced.
 - **Known limitation:** v1's `partialize` always wrote `adapterSource` and `injectedDtcs`, so every
   real v1 file carries them — including installs that never chose anything and just persisted the
   old defaults (`'mock'`, `['P0299']`). The migration cannot tell those apart from a deliberate

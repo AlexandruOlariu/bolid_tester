@@ -19,6 +19,7 @@ jest.mock('@/shared/transports/ble/BleTransport', () => ({ BleTransport: jest.fn
 jest.mock('@/shared/transports/ble/manager', () => ({ getBleManager: jest.fn() }));
 jest.mock('@/shared/transports/ble/permissions', () => ({
   requestBlePermissions: jest.fn(async () => false),
+  requestClassicBluetoothPermissions: jest.fn(async () => false),
 }));
 
 import * as scenarios from '@/shared/obd-core/transport/scenarios';
@@ -32,6 +33,8 @@ import {
   disconnect,
   FLAP_PAUSED_MESSAGE,
   resetForRestore,
+  listPairedAdapters,
+  setSppModuleLoader,
   setTcpSocketFactory,
   switchAdapterSource,
   switchToRealAdapter,
@@ -39,6 +42,16 @@ import {
 import { bridgeToMock } from '@/shared/obd-core/transport/testing/bridge';
 import { FakeSocket, socketOverBridge } from '@/shared/transports/tcp/testing/fakeSocket';
 import { DEFAULT_WIFI_ENDPOINT } from '@/shared/transports/tcp/endpoint';
+import {
+  FakeSppModule,
+  sppDeviceOverBridge,
+  type FakeSppDevice,
+} from '@/shared/transports/spp/testing/fakeSppModule';
+import {
+  requestBlePermissions,
+  requestClassicBluetoothPermissions,
+} from '@/shared/transports/ble/permissions';
+import { MONITOR_UNAVAILABLE_MESSAGE } from '@/shared/obd-core/transport/Transport';
 import { diagnoseFailure } from './diagnoseFailure';
 import { useLinkStore } from '../model/linkStore';
 
@@ -404,5 +417,137 @@ describe('Wi-Fi adapter (plan 26)', () => {
     const s = useSessionStore.getState();
     expect(s.status).toBe('disconnected');
     expect(s.error).toMatch(/Adapter link lost/);
+  });
+});
+
+describe('Classic Bluetooth adapter (plan 27)', () => {
+  const ADDR = '00:1D:A5:68:98:8B';
+  let devices: FakeSppDevice[] = [];
+  let mod: FakeSppModule;
+  const permissions = requestClassicBluetoothPermissions as jest.Mock;
+  const blePermissions = requestBlePermissions as jest.Mock;
+
+  beforeEach(() => {
+    devices = [];
+    // Every SPP connect plays the simulated Golf through the bridge, chunked by `>` like the library.
+    mod = new FakeSppModule(() => {
+      const device = sppDeviceOverBridge(
+        bridgeToMock(scenarios.buildScenario('golf-plus-2009-20tdi')),
+      );
+      devices.push(device);
+      return device;
+    });
+    setSppModuleLoader(async () => mod);
+    permissions.mockResolvedValue(true);
+    useSettingsStore.setState({ adapterSource: 'spp', autoReconnect: false });
+  });
+  afterEach(() => {
+    setSppModuleLoader(undefined);
+    permissions.mockResolvedValue(false);
+    useSettingsStore.setState({ autoReconnect: true });
+  });
+
+  it('connects to the paired adapter and publishes a session that cannot sniff', async () => {
+    await connect({ deviceId: ADDR, deviceName: 'OBDII' });
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('connected');
+    expect(s.deviceId).toBe(ADDR);
+    expect(s.deviceName).toBe('OBDII');
+    expect(s.info?.protocol).toBe('ISO_15765_4_CAN_11_500');
+    expect(mod.connects[0]).toEqual({ address: ADDR, opts: { delimiter: '>', charset: 'ascii' } });
+    expect(useLinkStore.getState().kind).toBe('spp');
+    expect(adapterLogOrigin()).toMatchObject({ source: 'car', deviceId: ADDR });
+    // The adapter-log wrapper forwards the transport's capabilities to the session.
+    expect(s.session?.canMonitor).toBe(false);
+    await expect(s.session!.startSniffer(() => undefined)).rejects.toThrow(
+      MONITOR_UNAVAILABLE_MESSAGE,
+    );
+
+    await disconnect();
+    expect(devices[0].disconnects).toBe(1);
+    expect(useSessionStore.getState().status).toBe('disconnected');
+  });
+
+  it('a nameless paired device connects under a readable name', async () => {
+    await connect({ deviceId: ADDR });
+    expect(useSessionStore.getState().deviceName).toBe('Classic Bluetooth adapter');
+  });
+
+  it('refuses without a picked device or without the Bluetooth permission', async () => {
+    await expect(connect()).rejects.toThrow('Select a paired adapter first');
+    permissions.mockResolvedValueOnce(false);
+    await expect(connect({ deviceId: ADDR })).rejects.toThrow('Bluetooth permission denied');
+    expect(mod.connects).toHaveLength(0);
+    // Only the Classic Bluetooth permission is asked — never the BLE (location on old Android) one.
+    expect(blePermissions).not.toHaveBeenCalled();
+  });
+
+  it('a socket failure ends in error with the paired-but-not-reachable diagnosis', async () => {
+    setSppModuleLoader(
+      async () =>
+        new FakeSppModule(() => {
+          throw new Error('read failed, socket might closed or timeout, read ret: -1');
+        }),
+    );
+    await expect(connect({ deviceId: ADDR, deviceName: 'OBDII' })).rejects.toThrow(
+      /Could not open the Classic Bluetooth adapter/,
+    );
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('error');
+    expect(useLinkStore.getState().stage).toBe('transport');
+    expect(useLinkStore.getState().device).toEqual({ id: ADDR, name: 'OBDII' });
+    const d = diagnoseFailure({
+      error: s.error,
+      btState: 'checking',
+      adapterSource: 'spp',
+      logTail: [],
+      deviceName: 'OBDII',
+    });
+    expect(d.explanation).toBe('The adapter is paired but not reachable.');
+  });
+
+  it('the adapter going away is handled as a link loss', async () => {
+    await connect({ deviceId: ADDR });
+    mod.emitDisconnected(ADDR);
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('disconnected');
+    expect(s.error).toMatch(/Adapter link lost/);
+  });
+
+  it('only the RFCOMM socket closing (Bluetooth link still up) is a link loss too', async () => {
+    await connect({ deviceId: ADDR });
+    mod.emitSocketClosed(ADDR);
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('disconnected');
+    expect(s.error).toMatch(/Adapter link lost/);
+  });
+
+  it('auto-reconnect replays the paired address', async () => {
+    jest.useFakeTimers();
+    try {
+      useSettingsStore.setState({ autoReconnect: true });
+      // The simulator answers on setTimeout(0): advance the fake clock to finish each connect.
+      const first = connect({ deviceId: ADDR, deviceName: 'OBDII' });
+      await jest.advanceTimersByTimeAsync(500);
+      await first;
+      mod.emitDisconnected(ADDR);
+      expect(useSessionStore.getState().status).toBe('disconnected');
+      await jest.advanceTimersByTimeAsync(3000); // the 2 s backoff, then the reconnect itself
+      expect(mod.connects.map((c) => c.address)).toEqual([ADDR, ADDR]);
+      expect(useSessionStore.getState().status).toBe('connected');
+      expect(useSessionStore.getState().deviceName).toBe('OBDII');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('lists the paired devices, likely adapters first', async () => {
+    mod.bonded = [
+      { address: '11:11:11:11:11:11', name: 'Headphones' },
+      { address: ADDR, name: 'OBDII' },
+    ];
+    const list = await listPairedAdapters();
+    expect(list.map((d) => d.name)).toEqual(['OBDII', 'Headphones']);
+    expect(list[0].isLikelyAdapter).toBe(true);
   });
 });

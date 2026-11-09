@@ -137,6 +137,10 @@ adds any UDS pair the profile declares that is not among them):
 
 - Fully exercised against the simulator: `scenarios.ts` seeds per-header DTC stores + ident from
   the profile; MockTransport answers `19 02`/`19 04`/`14`/`22 F1xx` per ATSH header.
+- **Scan gateway (TP2.0)** needs raw-CAN monitor mode on a real adapter: over a link that cannot
+  stream it (Classic Bluetooth SPP, `session.canMonitor` false) the button is replaced by
+  `TP20_MONITOR_UNAVAILABLE` and `scanGateway` refuses before sending anything (plan 27; see
+  [tp20.md](./tp20.md)). The simulator's in-memory TP2.0 bus needs no monitor.
 - Real cars: silent modules are reported as such, never as app errors; every experimental address
   is badged "Illustrative" until its profile entry carries `confirmed` evidence.
 

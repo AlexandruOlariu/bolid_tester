@@ -163,6 +163,28 @@
     ],
     "type": "concept"
   },
+  "concept:classic-bluetooth-spp": {
+    "path": null,
+    "summary": "Classic Bluetooth SPP ELM327 ('Bluetooth 3.0', plan 27), Android only: iOS opens classic accessories only via MFi, which ELM327 clones lack, so the s\u2026",
+    "tokens": [
+      "3.0",
+      "atma",
+      "bluetooth",
+      "bonded",
+      "capabilities",
+      "classic",
+      "delimiter",
+      "mfi",
+      "monitor",
+      "paired",
+      "pin",
+      "prompt",
+      "rfcomm",
+      "serial",
+      "spp"
+    ],
+    "type": "concept"
+  },
   "concept:coding-tweaks-backup": {
     "path": null,
     "summary": "One-tap coding presets (reversible curated toggles per profile, compiled to the gated coding write with on/off/unknown detection), the long-coding pe\u2026",
@@ -3051,7 +3073,8 @@
     "tests": [
       "src/features/can-sniffer/api/captureExport.test.ts",
       "src/features/can-sniffer/model/snifferController.test.ts",
-      "src/features/can-sniffer/model/snifferStore.test.ts"
+      "src/features/can-sniffer/model/snifferStore.test.ts",
+      "src/features/can-sniffer/ui/SnifferScreen.test.tsx"
     ],
     "tokens": [
       "can",
@@ -3078,12 +3101,13 @@
   },
   "feature:connection": {
     "path": "src/features/connection",
-    "summary": "Scan for, connect to, and initialize the ELM327 adapter \u2014 Bluetooth LE, or Wi-Fi over TCP (plan 26).",
+    "summary": "Scan for, connect to, and initialize the ELM327 adapter \u2014 Bluetooth LE, Wi-Fi over TCP (plan 26), or",
     "tests": [
       "src/features/connection/api/connectionService.test.ts",
       "src/features/connection/api/diagnoseFailure.test.ts",
       "src/features/connection/api/flapGuard.test.ts",
       "src/features/connection/api/reconnect.test.ts",
+      "src/features/connection/hooks/usePairedAdapters.test.tsx",
       "src/features/connection/ui/ConnectionScreen.test.tsx"
     ],
     "tokens": [
@@ -4050,6 +4074,18 @@
     ],
     "type": "transport"
   },
+  "transport:SppTransport": {
+    "path": "src/shared/transports/spp/SppTransport.ts",
+    "summary": "Transport implementation over Classic Bluetooth (RFCOMM / Serial Port Profile), for the cheap \"Bluetooth 3.0\" ELM327 adapters that `react-native-ble-\u2026",
+    "tests": [
+      "src/shared/transports/spp/SppTransport.test.ts"
+    ],
+    "tokens": [
+      "spp",
+      "transport"
+    ],
+    "type": "transport"
+  },
   "transport:TcpTransport": {
     "path": "src/shared/transports/tcp/TcpTransport.ts",
     "summary": "Transport implementation over a TCP socket, for Wi-Fi ELM327 adapters (plan 26).",
@@ -4059,6 +4095,15 @@
     "tokens": [
       "tcp",
       "transport"
+    ],
+    "type": "transport"
+  },
+  "transport:adapterNames": {
+    "path": "src/shared/transports/adapterNames.ts",
+    "summary": "Device-name hints shared by every Bluetooth transport (BLE scan results and the Classic Bluetooth bonded list, plan 27).",
+    "tokens": [
+      "adapter",
+      "names"
     ],
     "type": "transport"
   },
@@ -4082,6 +4127,16 @@
     ],
     "type": "transport"
   },
+  "transport:fakeSppModule": {
+    "path": "src/shared/transports/spp/testing/fakeSppModule.ts",
+    "summary": "Test-only fakes for `SppTransport` (plan 27): a scriptable `SppDeviceLike` / `SppModuleLike`, and a device that plays a Classic Bluetooth ELM327 thro\u2026",
+    "tokens": [
+      "fake",
+      "module",
+      "spp"
+    ],
+    "type": "transport"
+  },
   "transport:manager": {
     "path": "src/shared/transports/ble/manager.ts",
     "summary": "Lazily-created singleton BleManager (react-native-ble-plx).",
@@ -4092,7 +4147,10 @@
   },
   "transport:permissions": {
     "path": "src/shared/transports/ble/permissions.ts",
-    "summary": "Runtime BLE permissions.",
+    "summary": "Runtime Bluetooth permissions.",
+    "tests": [
+      "src/shared/transports/ble/permissions.test.ts"
+    ],
     "tokens": [
       "permissions"
     ],

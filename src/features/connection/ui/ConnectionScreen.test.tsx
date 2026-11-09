@@ -1,4 +1,5 @@
 import React from 'react';
+import { Linking, Platform } from 'react-native';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { mockPush } from '@test/mocks/router';
@@ -6,7 +7,11 @@ import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import * as bleManager from '@/shared/transports/ble/manager';
 import { FakeSocket } from '@/shared/transports/tcp/testing/fakeSocket';
-import { setTcpSocketFactory } from '../api/connectionService';
+import { setSppModuleLoader, setTcpSocketFactory } from '../api/connectionService';
+import { bridgeToMock } from '@/shared/obd-core/transport/testing/bridge';
+import { buildScenario } from '@/shared/obd-core/transport/scenarios';
+import { FakeSppModule, sppDeviceOverBridge } from '@/shared/transports/spp/testing/fakeSppModule';
+import { SPP_FALLBACK_NOTICE } from '@/shared/state/settingsStore';
 import { ConnectionScreen } from './ConnectionScreen';
 
 describe('ConnectionScreen', () => {
@@ -125,6 +130,128 @@ describe('ConnectionScreen', () => {
       await waitFor(() => expect(useSettingsStore.getState().adapterSource).toBe('wifi'));
       fireEvent.press(await screen.findByText('Use a Bluetooth adapter'));
       await waitFor(() => expect(useSettingsStore.getState().adapterSource).toBe('ble'));
+    });
+  });
+
+  describe('Classic Bluetooth adapter (plan 27)', () => {
+    const ADDR = '00:1D:A5:68:98:8B';
+    let mod: FakeSppModule;
+
+    beforeEach(() => {
+      jest.replaceProperty(Platform, 'OS', 'android');
+      mod = new FakeSppModule(() =>
+        sppDeviceOverBridge(bridgeToMock(buildScenario('golf-plus-2009-20tdi'))),
+      );
+      setSppModuleLoader(async () => mod);
+    });
+    afterEach(() => {
+      setSppModuleLoader(undefined);
+      jest.restoreAllMocks();
+    });
+
+    it('lists the paired adapters and connects to the picked one', async () => {
+      mod.bonded = [
+        { address: '11:11:11:11:11:11', name: 'Headphones' },
+        { address: ADDR, name: 'OBDII' },
+      ];
+      const spy = jest.spyOn(bleManager, 'getBleManager');
+      useSettingsStore.setState({ adapterSource: 'spp', injectedDtcs: [] });
+      renderWithProviders(<ConnectionScreen />);
+
+      expect(screen.getByTestId('connect-spp')).toBeTruthy();
+      expect(screen.getByText('Connect to your paired classic Bluetooth adapter')).toBeTruthy();
+      expect(await screen.findByLabelText('Connect to OBDII')).toBeTruthy();
+      expect(screen.getByText('Headphones')).toBeTruthy();
+      expect(screen.queryByText('Scan for adapters')).toBeNull();
+      expect(screen.queryByTestId('connect-spp-empty')).toBeNull();
+
+      // Likely adapters first.
+      const rows = screen.getAllByLabelText(/^Connect to /);
+      expect(rows.map((r) => r.props.accessibilityLabel)).toEqual([
+        'Connect to OBDII',
+        'Connect to Headphones',
+      ]);
+      fireEvent.press(screen.getByLabelText('Connect to OBDII'));
+      await waitFor(() => expect(useSessionStore.getState().status).toBe('connected'), {
+        timeout: 10000,
+      });
+      expect(useSessionStore.getState().deviceId).toBe(ADDR);
+      expect(mod.connects[0].opts).toEqual({ delimiter: '>', charset: 'ascii' });
+      expect(mockPush).toHaveBeenCalledWith('/vehicle');
+      // Classic Bluetooth never touches the BLE stack.
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('without a paired adapter shows the pairing guidance and opens Bluetooth settings', async () => {
+      useSettingsStore.setState({ adapterSource: 'spp' });
+      renderWithProviders(<ConnectionScreen />);
+
+      expect(await screen.findByTestId('connect-spp-empty')).toBeTruthy();
+      expect(screen.getByText(/Pair the adapter first: Android Settings → Bluetooth/)).toBeTruthy();
+      expect(screen.getByText(/PIN 1234 or 0000/)).toBeTruthy();
+
+      fireEvent.press(screen.getByText('Open Bluetooth settings'));
+      expect(Linking.sendIntent).toHaveBeenCalledWith('android.settings.BLUETOOTH_SETTINGS');
+
+      // Paired meanwhile: Refresh lists it.
+      mod.bonded = [{ address: ADDR, name: 'OBDII' }];
+      fireEvent.press(screen.getByText('Refresh'));
+      expect(await screen.findByLabelText('Connect to OBDII')).toBeTruthy();
+      expect(screen.queryByTestId('connect-spp-empty')).toBeNull();
+    });
+
+    it('explains why the list is empty when Bluetooth is off', async () => {
+      mod.enabled = false;
+      useSettingsStore.setState({ adapterSource: 'spp' });
+      renderWithProviders(<ConnectionScreen />);
+
+      expect(await screen.findByTestId('connect-spp-error')).toHaveTextContent(/Bluetooth is off/);
+      expect(screen.queryByTestId('connect-spp-empty')).toBeNull();
+    });
+
+    it('an unreachable paired adapter shows the power-cycle / other-app diagnosis', async () => {
+      setSppModuleLoader(async () => {
+        const failing = new FakeSppModule(() => {
+          throw new Error('read failed, socket might closed or timeout, read ret: -1');
+        });
+        failing.bonded = [{ address: ADDR, name: 'OBDII' }];
+        return failing;
+      });
+      useSettingsStore.setState({ adapterSource: 'spp' });
+      renderWithProviders(<ConnectionScreen />);
+
+      fireEvent.press(await screen.findByLabelText('Connect to OBDII'));
+      expect(await screen.findByText('Can’t open the Classic Bluetooth adapter')).toBeTruthy();
+      expect(screen.getByText('Classic Bluetooth link')).toBeTruthy();
+      expect(screen.getByText(/no other app \(e\.g\. Torque\)/)).toBeTruthy();
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('switches between Bluetooth LE and Classic Bluetooth on Android', async () => {
+      useSettingsStore.setState({ adapterSource: 'ble' });
+      renderWithProviders(<ConnectionScreen />);
+
+      fireEvent.press(screen.getByText('Using a classic Bluetooth (3.0) adapter instead?'));
+      await waitFor(() => expect(useSettingsStore.getState().adapterSource).toBe('spp'));
+      fireEvent.press(await screen.findByText('Use a Bluetooth LE adapter'));
+      await waitFor(() => expect(useSettingsStore.getState().adapterSource).toBe('ble'));
+    });
+
+    it('offers no Classic Bluetooth link on iOS', () => {
+      jest.replaceProperty(Platform, 'OS', 'ios');
+      useSettingsStore.setState({ adapterSource: 'ble' });
+      renderWithProviders(<ConnectionScreen />);
+      expect(screen.getByText('Using a Wi-Fi adapter instead?')).toBeTruthy();
+      expect(screen.queryByText('Using a classic Bluetooth (3.0) adapter instead?')).toBeNull();
+    });
+
+    it('shows the one-time fallback notice until dismissed', () => {
+      useSettingsStore.setState({ adapterSource: 'ble', adapterSourceNotice: SPP_FALLBACK_NOTICE });
+      renderWithProviders(<ConnectionScreen />);
+      expect(screen.getByTestId('adapter-source-notice')).toHaveTextContent(/work only on Android/);
+      fireEvent.press(screen.getByText('OK'));
+      expect(screen.queryByTestId('adapter-source-notice')).toBeNull();
+      expect(useSettingsStore.getState().adapterSourceNotice).toBeNull();
     });
   });
 });

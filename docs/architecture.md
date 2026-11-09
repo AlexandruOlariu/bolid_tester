@@ -5,7 +5,8 @@
 A pure-TypeScript **OBD2 core** (no platform APIs) sits behind a swappable **Transport** interface.
 A thin React Native (Expo) UI, organized as **feature slices**, sits on top. This keeps the
 diagnostic engine unit-testable with **no hardware** and reusable across the BLE transport, the
-Wi-Fi TCP transport, a future Web Bluetooth build, and the in-memory simulator.
+Wi-Fi TCP transport, the Classic Bluetooth (SPP) transport, a future Web Bluetooth build, and the
+in-memory simulator.
 
 ```
 UI — feature slices (Tamagui)  ──►  state stores (Zustand)  ──►  DiagnosticSession
@@ -15,10 +16,11 @@ UI — feature slices (Tamagui)  ──►  state stores (Zustand)  ──►  D
                                                        ELM327 client (AT cmds, queue, parsing)
                                                               │
                                                    Transport interface
-                         ┌──────────────────┬──────────────┼─────────────────┐
-                  BleTransport         TcpTransport     MockTransport     (WebBluetoothTransport
-          (react-native-ble-plx)  (react-native-tcp-socket,  (simulator)    — future, optional)
-                                   Wi-Fi ELM327, plan 26)
+                ┌──────────────────┬──────────────────┬───┴──────────┬─────────────────┐
+         BleTransport         TcpTransport        SppTransport     MockTransport  (WebBluetoothTransport
+ (react-native-ble-plx)  (react-native-tcp-socket, (react-native-     (simulator)   — future, optional)
+                          Wi-Fi ELM327, plan 26)   bluetooth-classic,
+                                                   Android SPP, plan 27)
 ```
 
 ## Layers (bottom-up)
@@ -26,7 +28,7 @@ UI — feature slices (Tamagui)  ──►  state stores (Zustand)  ──►  D
 ### 1. Transport (`src/shared/obd-core/transport`)
 
 A minimal byte pipe. The rest of the stack does not care whether bytes go over BLE, a TCP socket,
-a mock, or (later) Web Bluetooth.
+a classic Bluetooth serial port, a mock, or (later) Web Bluetooth.
 
 ```ts
 interface Transport {
@@ -35,8 +37,14 @@ interface Transport {
   write(bytes: Uint8Array): Promise<void>;
   onData(listener: (bytes: Uint8Array) => void): () => void; // returns unsubscribe
   readonly status: TransportStatus; // 'disconnected' | 'connecting' | 'connected' | 'error'
+  readonly capabilities?: TransportCapabilities; // { monitor: boolean }; absent = can stream ATMA
 }
 ```
+
+`capabilities` (plan 27) is optional and backwards-compatible: absent means `{ monitor: true }`. A
+link that only delivers prompt-terminated messages declares `{ monitor: false }`;
+`DiagnosticSession.canMonitor` reads it and `startSniffer()` / `Elm327Client.startMonitor()` refuse
+with `MONITOR_UNAVAILABLE_MESSAGE` instead of holding the queue forever.
 
 - **`MockTransport`** — the simulator (see [`simulator.md`](./simulator.md)). Pure, deterministic.
 - **`BleTransport`** — wraps `react-native-ble-plx`. **Discovers** the notify + write characteristics
@@ -46,6 +54,14 @@ interface Transport {
   loads `react-native-tcp-socket` through a variable specifier, the tests use a fake socket driven
   by the simulator (`obd-core/transport/testing/bridge.ts`). Same status events as BLE, so link
   loss and auto-reconnect work unchanged (see [connection](./features/connection.md#wi-fi-adapters-tcp-plan-26)).
+- **`SppTransport`** (`src/shared/transports/spp/`, plan 27, Android only) — an RFCOMM socket to a
+  paired classic Bluetooth ("3.0") ELM327 through `react-native-bluetooth-classic`, injected as an
+  `SppModuleLike` loader (the tests use a fake whose device re-chunks the simulator's output by `>`
+  through the same bridge). The library hands over one message per `>` with the `>` stripped, so
+  the transport re-appends the prompt; for the same reason it declares `capabilities = { monitor:
+false }` (no `ATMA` sniffer). `listBondedAdapters()` lists paired devices — there is no scanning.
+  iOS cannot open non-MFi classic accessories, so the source is hidden there (see
+  [connection](./features/connection.md#classic-bluetooth-spp-android--plan-27)).
 
 ### 2. ELM327 client (`src/shared/obd-core/elm327`)
 
@@ -99,7 +115,7 @@ features/<name>/
 └── index.ts   # the feature's public surface
 ```
 
-Shared, cross-cutting code (the OBD2 core, vehicle registry, BLE and TCP transports, design-system wrappers,
+Shared, cross-cutting code (the OBD2 core, vehicle registry, BLE, TCP and SPP transports, design-system wrappers,
 theme, generic hooks, utils) lives under `src/shared/*`. Anything reused by two features is promoted
 to `shared`.
 

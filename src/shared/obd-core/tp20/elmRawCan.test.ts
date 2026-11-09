@@ -6,16 +6,20 @@
 import type { Elm327Client } from '../elm327/Elm327Client';
 import { Elm327RawCanLink, parseRawCanLine, probeTp20Capability } from './elmRawCan';
 import { RawFrame } from './tp20';
+import { MONITOR_UNAVAILABLE_MESSAGE } from '../transport/Transport';
 
-function mockClient(responses: Record<string, string> = {}) {
+function mockClient(responses: Record<string, string> = {}, opts: { canMonitor?: boolean } = {}) {
   const calls: string[] = [];
   let monitorCb: ((line: string) => void) | null = null;
+  const canMonitor = opts.canMonitor ?? true;
   const client = {
+    canMonitor,
     raw: async (cmd: string) => {
       calls.push(cmd);
       return responses[cmd] ?? 'OK';
     },
     startMonitor: async (cb: (line: string) => void) => {
+      if (!canMonitor) throw new Error(MONITOR_UNAVAILABLE_MESSAGE);
       monitorCb = cb;
     },
     stopMonitor: async () => {
@@ -122,15 +126,32 @@ describe('Elm327RawCanLink', () => {
     expect(client.monitoring).toBe(true); // monitoring resumed around the filter change
   });
 
+  it('begin() refuses before sending anything over a link that cannot monitor (SPP, plan 27)', async () => {
+    const { client, calls } = mockClient({}, { canMonitor: false });
+    const link = new Elm327RawCanLink(client);
+    await expect(link.begin()).rejects.toThrow(MONITOR_UNAVAILABLE_MESSAGE);
+    expect(calls).toEqual([]); // the adapter is never left in raw-CAN formatting
+  });
+
+  it('begin() restores OBD formatting when entering monitor mode fails', async () => {
+    const { client, calls } = mockClient();
+    (client as unknown as { startMonitor: () => Promise<void> }).startMonitor = async () => {
+      throw new Error('link dropped');
+    };
+    const link = new Elm327RawCanLink(client);
+    await expect(link.begin()).rejects.toThrow('link dropped');
+    expect(calls.slice(calls.indexOf('STI') + 1)).toEqual(
+      expect.arrayContaining(['ATCAF1', 'ATH0', 'ATS0', 'ATCRA']),
+    );
+  });
+
   it('uses a single STPX command per frame on STN/OBDLink adapters', async () => {
     const { client, calls } = mockClient({ STI: 'STN2255 v5.6.8' });
     const link = new Elm327RawCanLink(client);
     await link.begin();
     calls.length = 0;
     await link.send({ id: 0x740, data: [0x10, 0x1a, 0x9b] });
-    expect(calls).toEqual(
-      expect.arrayContaining([expect.stringMatching(/^STPX H:740, D:101A9B/)]),
-    );
+    expect(calls).toEqual(expect.arrayContaining([expect.stringMatching(/^STPX H:740, D:101A9B/)]));
     expect(calls.some((c) => c.startsWith('ATSH'))).toBe(false);
   });
 });
@@ -146,6 +167,12 @@ describe('probeTp20Capability', () => {
     expect(probe.ok).toBe(true);
     expect(probe.framesSeen).toBe(2);
     expect(client.monitoring).toBe(false); // probe cleans up after itself
+  });
+
+  it('rejects without touching the adapter over a link that cannot monitor', async () => {
+    const { client, calls } = mockClient({}, { canMonitor: false });
+    await expect(probeTp20Capability(client, 20)).rejects.toThrow(MONITOR_UNAVAILABLE_MESSAGE);
+    expect(calls).toEqual([]);
   });
 
   it('reports not-ok on a silent bus / incapable clone', async () => {

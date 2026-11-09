@@ -1,6 +1,5 @@
-/** The connection feature's service layer: builds the right Transport (simulator, BLE or Wi-Fi
- *  TCP — plan 26), wires the
- *  adapter I/O log, runs the DiagnosticSession, and updates the shared stores.
+/** The connection feature's service layer: builds the right Transport (simulator, BLE, Wi-Fi TCP —
+ *  plan 26 — or Classic Bluetooth SPP — plan 27), wires the adapter I/O log, runs the DiagnosticSession, and updates the shared stores.
  *  Note: "api" here means device/engine access, not a network API.
  *
  *  It also owns the *link-loss lifecycle*: once connected it watches the transport's status events
@@ -16,9 +15,18 @@ import { DEFAULT_WAKE_AFTER_IDLE_MS } from '@/shared/obd-core/elm327/Elm327Clien
 import { logRxText, logTxText } from '@/shared/obd-core/transport/recordingTransport';
 import { BleTransport } from '@/shared/transports/ble/BleTransport';
 import { getBleManager } from '@/shared/transports/ble/manager';
-import { requestBlePermissions } from '@/shared/transports/ble/permissions';
+import {
+  requestBlePermissions,
+  requestClassicBluetoothPermissions,
+} from '@/shared/transports/ble/permissions';
 import { TcpTransport, type TcpSocketFactory } from '@/shared/transports/tcp/TcpTransport';
 import { formatEndpoint } from '@/shared/transports/tcp/endpoint';
+import {
+  SppTransport,
+  listBondedAdapters,
+  type BondedAdapter,
+  type SppModuleLoader,
+} from '@/shared/transports/spp/SppTransport';
 import { useSettingsStore, type AdapterSource } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useGarageStore } from '@/shared/state/garageStore';
@@ -57,6 +65,10 @@ function withLog(inner: Transport, isMonitoring: () => boolean, isStale: () => b
   return {
     get status() {
       return inner.status;
+    },
+    // Forwarded, so the session sees what the real link can do (no ATMA over SPP, plan 27).
+    get capabilities() {
+      return inner.capabilities;
     },
     connect: () => inner.connect(),
     disconnect: () => inner.disconnect(),
@@ -116,6 +128,24 @@ export function setTcpSocketFactory(factory: TcpSocketFactory | undefined): void
 
 /** The device a Wi-Fi attempt targets: the endpoint from settings (there is nothing to pick). */
 export const WIFI_DEVICE_NAME = 'Wi-Fi ELM327';
+
+/** The Classic Bluetooth module loader; undefined = `react-native-bluetooth-classic` (the app). */
+let sppModuleLoader: SppModuleLoader | undefined;
+
+/** Test seam (plan 27): open Classic Bluetooth links and list paired devices with `loader` instead
+ *  of `react-native-bluetooth-classic`. `undefined` restores the default. */
+export function setSppModuleLoader(loader: SppModuleLoader | undefined): void {
+  sppModuleLoader = loader;
+}
+
+/** The name an SPP attempt shows when the paired device has none. */
+export const SPP_DEVICE_NAME = 'Classic Bluetooth adapter';
+
+/** The phone's paired (bonded) Bluetooth devices for the Classic Bluetooth picker, likely OBD2
+ *  adapters first. Throws a plain-English error when Bluetooth is off or the module is absent. */
+export function listPairedAdapters(): Promise<BondedAdapter[]> {
+  return listBondedAdapters(sppModuleLoader);
+}
 
 function detachStatusWatch(): void {
   statusUnsub?.();
@@ -255,9 +285,12 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
   // the adapter it targeted (sessionStore only learns the device on success, and keeps the old one
   // after a drop).
   const attemptDevice =
-    adapterSource === 'ble'
+    adapterSource === 'ble' || adapterSource === 'spp'
       ? target
-        ? { id: target.deviceId, name: target.deviceName ?? null }
+        ? {
+            id: target.deviceId,
+            name: target.deviceName ?? (adapterSource === 'spp' ? SPP_DEVICE_NAME : null),
+          }
         : null
       : adapterSource === 'wifi'
         ? { id: formatEndpoint(wifi), name: WIFI_DEVICE_NAME }
@@ -292,6 +325,18 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
       rawTransport = new BleTransport(getBleManager(), target.deviceId);
       device = attemptDevice;
       // Real adapters auto-sleep when idle: wake them before a command after 20 s of silence.
+      wakeAfterIdleMs = DEFAULT_WAKE_AFTER_IDLE_MS;
+    } else if (adapterSource === 'spp') {
+      // Classic Bluetooth (plan 27, Android): an RFCOMM socket to a device paired in Android
+      // settings. RFCOMM needs only BLUETOOTH_CONNECT on API 31+ and no runtime permission before
+      // (never the BLE location prompt). `lastTarget` keeps the address, so auto-reconnect replays
+      // it unchanged.
+      if (!target || !attemptDevice) throw new Error('Select a paired adapter first');
+      if (!(await requestClassicBluetoothPermissions())) {
+        throw new Error('Bluetooth permission denied');
+      }
+      rawTransport = new SppTransport(target.deviceId, sppModuleLoader);
+      device = attemptDevice;
       wakeAfterIdleMs = DEFAULT_WAKE_AFTER_IDLE_MS;
     } else if (adapterSource === 'wifi') {
       // Wi-Fi ELM327 (plan 26): a TCP socket to the endpoint in settings. No permission prompt

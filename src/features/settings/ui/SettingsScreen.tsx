@@ -976,6 +976,15 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
                   label="Wi-Fi adapter"
                   onPress={() => void connectionService.switchAdapterSource('wifi')}
                 />
+                {/* Classic Bluetooth (plan 27) is Android only: iOS opens classic accessories only
+                    through MFi, which ELM327 clones are not. */}
+                {Platform.OS === 'android' ? (
+                  <Seg
+                    active={s.adapterSource === 'spp'}
+                    label="Classic Bluetooth"
+                    onPress={() => void connectionService.switchAdapterSource('spp')}
+                  />
+                ) : null}
                 <Seg
                   active={s.adapterSource === 'mock'}
                   label="Simulator (no car)"
@@ -983,11 +992,22 @@ function DeveloperSection({ resetAppData }: { resetAppData?: ResetAppData }) {
                 />
               </XStack>
               <Paragraph theme="alt2" fontSize="$1">
-                Bluetooth LE and Wi-Fi ELM327 adapters connect to a real car. The simulator emulates
-                a real ECU so every screen works with no hardware; a banner stays visible while it
-                is on. Switching disconnects the current session.
+                Bluetooth LE and Wi-Fi ELM327 adapters connect to a real car
+                {Platform.OS === 'android'
+                  ? ', and so do classic Bluetooth (“3.0”) ones paired in Android’s Bluetooth settings'
+                  : ''}
+                . The simulator emulates a real ECU so every screen works with no hardware; a banner
+                stays visible while it is on. Switching disconnects the current session.
               </Paragraph>
             </YStack>
+
+            {s.adapterSource === 'spp' ? (
+              <Paragraph theme="alt2" fontSize="$1" testID="settings-spp">
+                Classic Bluetooth: pair the adapter in Android Settings → Bluetooth first (usually
+                “OBDII”, PIN 1234 or 0000), then pick it on the Connect tab. The bus sniffer is not
+                available over classic Bluetooth.
+              </Paragraph>
+            ) : null}
 
             {s.adapterSource === 'wifi' ? <WifiEndpointSection /> : null}
 

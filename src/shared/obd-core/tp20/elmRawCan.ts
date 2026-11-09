@@ -15,6 +15,7 @@
  *  See docs/features/tp20.md. */
 
 import { Elm327Client } from '../elm327/Elm327Client';
+import { MONITOR_UNAVAILABLE_MESSAGE } from '../transport/Transport';
 import { RawCanLink, RawFrame } from './tp20';
 
 function toHex(bytes: number[]): string {
@@ -65,6 +66,9 @@ export class Elm327RawCanLink implements RawCanLink {
   /** Enter raw-CAN mode and begin monitoring. Call once before opening a channel. */
   async begin(): Promise<void> {
     if (this.started) return;
+    // A link that cannot stream monitor mode (Classic Bluetooth SPP, plan 27): refuse before any
+    // AT command, so the adapter is never left in raw-CAN formatting.
+    if (!this.client.canMonitor) throw new Error(MONITOR_UNAVAILABLE_MESSAGE);
     // ATS1, not ATS0: the monitor parser needs space-separated id/byte tokens.
     for (const c of ['ATCAF0', 'ATH1', 'ATL0', 'ATS1']) await this.client.raw(c);
     // Clear any receive filter left over from a UDS module scan (ATCRA) — best-effort, old
@@ -73,19 +77,30 @@ export class Elm327RawCanLink implements RawCanLink {
     // STN/OBDLink detection: STPX carries header+data in one command (fewer round-trips/frame).
     const sti = await this.client.raw('STI').catch(() => '');
     this.stn = /\bSTN/i.test(sti);
-    await this.client.startMonitor(this.dispatch);
+    try {
+      await this.client.startMonitor(this.dispatch);
+    } catch (e) {
+      // `started` stays false, so end() would skip the restore: undo the raw-CAN setup here.
+      await this.restoreObdFormatting();
+      throw e;
+    }
     this.started = true;
   }
 
   async end(): Promise<void> {
     if (!this.started) return;
     await this.client.stopMonitor();
-    // Restore what the normal client expects (init() runs ATL0/ATS0/ATH0): auto-format back on,
-    // headers off, spaces off — otherwise every later OBD response parses wrong until re-init.
-    for (const c of ['ATCAF1', 'ATH0', 'ATS0']) await this.client.raw(c).catch(() => undefined);
-    await this.clearFilter();
+    await this.restoreObdFormatting();
     this.started = false;
     this.lastHeader = -1;
+  }
+
+  /** Restore what the normal client expects (init() runs ATL0/ATS0/ATH0): auto-format back on,
+   *  headers off, spaces off, no receive filter — otherwise every later OBD response parses wrong
+   *  until re-init. Best-effort per command. */
+  private async restoreObdFormatting(): Promise<void> {
+    for (const c of ['ATCAF1', 'ATH0', 'ATS0']) await this.client.raw(c).catch(() => undefined);
+    await this.clearFilter();
   }
 
   private async clearFilter(): Promise<void> {

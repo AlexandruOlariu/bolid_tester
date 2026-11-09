@@ -8,8 +8,10 @@ import { connectSimulator } from '@test/simulator';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useGarageStore } from '@/shared/state/garageStore';
 import { useVehicleStore } from '@/shared/state/vehicleStore';
+import { useSettingsStore } from '@/shared/state/settingsStore';
 import { VAG_UDS_HEADER_CANDIDATES, groupCandidatesByPair } from '@/shared/obd-core';
 import { useModuleScanStore } from '../model/moduleScanStore';
+import { TP20_MONITOR_UNAVAILABLE } from '../hooks/useModuleScan';
 import { ModuleScanScreen } from './ModuleScanScreen';
 import { DiscoverySection } from './DiscoverySection';
 
@@ -138,6 +140,19 @@ describe('ModuleScanScreen — Discover modules', () => {
     fireEvent.press(screen.getByText('Instrument cluster (TP2.0)'));
     expect(screen.getByTestId('verify-module-uds:17')).toBeTruthy();
     expect(screen.getByTestId('verify-module-tp20:17')).toBeTruthy();
+  });
+
+  it('explains instead of offering the TP2.0 scan over a link that cannot monitor (SPP)', async () => {
+    useVehicleStore.setState({ selectedProfileId: 'golf-plus-2009-20tdi' });
+    await connectSimulator({ vehicleId: 'golf-plus-2009-20tdi' });
+    const session = useSessionStore.getState().session!;
+    // A Classic Bluetooth link: a real adapter source whose transport cannot stream ATMA.
+    Object.defineProperty(session, 'canMonitor', { get: () => false });
+    useSettingsStore.setState({ adapterSource: 'spp' });
+    renderWithProviders(<ModuleScanScreen />);
+    expect(screen.getByText('Pre-UDS modules (TP2.0)')).toBeTruthy();
+    expect(screen.getByText(TP20_MONITOR_UNAVAILABLE)).toBeTruthy();
+    expect(screen.queryByText('Scan gateway (TP2.0)')).toBeNull();
   });
 
   it('is not offered on 29-bit CAN, where addressing could not be restored afterwards', async () => {

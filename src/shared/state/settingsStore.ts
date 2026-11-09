@@ -34,9 +34,33 @@ import {
   type TcpEndpoint,
 } from '@/shared/transports/tcp/endpoint';
 
-/** Where the app gets its adapter: the simulator, a Bluetooth LE ELM327, or a Wi-Fi ELM327 over
- *  TCP (plan 26). */
-export type AdapterSource = 'mock' | 'ble' | 'wifi';
+/** Where the app gets its adapter: the simulator, a Bluetooth LE ELM327, a Wi-Fi ELM327 over TCP
+ *  (plan 26), or a Classic Bluetooth (SPP) ELM327 — Android only (plan 27). */
+export type AdapterSource = 'mock' | 'ble' | 'wifi' | 'spp';
+
+/** Whether `source` can be used on platform `os` (`Platform.OS`): Classic Bluetooth is Android
+ *  only — iOS opens classic accessories only through Apple's MFi programme, which ELM327 clones are
+ *  not part of. */
+export function isAdapterSourceSupported(source: AdapterSource, os: string): boolean {
+  return source !== 'spp' || os === 'android';
+}
+
+/** The one-time notice shown when a stored Classic Bluetooth source was replaced on iOS. */
+export const SPP_FALLBACK_NOTICE =
+  'Classic Bluetooth adapters work only on Android, so the app switched to Bluetooth LE. ' +
+  'Use a Bluetooth LE or Wi-Fi OBD2 adapter on this device.';
+
+/** `Platform.OS`, once the app told the store (`setSettingsPlatform`); null = unknown (tests, or
+ *  before startup), in which case no source is replaced. Kept out of the store module's imports so
+ *  this file stays free of React Native (it runs in the Node test project). Declared before the
+ *  store, because a synchronous storage would run `merge` during `create()`. */
+let settingsPlatform: string | null = null;
+
+/** Set by `merge` when hydration replaced an unusable stored source. zustand's persist writes the
+ *  file after hydration only when a migration ran, so `onRehydrateStorage` writes the fallback back
+ *  itself — otherwise the file keeps `'spp'` and the "one-time" notice returns on every launch. */
+let fallbackNeedsWrite = false;
+
 export type ThemePref = 'system' | 'light' | 'dark';
 
 /** Structured-output mode for the AI request (see obd-core `buildChatRequestBody`). */
@@ -77,6 +101,10 @@ export interface SettingsState {
   ai: AiSettings;
   /** The Wi-Fi adapter's TCP address (plan 26), used when `adapterSource` is `'wifi'`. */
   wifi: TcpEndpoint;
+  /** Runtime only (never persisted): set when hydration replaced an adapter source this platform
+   *  cannot use (a stored `'spp'` on iOS, plan 27). The Connect screen shows it once. */
+  adapterSourceNotice: string | null;
+  dismissAdapterSourceNotice: () => void;
   setAdapterSource: (s: AdapterSource) => void;
   setSimulatedVehicle: (id: string) => void;
   setInjectedDtcs: (codes: string[]) => void;
@@ -182,6 +210,8 @@ export const useSettingsStore = create<SettingsState>()(
       theme: 'dark',
       ai: DEFAULT_AI_SETTINGS,
       wifi: { ...DEFAULT_WIFI_ENDPOINT },
+      adapterSourceNotice: null,
+      dismissAdapterSourceNotice: () => set({ adapterSourceNotice: null }),
       setAdapterSource: (adapterSource) => set({ adapterSource }),
       setSimulatedVehicle: (simulatedVehicleId) => set({ simulatedVehicleId }),
       setInjectedDtcs: (injectedDtcs) => set({ injectedDtcs }),
@@ -241,17 +271,47 @@ export const useSettingsStore = create<SettingsState>()(
         if (!isAiProviderId(ai.provider)) ai.provider = inferProvider(ai.baseUrl);
         // A restored or hand-edited file with an unusable endpoint keeps the current one.
         const wifi = isValidEndpoint(p.wifi) ? p.wifi : current.wifi;
-        return { ...current, ...p, ai, wifi };
+        const merged = { ...current, ...p, ai, wifi };
+        // Classic Bluetooth on iOS (a backup restored from an Android phone): fall back to BLE,
+        // and have onRehydrateStorage write that back to the file.
+        const fallback = platformFallback(merged.adapterSource);
+        if (fallback.adapterSource) fallbackNeedsWrite = true;
+        return { ...merged, ...fallback };
       },
       // Once the persisted blob is in memory, reconcile the apiKey with the keystore (migrate a legacy
       // plaintext key out of the file, or load the stored key into runtime state).
       onRehydrateStorage: () => (state, error) => {
         if (error || !state) return;
+        if (fallbackNeedsWrite) {
+          fallbackNeedsWrite = false;
+          // The persisted setState writes the partialized state (adapterSource 'ble') to the file.
+          useSettingsStore.setState({ adapterSource: state.adapterSource });
+        }
         void hydrateApiKey();
       },
     },
   ),
 );
+
+/** The state patch that replaces an adapter source this platform cannot use, or `{}`. */
+function platformFallback(
+  source: AdapterSource | undefined,
+): Partial<Pick<SettingsState, 'adapterSource' | 'adapterSourceNotice'>> {
+  if (!source || settingsPlatform === null || isAdapterSourceSupported(source, settingsPlatform)) {
+    return {};
+  }
+  return { adapterSource: 'ble', adapterSourceNotice: SPP_FALLBACK_NOTICE };
+}
+
+/** Tell the store which platform it runs on (`Platform.OS`; called once at app start, from the
+ *  root layout). A stored source this platform cannot use — Classic Bluetooth on iOS — falls back
+ *  to Bluetooth LE with a one-time notice, whether hydration already ran or runs later (`merge`).
+ *  `null` forgets the platform (tests). */
+export function setSettingsPlatform(os: string | null): void {
+  settingsPlatform = os;
+  const patch = platformFallback(useSettingsStore.getState().adapterSource);
+  if (patch.adapterSource) useSettingsStore.setState(patch);
+}
 
 /** Keys entered this session, per provider. Keeps a provider switch working when the keystore is
  *  unavailable (Expo Go, web, tests), where keys live in memory only (documented degradation). */

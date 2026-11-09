@@ -9,7 +9,7 @@
  *     listening for the late reply's `>` (up to `DRAIN_GRACE_MS`) and discards it, so a late reply
  *     can never resolve the next command. */
 
-import { Transport } from '../transport/Transport';
+import { Transport, canStreamMonitor, MONITOR_UNAVAILABLE_MESSAGE } from '../transport/Transport';
 import { redactCommand } from '../transport/redact';
 import { bytesToString, stringToBytes } from '../../lib/bytes';
 import { parseElmResponse, ParsedResponse } from './responseParser';
@@ -348,11 +348,22 @@ export class Elm327Client {
     return parseElmResponse(raw);
   }
 
+  /** Whether this client's transport can stream monitor mode (`ATMA`); false over Classic
+   *  Bluetooth SPP (plan 27). Callers that reconfigure the adapter before monitoring (the TP2.0
+   *  raw-CAN link) check this first, so a refusal never leaves the adapter half-configured. */
+  get canMonitor(): boolean {
+    return canStreamMonitor(this.transport);
+  }
+
   /** Start ELM327 monitor mode (default `ATMA`): frames stream to `listener` until
-   *  stopMonitor(). The command queue is held meanwhile — monitor mode owns the channel. */
+   *  stopMonitor(). The command queue is held meanwhile — monitor mode owns the channel. Rejects
+   *  with `MONITOR_UNAVAILABLE_MESSAGE` when the transport cannot stream monitor mode. */
   async startMonitor(listener: (line: string) => void, cmd = 'ATMA'): Promise<void> {
     if (this.monitorListener) return;
     if (this.closed) throw new Elm327ClosedError();
+    // A link that only delivers prompt-terminated messages (Classic Bluetooth SPP, plan 27) would
+    // never hand the monitor's prompt-less lines over — and would hold the queue forever.
+    if (!this.canMonitor) throw new Error(MONITOR_UNAVAILABLE_MESSAGE);
     this.attach();
     const hold = new Promise<void>((res) => (this.monitorRelease = res));
     this.queue = this.queue.then(() => hold);

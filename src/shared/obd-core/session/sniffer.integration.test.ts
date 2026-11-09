@@ -6,6 +6,8 @@ import { MockTransport } from '../transport/MockTransport';
 import { buildScenario } from '../transport/scenarios';
 import { CanFrameAggregator, formatCaptureCsv } from '../obd/canMonitor';
 import { CaptureBuffer } from '../obd/captureBuffer';
+import { MONITOR_UNAVAILABLE_MESSAGE, type Transport } from '../transport/Transport';
+import { bytesToString } from '../../lib/bytes';
 
 describe('CAN sniffer against the simulator', () => {
   it('streams frames during ATMA and resumes commands after stop', async () => {
@@ -87,5 +89,50 @@ describe('CAN sniffer against the simulator', () => {
     const ts = data.map((r) => Number(r.split(',')[0]));
     expect(ts).toEqual([...ts].sort((a, b) => a - b));
     expect(ts[ts.length - 1]).toBeLessThan(60_000);
+  });
+
+  describe('transport capabilities (plan 27)', () => {
+    it('a transport without `capabilities` (the simulator, BLE, TCP) allows monitoring', async () => {
+      const mock = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+      expect((mock as Transport).capabilities).toBeUndefined();
+      const session = new DiagnosticSession(mock);
+      expect(session.canMonitor).toBe(true);
+    });
+
+    it('a transport declaring monitor: false refuses the sniffer before sending anything', async () => {
+      const mock = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+      const sent: string[] = [];
+      // The simulator, re-declared as a prompt-framed link (like SPP).
+      const framed: Transport = {
+        get status() {
+          return mock.status;
+        },
+        capabilities: { monitor: false },
+        connect: () => mock.connect(),
+        disconnect: () => mock.disconnect(),
+        write: (b) => {
+          sent.push(bytesToString(b).trim());
+          return mock.write(b);
+        },
+        onData: (l) => mock.onData(l),
+        onStatusChange: (l) => mock.onStatusChange(l),
+      };
+      const session = new DiagnosticSession(framed);
+      await session.connect();
+      expect(session.canMonitor).toBe(false);
+      const before = sent.length;
+      await expect(session.startSniffer(() => undefined)).rejects.toThrow(
+        MONITOR_UNAVAILABLE_MESSAGE,
+      );
+      // The client-level guard holds too (TP2.0 raw CAN uses monitor mode directly).
+      await expect(session.client.startMonitor(() => undefined)).rejects.toThrow(
+        MONITOR_UNAVAILABLE_MESSAGE,
+      );
+      expect(sent).toHaveLength(before);
+      expect(session.sniffing).toBe(false);
+      // The queue was never held: normal commands still work.
+      const v = await session.readValue('010C');
+      expect(v?.value).toBeCloseTo(820, 0);
+    });
   });
 });

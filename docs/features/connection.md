@@ -1,6 +1,7 @@
 # Feature: connection
 
-Scan for, connect to, and initialize the ELM327 adapter — Bluetooth LE, or Wi-Fi over TCP (plan 26).
+Scan for, connect to, and initialize the ELM327 adapter — Bluetooth LE, Wi-Fi over TCP (plan 26), or
+Classic Bluetooth (SPP) on Android (plan 27).
 
 ## UI
 
@@ -15,14 +16,28 @@ Initializing… / Connected / Error` with an icon and colour per `ConnState`;
     internet, choose _Stay connected_." — the adapter address from Settings
     (`connect-wifi-endpoint`), **Connect over Wi-Fi** and **Use a Bluetooth adapter**; no scan and no
     `BleManager` (see [Wi-Fi adapters](#wi-fi-adapters-tcp-plan-26));
+  - with the **Classic Bluetooth** source (Android only, `testID="connect-spp"`, `ui/SppConnect.tsx`),
+    the **Paired adapters** list (the phone's bonded devices, likely adapters first, each a
+    `DeviceRow`), the note that the bus sniffer is not available over classic Bluetooth, an empty
+    state (`connect-spp-empty`) — "Pair the adapter first: Android Settings → Bluetooth → pair
+    `OBDII` (PIN 1234 or 0000), then come back." — **Open Bluetooth settings**
+    (`Linking.sendIntent('android.settings.BLUETOOTH_SETTINGS')`, falling back to
+    `Linking.openSettings()`), **Refresh**, a list error (`connect-spp-error`: Bluetooth off,
+    permission denied, module missing) and **Use a Bluetooth LE adapter**; no scan and no
+    `BleManager` (see [Classic Bluetooth](#classic-bluetooth-spp-android--plan-27));
   - otherwise (Bluetooth) the `BluetoothPrompt` banner when the radio is not ready, **Scan for
-    adapters**, the device list, on Android **Connect by address**, and a small **Using a Wi-Fi
-    adapter instead?** link that switches the source to Wi-Fi.
+    adapters**, the device list, on Android **Connect by address**, a small **Using a Wi-Fi
+    adapter instead?** link that switches the source to Wi-Fi and, on Android only, **Using a
+    classic Bluetooth (3.0) adapter instead?**.
   - The subtitle follows the source ("Pair with your OBD2 Bluetooth adapter" / "Connect to your
-    Wi-Fi OBD2 adapter").
-- **DeviceRow** — one scanned device: name (or "(unnamed)"), id and RSSI, a ⭐ when the name matches
-  an adapter hint (`ADAPTER_NAME_HINTS` in `shared/transports/ble/manager.ts`: `vlink`,
-  `ios-vlink`, `v-link`, `veepeak`, `obdii`, `obd`, `icar`), and a **Connect** button.
+    Wi-Fi OBD2 adapter" / "Connect to your paired classic Bluetooth adapter").
+  - When a stored Classic Bluetooth source was replaced on iOS (below), a one-time notice
+    (`adapter-source-notice`, `settingsStore.adapterSourceNotice`) with **OK**.
+- **DeviceRow** — one scanned (or paired) device: name (or "(unnamed)"), id and RSSI (none for a
+  paired device), a ⭐ when the name matches an adapter hint (`ADAPTER_NAME_HINTS` in the pure
+  `shared/transports/adapterNames.ts`, re-exported by `ble/manager.ts`: `vlink`, `ios-vlink`,
+  `v-link`, `veepeak`, `obdii`, `obd`, `icar`, `elm327`), and a **Connect** button labelled
+  "Connect to _name_" for screen readers.
 - **SimulatorBanner** — the amber strip on every route (below).
 - The shared `StatusBadge` (`shared/ui`) renders the same states as a compact badge; the Connect
   screen uses its own larger `StatusHero` instead.
@@ -71,16 +86,27 @@ no-op.
   `/vehicle`; errors are surfaced through `sessionStore.error`, not thrown.
 - `useBluetoothState(enabled?)` — subscribe to the phone's live Bluetooth radio state
   (`onStateChange`): `ready / poweredOff / unauthorized / unsupported / checking`. The Connect
-  screen passes `adapterSource === 'ble'`, so neither the simulator nor Wi-Fi ever constructs the
-  `BleManager`. Drives `BluetoothPrompt`.
+  screen passes `adapterSource === 'ble'`, so neither the simulator, Wi-Fi nor Classic Bluetooth ever
+  constructs the `BleManager`. Drives `BluetoothPrompt`.
+- `usePairedAdapters(enabled)` — `{ devices, loading, loaded, error, refresh }` for the Classic
+  Bluetooth picker: requests the Classic Bluetooth permission
+  (`requestClassicBluetoothPermissions`: `BLUETOOTH_CONNECT` — "Nearby devices" — on API 31+;
+  nothing on older Android, where the install-time `BLUETOOTH` / `BLUETOOTH_ADMIN` cover the bonded
+  list and RFCOMM, so the BLE location prompt never appears), then
+  `connectionService.listPairedAdapters()`; reads again on **Refresh** and whenever the app returns
+  to the foreground (back from pairing in Android settings). The foreground re-read only **checks**
+  the permission (`checkClassicBluetoothPermissions`, no system dialog) and is skipped while a request is in flight: the permission dialog itself pauses
+  the activity, and its close must not prompt a second time. Failures are shown as `error` and
+  logged (`connection/paired-adapters`, warning).
 
 ## api (service layer)
 
 - `connectionService` (`api/connectionService.ts`, exported as a namespace from the slice) —
   `connect(target?: ConnectTarget)` builds the `Transport` (`BleTransport` for `{ deviceId }`, a
-  `TcpTransport` to `settings.wifi` for the Wi-Fi source, or a `MockTransport` over the simulated car
-  per Settings), wraps it so all I/O is mirrored to the
-  adapter log, constructs the `DiagnosticSession` (which owns the `Elm327Client`), runs
+  `TcpTransport` to `settings.wifi` for the Wi-Fi source, an `SppTransport` to the paired
+  `{ deviceId }` for the Classic Bluetooth source, or a `MockTransport` over the simulated car per
+  Settings), wraps it so all I/O is mirrored to the adapter log (the wrapper forwards the
+  transport's `capabilities`), constructs the `DiagnosticSession` (which owns the `Elm327Client`), runs
   `session.connect()` (init → probe → identify), then — on CAN, when the active profile declares
   extended PIDs — reads the engine part number once (`session.readPartNumber()`, `22 F187`) into
   `info.partNumber` (failure is logged as `connection/part-number` and never fails the connect; it
@@ -90,7 +116,8 @@ no-op.
   connect invalidated, auto-reconnect cancelled, adapter log cleared — run before a data restore,
   whose restored settings may change the source; plan 18), `FLAP_PAUSED_MESSAGE`,
   `setTcpSocketFactory(factory?)` (test seam: Wi-Fi sockets from a fake instead of
-  `react-native-tcp-socket`), and the
+  `react-native-tcp-socket`), `listPairedAdapters()` (the Classic Bluetooth picker's list),
+  `setSppModuleLoader(loader?)` (test seam: a fake `react-native-bluetooth-classic`), and the
   simulator dev hooks under `__sim`
   (Settings → Developer & simulator). Link-loss, auto-reconnect and the flap guard live here too (below).
 - Pure helpers, unit-tested: `reconnect.ts` (`runReconnect`), `flapGuard.ts`
@@ -107,14 +134,15 @@ no-op.
   but keeps the device so reconnect can be offered) and `reset`.
 - `model/scanStore.ts` (`useScanStore`, in-memory): `scanning`, `devices: ScannedDevice[]`
   (`id`, `name`, `rssi`, `isLikelyAdapter`); `setScanning`, `upsert`, `clear`.
-- `model/linkStore.ts` (`useLinkStore`, in-memory): `kind: 'ble' | 'wifi' | null` (the latest
+- `model/linkStore.ts` (`useLinkStore`, in-memory): `kind: 'ble' | 'wifi' | 'spp' | null` (the latest
   attempt's link kind; null for the simulator), `link: BleLinkInfo | null` (set the moment the
   transport reports `connected`, so a failed init still shows it, and again after a successful
   connect; null for the simulator), `stage: ConnectStage | null` (the furthest stage the latest
   attempt reached: `bluetooth` → `transport` → `init` → `probe` → `identify`; the last three come
   from `DiagnosticSession.connect(onStage)`), `attemptStartedAt` (ms) and
   `device: AttemptDevice | null` (`{ id, name }` of the device this attempt targeted; `sessionStore`
-  only learns the device on success; for Wi-Fi `{ id: '192.168.0.10:35000', name: 'Wi-Fi ELM327' }`).
+  only learns the device on success; for Wi-Fi `{ id: '192.168.0.10:35000', name: 'Wi-Fi ELM327' }`;
+  for Classic Bluetooth the paired MAC and its name, or "Classic Bluetooth adapter").
   Actions: `beginAttempt(stage, device, kind?, now?)` (clears `link`, records the first stage, the
   device, the link kind and the start time), `setStage` and `setLink`. Written by
   `connectionService.connectInternal`; read by the diagnostics panel.
@@ -275,8 +303,79 @@ adapter at … within 5 s (ETIMEDOUT)`). After connecting, an unsolicited `close
   Wi-Fi cases in `connectionService.test.ts`, `diagnoseFailure.test.ts` and
   `ConnectionScreen.test.tsx`.
 - **Out of scope:** discovering the adapter address automatically (mDNS / UDP broadcast), Wi-Fi
-  networks with a password, classic Bluetooth (plan 27). Verifying a real Wi-Fi adapter on Android
-  and iOS is on-car pending (plan 26 § Deferred).
+  networks with a password (classic Bluetooth: next section). Verifying a real Wi-Fi adapter on
+  Android and iOS is on-car pending (plan 26 § Deferred).
+
+## Classic Bluetooth (SPP, Android — plan 27)
+
+The cheap "Bluetooth 3.0" ELM327 adapters use the Serial Port Profile over classic Bluetooth
+(RFCOMM), which `react-native-ble-plx` cannot reach at all. On Android they connect through an
+`SppTransport` behind the same `Transport` interface.
+
+- **Library.** [`react-native-bluetooth-classic`](https://github.com/kenjdavidson/react-native-bluetooth-classic)
+  `1.73.0-rc.17` (pinned — the package has shipped only release candidates for years; autolinked,
+  no config plugin; its Android manifest adds `BLUETOOTH` / `BLUETOOTH_ADMIN` up to API 30 and
+  `BLUETOOTH_CONNECT` / `BLUETOOTH_SCAN` from 31, which `app.json` already declares). Loaded by
+  `defaultSppModule` through a variable specifier, so Jest and web never resolve it; a build without
+  it fails with "Classic Bluetooth is not available in this build…".
+- **Transport.** `shared/transports/spp/SppTransport.ts` over an injected `SppModuleLike`:
+  `connectToDevice(address, { delimiter: '>', charset: 'ascii' })`, writes as ASCII strings
+  (`device.write`), `onDataReceived` per message. The library
+  delivers data **per delimiter, delimiter stripped**; the ELM327 ends every reply with its prompt
+  `>`, so the transport re-appends `>` to each message before the ELM client sees it.
+- **Status.** `connecting` → `connected`; a socket failure → `error` with `Could not open the
+Classic Bluetooth adapter <MAC>: <library error>` (typically "read failed, socket might closed or
+  timeout"). A **drop** → `disconnected` once, so link loss and auto-reconnect treat it like a BLE
+  drop; `lastTarget` keeps the MAC, so auto-reconnect replays it unchanged. The library reports a
+  drop two ways, and the transport listens to both: the global `DEVICE_DISCONNECTED` event (sent
+  only when the whole Bluetooth ACL link drops; other addresses are ignored) and the per-device
+  `DEVICE_DISCONNECTED@<MAC>` event (sent when only the RFCOMM socket's read thread fails — the ACL
+  link may stay up, so the global event can come late or never; subscribed through the module's
+  `createBluetoothEventSubscription`). A failed write is a drop too: once the socket is gone the
+  library rejects writes with "Not connected to <MAC>" (or a socket write fails, or `write`
+  resolves `false`), and the transport closes the native connection best-effort and reports
+  `disconnected` instead of failing every later command with the status stuck on `connected`. A
+  manual `disconnect()` unsubscribes first, closes the device and emits only `disconnected`; a
+  disconnect during a connect cancels it (`SppConnectCancelledError`) and closes the late socket.
+  If the library still holds a connection to the address (e.g. after a JS reload),
+  `connectToDevice` resolves with that existing connection rather than failing — it keeps the
+  options it was opened with, which are always `SPP_CONNECT_OPTIONS` in this app.
+- **No sniffer.** `SppTransport.capabilities = { monitor: false }`: monitor mode (`ATMA`) streams
+  lines ending in `\r` with no prompt until interrupted, which a `>`-delimited link never hands
+  over. `DiagnosticSession.startSniffer()` (and `Elm327Client.startMonitor()`) reject with "Bus
+  monitoring is not available over this adapter link" before sending anything, and the Bus sniffer
+  screen shows that instead of **Start** ([can-sniffer](./can-sniffer.md)).
+- **Pairing, no scanning.** `listBondedAdapters()` / `connectionService.listPairedAdapters()` read
+  the phone's bonded devices (refusing with "Bluetooth is off…" while the radio is off), flag
+  likely adapters with the shared name hints and sort them first. Discovery of unpaired devices is
+  out of scope: the user pairs the adapter in Android Settings → Bluetooth (usually `OBDII`, PIN
+  `1234` or `0000`) — **Open Bluetooth settings** jumps there.
+- **Connect.** `connectInternal`'s SPP branch: a picked target is required ("Select a paired adapter
+  first"), `requestClassicBluetoothPermissions()` (CONNECT on API 31+, no prompt on older Android;
+  "Bluetooth permission denied" when refused),
+  `new SppTransport(target.deviceId)`, `wakeAfterIdleMs` as for BLE, attempt device
+  `{ id: <MAC>, name: <paired name> ?? 'Classic Bluetooth adapter' }`, `linkStore.kind = 'spp'`,
+  adapter-log origin `{ source: 'car', deviceId: <MAC> }`.
+- **iOS: unsupported, hidden.** Apple lets an app open a classic Bluetooth accessory only through
+  the MFi (Made for iPhone) programme and its External Accessory framework; ELM327 clones are not
+  MFi-certified, so no App Store app can open them. The Settings segment and the Connect-screen
+  link render only when `Platform.OS === 'android'`. A stored `'spp'` source on another platform (a
+  backup restored from an Android phone) falls back to `'ble'` when the settings hydrate, with a
+  one-time notice — `settingsStore.setSettingsPlatform(Platform.OS)` (called by the root layout)
+  feeds the `merge` rule and also applies the fallback if hydration already ran. Either way the
+  fallback is written back to `bolid.settings.json`, so the notice really is one-time.
+- **Tests.** `SppTransport.test.ts` (fake module: status transitions, re-appended prompt, drop for
+  this address only, socket-closed event, write failure as a drop, manual disconnect, cancel,
+  capability, bonded list, the
+  default loader against a virtual module), `SppTransport.session.integration.test.ts`
+  (`DiagnosticSession` over `SppTransport` whose fake device re-chunks the simulated Golf **by `>`**
+  through `bridgeToMock`: identify, `010C`, `readDtcs('03')`, sniffer refused), the SPP cases in
+  `connectionService.test.ts`, `diagnoseFailure.test.ts`, `settingsStore.test.ts`,
+  `ConnectionScreen.test.tsx`, `SettingsScreen.test.tsx` and `SnifferScreen.test.tsx`.
+- **Out of scope:** iOS classic Bluetooth, discovery / scanning of unpaired SPP devices, `ATMA`
+  streaming over SPP. The installed library's Android source also accepts an empty `delimiter`
+  (every read handed over as-is), which would allow `ATMA`; switching to it needs a real adapter
+  first (plan 27 § Deferred). A real SPP adapter on the owner's phone: on-car pending.
 
 ## Connection diagnostics panel
 
@@ -287,21 +386,26 @@ adapter at … within 5 s (ETIMEDOUT)`). After connecting, an unsolicited `close
   a bare-CR wake-up as `(wake-up)`), the `linkStore` values when present (MTU, payload, service,
   write mode), the device name/id of **this attempt** (`linkStore.device` — `sessionStore` only learns
   the device on success and keeps the previous one after a drop), "Link: Wi-Fi (TCP socket) to
-  `<host>:<port>`" for a Wi-Fi attempt, and the furthest stage reached, with
+  `<host>:<port>`" for a Wi-Fi attempt, "Link: Classic Bluetooth (serial port) to `<MAC>`" for a
+  Classic Bluetooth attempt, and the furthest stage reached, with
   **Copy details**
   (`Share.share({ message })` — no clipboard dependency) and **Open error log** (`/error-log`).
 - The rules are the pure `api/diagnoseFailure.ts` (`diagnoseFailure(input): FailureDiagnosis`),
   first match wins. Stages: `bluetooth | transport | init | probe | identify` (the `transport` chip
-  reads "Wi-Fi link" for the Wi-Fi source — `stageLabel(stage, source)`).
+  reads "Wi-Fi link" for the Wi-Fi source and "Classic Bluetooth link" for the Classic Bluetooth
+  source — `stageLabel(stage, source)`).
   1. Bluetooth source and the radio is off / unauthorized / unsupported → `bluetooth` (the
      `BluetoothPrompt` wording; a still-settling radio is not evidence). - 1b. Wi-Fi source and the error matches `ECONNREFUSED | ETIMEDOUT | EHOSTUNREACH |
 ENETUNREACH`, "connection refused", "no route to host", "network is unreachable" or
      `TcpTransport`'s own wording → `transport`: "The phone is not on the adapter's Wi-Fi network,
      or the adapter uses a different address", with: join the `WiFi_OBDII` network (Android:
      _Stay connected_), check `192.168.0.10`, port `35000`, turn mobile data off, allow Local
-     Network on iPhone (plan 26).
-  2. Error `No suitable notify…` → `transport`: not a serial-over-BLE adapter, maybe classic
-     Bluetooth (SPP) — not supported yet (plan 27).
+     Network on iPhone (plan 26). - 1c. Classic Bluetooth source and the error matches `socket | read failed | connection refused |
+service discovery failed` (Android RFCOMM failures) → `transport`: "The adapter is paired but
+     not reachable", with: power-cycle the adapter, make sure no other app (e.g. Torque) holds the
+     connection, keep the phone close with the ignition on, re-pair it (PIN 1234 / 0000) (plan 27).
+  2. Error `No suitable notify…` → `transport`: not a serial-over-BLE adapter, maybe a classic
+     Bluetooth (SPP) one — on Android, pair it and choose Classic Bluetooth as the adapter source.
   3. Error mentions permission (not on Wi-Fi) → `bluetooth` (permission needed).
   4. A timeout whose last command was `ATZ` → `init`: "accepted the link but did not answer `ATZ` —
      it is unpowered or asleep".
@@ -312,7 +416,8 @@ ENETUNREACH`, "connection refused", "no route to host", "network is unreachable"
      bytes at MTU 23), so the message can be split across two.
   7. A timeout whose last command was an OBD request → `identify`.
   8. Anything else → `transport` with the raw error. Rules 4, 7 and 8 word their link suggestions
-     for the source (the Wi-Fi network instead of Bluetooth).
+     for the source (the Wi-Fi network instead of Bluetooth; rule 4 on Classic Bluetooth: close any
+     other OBD2 app holding the adapter).
 - The panel only feeds the classifier entries newer than `linkStore.attemptStartedAt`, so an older
   session's traffic cannot mislead it. `formatDiagnosticsReport` builds the shared text.
 
@@ -332,8 +437,9 @@ the app never lists it." The connection flow handles it as follows:
   visible error on the Connect screen and is recorded in the **Error log** (`source: connection/scan`).
 - Other user-side checks: turn **Location** on for Android 11 and below (BLE scanning requires it
   there); make sure the unit is a **BLE / "4.0"** adapter (a Bluetooth Classic / SPP "3.0" ELM327
-  can't be reached by `react-native-ble-plx` at all); or **"Forget"** the device in Android settings
-  so it advertises again.
+  can't be reached by `react-native-ble-plx` at all — on Android, pick **Classic Bluetooth** as the
+  adapter source instead and choose it from the paired list); or **"Forget"** the device in Android
+  settings so it advertises again.
 
 ## Acceptance
 
@@ -362,5 +468,11 @@ the app never lists it." The connection flow handles it as follows:
   tests). Switching between Simulator / Bluetooth / Wi-Fi never constructs a `BleManager` unless
   Bluetooth is selected, not even when the Connect screen unmounts (`useScan`'s `stop()` touches
   the BLE stack only after a scan was started). A real Wi-Fi ELM327 on Android and iOS: on-car pending.
+- On Android, Settings → Developer & simulator → **Classic Bluetooth** with nothing paired shows the
+  pairing guidance and **Open Bluetooth settings** opens the system Bluetooth screen; a paired
+  adapter connects from the list, and identify + DTC read work through the delimiter-chunked
+  simulator (integration test). On iOS the segment and the Connect-screen link are absent and a
+  stored `'spp'` source falls back to Bluetooth LE with a one-time notice. The Bus sniffer explains
+  that monitoring is unavailable over SPP instead of failing. A real SPP adapter: on-car pending.
 - On-car pending (plan 12, deferred): the Vgate's real sleep delay and whether a bare `\r` wakes it,
   the negotiated MTU on the owner's phones, and one walk-out-of-range reconnect + flap-guard check.

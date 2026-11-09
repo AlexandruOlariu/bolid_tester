@@ -10,7 +10,11 @@ can be recovered later instead of guessed. Reachable from **More → Bus sniffer
 
 1. Connect (simulator or real adapter). Without a connected session the screen shows
    "Not connected." — unless a finished capture is in memory, which can still be shared (Start
-   stays unavailable until you reconnect).
+   stays unavailable until you reconnect). Over a link that cannot stream the monitor (Classic
+   Bluetooth SPP, plan 27) the screen shows "Bus monitoring is not available over this adapter
+   link." with the reason and the advice to sniff with a Bluetooth LE or Wi-Fi adapter
+   (`testID="sniffer-unavailable"`) instead of **Start** — see
+   [Link capability](#link-capability-plan-27).
 2. Type a **note** — what is happening on the bus ("VCDS Group 121 basic settings, engine idle").
    It is written into the capture header **as it was at Start**. The note is kept between runs
    and is read-only while monitoring.
@@ -34,6 +38,23 @@ Leaving the screen mid-run (or losing the session) still stops `ATMA` and marks 
 the setup returns, and no snapshot timer is left behind). Stop pressed during that setup waits for
 it, then stops. The capture stays in memory and can still be shared when the screen is reopened,
 until the next **Start** clears it.
+
+## Link capability (plan 27)
+
+`ATMA` streams lines that end in `\r` with no `>` prompt until something interrupts it. A transport
+that only hands over prompt-terminated messages cannot carry that: `react-native-bluetooth-classic`
+delivers data per delimiter, and the Classic Bluetooth link uses `>` as the delimiter. So
+`Transport` has an optional `capabilities?: { monitor: boolean }` (absent = `{ monitor: true }`:
+BLE, Wi-Fi TCP, the simulator); `SppTransport` declares `{ monitor: false }`.
+
+- `DiagnosticSession.canMonitor` reads it; `startSniffer()` rejects with
+  `MONITOR_UNAVAILABLE_MESSAGE` ("Bus monitoring is not available over this adapter link") before
+  sending `ATH1` / `ATMA`, so the command queue is never held. `Elm327Client.startMonitor()` refuses
+  the same way (TP2.0's raw-CAN channel uses it directly).
+- `useSniffer()` returns `canMonitor` (`session?.canMonitor ?? true`); the screen shows the
+  explanation instead of **Start monitoring**. Every other screen works over the same link.
+- connectionService's adapter-log wrapper forwards `capabilities`, so the session sees the real
+  link's.
 
 ## Capture files
 
@@ -140,6 +161,8 @@ The way to learn bytes that VCDS hides behind its label files (e.g. the V157 int
 - A note typed before Start appears in the CSV header.
 - Capturing 25 000 lines keeps the UI responsive and reports `dropped` > 0.
 - Export buttons disabled while running; leaving the screen mid-run still stops `ATMA`.
+- Connected over Classic Bluetooth (SPP), the screen explains that bus monitoring is unavailable
+  instead of offering Start, and nothing is sent to the adapter.
 
 ## Tests
 
@@ -150,7 +173,10 @@ stream shape), `features/can-sniffer/api/captureExport.test.ts` (header, file na
 share, failures logged), `features/can-sniffer/model/snifferStore.test.ts`,
 `features/can-sniffer/model/snifferController.test.ts` (Start clears the buffer and freezes the
 header context, which also carries the app version; export refused while running / empty; dispose stops `ATMA` and ends the run, also
-mid-setup; Stop mid-setup; double Start).
+mid-setup; Stop mid-setup; double Start), `ui/SnifferScreen.test.tsx` (Start over the simulator;
+the unavailability notice over a Classic Bluetooth session), the `transport capabilities` cases in
+`session/sniffer.integration.test.ts` and `transports/spp/SppTransport.session.integration.test.ts`
+(the sniffer refused before anything is sent; the link stays usable).
 
 ## Not yet (on-car)
 

@@ -48,6 +48,11 @@ async function busWake(session: DiagnosticSession, proto: ProtocolId): Promise<v
   }
 }
 
+/** Why the TP2.0 gateway scan is unavailable over a link that cannot stream monitor mode. */
+export const TP20_MONITOR_UNAVAILABLE =
+  'The TP2.0 scan reads the bus in raw-CAN monitor mode, which a Classic Bluetooth adapter link ' +
+  'cannot stream. Use a Bluetooth LE or Wi-Fi adapter for pre-UDS modules.';
+
 /** Scan every profile-declared module (VCDS-style "auto-scan"): ident + per-module fault codes.
  *  CAN-only; K-line cars keep the engine-only Fault codes screen. */
 export function useModuleScan() {
@@ -60,6 +65,11 @@ export function useModuleScan() {
   const available = !!session && modules.length > 0 && isCan(proto);
   const tp20Modules = modules.filter((m) => m.transport === 'tp20');
   const canScanTp20 = !!session && tp20Modules.length > 0 && isCan(proto);
+  /** A real adapter runs TP2.0 over raw-CAN monitor mode (`ATMA`), which a Classic Bluetooth (SPP)
+   *  link cannot stream (plan 27): the screen explains that instead of offering the scan. The
+   *  simulator's in-memory bus needs no monitor. */
+  const adapterSource = useSettingsStore((s) => s.adapterSource);
+  const tp20MonitorUnavailable = !!session && adapterSource !== 'mock' && !session.canMonitor;
   /** Discovery needs only an 11-bit CAN link — it is how a car with no module list gets one. Not
    *  29-bit CAN / J1939: every candidate is an 11-bit id pair, and there is no functional header
    *  to restore `ATSH` to afterwards, so standard reads would break until reconnect. */
@@ -142,12 +152,17 @@ export function useModuleScan() {
 
   const scanGateway = useCallback(async () => {
     if (!session || !tp20Modules.length || useModuleScanStore.getState().running) return;
+    // Simulator (mock adapter): drive the tested TP2.0 stack against an in-memory VW bus built
+    // from the profile. Real hardware: raw-CAN over the live ELM327. Same scan code either way.
+    const usingMock = useSettingsStore.getState().adapterSource === 'mock';
+    // Raw CAN needs monitor mode; refuse before the adapter is reconfigured (SPP, plan 27).
+    if (!usingMock && !session.canMonitor) {
+      store.setTp20Error(TP20_MONITOR_UNAVAILABLE);
+      return;
+    }
     store.setRunning(true);
     store.setTp20Error(null);
     try {
-      // Simulator (mock adapter): drive the tested TP2.0 stack against an in-memory VW bus built
-      // from the profile. Real hardware: raw-CAN over the live ELM327. Same scan code either way.
-      const usingMock = useSettingsStore.getState().adapterSource === 'mock';
       const wanted = tp20Modules
         .map((m) => m.tp20Address)
         .filter((a): a is number => a !== undefined);
@@ -240,6 +255,7 @@ export function useModuleScan() {
   return {
     available,
     canScanTp20,
+    tp20MonitorUnavailable,
     canDiscover,
     isGarageCar,
     discovery,

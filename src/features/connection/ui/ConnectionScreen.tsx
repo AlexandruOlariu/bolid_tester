@@ -15,6 +15,7 @@ import { useBluetoothState } from '../hooks/useBluetoothState';
 import { DeviceRow } from './DeviceRow';
 import { BluetoothPrompt } from './BluetoothPrompt';
 import { ConnectionDiagnostics } from './ConnectionDiagnostics';
+import { SppConnect } from './SppConnect';
 import { Panel } from '../styles/connection.styles';
 
 const STATUS_CONFIG: Record<ConnState, { icon: React.ElementType; color: string; label: string }> =
@@ -49,6 +50,7 @@ function StatusHero({ status }: { status: ConnState }) {
 const SUBTITLES = {
   ble: 'Pair with your OBD2 Bluetooth adapter',
   wifi: 'Connect to your Wi-Fi OBD2 adapter',
+  spp: 'Connect to your paired classic Bluetooth adapter',
   mock: 'Pair with your OBD2 Bluetooth adapter',
 } as const;
 
@@ -101,13 +103,16 @@ function WifiConnect({ busy, onConnect }: { busy: boolean; onConnect: () => void
 
 export function ConnectionScreen() {
   const adapterSource = useSettingsStore((s) => s.adapterSource);
+  // Set once when a stored Classic Bluetooth source was replaced on iOS (plan 27).
+  const sourceNotice = useSettingsStore((s) => s.adapterSourceNotice);
+  const dismissSourceNotice = useSettingsStore((s) => s.dismissAdapterSourceNotice);
   const simulated = useSettingsStore((s) => s.simulatedVehicleId);
   const status = useSessionStore((s) => s.status);
   const error = useSessionStore((s) => s.error);
   const { scanning, devices, start, stop } = useScan();
   const { connect, busy } = useConnect();
-  // Only the Bluetooth source touches the BLE stack: the simulator and Wi-Fi never construct a
-  // BleManager (plan 26).
+  // Only the Bluetooth LE source touches the BLE stack: the simulator, Wi-Fi and Classic Bluetooth
+  // never construct a BleManager (plans 26, 27).
   const bt = useBluetoothState(adapterSource === 'ble');
   const [manualId, setManualId] = useState('');
 
@@ -120,6 +125,15 @@ export function ConnectionScreen() {
       <StatusHero status={status} />
 
       <FirstRunCard />
+
+      {sourceNotice ? (
+        <Panel testID="adapter-source-notice">
+          <Paragraph fontSize="$3">{sourceNotice}</Paragraph>
+          <Button size="$3" alignSelf="flex-start" onPress={dismissSourceNotice}>
+            OK
+          </Button>
+        </Panel>
+      ) : null}
 
       {error ? (
         <Panel backgroundColor="$red2">
@@ -155,6 +169,8 @@ export function ConnectionScreen() {
         </YStack>
       ) : adapterSource === 'wifi' ? (
         <WifiConnect busy={busy} onConnect={() => void connect()} />
+      ) : adapterSource === 'spp' ? (
+        <SppConnect busy={busy} onConnect={(target) => void connect(target)} />
       ) : (
         <YStack gap="$3" marginTop="$2">
           <BluetoothPrompt bt={bt} />
@@ -226,6 +242,18 @@ export function ConnectionScreen() {
           >
             Using a Wi-Fi adapter instead?
           </Button>
+          {/* Classic Bluetooth (SPP) is Android only: iOS needs MFi, which ELM327 clones lack. */}
+          {Platform.OS === 'android' ? (
+            <Button
+              size="$3"
+              chromeless
+              alignSelf="flex-start"
+              disabled={busy}
+              onPress={() => void switchAdapterSource('spp')}
+            >
+              Using a classic Bluetooth (3.0) adapter instead?
+            </Button>
+          ) : null}
         </YStack>
       )}
     </Screen>

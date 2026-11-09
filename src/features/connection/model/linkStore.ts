@@ -1,14 +1,15 @@
 /** Live facts about the current / latest connect attempt, for the Connect screen's diagnostics
- *  panel: the kind of link (Bluetooth LE or Wi-Fi, plan 26), what the BLE link negotiated (MTU, characteristics, write mode), the furthest stage the
- *  attempt reached, the device it targeted (sessionStore only learns the device on success), and
- *  when it started (so the panel only shows this attempt's adapter-log lines).
+ *  panel: the kind of link (Bluetooth LE, Wi-Fi — plan 26 — or Classic Bluetooth — plan 27), what
+ *  the BLE link negotiated (MTU, characteristics, write mode), the furthest stage the attempt
+ *  reached, the device it targeted (sessionStore only learns the device on success), and when it
+ *  started (so the panel only shows this attempt's adapter-log lines).
  *  Written by connectionService; in-memory only. See docs/features/connection.md. */
 import { create } from 'zustand';
 import type { BleLinkInfo } from '@/shared/transports/ble/BleTransport';
 import type { ConnectStage } from '../api/diagnoseFailure';
 
 /** The kind of real-adapter link an attempt uses; null for the simulator. */
-export type LinkKind = 'ble' | 'wifi';
+export type LinkKind = 'ble' | 'wifi' | 'spp';
 
 export interface AttemptDevice {
   id: string | null;
@@ -16,7 +17,8 @@ export interface AttemptDevice {
 }
 
 interface LinkState {
-  /** Bluetooth LE or Wi-Fi for the latest attempt, or null for the simulator / before the first. */
+  /** Bluetooth LE, Wi-Fi or Classic Bluetooth for the latest attempt, or null for the simulator /
+   *  before the first. */
   kind: LinkKind | null;
   /** The negotiated BLE link, or null for the simulator / before the link is up. */
   link: BleLinkInfo | null;
