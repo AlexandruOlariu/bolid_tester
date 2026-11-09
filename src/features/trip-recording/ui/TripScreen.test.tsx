@@ -1,8 +1,11 @@
 /** Trips screen per-car filter (plan 06): the chips filter the saved trips, and a filter whose car
- *  loses its last trip falls back to "All cars" instead of leaving an empty, unclearable list. */
+ *  loses its last trip falls back to "All cars" instead of leaving an empty, unclearable list. Open
+ *  goes to the trip detail screen (plan 17); distances are metric only. */
 import React from 'react';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
+import { mockPush } from '@test/mocks/router';
+import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useTripStore, type TripSummary } from '../model/tripStore';
 import { TripScreen } from './TripScreen';
 
@@ -50,5 +53,26 @@ describe('TripScreen per-car filter', () => {
     expect(screen.queryByText(/^All cars/)).toBeNull();
     expect(screen.getByText(/· 21 samples$/)).toBeTruthy();
     expect(screen.getByText(/· 22 samples$/)).toBeTruthy();
+  });
+});
+
+describe('TripScreen rows', () => {
+  it('Open navigates to the trip detail screen with the trip id (no inline expand)', () => {
+    useTripStore.setState({ trips: [PUNTO] });
+    renderWithProviders(<TripScreen />);
+    fireEvent.press(screen.getByText('Open'));
+    expect(mockPush).toHaveBeenCalledWith({ pathname: '/trip-detail', params: { id: '11' } });
+    expect(screen.queryByText(/Loaded \d+ sample/)).toBeNull();
+    expect(screen.queryByText('Close')).toBeNull();
+  });
+
+  it('shows the distance in km, whatever the legacy units setting says', () => {
+    // The dead imperial setting no longer reaches Trips (plan 07 deletes the field; drop this then).
+    useSettingsStore.setState({ units: 'imperial' });
+    useTripStore.setState({
+      trips: [{ ...PUNTO, stats: { ...PUNTO.stats, distanceKm: 12.3456 } }],
+    });
+    renderWithProviders(<TripScreen />);
+    expect(screen.getByText(/· 11 samples · 12\.35 km$/)).toBeTruthy();
   });
 });

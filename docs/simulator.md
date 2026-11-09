@@ -50,6 +50,17 @@ from a vehicle profile.
   (TP2.0 channel setup `200`→`201`, tester session `7E0`→`7E8`) so a saved sniffer capture has real
   content; other CAN profiles a generic 5-frame mix, K-line a single line. See
   [can-sniffer](./features/can-sniffer.md).
+- **GPS track (synthetic):** not an ELM327 feature, but simulator-only: with the adapter source set
+  to the simulator, trip recording's `startTrackCapture()` does not touch `expo-location`; it walks
+  a deterministic 2 km rounded-rectangle loop around 44.4268 N, 26.1025 E
+  (`syntheticLoopPoint` in `analysis/track.ts`), one fix every 5 s plus one at the stop, advancing
+  by the live `010D` speed (40 km/h when none is published). Each step is a straight line of
+  speed × time from the last fix (`syntheticLoopAdvance`), so the GPS distance equals the OBD one
+  even where a step cuts a corner. The trip is badged "simulated GPS" on the Trip detail screen, and
+  its GPS-vs-OBD check reads `ok` at any steady speed. Demo: Settings → Simulator, connect, open
+  Live (the Golf's speed varies), Trips → **Record** for about 3 min (one 2 km lap at ~40 km/h;
+  60 s draws only the first straight and a corner) → **Stop** → **Open**. See
+  [trip-recording](./features/trip-recording.md#trip-detail-plan-17).
 
 ## Scenarios
 

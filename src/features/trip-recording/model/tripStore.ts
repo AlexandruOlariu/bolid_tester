@@ -20,6 +20,9 @@ export interface TripSummary {
    *  recorded before the garage existed — those group by `header.profileId`, which has always held
    *  the selected profile id. */
   vehicleId?: string;
+  /** True when the track was the simulator's synthetic loop, not real GPS (plan 17) — the detail
+   *  screen badges it "simulated GPS". Absent on real-GPS and track-less trips. */
+  syntheticTrack?: boolean;
 }
 
 /** Filter key of a trip's car: its `vehicleId`, else the header's `profileId` (every trip recorded

@@ -425,6 +425,26 @@
     "relates"
   ],
   [
+    "concept:gps-obd-check",
+    "concept:trip-recording",
+    "relates"
+  ],
+  [
+    "concept:gps-obd-check",
+    "core:analysis/track",
+    "relates"
+  ],
+  [
+    "concept:gps-obd-check",
+    "doc:features/trip-recording",
+    "relates"
+  ],
+  [
+    "concept:gps-obd-check",
+    "feature:trip-recording",
+    "relates"
+  ],
+  [
     "concept:guided-routines",
     "concept:dpf-regen",
     "relates"
@@ -1070,19 +1090,14 @@
     "named"
   ],
   [
+    "core:analysis/track",
     "core:analysis/trip",
-    "core:analysis/fuelEconomy",
     "imports"
   ],
   [
     "core:analysis/trip",
-    "doc:features/trip-recording",
-    "named"
-  ],
-  [
-    "core:analysis/trip",
-    "doc:plans/17-trip-detail-map",
-    "named"
+    "core:analysis/fuelEconomy",
+    "imports"
   ],
   [
     "core:coding/adaptationValue",
@@ -1347,6 +1362,11 @@
   [
     "core:public-api",
     "core:analysis/performance",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:analysis/track",
     "imports"
   ],
   [
@@ -3301,6 +3321,11 @@
   ],
   [
     "feature:trip-recording",
+    "core:analysis/track",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
     "core:analysis/trip",
     "imports"
   ],
@@ -3316,17 +3341,7 @@
   ],
   [
     "feature:trip-recording",
-    "doc:plans/17-trip-detail-map",
-    "named"
-  ],
-  [
-    "feature:trip-recording",
     "feature:vehicle-select",
-    "imports"
-  ],
-  [
-    "feature:trip-recording",
-    "lib:units",
     "imports"
   ],
   [
@@ -3342,6 +3357,11 @@
   [
     "feature:trip-recording",
     "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "store:liveDataStore",
     "imports"
   ],
   [
@@ -3802,6 +3822,21 @@
   [
     "screen:sniffer",
     "feature:can-sniffer",
+    "serves"
+  ],
+  [
+    "screen:trip-detail",
+    "doc:plans/05-dtc-database",
+    "named"
+  ],
+  [
+    "screen:trip-detail",
+    "doc:plans/17-trip-detail-map",
+    "named"
+  ],
+  [
+    "screen:trip-detail",
+    "feature:trip-recording",
     "serves"
   ],
   [

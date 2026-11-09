@@ -31,6 +31,7 @@ export * from './session/DiagnosticSession';
 export * from './analysis/alerts';
 export * from './analysis/performance';
 export * from './analysis/trip';
+export * from './analysis/track';
 export * from './analysis/fuelEconomy';
 export * from './analysis/chartBuffer';
 export * from './analysis/notifications';

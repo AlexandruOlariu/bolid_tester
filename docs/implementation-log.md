@@ -5,6 +5,75 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 17 — Trip detail map (2026-11-09)
+
+[Plan 17](./plans/17-trip-detail-map.md) landed: a saved trip opens on its own screen with the GPS
+track drawn as a coloured SVG polyline, the GPS-vs-OBD distance check with a plain verdict, and a
+speed-over-time strip — all demoable in the simulator through a synthetic GPS loop. The deferred
+on-car part (validating the 3 % / 8 % thresholds against the Golf's known-good odometer) is
+untouched.
+
+- **Core (`shared/obd-core/analysis/track.ts`, exported from `obd-core/index.ts`).** `trackBounds`,
+  `projectTrack` (equirectangular, lon × cos(latMid), fitted and centred in the padded box, north
+  up), `scaleBar` (nice 100 m … 100 km bar ≤ ⅓ of the width), `formatBarLength`, `nearestPoint`
+  (tap hit-test, 24 px), `alignSamplesToTrack` (binary search, ties → earlier; speed from the GPS
+  fix with `010D` fallback, `010C`, `015E`), `colourSegments` / `legendFor` (fixed metric buckets on
+  a 5-step accent → red palette, fuel by trip quartiles, grey for null), `gpsVsObd` (`ok` < 3 %,
+  `check` < 8 %, `mismatch` ≥ 8 %, `unknown` with < 2 fixes / no `010D`; constants
+  `GPS_OBD_OK_PCT` / `GPS_OBD_CHECK_PCT`), `speedProfile` (≤ 300 points) and
+  `syntheticLoopPoint` (2 km rounded rectangle from 44.4268 N, 26.1025 E) with
+  `syntheticLoopAdvance` (the loop position a given straight-line step away). `trip.ts` exports
+  `obdDistanceKmFromSamples` (the private `obdDistanceKm` is now a one-line wrapper).
+- **Loading.** `useTripRecorder.loadTrip(header)` reads the CSV once → `{ samples, track }`;
+  `loadTripSamples` delegates to it. Same `csv-read` error logging.
+- **Synthetic GPS.** `trackRecorder.startTrackCapture()` with `adapterSource === 'mock'` starts a
+  timer (fix at start, then every 5 s) that advances along the loop by the live `010D` speed (40 km/h
+  default), each step a chord of speed × time (`syntheticLoopAdvance`) so GPS = OBD distance even
+  through the corners; `stopTrackCapture()` adds a closing fix at the stop time. `isSyntheticTrack()`;
+  `stopRecording` stores `TripSummary.syntheticTrack: true` (optional field, no persist migration).
+- **UI.** New hidden route `/trip-detail` (`src/app/trip-detail.tsx`, `_layout` `href: null`, title
+  "Trip") → `TripDetailScreen`: stats cards, GPS-vs-OBD card (distances, Δ %, average speeds,
+  verdict + note), `TrackMap` (3:2 SVG on `$color2`, segment lines, start/end markers, scale bar,
+  "N ↑", Speed · RPM · Fuel · None control, legend chips, tap → tooltip card with time, km/h, rpm,
+  L/h), `SpeedStrip`, "simulated GPS" badge, empty states ("No GPS track for this trip.", no
+  samples, trip not found). `TripScreen` rows' **Open** now navigates there (inline expand
+  removed) and no longer imports `@/shared/lib/units` — distances are km, metric only.
+- **Tests (+58 tests, +3 suites: 948 tests / 123 suites after the review fixes).** `track.test.ts` (projection fit and
+  y-flip, aspect, `scaleBar` 500 m at 320 px, nearest-sample ties, segment count/grey, buckets,
+  legends, verdicts at ±2 / ±5 / ±12 % and around the thresholds, `unknown`, `speedProfile` cap,
+  loop closure and 2 km length), `trip.test.ts` (`obdDistanceKmFromSamples` = `tripStats` distance),
+  `trackRecorder.test.ts` (mock source → points advance with the live speed, closing fix, 40 km/h
+  default; BLE path unchanged), `useTripRecorder.test.ts` (core: `loadTrip` one read, old CSV,
+  missing file; simulator `stopRecording` writes the track and flags the summary),
+  `TripDetailScreen.test.tsx` (60 s simulator recording → `ok` + badge + 12 segments, a 3 min
+  recording draws the closed loop, a hand-built lap closes,
+  overlay recolour + legend, tap tooltip, mismatch card, pre-GPS trip, missing CSV / unknown id),
+  `TripScreen.test.tsx` (Open → `/trip-detail` with the id; km regardless of the legacy units
+  setting). Context graph: new `concept:gps-obd-check`.
+- **Deviations.** `scaleBar` takes an optional 4th `height` argument so the bar matches a
+  height-bound fit (the plan's signature only had width), and its nice lengths continue past 5 km
+  (10 / 20 / 50 / 100 km) for long drives. Extra pure helpers `nearestPoint` and
+  `formatBarLength`. The synthetic generator advances by speed × the actual elapsed time (≈ 5 s per
+  tick) and adds a closing fix on stop, so GPS and OBD distances cover the same span (otherwise up to
+  5 s of driving is lost and a 60 s trip could miss the `ok` band). "simulated GPS" is persisted as
+  `TripSummary.syntheticTrack` because `isSyntheticTrack()` alone cannot tell a reopened trip's
+  origin. The UI test stubs `loadTrip` with the in-memory files because the UI Jest project cannot
+  run the variable-specifier `import()`; the real read is tested in the core project. Speed values
+  for the overlay come from the nearest sample with no maximum time gap.
+- **Review fixes.** (1) The plan's "simulator trip with ≥ 10 fixes renders a closed loop" and its
+  60 s demo cannot hold on a 2 km loop at 40 km/h (10 fixes ≈ 500 m, the first straight): the loop
+  closes after one lap, about 3 min. Kept the plan's 2 km geometry, corrected the docs (3 min demo)
+  and added a real 3 min simulator recording test asserting the closed loop. (2) Fuel-rate buckets
+  collapsed on a steady fuel rate (quartiles `[v, v, v]` → every segment red, repeated legend labels
+  and duplicate React keys): edges are now rounded to the legend's 0.1 L/h and kept only when
+  distinct and above the minimum, so a steady trip is one middle-colour bucket labelled with its
+  value; legend chips are keyed by index. (3) Arc-length steps cut the 60 m corners, so a steady
+  90 km/h simulator drive read > 3 % short (`check`): steps are now chords of speed × time
+  (`syntheticLoopAdvance`, bisection), and tests drive 40 / 90 / 130 km/h for 10 min and assert
+  `ok` with |Δ| < 0.5 %.
+
+---
+
 ## Plan 14 — Mode 22 charts and measuring groups (2026-11-09)
 
 [Plan 14](./plans/14-mode22-charts-measuring-groups.md) landed: extended (Mode 22) DIDs flow

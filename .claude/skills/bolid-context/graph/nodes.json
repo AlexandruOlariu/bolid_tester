@@ -348,6 +348,27 @@
     ],
     "type": "concept"
   },
+  "concept:gps-obd-check": {
+    "path": null,
+    "summary": "Trip detail (plan 17): the GPS track is drawn as an SVG polyline (no map tiles/keys) coloured by speed/RPM/fuel rate; GPS distance (haversine over fi\u2026",
+    "tokens": [
+      "check",
+      "distance",
+      "gps",
+      "loop",
+      "map",
+      "odometer",
+      "overlay",
+      "polyline",
+      "speedo",
+      "speedometer",
+      "synthetic",
+      "track",
+      "trip-detail",
+      "verdict"
+    ],
+    "type": "concept"
+  },
   "concept:guided-routines": {
     "path": null,
     "summary": "Output tests (UDS 2F) and basic settings (UDS 31) as guided routines with live interlocks (engine/speed) + keep-alive; includes forced DPF regen. Gat\u2026",
@@ -883,6 +904,18 @@
     "tokens": [
       "analysis",
       "performance"
+    ],
+    "type": "core"
+  },
+  "core:analysis/track": {
+    "path": "src/shared/obd-core/analysis/track.ts",
+    "summary": "Pure GPS-track helpers for the trip detail screen (plan 17): a fitted equirectangular projection for drawing the track with react-native-svg (no map\u2026",
+    "tests": [
+      "src/shared/obd-core/analysis/track.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "track"
     ],
     "type": "core"
   },
@@ -2937,7 +2970,9 @@
     "summary": "Record a drive as a typed **time-series** of live PIDs (plus DTC snapshots), persist it on the",
     "tests": [
       "src/features/trip-recording/api/trackRecorder.test.ts",
+      "src/features/trip-recording/hooks/useTripRecorder.test.ts",
       "src/features/trip-recording/model/tripStore.test.ts",
+      "src/features/trip-recording/ui/TripDetailScreen.test.tsx",
       "src/features/trip-recording/ui/TripScreen.test.tsx"
     ],
     "tokens": [
@@ -3285,6 +3320,15 @@
     "summary": "Route screen 'sniffer' (expo-router).",
     "tokens": [
       "sniffer"
+    ],
+    "type": "screen"
+  },
+  "screen:trip-detail": {
+    "path": "src/app/trip-detail.tsx",
+    "summary": "Route screen 'trip detail' (expo-router).",
+    "tokens": [
+      "detail",
+      "trip"
     ],
     "type": "screen"
   },

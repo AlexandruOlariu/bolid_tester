@@ -4,13 +4,22 @@
  *  and share/export. Native modules (expo-file-system / expo-sharing) are loaded via variable
  *  specifiers so the project builds and unit-tests without them present — the same
  *  dependency-tolerant pattern as useDtcExport / useErrorLogExport. See docs/features/trip-recording.md. */
-import { Trip, TripHeader, TripSample, toCsv, fromCsv, tripStats } from '@/shared/obd-core';
+import {
+  Trip,
+  TripHeader,
+  TripSample,
+  TrackPoint,
+  toCsv,
+  fromCsv,
+  trackFromCsv,
+  tripStats,
+} from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { logError } from '@/shared/state/errorLogStore';
 import { notify } from '@/shared/notify';
 import { useTripStore } from '../model/tripStore';
-import { stopTrackCapture } from '../api/trackRecorder';
+import { isSyntheticTrack, stopTrackCapture } from '../api/trackRecorder';
 
 /** Per-trip CSV filename stem (documentDirectory-relative). */
 function tripCsvName(id: string): string {
@@ -31,6 +40,7 @@ export async function stopRecording(): Promise<Trip> {
   // the CSV and feeds `tripStats` (GPS distance / OBD-vs-GPS speed delta). An empty track — capture was
   // never started, denied, or unavailable — is simply omitted, leaving the trip shape unchanged.
   const track = stopTrackCapture();
+  const synthetic = track.length > 0 && isSyntheticTrack();
   const trip: Trip = {
     header: {
       id: `${st.startedAt ?? Date.now()}`,
@@ -65,6 +75,7 @@ export async function stopRecording(): Promise<Trip> {
     stats,
     markerCount: trip.markers.length,
     vehicleId: profileId,
+    ...(synthetic ? { syntheticTrack: true } : {}),
   });
   void notify({
     category: 'trip',
@@ -75,17 +86,26 @@ export async function stopRecording(): Promise<Trip> {
   return trip;
 }
 
-/** Lazy-load a trip's samples from its CSV. Returns `[]` when the file is missing/unreadable (e.g.
- *  the CSV write failed on stop, or on web/tests) — best-effort, logged. */
-export async function loadTripSamples(header: TripHeader): Promise<TripSample[]> {
+/** A trip's samples and GPS track, read back from its CSV. */
+export interface LoadedTrip {
+  samples: TripSample[];
+  track: TrackPoint[];
+}
+
+/** Lazy-load a whole trip — samples (`fromCsv`) and GPS track (`trackFromCsv`) — from one read of its
+ *  CSV. Returns empty arrays when the file is missing/unreadable (e.g. the CSV write failed on stop,
+ *  or on web/tests) — best-effort, logged. A trip recorded before GPS (no `#TRACK` section) loads
+ *  with an empty track. */
+export async function loadTrip(header: TripHeader): Promise<LoadedTrip> {
   try {
     const FileSystem = await import('expo-file-system' as string);
     const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
-    if (!dir) return [];
+    if (!dir) return { samples: [], track: [] };
     const uri = `${dir}${tripCsvName(header.id)}`;
     const info = await FileSystem.getInfoAsync(uri);
-    if (!info.exists) return [];
-    return fromCsv(await FileSystem.readAsStringAsync(uri));
+    if (!info.exists) return { samples: [], track: [] };
+    const csv: string = await FileSystem.readAsStringAsync(uri);
+    return { samples: fromCsv(csv), track: trackFromCsv(csv) };
   } catch (e) {
     logError({
       source: 'trip-recording',
@@ -93,8 +113,13 @@ export async function loadTripSamples(header: TripHeader): Promise<TripSample[]>
       severity: 'warning',
       context: { phase: 'csv-read', tripId: header.id },
     });
-    return [];
+    return { samples: [], track: [] };
   }
+}
+
+/** Lazy-load a trip's samples from its CSV (`loadTrip` without the track). */
+export async function loadTripSamples(header: TripHeader): Promise<TripSample[]> {
+  return (await loadTrip(header)).samples;
 }
 
 /** Remove a trip: delete its CSV (idempotent, best-effort) then drop the summary from the store. */

@@ -62,13 +62,13 @@ Goal: the app is useful on a car it has never seen, and explains every code it r
 
 Goal: the "send it to my mechanic" release.
 
-|     | Feature                                                                      | Notes                                                                                                                                         |
-| --- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| ⬜  | **Unified vehicle report** · [plan 15](./plans/15-unified-vehicle-report.md) | One PDF/HTML: identity, readiness, DTCs with VAG numbers and freeze frames, module scan, inspection verdict, battery, AI summary; share sheet |
-| ⬜  | **Per-car timeline** · [plan 16](./plans/16-per-car-timeline.md)             | History, scans, trips, maintenance and reports on one chronological view per car, with before/after diff links                                |
-| ⬜  | **Trip detail map** · [plan 17](./plans/17-trip-detail-map.md)               | GPS polyline, speed / RPM / fuel overlays, GPS-vs-OBD distance check                                                                          |
-| ⬜  | **Export everything** · [plan 18](./plans/18-backup-restore.md)              | CSV / JSON for every store; one-tap full app backup and restore (zip), no cloud                                                               |
-| ⬜  | **AI provider presets** · [plan 19](./plans/19-ai-provider-presets.md)       | OpenAI / Anthropic / local presets with per-provider defaults; multi-turn follow-up questions; report cites the linked guides                 |
+|     | Feature                                                                      | Notes                                                                                                                                                                                                                                                     |
+| --- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ⬜  | **Unified vehicle report** · [plan 15](./plans/15-unified-vehicle-report.md) | One PDF/HTML: identity, readiness, DTCs with VAG numbers and freeze frames, module scan, inspection verdict, battery, AI summary; share sheet                                                                                                             |
+| ⬜  | **Per-car timeline** · [plan 16](./plans/16-per-car-timeline.md)             | History, scans, trips, maintenance and reports on one chronological view per car, with before/after diff links                                                                                                                                            |
+| ✅  | **Trip detail map** · [plan 17](./plans/17-trip-detail-map.md)               | GPS polyline, speed / RPM / fuel overlays, GPS-vs-OBD distance check; synthetic GPS loop in the simulator ([trip-recording](./features/trip-recording.md#trip-detail-plan-17)) — on-car pending (validate the 3 % / 8 % thresholds on one real Golf trip) |
+| ⬜  | **Export everything** · [plan 18](./plans/18-backup-restore.md)              | CSV / JSON for every store; one-tap full app backup and restore (zip), no cloud                                                                                                                                                                           |
+| ⬜  | **AI provider presets** · [plan 19](./plans/19-ai-provider-presets.md)       | OpenAI / Anthropic / local presets with per-provider defaults; multi-turn follow-up questions; report cites the linked guides                                                                                                                             |
 
 ### v0.5 — iOS, languages & accessibility
 
