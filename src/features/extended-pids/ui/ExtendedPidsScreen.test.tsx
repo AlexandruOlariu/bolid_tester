@@ -5,7 +5,7 @@
 import React from 'react';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
-import { connectSimulator } from '@test/simulator';
+import { connectSimulator, settleFirstPollSweep } from '@test/simulator';
 import { CONFIRMED_TEXT, ILLUSTRATIVE_TEXT, confirmItems } from '@test/confirmation';
 import { getVehicleProfile } from '@/shared/vehicles';
 import { mockPush, setMockFocused } from '@test/mocks/router';
@@ -26,6 +26,8 @@ async function golf() {
       <ExtendedPidsScreen />
     </>,
   );
+  // The focused screen registers its DIDs, so the poll loop sweeps at once: settle it in act().
+  await settleFirstPollSweep();
 }
 
 describe('ExtendedPidsScreen', () => {

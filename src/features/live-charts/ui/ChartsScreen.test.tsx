@@ -4,7 +4,7 @@ import React from 'react';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { setMockWindow, TABLET_WINDOW } from '@test/mocks/window';
-import { connectSimulator } from '@test/simulator';
+import { connectSimulator, settleFirstPollSweep } from '@test/simulator';
 import { useVehicleStore } from '@/shared/state/vehicleStore';
 import { useChartsStore } from '@/shared/state/chartsStore';
 import { EngineHost } from '@/features/engine-host';
@@ -21,6 +21,8 @@ async function open(profileId: string) {
       <ChartsScreen />
     </>,
   );
+  // The default panels register their PIDs, so the poll loop sweeps at once: settle it in act().
+  await settleFirstPollSweep();
 }
 
 describe('ChartsScreen', () => {

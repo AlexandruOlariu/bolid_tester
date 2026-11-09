@@ -291,8 +291,13 @@ describe('SettingsScreen', () => {
     useSettingsStore.setState({ adapterSource: 'mock' });
     renderWithProviders(<SettingsScreen resetAppData={resetAllAppData} />);
     openDeveloper();
-    // A simulator connect is mid-handshake when the owner confirms the reset.
-    const inFlight = connect().catch(() => undefined);
+    // A simulator connect is mid-handshake when the owner confirms the reset. Its synchronous start
+    // (status → connecting, the adapter-log entry) re-renders the screen, so it begins inside act();
+    // the handshake itself keeps running and is awaited below.
+    let inFlight: Promise<unknown> = Promise.resolve();
+    act(() => {
+      inFlight = connect().catch(() => undefined);
+    });
 
     fireEvent.press(screen.getByText('Reset all app data'));
     pressAlertButton(alert, 0, 'Continue');
@@ -466,7 +471,10 @@ describe('SettingsScreen', () => {
     await act(async () => {
       await useSessionStore.getState().session?.readDtcs('03');
     });
-    useSettingsStore.setState({ simulatedVehicleId: 'fiat-punto-2008-12' });
+    // Block body: the persisted store's setState returns its write promise, which act() must not get.
+    act(() => {
+      useSettingsStore.setState({ simulatedVehicleId: 'fiat-punto-2008-12' });
+    });
     // The read is done; wait for the throttled publish to carry all of it (the `03` reply too).
     await waitFor(() => {
       const { entries } = useAdapterLogStore.getState();
@@ -846,7 +854,9 @@ describe('Settings → Privacy: crash reports (plan 31)', () => {
     fireEvent.press(screen.getByText('Send test crash report'));
     expect(sdk.captureException).not.toHaveBeenCalled();
 
-    useSettingsStore.setState({ crashReports: true });
+    act(() => {
+      useSettingsStore.setState({ crashReports: true });
+    });
     await act(async () => {
       await startCrashReporting(true);
     });
