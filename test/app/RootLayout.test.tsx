@@ -6,6 +6,8 @@ import path from 'path';
 import React from 'react';
 import { render, screen, within } from '@testing-library/react-native';
 import RootLayout from '@/app/_layout';
+import { lastTabsScreenOptions } from '@test/mocks/router';
+import { setMockWindow, TABLET_WINDOW } from '@test/mocks/window';
 
 jest.mock('@/features/engine-host', () => ({ EngineHost: () => null }));
 jest.mock('@/shared/ui/AppSplash', () => ({ AppSplash: () => null }));
@@ -49,5 +51,47 @@ describe('RootLayout', () => {
         registered: true,
       });
     }
+  });
+
+  it('keeps the bottom tab bar on a portrait phone (plan 21)', () => {
+    render(<RootLayout />);
+
+    expect(lastTabsScreenOptions).toMatchObject({
+      tabBarPosition: 'bottom',
+      tabBarVariant: 'uikit',
+    });
+    expect(lastTabsScreenOptions.tabBarLabelPosition).toBeUndefined();
+  });
+
+  it('moves the tabs to a left side rail on a tablet', () => {
+    setMockWindow(TABLET_WINDOW);
+    render(<RootLayout />);
+
+    expect(lastTabsScreenOptions).toMatchObject({
+      tabBarPosition: 'left',
+      tabBarVariant: 'material',
+      tabBarLabelPosition: 'below-icon',
+    });
+  });
+
+  it('uses the side rail on a medium window in landscape that is tall enough', () => {
+    setMockWindow({ width: 800, height: 600 });
+    render(<RootLayout />);
+    expect(lastTabsScreenOptions.tabBarPosition).toBe('left');
+  });
+
+  it('keeps the bottom bar on a phone in landscape (too short for the non-scrolling rail)', () => {
+    setMockWindow({ width: 760, height: 360 });
+    render(<RootLayout />);
+    expect(lastTabsScreenOptions.tabBarPosition).toBe('bottom');
+    setMockWindow({ width: 915, height: 412 }); // Pixel 7: expanded by width
+    render(<RootLayout />);
+    expect(lastTabsScreenOptions.tabBarPosition).toBe('bottom');
+  });
+
+  it('keeps the bottom bar on a medium window in portrait', () => {
+    setMockWindow({ width: 760, height: 1100 });
+    render(<RootLayout />);
+    expect(lastTabsScreenOptions.tabBarPosition).toBe('bottom');
   });
 });

@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Card, YStack, XStack, Text, Paragraph, Button, H4 } from 'tamagui';
 import { CheckCircle2 } from 'lucide-react-native';
-import { Screen } from '@/shared/ui';
+import { CardGrid, Screen } from '@/shared/ui';
 import { ImportPreviewSheet } from '@/shared/ui/ImportPreviewSheet';
 import { useExchangeImport } from '@/shared/ui/useExchangeImport';
 import {
@@ -256,65 +256,70 @@ export function VehicleSelectScreen() {
               No cars in your garage yet.
             </Paragraph>
           ) : null}
-          {garage.map((v) => (
-            <GarageCard
-              key={v.id}
-              v={v}
-              active={v.id === selectedProfileId}
-              onSelect={() => pick(v.id)}
-              onEdit={() => setEditor({ vehicle: v })}
-              onExport={() => void exportCar(v)}
-            />
-          ))}
+          {/* Two columns on a tablet / landscape phone (plan 21). */}
+          <CardGrid testID="garage-grid">
+            {garage.map((v) => (
+              <GarageCard
+                key={v.id}
+                v={v}
+                active={v.id === selectedProfileId}
+                onSelect={() => pick(v.id)}
+                onEdit={() => setEditor({ vehicle: v })}
+                onExport={() => void exportCar(v)}
+              />
+            ))}
+          </CardGrid>
         </YStack>
 
         <H4>Built-in profiles</H4>
-        {VEHICLE_PROFILES.map((p) => {
-          const active = p.id === selectedProfileId;
-          return (
-            <Card
-              key={p.id}
-              bordered
-              padding="$4"
-              backgroundColor="$backgroundHover"
-              borderColor={active ? GREEN : '$borderColor'}
-              borderWidth={active ? 2 : 1}
-              borderLeftWidth={active ? 4 : 1}
-              borderLeftColor={active ? GREEN : '$borderColor'}
-              pressStyle={{ opacity: 0.85, scale: 0.99 }}
-              onPress={() => pick(p.id)}
-            >
-              <YStack gap="$2">
-                <XStack justifyContent="space-between" alignItems="center">
-                  <Text fontWeight="800" fontSize="$5" flex={1}>
-                    {p.name}
-                  </Text>
-                  {active ? <CheckCircle2 size={20} color={GREEN} /> : null}
-                </XStack>
-                <Chip>
-                  {PROTOCOL_LABELS[p.expectedProtocol]}
-                  {p.extendedPids?.length ? ' · experimental' : ''}
-                </Chip>
-                {p.notes ? (
-                  <Paragraph theme="alt2" fontSize="$2" numberOfLines={3}>
-                    {p.notes}
-                  </Paragraph>
-                ) : null}
-                {p.id !== 'generic' ? (
-                  <XStack>
-                    <Button
-                      size="$2"
-                      onPress={() => void exportSeed(p)}
-                      accessibilityLabel={`Share ${p.name} as a starting profile`}
-                    >
-                      Share as starting profile
-                    </Button>
+        <CardGrid testID="profiles-grid" gap={12}>
+          {VEHICLE_PROFILES.map((p) => {
+            const active = p.id === selectedProfileId;
+            return (
+              <Card
+                key={p.id}
+                bordered
+                padding="$4"
+                backgroundColor="$backgroundHover"
+                borderColor={active ? GREEN : '$borderColor'}
+                borderWidth={active ? 2 : 1}
+                borderLeftWidth={active ? 4 : 1}
+                borderLeftColor={active ? GREEN : '$borderColor'}
+                pressStyle={{ opacity: 0.85, scale: 0.99 }}
+                onPress={() => pick(p.id)}
+              >
+                <YStack gap="$2">
+                  <XStack justifyContent="space-between" alignItems="center">
+                    <Text fontWeight="800" fontSize="$5" flex={1}>
+                      {p.name}
+                    </Text>
+                    {active ? <CheckCircle2 size={20} color={GREEN} /> : null}
                   </XStack>
-                ) : null}
-              </YStack>
-            </Card>
-          );
-        })}
+                  <Chip>
+                    {PROTOCOL_LABELS[p.expectedProtocol]}
+                    {p.extendedPids?.length ? ' · experimental' : ''}
+                  </Chip>
+                  {p.notes ? (
+                    <Paragraph theme="alt2" fontSize="$2" numberOfLines={3}>
+                      {p.notes}
+                    </Paragraph>
+                  ) : null}
+                  {p.id !== 'generic' ? (
+                    <XStack>
+                      <Button
+                        size="$2"
+                        onPress={() => void exportSeed(p)}
+                        accessibilityLabel={`Share ${p.name} as a starting profile`}
+                      >
+                        Share as starting profile
+                      </Button>
+                    </XStack>
+                  ) : null}
+                </YStack>
+              </Card>
+            );
+          })}
+        </CardGrid>
       </YStack>
       <VehicleEditorSheet
         open={editor !== null}

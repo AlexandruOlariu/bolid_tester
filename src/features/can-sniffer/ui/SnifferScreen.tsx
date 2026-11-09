@@ -30,9 +30,11 @@ export function SnifferScreen() {
   const canShare = !running && !exporting && capturedLines > 0;
 
   return (
+    // `wide` (plan 21): the frame table uses the full tablet width.
     <Screen
       title="Bus sniffer"
       subtitle="Raw adapter monitor (ATMA) — live polling pauses while sniffing"
+      wide
     >
       <YStack gap="$1">
         <Paragraph theme="alt2" size="$2">

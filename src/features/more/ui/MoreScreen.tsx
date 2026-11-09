@@ -28,7 +28,7 @@ import {
   FileStack,
   Archive,
 } from 'lucide-react-native';
-import { Screen } from '@/shared/ui';
+import { CardGrid, Screen } from '@/shared/ui';
 import { checkForUpdate, fetchAndReload } from '../api/updates';
 import {
   MORE_SECTIONS,
@@ -193,14 +193,17 @@ export function MoreScreen() {
               {section.blurb}
             </Paragraph>
           ) : null}
-          {section.entries.map((entry) => (
-            <EntryRow
-              key={entryKey(entry)}
-              entry={entry}
-              busy={entry.action === 'check-updates' && checking}
-              onPress={pressFor(entry)}
-            />
-          ))}
+          {/* Two columns on a tablet / landscape phone (plan 21). */}
+          <CardGrid testID={`more-grid-${section.id}`}>
+            {section.entries.map((entry) => (
+              <EntryRow
+                key={entryKey(entry)}
+                entry={entry}
+                busy={entry.action === 'check-updates' && checking}
+                onPress={pressFor(entry)}
+              />
+            ))}
+          </CardGrid>
         </YStack>
       ))}
     </Screen>

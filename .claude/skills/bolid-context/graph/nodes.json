@@ -3151,6 +3151,7 @@
     "summary": "Plot live PIDs over **time** (line charts) alongside the gauges in [`live-data`](./live-data.md), and",
     "tests": [
       "src/features/live-charts/api/chartCsv.test.ts",
+      "src/features/live-charts/api/chartGeometry.test.ts",
       "src/features/live-charts/model/chartKeys.test.ts",
       "src/features/live-charts/ui/ChartsScreen.test.tsx"
     ],
@@ -3165,6 +3166,7 @@
     "summary": "Stream and display live engine parameters (Mode 01 PIDs).",
     "tests": [
       "src/features/live-data/model/dashboardLayout.test.ts",
+      "src/features/live-data/model/twoPaneGrid.test.ts",
       "src/features/live-data/ui/DashboardScreen.test.tsx",
       "src/features/live-data/ui/SensorGroups.test.tsx"
     ],
@@ -4053,6 +4055,15 @@
     ],
     "type": "ui"
   },
+  "ui:CardGrid": {
+    "path": "src/shared/ui/CardGrid.tsx",
+    "summary": "Vertical gap between rows (and between items on a phone), in dp.",
+    "tokens": [
+      "card",
+      "grid"
+    ],
+    "type": "ui"
+  },
   "ui:Gauge": {
     "path": "src/shared/ui/Gauge.tsx",
     "summary": "A 270\u00b0 arc gauge (react-native-svg).",
@@ -4086,7 +4097,10 @@
   },
   "ui:Screen": {
     "path": "src/shared/ui/Screen.tsx",
-    "summary": "Standard scrollable screen frame with safe-area + optional pull-to-refresh.",
+    "summary": "Use the full window width on tablets instead of the centred \u2264 1100 dp column (plan 21) \u2014 for screens that lay out their own columns (Live, Charts, th\u2026",
+    "tests": [
+      "src/shared/ui/Screen.test.tsx"
+    ],
     "tokens": [],
     "type": "ui"
   },
@@ -4113,7 +4127,7 @@
   },
   "ui:ValueCard": {
     "path": "src/shared/ui/ValueCard.tsx",
-    "summary": "Compact live-parameter tile.",
+    "summary": "Fixed width in dp instead of growing to fill the row (plan 21: the two-pane Live grid computes it from the measured column so the cards fill each row\u2026",
     "tokens": [
       "card",
       "value"
@@ -4132,12 +4146,30 @@
     ],
     "type": "ui"
   },
+  "ui:layoutClass": {
+    "path": "src/shared/ui/layoutClass.ts",
+    "summary": "Window-size classes for the tablet / landscape layout (plan 21).",
+    "tokens": [
+      "class",
+      "layout"
+    ],
+    "type": "ui"
+  },
   "ui:useExchangeImport": {
     "path": "src/shared/ui/useExchangeImport.ts",
     "summary": "What the import sheet shows: a preview to confirm, or why the file was refused.",
     "tokens": [
       "exchange",
       "import"
+    ],
+    "type": "ui"
+  },
+  "ui:useLayoutClass": {
+    "path": "src/shared/ui/useLayoutClass.ts",
+    "summary": "The current window's layout class (plan 21): `useWindowDimensions()` \u2192 `classify`.",
+    "tokens": [
+      "class",
+      "layout"
     ],
     "type": "ui"
   },

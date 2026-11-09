@@ -6,10 +6,13 @@ interface ValueCardProps {
   value?: number | string | null;
   unit?: string;
   stale?: boolean;
+  /** Fixed width in dp instead of growing to fill the row (plan 21: the two-pane Live grid computes
+   *  it from the measured column so the cards fill each row exactly). Replaces the 150 dp minimum. */
+  width?: number;
 }
 
 /** Compact live-parameter tile. */
-export function ValueCard({ name, value, unit, stale }: ValueCardProps) {
+export function ValueCard({ name, value, unit, stale, width }: ValueCardProps) {
   const display =
     value === null || value === undefined
       ? '—'
@@ -22,8 +25,9 @@ export function ValueCard({ name, value, unit, stale }: ValueCardProps) {
       elevate
       bordered
       padding="$3"
-      minWidth={150}
-      flex={1}
+      {...(width !== undefined
+        ? { width, flexGrow: 0, flexShrink: 0 }
+        : { minWidth: 150, flex: 1 })}
       opacity={stale ? 0.5 : 1}
       accessible
       accessibilityRole="text"

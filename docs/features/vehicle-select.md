@@ -38,6 +38,11 @@ Garage cars and learned profiles landed with [plan 06](../plans/06-garage-learne
     profile** (plan 13): the profile as a **seed** file a friend imports and then learns their own
     car from.
 
+- **Two columns on wide screens** (plan 21) — on a medium / expanded window (≥ 600 dp) the garage
+  cards and the built-in profile cards each sit two per row (`CardGrid`, cells `garage-grid-cell` /
+  `profiles-grid-cell`, `flexBasis 49%`); a phone in portrait keeps one column. The recognition
+  cards and the garage actions stay full width.
+
 - **VehicleEditorSheet** — name (required, at most 80 characters), year (numeric, 1980 to next
   year, or blank), fuel (Petrol / Diesel / LPG / Hybrid / Other), **base profile** (registry list,
   with the warning that a specific profile brings its experimental, car-specific tools), notes (at

@@ -44,6 +44,7 @@ import { useNotificationsStore } from '@/features/notifications/model/notificati
 import { useBackupStore } from '@/features/backup/model/backupStore';
 import { memoryFiles } from './mocks/fileSystem';
 import { setMockFocused, setMockSearchParams } from './mocks/router';
+import { resetMockWindow } from './mocks/window';
 
 type AnyStore = UseBoundStore<StoreApi<any>> & {
   persist?: { clearStorage: () => void };
@@ -99,4 +100,5 @@ export function resetStores(): void {
   cancelPendingWrites();
   setMockSearchParams({});
   setMockFocused(true);
+  resetMockWindow();
 }

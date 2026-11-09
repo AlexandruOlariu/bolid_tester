@@ -34,6 +34,23 @@ charts answer "how is it changing?" — warm-up curves, boost vs RPM, fuel-trim 
   `model/chartsStore.ts`): `panels`, `setPanels`, `setPanelPids`, `addPanel(pids, windowMs?)` (id
   `p<n>`, one past the highest in use; default window 60 s), `removePanel`. In memory only.
 
+## Layout (plan 21)
+
+- **Measured plot.** Each panel measures its plot area with `onLayout` and draws the SVG at that
+  width (320 dp until the first layout); the height is `chartHeight(width)` = 3 : 8 of the width,
+  capped at 220 dp (320 → 120, the old fixed size). The geometry is pure, in `api/chartGeometry.ts`:
+  `toScreen(pts, w, h)` (time spans `[0, w]`, value `[h, 0]`), `msPerPx(windowMs, w)` (the drag-to-pan
+  rate; the `PanResponder` reads the width from a ref like its other live inputs) and
+  `chartHeight(w)`.
+- **Side by side.** On medium / expanded windows (≥ 600 dp, `useLayoutClass`) the panels sit two
+  per row (`testID="chart-panels-grid"`, each cell `flexBasis 49%`) and the screen uses the full
+  width (`Screen wide`); on a phone in portrait they stack as before. Both layouts share one element
+  tree (only the wrapper's direction and the cells' basis change), so rotating keeps every panel
+  mounted with its zoom, pan and inspect state. A panel's action buttons wrap
+  instead of overflowing a narrow half.
+- **More panels.** Tablets have room for four or more: **Add panel** (the picker above) appends
+  `p3`, `p4`, … like on a phone. Panels stay in memory only.
+
 ## Interactions
 
 Gestures use the built-in React Native Gesture Responder System (`PanResponder`) — **no new
@@ -90,6 +107,9 @@ the buffered time span so the pan can be clamped.
 
 ## Acceptance
 
+- A panel plots at 320 × 120 until measured and then at its measured width (400 → 400 × 150,
+  600 → 600 × 220); a 1280 dp window lays the default panels out side by side, a phone stacks them,
+  and rotating a phone to landscape keeps the panels mounted (`ChartsScreen.test.tsx`); `chartGeometry.test.ts` covers `toScreen` / `msPerPx` / `chartHeight`.
 - Golf simulator: **Add panel** → pick "DPF soot mass (calc.) (g) · 1701" → the line and its stats
   update every sweep without the Extended PIDs screen open (`ChartsScreen.test.tsx`).
 - Punto simulator: the picker offers no DIDs; a stale `22:` panel sends no `22` request.

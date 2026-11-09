@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import type { LayoutChangeEvent } from 'react-native';
 import { YStack, XStack, Paragraph, Button, Text, Card } from 'tamagui';
 import { ArrowUp, ArrowDown, Eye, EyeOff, Sliders, Check, RotateCcw } from 'lucide-react-native';
-import { Screen, Gauge, ValueCard } from '@/shared/ui';
+import { Screen, Gauge, ValueCard, useLayoutClass, isTwoPane } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { livePidFilter } from '@/shared/vehicles';
 import { useActiveProfile } from '@/shared/state/activeProfile';
@@ -20,6 +21,13 @@ import {
   presetFor,
   type DashboardItem,
 } from '../model/dashboardLayout';
+import {
+  CARD_GAP,
+  COLUMN_GAP,
+  cardWidth,
+  leftColumnWidth,
+  rightColumnWidth,
+} from '../model/twoPaneGrid';
 import { SensorGroups } from './SensorGroups';
 
 /** The two views of the Live tab (plan 07): the customisable dashboard, or every sensor grouped. */
@@ -77,10 +85,15 @@ function FuelEconomyCard({ result }: { result: FuelEconomyResult }) {
 }
 
 /** One built-in gauge, in its own (metric) unit. */
-function GaugeItem({ pid, value }: { pid: string; value: number | null }) {
+function GaugeItem({ pid, value, size }: { pid: string; value: number | null; size?: number }) {
   const g = GAUGE_BY_PID.get(pid)!;
-  return <Gauge label={g.label} value={fmt(value)} min={g.min} max={g.max} unit={g.unit} />;
+  return (
+    <Gauge label={g.label} value={fmt(value)} min={g.min} max={g.max} unit={g.unit} size={size} />
+  );
 }
+
+/** `Screen`'s horizontal padding on medium / expanded windows (24 dp a side). */
+const ROOMY_PADDING = 24;
 
 /** The Dashboard | All sensors switch under the title. */
 function ViewSwitch({ view, onChange }: { view: LiveView; onChange: (v: LiveView) => void }) {
@@ -115,6 +128,15 @@ export function DashboardScreen() {
   const profile = useActiveProfile();
   const selectedId = profile.id;
   const [view, setView] = useState<LiveView>('dashboard');
+  const win = useLayoutClass();
+  const twoPane = isTwoPane(win);
+  // Plan 21: the two-pane row measures itself, so the side rail and the screen padding are already
+  // taken out of the column / card widths. Until the first layout, estimate the row from the window.
+  const [measuredRow, setMeasuredRow] = useState<number | null>(null);
+  const onRowLayout = useCallback((e: LayoutChangeEvent) => {
+    const w = Math.round(e.nativeEvent.layout.width);
+    if (w > 0) setMeasuredRow(w);
+  }, []);
 
   // A car with no saved Customize layout starts from its fuel preset (plan 07).
   const saved = useDashboardLayoutStore((s) => s.byProfile[selectedId]);
@@ -188,8 +210,103 @@ export function DashboardScreen() {
     );
   }
 
+  const gaugeSize = win.cls === 'expanded' ? 180 : undefined;
+  const gauges = (
+    <XStack flexWrap="wrap" justifyContent="space-around" gap="$2">
+      {visible
+        .filter((i) => i.kind === 'gauge')
+        .map((i) => (
+          <GaugeItem key={i.id} pid={i.pid} value={numeric[i.pid] ?? null} size={gaugeSize} />
+        ))}
+    </XStack>
+  );
+  const fuelCard = fuel && !(editing && !twoPane) ? <FuelEconomyCard result={fuel} /> : null;
+  const visibleGauges = visible.some((i) => i.kind === 'gauge');
+  // The gauge column is left out when it would be empty (every gauge hidden, no fuel economy).
+  const hasLeft = visibleGauges || fuelCard !== null;
+  const rowWidth = measuredRow ?? Math.max(0, win.width - 2 * ROOMY_PADDING);
+  // Up to three cards per row on expanded, two on medium — fewer when they would drop under 150 dp
+  // — each sized so the row is filled exactly.
+  const cardW = twoPane
+    ? cardWidth(rightColumnWidth(rowWidth, hasLeft), win.cls === 'expanded' ? 3 : 2)
+    : undefined;
+  const cardItems = visible.filter((i) => i.kind === 'card');
+  const cards = (
+    <YStack gap="$2">
+      <XStack flexWrap="wrap" gap={CARD_GAP}>
+        {cardItems.map((i) => (
+          <ValueCard
+            key={i.id}
+            name={values[i.pid]?.name ?? i.pid}
+            value={fmt(numeric[i.pid] ?? null)}
+            unit={values[i.pid]?.unit ?? ''}
+            width={cardW}
+          />
+        ))}
+      </XStack>
+      {cardItems.every((i) => values[i.pid] === undefined) ? (
+        <Paragraph theme="alt2">Reading…</Paragraph>
+      ) : null}
+    </YStack>
+  );
+  const editList = (
+    <YStack gap="$2">
+      <Paragraph theme="alt2" fontSize="$2">
+        Reorder with the arrows and toggle visibility. Saved per vehicle profile; Reset goes back to
+        the default for this car's fuel type.
+      </Paragraph>
+      {ordered.map((item, idx) => {
+        const hidden = isHidden(item.id, layout);
+        const label =
+          item.kind === 'gauge'
+            ? (GAUGE_BY_PID.get(item.pid)?.label ?? item.pid)
+            : (values[item.pid]?.name ?? item.pid);
+        return (
+          <XStack
+            key={item.id}
+            alignItems="center"
+            gap="$2"
+            borderColor="$borderColor"
+            borderWidth={1}
+            borderRadius="$3"
+            padding="$2"
+            opacity={hidden ? 0.5 : 1}
+          >
+            <Text flex={1} numberOfLines={1}>
+              {label}{' '}
+              <Text theme="alt2" fontSize="$1">
+                {item.kind === 'gauge' ? 'gauge' : item.pid}
+              </Text>
+            </Text>
+            <Button
+              size="$2"
+              circular
+              disabled={idx === 0}
+              icon={<ArrowUp size={16} />}
+              onPress={() => move(selectedId, orderedIds, item.id, -1)}
+            />
+            <Button
+              size="$2"
+              circular
+              disabled={idx === ordered.length - 1}
+              icon={<ArrowDown size={16} />}
+              onPress={() => move(selectedId, orderedIds, item.id, 1)}
+            />
+            <Button
+              size="$2"
+              circular
+              theme={hidden ? 'gray' : 'green'}
+              icon={hidden ? <EyeOff size={16} /> : <Eye size={16} />}
+              onPress={() => toggleHidden(selectedId, item.id, layout)}
+            />
+          </XStack>
+        );
+      })}
+    </YStack>
+  );
+
   return (
-    <Screen title="Live data" subtitle="Streaming the parameters this ECU supports">
+    <Screen title="Live data" subtitle="Streaming the parameters this ECU supports" wide={twoPane}>
       <ViewSwitch
         view={view}
         onChange={(v) => {
@@ -218,89 +335,31 @@ export function DashboardScreen() {
         </Button>
       </XStack>
 
-      {fuel && !editing ? <FuelEconomyCard result={fuel} /> : null}
-
-      {editing ? (
-        <YStack gap="$2">
-          <Paragraph theme="alt2" fontSize="$2">
-            Reorder with the arrows and toggle visibility. Saved per vehicle profile; Reset goes
-            back to the default for this car's fuel type.
-          </Paragraph>
-          {ordered.map((item, idx) => {
-            const hidden = isHidden(item.id, layout);
-            const label =
-              item.kind === 'gauge'
-                ? (GAUGE_BY_PID.get(item.pid)?.label ?? item.pid)
-                : (values[item.pid]?.name ?? item.pid);
-            return (
-              <XStack
-                key={item.id}
-                alignItems="center"
-                gap="$2"
-                borderColor="$borderColor"
-                borderWidth={1}
-                borderRadius="$3"
-                padding="$2"
-                opacity={hidden ? 0.5 : 1}
-              >
-                <Text flex={1} numberOfLines={1}>
-                  {label}{' '}
-                  <Text theme="alt2" fontSize="$1">
-                    {item.kind === 'gauge' ? 'gauge' : item.pid}
-                  </Text>
-                </Text>
-                <Button
-                  size="$2"
-                  circular
-                  disabled={idx === 0}
-                  icon={<ArrowUp size={16} />}
-                  onPress={() => move(selectedId, orderedIds, item.id, -1)}
-                />
-                <Button
-                  size="$2"
-                  circular
-                  disabled={idx === ordered.length - 1}
-                  icon={<ArrowDown size={16} />}
-                  onPress={() => move(selectedId, orderedIds, item.id, 1)}
-                />
-                <Button
-                  size="$2"
-                  circular
-                  theme={hidden ? 'gray' : 'green'}
-                  icon={hidden ? <EyeOff size={16} /> : <Eye size={16} />}
-                  onPress={() => toggleHidden(selectedId, item.id, layout)}
-                />
-              </XStack>
-            );
-          })}
-        </YStack>
+      {twoPane ? (
+        // Plan 21: gauges + fuel economy in a left column (dropped when empty), the value cards (or
+        // the Customize list) in the right one.
+        <XStack testID="live-row" gap={COLUMN_GAP} alignItems="flex-start" onLayout={onRowLayout}>
+          {hasLeft ? (
+            <YStack testID="live-left" width={leftColumnWidth(rowWidth)} gap="$3">
+              {visibleGauges ? gauges : null}
+              {fuelCard}
+            </YStack>
+          ) : null}
+          <YStack testID="live-right" flex={1} minWidth={0} gap="$2">
+            {editing ? editList : cards}
+          </YStack>
+        </XStack>
       ) : (
         <>
-          <XStack flexWrap="wrap" justifyContent="space-around" gap="$2">
-            {visible
-              .filter((i) => i.kind === 'gauge')
-              .map((i) => (
-                <GaugeItem key={i.id} pid={i.pid} value={numeric[i.pid] ?? null} />
-              ))}
-          </XStack>
-
-          <YStack gap="$2">
-            <XStack flexWrap="wrap" gap="$2">
-              {visible
-                .filter((i) => i.kind === 'card')
-                .map((i) => (
-                  <ValueCard
-                    key={i.id}
-                    name={values[i.pid]?.name ?? i.pid}
-                    value={fmt(numeric[i.pid] ?? null)}
-                    unit={values[i.pid]?.unit ?? ''}
-                  />
-                ))}
-            </XStack>
-            {visible.filter((i) => i.kind === 'card').every((i) => values[i.pid] === undefined) ? (
-              <Paragraph theme="alt2">Reading…</Paragraph>
-            ) : null}
-          </YStack>
+          {fuelCard}
+          {editing ? (
+            editList
+          ) : (
+            <>
+              {gauges}
+              {cards}
+            </>
+          )}
         </>
       )}
     </Screen>

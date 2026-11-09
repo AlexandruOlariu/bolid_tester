@@ -5,6 +5,98 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 21 — Tablet and landscape layout (2026-11-09)
+
+[Plan 21](./plans/21-tablet-layout.md) landed: on windows ≥ 600 dp the app uses the space — a side
+tab rail, Live as gauges | values, Charts with measured plots two per row, two-column More and
+Vehicle lists, and every `Screen` capped at a centred 1100 dp column. Portrait phones are unchanged.
+What waits for hardware: the plan's Acceptance checks on a Pixel Tablet emulator / real tablet and
+a phone in landscape (pinch / pan / tap on a 600 dp panel, the Server URL input with the keyboard
+open), recorded as "device pending" on the roadmap. The Android half of the keyboard check is
+open: `automaticallyAdjustKeyboardInsets` is iOS-only and the app runs edge-to-edge on Android
+(Expo 56 / RN 0.85; RN's `ReactRootView` only reports IME insets as keyboard events), so whether
+`adjustResize` still shrinks the window is unverified. Procedure: Android phone in landscape →
+Settings → focus Server URL; if the field ends up under the keyboard, give `Screen` an Android
+keyboard path (e.g. a `KeyboardAvoidingView` with the header height as `keyboardVerticalOffset`).
+
+- **Layout classes (`src/shared/ui/layoutClass.ts`, pure).** `classify(width)` → `compact` < 600,
+  `medium` 600–839, `expanded` ≥ 840 (Material 3 window-size classes; Tamagui v3 has no 768 edge),
+  `layoutInfo`, `isTwoPane` (not compact), `usesSideRail` (expanded, or medium in landscape, and
+  the window at least `railMinHeight(fontScale)` tall — ~555 dp at font scale 1: the navigator's
+  rail is a non-scrolling column, so 7 tabs × ~69 dp must fit or Settings / More fall off-screen),
+  `CONTENT_MAX_WIDTH = 1100`. `useLayoutClass()` (`useLayoutClass.ts`) feeds it from
+  `useWindowDimensions()`. All exported from `@/shared/ui`.
+- **Screen.** Padding 16 → 24 on medium / expanded; content wrapped in a centred `YStack`
+  (`testID="screen-content"`) capped at 1100 dp unless the new `wide` prop is set (Live, Charts, the
+  bus sniffer); `automaticallyAdjustKeyboardInsets` on the `ScrollView` (iOS keyboard; Android
+  unverified, see above).
+- **Side rail.** `_layout.tsx`: `tabBarPosition: 'left'`, `tabBarVariant: 'material'`,
+  `tabBarLabelPosition: 'below-icon'` and a right border on the rail; the phone bar keeps
+  `'bottom'` / `'uikit'` and no label position (the navigator throws on `below-icon` + `uikit` on a
+  side, and on `material` at the bottom — both combinations avoided).
+- **Live.** Two-pane on non-compact: the row (`live-row`) measures itself with `onLayout` (window
+  minus padding until the first layout) and `live-data/model/twoPaneGrid.ts` (pure) sizes it —
+  `live-left` is 45 % of the measured row, at most 360 dp (gauges, then the fuel-economy card), and is
+  dropped when empty (every gauge hidden, no fuel economy); `live-right` holds the value cards (or the
+  Customize list), each given an exact `ValueCard width` (new prop; replaces the 150 dp minimum) for
+  as many ≥ 150 dp cards per row as fit, at most 3 on expanded / 2 on medium. Review fix: the first
+  cut used 45 % of the _window_ and fixed `31%` / `48%` flex bases with `minWidth 150` and no grow, so
+  on an 800 × 600 window with a rail (card column ~296 dp) or a 640 × 360 phone each card was forced
+  to 150 dp and sat alone with half the row empty, and an all-hidden gauge column stayed as an empty
+  270–360 dp strip. Gauges 180 dp on expanded. The switch and Customize toolbar stay on
+  top; All sensors unchanged.
+- **Charts.** Geometry extracted to `live-charts/api/chartGeometry.ts` (`toScreen(pts, w, h)`,
+  `msPerPx`, `chartHeight` = 3 : 8 capped at 220, `DEFAULT_CHART_WIDTH` 320). Each panel measures its
+  plot with `onLayout` (`testID="chart-plot-<id>"`); the `PanResponder` reads the width from a ref.
+  Non-compact: panels in a wrap grid (`chart-panels-grid`, `flexBasis 49%`); panel buttons wrap.
+  Compact and two-pane render the same element tree (the wrapper only flips row / column), so a
+  rotation does not remount the panels and drop their zoom / pan / inspect state.
+- **Lists.** New `CardGrid` (`src/shared/ui/CardGrid.tsx`): one column on compact, two (`49%`
+  cells, `<testID>-cell`) otherwise — used by every More section (`more-grid-<section>`) and the
+  garage / built-in profile cards (`garage-grid`, `profiles-grid`).
+- **Test harness.** RN's jest mock reports a 750 dp ("medium") window, so `jest.setup.ui.ts` now
+  mocks `react-native/Libraries/Utilities/useWindowDimensions` with `test/mocks/window.ts`
+  (default 390 × 844 phone; `setMockWindow`, `TABLET_WINDOW`; reset in `resetStores`). The stand-in
+  `Tabs` records `lastTabsScreenOptions`.
+- **Tests.** `classify.test.ts` (360 / 599 / 600 / 839 / 840 / 1280, landscape, two-pane, rail;
+  no rail at 640 × 360, 780 × 360, 915 × 412 or 932 × 430; larger font scales need more height),
+  `chartGeometry.test.ts` (x spans `[0, w]`, y `[0, h]`, `msPerPx`, `chartHeight`),
+  `Screen.test.tsx` (cap, padding, `wide`, keyboard insets), `RootLayout.test.tsx` (bottom bar on a
+  phone, a medium portrait window and a landscape phone (760 × 360, 915 × 412); rail on a tablet and
+  an 800 × 600 medium landscape window),
+  `DashboardScreen.test.tsx` (`live-left` / `live-right` at 1280 and 760 × 360, Customize in the right
+  column, `live-left` 266 dp / 150 dp cards at 640 × 360, 302 dp / 172 dp cards on a measured 672 dp
+  row, one full-width card in a 290 dp column, 2 then 3 per row on expanded, no `live-left` with every
+  gauge hidden, neither at 390), `twoPaneGrid.test.ts` (column / card widths), `ChartsScreen.test.tsx` (320 × 120 until measured, then 400 × 150 and
+  600 × 220; grid on a tablet, stacked on a phone, panels stay mounted across a rotation), `MoreScreen.test.tsx` and
+  `VehicleSelectScreen.test.tsx` (two-column cells on a tablet, none on a phone).
+- **Docs.** architecture § UI ("Layout classes"), live-data, live-charts ("Layout"), more,
+  vehicle-select, testing (`mocks/window.ts`); roadmap item ✅ (device pending) and the Live row of
+  the feature map (fuel presets and the grouped view shipped with plan 07, tablet two-pane now).
+
+**Deviations.**
+
+- The pure breakpoints live in `layoutClass.ts` (the hook in `useLayoutClass.ts` re-exports them) so
+  `classify.test.ts` runs under the `core` Jest project without React Native.
+- A Pixel 7 in landscape (915 dp) is **expanded** by width, not "medium" as the plan's Simulator
+  note says; it gets the same two-pane layout (plus 180 dp gauges) but keeps the bottom bar.
+- The plan puts landscape phones (medium + landscape) on the side rail. The rail also requires the
+  window height to hold all seven tabs (`railMinHeight`), because expo-router's rail neither
+  scrolls nor shrinks its items: on a 360–430 dp tall phone Settings and More would sit off-screen.
+  So in practice the rail is for tablets; a phone on its side keeps the bottom bar.
+- **Add panel** already existed (plan 14's picker, `addPanel` → `p3`, `p4`, …), so no second
+  "next unused PID" button was added; tablets add panels through the picker.
+- The phone bar gets no `tabBarLabelPosition` (the plan floated `'beside-icon'` with a question
+  mark); it keeps today's platform default, so portrait phones are unchanged. Only the rail sets
+  `'below-icon'`.
+- The optional three-column Faults layout was not built (optional in the plan; the DTC rows are
+  not stretch-safe in a third of the width).
+- The plan's Dashboard test mocks `useWindowDimensions` per test; here a shared default-phone
+  double (`test/mocks/window.ts`) does it for every UI test, because RN's 750 dp default would
+  otherwise switch every existing screen test to the medium layout.
+
+---
+
 ## Plan 16 — Per-car timeline (2026-11-09)
 
 [Plan 16](./plans/16-per-car-timeline.md) landed: **History is now the per-car timeline** — one

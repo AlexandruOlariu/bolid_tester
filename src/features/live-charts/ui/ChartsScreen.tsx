@@ -1,10 +1,10 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { PanResponder, View } from 'react-native';
+import { PanResponder, View, type LayoutChangeEvent } from 'react-native';
 import { YStack, XStack, Paragraph, H4, Button, Text } from 'tamagui';
 import Svg, { Polyline, Line, Circle } from 'react-native-svg';
-import { Screen } from '@/shared/ui';
+import { Screen, useLayoutClass, isTwoPane } from '@/shared/ui';
 import { HintCard } from '@/features/onboarding';
-import { Point, isCan } from '@/shared/obd-core';
+import { isCan } from '@/shared/obd-core';
 import { livePidFilter } from '@/shared/vehicles';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useActiveProfile } from '@/shared/state/activeProfile';
@@ -12,40 +12,19 @@ import { useChartsStore, ChartPanel, MAX_PANEL_SERIES } from '../model/chartsSto
 import { chartKeyOptions, panelLabels, type ChartKeyOption } from '../model/chartKeys';
 import { useChartSeries } from '../hooks/useChartSeries';
 import { useChartExport } from '../hooks/useChartExport';
+import {
+  DEFAULT_CHART_WIDTH,
+  chartHeight,
+  msPerPx,
+  toScreen,
+  type ScreenPoint,
+} from '../api/chartGeometry';
 
-const W = 320;
-const H = 120;
 const MIN_WINDOW = 10_000; //  10 s — most zoomed-in
 const MAX_WINDOW = 600_000; // 10 min — most zoomed-out
 const COLORS = ['#2bb673', '#4c9df3', '#d29922', '#f85149'];
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-
-interface ScreenPoint {
-  x: number;
-  y: number;
-  t: number;
-  v: number;
-}
-
-/** Map a series to SVG screen coordinates, each PID independently normalized (matches the gauges'
- *  auto-scaling). Returns both the coords (for tap-inspect) and the polyline string. */
-function toScreen(pts: Point[]): { screen: ScreenPoint[]; polyline: string } {
-  if (pts.length < 1) return { screen: [], polyline: '' };
-  const ts = pts.map((p) => p.t);
-  const vs = pts.map((p) => p.v);
-  const tMin = Math.min(...ts);
-  const tSpan = Math.max(...ts) - tMin || 1;
-  const vMin = Math.min(...vs);
-  const vSpan = Math.max(...vs) - vMin || 1;
-  const screen = pts.map((p) => ({
-    x: ((p.t - tMin) / tSpan) * W,
-    y: H - ((p.v - vMin) / vSpan) * H,
-    t: p.t,
-    v: p.v,
-  }));
-  return { screen, polyline: screen.map((s) => `${s.x.toFixed(1)},${s.y.toFixed(1)}`).join(' ') };
-}
 
 interface Inspect {
   pid: string;
@@ -65,13 +44,22 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
   const [inspect, setInspect] = useState<Inspect | null>(null);
   const { series, stats, oldestOffsetMs } = useChartSeries(pids, windowMs, 120, panOffsetMs);
   const { shareCsv, busy } = useChartExport();
+  // Plan 21: the plot fills the panel — measured with onLayout, 320 until the first layout.
+  const [width, setWidth] = useState(DEFAULT_CHART_WIDTH);
+  const height = chartHeight(width);
+  const onPlotLayout = useCallback((e: LayoutChangeEvent) => {
+    const measured = Math.round(e.nativeEvent.layout.width);
+    if (measured > 0) setWidth(measured);
+  }, []);
 
   // Live refs so the (memoized) PanResponder handlers never read stale gesture inputs.
   const windowRef = useRef(windowMs);
   const panRef = useRef(panOffsetMs);
   const oldestRef = useRef(oldestOffsetMs);
   const screenRef = useRef<{ pid: string; pts: ScreenPoint[] }[]>([]);
+  const widthRef = useRef(width);
   windowRef.current = windowMs;
+  widthRef.current = width;
   panRef.current = panOffsetMs;
   oldestRef.current = oldestOffsetMs;
 
@@ -134,9 +122,9 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
           emit(() => setWindowMs(next));
         } else {
           // One-finger drag → pan the window's end back/forward in time.
-          const msPerPx = windowRef.current / W;
+          const rate = msPerPx(windowRef.current, widthRef.current);
           const maxOffset = Math.max(0, oldestRef.current - windowRef.current);
-          const next = clamp(startPan.current + g.dx * msPerPx, 0, maxOffset);
+          const next = clamp(startPan.current + g.dx * rate, 0, maxOffset);
           emit(() => setPanOffsetMs(next));
         }
       },
@@ -152,7 +140,7 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
 
   // Rebuild the screen-space geometry each render for both drawing and tap-inspect.
   const plotted = pids.map((pid, i) => {
-    const { screen, polyline } = toScreen(series[pid] ?? []);
+    const { screen, polyline } = toScreen(series[pid] ?? [], width, height);
     return { pid, color: COLORS[i % COLORS.length], screen, polyline };
   });
   screenRef.current = plotted.map((p) => ({ pid: p.pid, pts: p.screen }));
@@ -169,11 +157,13 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
       </XStack>
 
       <View
+        testID={`chart-plot-${id}`}
+        onLayout={onPlotLayout}
         {...responder.panHandlers}
         accessibilityLabel={`Chart for ${pids.map((k) => labels[k]).join(', ')}. Pinch to zoom, drag to pan, tap to inspect a sample.`}
       >
-        <Svg width={W} height={H}>
-          <Line x1={0} y1={H} x2={W} y2={H} stroke="#30363D" strokeWidth={1} />
+        <Svg width={width} height={height}>
+          <Line x1={0} y1={height} x2={width} y2={height} stroke="#30363D" strokeWidth={1} />
           {plotted.map((p) => (
             <Polyline
               key={p.pid}
@@ -185,7 +175,14 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
           ))}
           {inspect ? (
             <>
-              <Line x1={inspect.x} y1={0} x2={inspect.x} y2={H} stroke="#8B949E" strokeWidth={1} />
+              <Line
+                x1={inspect.x}
+                y1={0}
+                x2={inspect.x}
+                y2={height}
+                stroke="#8B949E"
+                strokeWidth={1}
+              />
               <Circle cx={inspect.x} cy={inspect.y} r={4} fill="#E6EDF3" />
             </>
           ) : null}
@@ -211,7 +208,7 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
         );
       })}
 
-      <XStack gap="$2" marginTop="$1">
+      <XStack gap="$2" marginTop="$1" flexWrap="wrap">
         {panned ? (
           <Button size="$2" theme="alt2" onPress={() => setPanOffsetMs(0)}>
             Back to live
@@ -304,6 +301,7 @@ export function ChartsScreen() {
   const info = useSessionStore((s) => s.info);
   const profile = useActiveProfile();
   const [picking, setPicking] = useState(false);
+  const twoPane = isTwoPane(useLayoutClass());
 
   // Mode 01 PIDs the car reports (∩ the profile's list), plus — on CAN with a profile that
   // declares DIDs — its extended `22:<DID>` keys.
@@ -320,14 +318,31 @@ export function ChartsScreen() {
   );
 
   return (
-    <Screen title="Charts" subtitle="Live parameters over time">
+    <Screen title="Charts" subtitle="Live parameters over time" wide={twoPane}>
       <HintCard id="charts-gestures" title="Explore the chart">
         Pinch to zoom the time window (10 s–10 min), drag left/right to pan through history, and tap
         a line to read the exact value and time. Use “Share window (CSV)” to send the data out.
       </HintCard>
-      {panels.map((p) => (
-        <Panel key={p.id} id={p.id} pids={p.pids} windowMs={p.windowMs} />
-      ))}
+      {/* Plan 21: two panels per row on a tablet / landscape phone (each plot stretches to its
+          half), stacked on a portrait phone. One element tree for both, so rotating keeps every
+          panel mounted with its zoom, pan and inspect state; only the styles change. */}
+      <XStack
+        testID={twoPane ? 'chart-panels-grid' : 'chart-panels'}
+        flexDirection={twoPane ? 'row' : 'column'}
+        flexWrap={twoPane ? 'wrap' : 'nowrap'}
+        justifyContent="space-between"
+        rowGap={12}
+      >
+        {panels.map((p) => (
+          <YStack
+            key={p.id}
+            flexBasis={twoPane ? '49%' : 'auto'}
+            maxWidth={twoPane ? '49%' : '100%'}
+          >
+            <Panel id={p.id} pids={p.pids} windowMs={p.windowMs} />
+          </YStack>
+        ))}
+      </XStack>
       {picking ? (
         <PanelPicker
           options={options}

@@ -49,6 +49,10 @@ It owns no data; each entry routes to another feature's screen.
   search for (e.g. `vcds` → Module scan, `ota` → Check for updates).
 - **Check for updates** ("Over-the-air app updates") is the last Tools row, an action instead of a
   route: it shows a spinner and "Checking…" while a check runs and ignores taps until it finishes.
+- **Two columns on wide screens** (plan 21) — on a medium / expanded window (≥ 600 dp: a tablet,
+  or a phone on its side) each section's rows sit two per row (`CardGrid`, cells
+  `more-grid-<section>-cell`, `flexBasis 49%`) inside the centred, width-capped `Screen` column; a
+  phone in portrait keeps one column. Search, headers and blurbs are unchanged.
 - **Sensor readings** is no longer here: it is the **All sensors** view of the Live tab
   ([live-data](./live-data.md#all-sensors), plan 07).
 

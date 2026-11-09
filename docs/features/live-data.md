@@ -14,6 +14,29 @@ Stream and display live engine parameters (Mode 01 PIDs).
     L/h); there is no unit setting or conversion layer.
   - **All sensors** — every supported sensor grouped by system, see [All sensors](#all-sensors).
 
+### Tablet and landscape layout (plan 21)
+
+The Dashboard segment follows the window's layout class (`useLayoutClass`, see
+[architecture](../architecture.md#ui-feature-sliced)):
+
+- **compact** (a phone in portrait, < 600 dp): unchanged — fuel-economy card, gauges, then the
+  value-card grid; Customize replaces gauges and cards with the item list.
+- **medium / expanded** (≥ 600 dp — a tablet, or a phone on its side): the Dashboard | All sensors
+  switch and the Customize toolbar stay above two columns. The two-pane row (`live-row`) measures
+  itself with `onLayout` (so the side rail and the 24 dp padding are already out; until the first
+  layout it is estimated as the window minus the padding), and the pure `model/twoPaneGrid.ts` sizes
+  it. The **left** column (`testID="live-left"`, 45 % of the row, at most 360 dp) holds the gauges
+  and then the fuel-economy card; it is **left out** when it would be empty (every gauge hidden in
+  Customize and no fuel-economy result), and the cards take the whole row. The **right** one
+  (`live-right`, `flex: 1`) holds the value cards: as many ≥ 150 dp cards per row as the column fits,
+  at most three on expanded and two on medium, each given an exact `ValueCard width` so the row is
+  filled (a column too narrow for two holds one full-width card, never a 150 dp card and a gap; a
+  short last row keeps the grid's card width). Customize lists the items in the right column
+  while the gauges stay visible on the left. Gauges are 180 dp on expanded (150 otherwise). The
+  screen uses the full width (`Screen wide`).
+
+The All sensors segment keeps the centred, width-capped column of every other screen.
+
 ### Dashboard presets by fuel
 
 `presetFor(fuel)` (`model/dashboardLayout.ts`, pure, plan 07) is the layout a car with **no saved
@@ -138,7 +161,13 @@ only while the segment is selected:
   every supported item stays visible.
 - `ui/DashboardScreen.test.tsx` — not connected; metric gauges; the **All sensors** segment shows
   the grouped view and registers exactly the effective PID set; a petrol garage car with no saved
-  layout leads with the fuel trims.
+  layout leads with the fuel trims; plan 21: a 1280 dp window renders `live-left` (the gauges) and
+  `live-right` (the cards, and the Customize list), a 760 × 360 landscape phone is two-pane too, a
+  640 × 360 one sizes `live-left` from the row (266 dp, two 150 dp cards); a measured 672 dp row
+  (800 × 600 with a rail) gives a 302 dp gauge column and two 172 dp cards, a 290 dp card column one
+  full-width card, a 454 dp one two per row on expanded and an 854 dp one three; with every gauge
+  hidden and no fuel economy `live-left` is gone and the cards span the row; a 390 dp phone renders
+  neither. `model/twoPaneGrid.test.ts` covers the pure column / card-width maths.
 - `ui/SensorGroups.test.tsx` — simulated Golf: the five injection DIDs are read once on mount
   (`readExtended` × 5) and live-data updates send no more; a read superseded by **Refresh**, or by
   leaving the view, sends nothing more; `22:<DID>` values never appear under "Other".

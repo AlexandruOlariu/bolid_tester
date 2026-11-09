@@ -33,16 +33,26 @@ interface TabScreenProps {
   options?: { title?: string; href?: string | null };
 }
 
-/** `<Tabs.Screen>` renders nothing by itself; `<Tabs>` renders a stand-in tab bar so a layout test
- *  can assert it: each visible tab as a `Text` (testID `tab-<route>`) showing its title — or the bare
+/** `<Tabs.Screen>` renders nothing by itself; `<Tabs>` records its `screenOptions`
+ *  (`lastTabsScreenOptions`) and renders a stand-in tab bar so a layout test can assert it: each visible tab as a `Text` (testID `tab-<route>`) showing its title — or the bare
  *  route name when the title is missing, as the real tab bar would — and each hidden `href: null`
  *  route as an empty `View` (testID `hidden-<route>`). */
 function TabScreen(_props: TabScreenProps): null {
   return null;
 }
 
-function Tabs({ children }: { children?: React.ReactNode }): React.ReactElement {
+/** The `screenOptions` the last rendered `<Tabs>` received (the side rail, plan 21). */
+export let lastTabsScreenOptions: Record<string, unknown> = {};
+
+function Tabs({
+  children,
+  screenOptions,
+}: {
+  children?: React.ReactNode;
+  screenOptions?: Record<string, unknown>;
+}): React.ReactElement {
   const { Text, View } = jest.requireActual<typeof import('react-native')>('react-native');
+  lastTabsScreenOptions = screenOptions ?? {};
   const screens: TabScreenProps[] = [];
   React.Children.forEach(children, (child) => {
     if (React.isValidElement<TabScreenProps>(child) && child.type === TabScreen) {

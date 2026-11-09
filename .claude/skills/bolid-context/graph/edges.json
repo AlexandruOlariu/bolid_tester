@@ -4530,6 +4530,16 @@
     "imports"
   ],
   [
+    "screen:_layout",
+    "ui:layoutClass",
+    "named"
+  ],
+  [
+    "screen:_layout",
+    "ui:useLayoutClass",
+    "named"
+  ],
+  [
     "screen:adaptations",
     "doc:features/adaptations",
     "named"
@@ -5220,6 +5230,16 @@
     "imports"
   ],
   [
+    "ui:CardGrid",
+    "ui:layoutClass",
+    "imports"
+  ],
+  [
+    "ui:CardGrid",
+    "ui:useLayoutClass",
+    "imports"
+  ],
+  [
     "ui:ImportPreviewSheet",
     "core:obd/protocols",
     "imports"
@@ -5255,6 +5275,16 @@
     "imports"
   ],
   [
+    "ui:Screen",
+    "ui:layoutClass",
+    "imports"
+  ],
+  [
+    "ui:Screen",
+    "ui:useLayoutClass",
+    "imports"
+  ],
+  [
     "ui:StatusBadge",
     "doc:vcds-parity-roadmap",
     "named"
@@ -5270,6 +5300,11 @@
     "imports"
   ],
   [
+    "ui:layoutClass",
+    "doc:plans/21-tablet-layout",
+    "named"
+  ],
+  [
     "ui:useExchangeImport",
     "doc:exchange-formats",
     "named"
@@ -5282,6 +5317,16 @@
   [
     "ui:useExchangeImport",
     "store:exchangeService",
+    "imports"
+  ],
+  [
+    "ui:useLayoutClass",
+    "doc:plans/21-tablet-layout",
+    "named"
+  ],
+  [
+    "ui:useLayoutClass",
+    "ui:layoutClass",
     "imports"
   ],
   [

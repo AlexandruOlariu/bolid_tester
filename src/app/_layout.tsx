@@ -15,7 +15,7 @@ import {
 import config from '../../tamagui.config';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { installGlobalErrorHandlers } from '@/shared/state/errorLogStore';
-import { AppLogo, RootErrorBoundary } from '@/shared/ui';
+import { AppLogo, RootErrorBoundary, useLayoutClass, usesSideRail } from '@/shared/ui';
 import { AppSplash } from '@/shared/ui/AppSplash';
 import { EngineHost } from '@/features/engine-host';
 import { SimulatorBanner } from '@/features/connection';
@@ -37,6 +37,10 @@ export default function RootLayout() {
   const scheme: 'light' | 'dark' =
     pref === 'system' ? (system === 'light' ? 'light' : 'dark') : pref;
   const nav = NAV[scheme];
+  // Plan 21: on a tablet (expanded, or medium + landscape) tall enough for all seven rail items the
+  // tab bar becomes a left side rail ('material' variant, labels under the icons); the header stays on
+  // top. A phone on its side is too short for the non-scrolling rail and keeps the bottom bar.
+  const rail = usesSideRail(useLayoutClass());
 
   return (
     <TamaguiProvider config={config} defaultTheme={scheme}>
@@ -71,14 +75,24 @@ export default function RootLayout() {
                 ),
                 headerTitleStyle: { fontWeight: '700' },
                 headerShadowVisible: false,
-                tabBarStyle: {
-                  backgroundColor: nav.bg,
-                  borderTopColor: nav.border,
-                  borderTopWidth: 1,
-                },
+                tabBarPosition: rail ? 'left' : 'bottom',
+                tabBarVariant: rail ? 'material' : 'uikit',
+                tabBarStyle: rail
+                  ? {
+                      backgroundColor: nav.bg,
+                      borderRightColor: nav.border,
+                      borderRightWidth: 1,
+                    }
+                  : {
+                      backgroundColor: nav.bg,
+                      borderTopColor: nav.border,
+                      borderTopWidth: 1,
+                    },
                 tabBarActiveTintColor: ACCENT,
                 tabBarInactiveTintColor: INACTIVE,
                 tabBarShowLabel: true,
+                // Labels under the icons on the rail; the phone bar keeps the platform default.
+                ...(rail ? { tabBarLabelPosition: 'below-icon' as const } : null),
                 tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
               }}
             >

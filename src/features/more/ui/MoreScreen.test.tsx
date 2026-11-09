@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { mockPush } from '@test/mocks/router';
+import { setMockWindow, TABLET_WINDOW } from '@test/mocks/window';
 import { MoreScreen } from './MoreScreen';
 
 /** Every row, by section (plan 07). "Check for updates" is the last Tools row. */
@@ -108,5 +109,23 @@ describe('MoreScreen', () => {
     );
     expect(mockPush).not.toHaveBeenCalled();
     alert.mockRestore();
+  });
+
+  it('lays each section out in two columns on a tablet (plan 21)', () => {
+    setMockWindow(TABLET_WINDOW);
+    renderWithProviders(<MoreScreen />);
+
+    for (const [id, titles] of Object.entries(SECTIONS)) {
+      const cells = screen.getAllByTestId(`more-grid-${id}-cell`);
+      expect(cells).toHaveLength(titles.length);
+      expect(cells[0]).toHaveStyle({ flexBasis: '49%' });
+      expect(within(cells[0]).getByRole('button', { name: entryName(titles[0]) })).toBeTruthy();
+    }
+  });
+
+  it('keeps one column on a phone in portrait', () => {
+    renderWithProviders(<MoreScreen />);
+    expect(screen.queryByTestId('more-grid-diagnose')).toBeNull();
+    expect(screen.queryAllByTestId(/^more-grid-.*-cell$/)).toHaveLength(0);
   });
 });

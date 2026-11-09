@@ -1,8 +1,9 @@
 /** Charts (plan 14): the panel picker offers the Golf's extended DIDs next to the Mode 01 PIDs, a
  *  picked DID plots live with its label, and a car without DIDs offers none. */
 import React from 'react';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
+import { setMockWindow, TABLET_WINDOW } from '@test/mocks/window';
 import { connectSimulator } from '@test/simulator';
 import { useVehicleStore } from '@/shared/state/vehicleStore';
 import { useChartsStore } from '@/shared/state/chartsStore';
@@ -57,5 +58,62 @@ describe('ChartsScreen', () => {
     const before = useChartsStore.getState().panels.length;
     fireEvent.press(screen.getAllByText('Remove')[0]);
     expect(useChartsStore.getState().panels).toHaveLength(before - 1);
+  });
+
+  describe('layout (plan 21)', () => {
+    /** The plot's SVG size: the host element under the plot view that carries width + height. */
+    function plotSize(panelId: string): { width: number; height: number } {
+      const svg = screen
+        .getByTestId(`chart-plot-${panelId}`)
+        .findAll(
+          (n: ReturnType<typeof screen.getByTestId>) =>
+            typeof n.type === 'string' && typeof n.props.width === 'number' && !!n.props.height,
+        )[0];
+      return { width: svg.props.width, height: svg.props.height };
+    }
+
+    function layout(panelId: string, width: number) {
+      fireEvent(screen.getByTestId(`chart-plot-${panelId}`), 'layout', {
+        nativeEvent: { layout: { x: 0, y: 0, width, height: 100 } },
+      });
+    }
+
+    it('plots at 320 × 120 until measured, then fills the measured width', async () => {
+      await open('golf-plus-2009-20tdi');
+      expect(plotSize('p1')).toEqual({ width: 320, height: 120 });
+      layout('p1', 400);
+      expect(plotSize('p1')).toEqual({ width: 400, height: 150 });
+      layout('p1', 600);
+      // 3:8 of 600 is 225, capped at 220.
+      expect(plotSize('p1')).toEqual({ width: 600, height: 220 });
+    });
+
+    it('a tablet lays the panels out side by side', async () => {
+      setMockWindow(TABLET_WINDOW);
+      await open('golf-plus-2009-20tdi');
+      const grid = screen.getByTestId('chart-panels-grid');
+      expect(within(grid).getByTestId('chart-plot-p1')).toBeTruthy();
+      expect(within(grid).getByTestId('chart-plot-p2')).toBeTruthy();
+    });
+
+    it('rotating keeps every panel mounted (its local chart state survives)', async () => {
+      await open('golf-plus-2009-20tdi');
+      layout('p1', 400);
+      expect(plotSize('p1')).toEqual({ width: 400, height: 150 });
+      // Portrait phone → landscape (medium): the grid switches on without remounting the panel, so
+      // its measured width (like its zoom / pan / inspect state) is kept, not reset to 320. A new
+      // panels array re-renders the screen, which then reads the rotated window.
+      expect(screen.queryByTestId('chart-panels-grid')).toBeNull();
+      setMockWindow({ width: 844, height: 390 });
+      act(() => useChartsStore.setState({ panels: [...useChartsStore.getState().panels] }));
+      expect(screen.getByTestId('chart-panels-grid')).toBeTruthy();
+      expect(plotSize('p1')).toEqual({ width: 400, height: 150 });
+    });
+
+    it('a phone in portrait stacks the panels', async () => {
+      await open('golf-plus-2009-20tdi');
+      expect(screen.queryByTestId('chart-panels-grid')).toBeNull();
+      expect(screen.getByTestId('chart-plot-p2')).toBeTruthy();
+    });
   });
 });

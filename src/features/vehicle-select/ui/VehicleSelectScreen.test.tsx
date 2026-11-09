@@ -1,8 +1,9 @@
 import React from 'react';
 import { Alert } from 'react-native';
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, within } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { mockPush } from '@test/mocks/router';
+import { setMockWindow, TABLET_WINDOW } from '@test/mocks/window';
 import { connectSimulator } from '@test/simulator';
 import { VEHICLE_PROFILES } from '@/shared/vehicles';
 import { useGarageStore } from '@/shared/state/garageStore';
@@ -321,5 +322,44 @@ describe('VehicleSelectScreen — profile import / export (plan 13)', () => {
     });
     expect(screen.getByText(/needs the file picker/)).toBeTruthy();
     load.mockRestore();
+  });
+
+  describe('tablet layout (plan 21)', () => {
+    it('shows the built-in profiles and the garage in two columns', () => {
+      useGarageStore.setState({
+        vehicles: [
+          {
+            id: 'user:a',
+            name: 'Car A',
+            fuel: 'petrol',
+            baseProfileId: 'generic',
+            createdAt: 1,
+            updatedAt: 1,
+          },
+          {
+            id: 'user:b',
+            name: 'Car B',
+            fuel: 'diesel',
+            baseProfileId: 'generic',
+            createdAt: 2,
+            updatedAt: 2,
+          },
+        ],
+      });
+      setMockWindow(TABLET_WINDOW);
+      renderWithProviders(<VehicleSelectScreen />);
+
+      const profiles = screen.getAllByTestId('profiles-grid-cell');
+      expect(profiles).toHaveLength(VEHICLE_PROFILES.length);
+      expect(profiles[0]).toHaveStyle({ flexBasis: '49%' });
+      expect(within(profiles[1]).getByText(VEHICLE_PROFILES[1].name)).toBeTruthy();
+      expect(screen.getAllByTestId('garage-grid-cell')).toHaveLength(2);
+    });
+
+    it('keeps one column on a phone', () => {
+      renderWithProviders(<VehicleSelectScreen />);
+      expect(screen.queryAllByTestId('profiles-grid-cell')).toHaveLength(0);
+      expect(screen.getByText(GOLF)).toBeTruthy();
+    });
   });
 });

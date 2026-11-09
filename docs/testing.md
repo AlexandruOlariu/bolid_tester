@@ -90,6 +90,13 @@ next to the screen (`src/features/<slug>/ui/<Screen>.test.tsx`). Tests that cann
 - `mocks/router.ts`: the expo-router double. Assert navigation on `mockPush`; `setMockSearchParams`
   feeds `useLocalSearchParams`; a stand-in `Tabs` lists the visible tabs (`tab-<route>`) and the
   hidden routes (`hidden-<route>`).
+- `mocks/window.ts`: the window size behind `useWindowDimensions` (plan 21). React Native's own
+  jest mock reports 750 × 1334 — a "medium" layout class — so the double defaults to a portrait
+  phone (390 × 844 dp) and every screen test renders the phone layout. Call
+  `setMockWindow(TABLET_WINDOW)` (1280 × 800, a Pixel Tablet in landscape) or
+  `setMockWindow({ width, height })` before rendering to test the tablet / landscape layouts;
+  `resetStores()` puts the phone back. The stand-in `Tabs` also records its `screenOptions`
+  (`lastTabsScreenOptions`) so the layout test can assert the side rail.
 - `resetStores()`: runs before every test. Each store a tab screen reads goes back to its initial
   state, every persisted store's pending debounced write is cancelled (`persist.clearStorage()`
   goes through `debouncedStorage.removeItem`), and the in-memory filesystem is emptied. The same

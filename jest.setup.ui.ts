@@ -99,6 +99,11 @@ jest.mock('expo-updates', () => ({
 
 // --- Navigation + safe area. ------------------------------------------------------------------------
 jest.mock('expo-router', () => require('./test/mocks/router').expoRouterMock);
+// The window size (plan 21): a portrait phone unless a test calls `setMockWindow` (test/mocks/window.ts).
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => require('./test/mocks/window').mockUseWindowDimensions(),
+}));
 jest.mock(
   'react-native-safe-area-context',
   () => require('react-native-safe-area-context/jest/mock').default,

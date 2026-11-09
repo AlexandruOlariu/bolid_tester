@@ -132,6 +132,29 @@ day grouping are pure, in `src/shared/lib/timeline.ts` (no state or feature impo
 history slice; it reaches the other screens only through routes (`/module-scan?after=&before=`,
 `/trip-detail?id=`, `/maintenance`, `/coding`).
 
+**Layout classes (plan 21).** Screens adapt to the window with `useLayoutClass()`
+(`src/shared/ui/useLayoutClass.ts`: `useWindowDimensions()` → `{ cls, width, height, landscape,
+fontScale }`). The class comes from the pure `classify(width)` in `src/shared/ui/layoutClass.ts`
+(unit-tested): **compact** < 600 dp, **medium** 600–839, **expanded** ≥ 840 — Material 3's
+window-size classes, chosen over Tamagui's v3 media queries (`sm` ≤ 800, `gtSm` ≥ 801, `gtMd` ≥
+1021, no 768 edge) because the 600 dp edge gives a 7-inch tablet in portrait and a small phone in
+landscape the two-pane layouts. Two rules build on it: `isTwoPane` (anything but compact) switches
+Live to gauges | values, Charts to two panels per row and More / Vehicle to two-column card grids
+(`CardGrid`, `src/shared/ui/CardGrid.tsx`); `usesSideRail` (expanded, or medium in landscape — and only when
+the window is at least `railMinHeight(fontScale)` tall, ~555 dp at font scale 1, because the
+navigator's rail is a non-scrolling column that must fit all seven tabs; a phone on its side keeps
+the bottom bar) moves the tab bar to a left rail (`tabBarPosition: 'left'`, `tabBarVariant: 'material'`, labels
+below the icons) in `src/app/_layout.tsx`; the header stays on top. **Screen width cap:** `Screen`
+(`src/shared/ui/Screen.tsx`) pads 16 dp on compact and 24 dp otherwise, and wraps its content in a
+centred column capped at `CONTENT_MAX_WIDTH` (1100 dp) on medium / expanded — unless the screen
+passes `wide` (Live, Charts and the bus sniffer lay out their own columns). Its `ScrollView` sets
+`automaticallyAdjustKeyboardInsets` so a focused input (Settings → Server URL on a phone in
+landscape) scrolls above the keyboard on iOS. That prop is iOS-only; on Android the app runs
+edge-to-edge (Expo 56 / RN 0.85, no `android.softwareKeyboardLayoutMode` in `app.json`) and whether
+the default `adjustResize` still shrinks the window there is **unverified** — a device check (see
+the plan 21 entry in the implementation log). Foldables, multi-window
+and a web target are out of scope.
+
 **Specs.** Every slice has a spec in `docs/features/<slug>.md` (see [docs/README](./README.md));
 `src/shared/lib/featureDocsSync.test.ts` enforces it.
 

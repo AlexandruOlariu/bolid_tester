@@ -1,6 +1,7 @@
 import React from 'react';
-import { fireEvent, screen } from '@testing-library/react-native';
+import { fireEvent, screen, within } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
+import { setMockWindow, TABLET_WINDOW } from '@test/mocks/window';
 import { connectSimulator } from '@test/simulator';
 import type { LiveValue } from '@/shared/obd-core/session/DiagnosticSession';
 import { useGarageStore } from '@/shared/state/garageStore';
@@ -120,5 +121,135 @@ describe('DashboardScreen', () => {
       'Intake manifold pressure',
       'Calculated engine load',
     ]);
+  });
+
+  describe('tablet layout (plan 21)', () => {
+    const seed = () =>
+      useLiveDataStore.setState({
+        values: {
+          '010C': live('010C', 'Engine RPM', 'rpm', 2150),
+          '0104': live('0104', 'Calculated engine load', '%', 22),
+        },
+      });
+
+    it('a tablet shows the gauges in a left column and the value cards in a right one', async () => {
+      setMockWindow(TABLET_WINDOW);
+      await connectSimulator();
+      seed();
+      renderWithProviders(<DashboardScreen />);
+
+      const left = screen.getByTestId('live-left');
+      const right = screen.getByTestId('live-right');
+      expect(within(left).getByRole('progressbar', { name: 'RPM' })).toBeTruthy();
+      expect(within(right).queryByRole('progressbar')).toBeNull();
+      expect(within(right).getByLabelText(/^Calculated engine load: 22/)).toBeTruthy();
+    });
+
+    it('Customize lists the items in the right column and keeps the gauges on the left', async () => {
+      setMockWindow(TABLET_WINDOW);
+      await connectSimulator();
+      seed();
+      renderWithProviders(<DashboardScreen />);
+
+      fireEvent.press(screen.getByText('Customize'));
+      expect(
+        within(screen.getByTestId('live-right')).getByText(/Reorder with the arrows/),
+      ).toBeTruthy();
+      expect(within(screen.getByTestId('live-left')).getAllByRole('progressbar').length).toBe(3);
+    });
+
+    it('a phone in landscape is two-pane too', async () => {
+      setMockWindow({ width: 760, height: 360 });
+      await connectSimulator();
+      seed();
+      renderWithProviders(<DashboardScreen />);
+      expect(screen.getByTestId('live-left')).toBeTruthy();
+    });
+
+    const widthOf = (id: string) => {
+      const style = [screen.getByTestId(id).props.style].flat(Infinity) as { width?: number }[];
+      return style.reduce<number | undefined>((w, s) => s?.width ?? w, undefined);
+    };
+    const cardWidthOf = (label: RegExp) => {
+      let node = screen.getByLabelText(label);
+      while (!node.props.accessibilityLabel) node = node.parent!;
+      const style = [node.props.style].flat(Infinity) as { width?: number }[];
+      return style.reduce<number | undefined>((w, s) => s?.width ?? w, undefined);
+    };
+    const layoutRow = (width: number) =>
+      fireEvent(screen.getByTestId('live-row'), 'layout', {
+        nativeEvent: { layout: { width, height: 400, x: 0, y: 0 } },
+      });
+
+    it('sizes the gauge column from the row, not the window, so the cards keep room', async () => {
+      setMockWindow({ width: 640, height: 360 });
+      await connectSimulator();
+      seed();
+      const view = renderWithProviders(<DashboardScreen />);
+      // Before the first layout the row is estimated as the window minus the 2 × 24 padding:
+      // 45 % of 592 → 266 dp, leaving 592 − 266 − 18 (gap) = 308 dp → two 150 dp cards.
+      expect(widthOf('live-left')).toBe(266);
+      expect(cardWidthOf(/^Calculated engine load: 22/)).toBe(150);
+      view.unmount();
+
+      // An 800 × 600 window with an ~80 dp side rail: the measured row is 672 dp.
+      setMockWindow({ width: 800, height: 600 });
+      renderWithProviders(<DashboardScreen />);
+      layoutRow(672);
+      expect(widthOf('live-left')).toBe(302);
+      // 672 − 302 − 18 = 352 dp → two cards of (352 − 7) / 2 → 172 dp, filling the row.
+      expect(cardWidthOf(/^Calculated engine load: 22/)).toBe(172);
+    });
+
+    it('a narrow card column holds one full-width card instead of a 150 dp card and a gap', async () => {
+      setMockWindow({ width: 640, height: 360 });
+      await connectSimulator();
+      seed();
+      renderWithProviders(<DashboardScreen />);
+      layoutRow(560); // 560 − 252 − 18 = 290 dp: too narrow for two cards
+      expect(cardWidthOf(/^Calculated engine load: 22/)).toBe(290);
+    });
+
+    it('a tablet with a narrower measured row drops to two cards per row rather than leaving a gap', async () => {
+      setMockWindow({ width: 960, height: 600 });
+      await connectSimulator();
+      seed();
+      renderWithProviders(<DashboardScreen />);
+      layoutRow(832); // 960 − 80 rail − 48 padding; 832 − 360 − 18 = 454 dp → 2 × 223
+      expect(cardWidthOf(/^Calculated engine load: 22/)).toBe(223);
+      layoutRow(1232); // 1280 − 48: 1232 − 360 − 18 = 854 dp → 3 × 280
+      expect(cardWidthOf(/^Calculated engine load: 22/)).toBe(280);
+    });
+
+    it('drops the empty gauge column when every gauge is hidden and there is no fuel economy', async () => {
+      setMockWindow(TABLET_WINDOW);
+      await connectSimulator();
+      seed();
+      useDashboardLayoutStore.setState({
+        byProfile: {
+          [getActiveProfile().id]: {
+            order: [],
+            hidden: ['gauge:010C', 'gauge:010D', 'gauge:0105'],
+          },
+        },
+      });
+      renderWithProviders(<DashboardScreen />);
+
+      expect(screen.queryByTestId('live-left')).toBeNull();
+      expect(screen.queryByRole('progressbar')).toBeNull();
+      // The cards get the whole 1232 dp row: 3 × (1232 − 14) / 3 → 406 dp.
+      expect(cardWidthOf(/^Calculated engine load: 22/)).toBe(406);
+    });
+
+    it('a phone in portrait keeps the single column', async () => {
+      setMockWindow({ width: 390, height: 844 });
+      await connectSimulator();
+      seed();
+      renderWithProviders(<DashboardScreen />);
+
+      expect(screen.queryByTestId('live-left')).toBeNull();
+      expect(screen.queryByTestId('live-right')).toBeNull();
+      expect(screen.getByRole('progressbar', { name: 'RPM' })).toBeTruthy();
+    });
   });
 });
