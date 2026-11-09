@@ -1,6 +1,7 @@
 import React from 'react';
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
+import { mockPush } from '@test/mocks/router';
 import { connectSimulator } from '@test/simulator';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
@@ -69,6 +70,15 @@ describe('SettingsScreen', () => {
 
     fireEvent.press(screen.getByText('P0299+P0401'));
     expect(useSettingsStore.getState().injectedDtcs).toEqual(['P0299', 'P0401']);
+  });
+
+  it('the Data section opens Backup & restore', () => {
+    renderWithProviders(<SettingsScreen />);
+    expect(screen.getByText('Data')).toBeTruthy();
+    fireEvent.press(screen.getByText('Backup & restore'));
+    expect(mockPush).toHaveBeenCalledWith('/backup');
+    fireEvent.press(screen.getByText('Export data…'));
+    expect(mockPush).toHaveBeenLastCalledWith('/backup');
   });
 
   it('About shows the app version and opens the privacy policy', () => {

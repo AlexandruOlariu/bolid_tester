@@ -76,7 +76,10 @@ no-op.
   `info.partNumber` (failure is logged as `connection/part-number` and never fails the connect; it
   picks the label pack for the Extended PIDs measuring groups, plan 14), and publishes the session
   with `sessionStore.setConnected`. Also `disconnect()`, `switchAdapterSource(source)`,
-  `switchToRealAdapter()`, `FLAP_PAUSED_MESSAGE`, and the simulator dev hooks under `__sim`
+  `switchToRealAdapter()`, `resetForRestore()` (the same teardown as a source switch — in-flight
+  connect invalidated, auto-reconnect cancelled, adapter log cleared — run before a data restore,
+  whose restored settings may change the source; plan 18), `FLAP_PAUSED_MESSAGE`, and the
+  simulator dev hooks under `__sim`
   (Settings → Developer). Link-loss, auto-reconnect and the flap guard live here too (below).
 - Pure helpers, unit-tested: `reconnect.ts` (`runReconnect`), `flapGuard.ts`
   (`pruneDrops`, `shouldAutoReconnect`), `diagnoseFailure.ts` (`diagnoseFailure`,

@@ -102,9 +102,11 @@ reading the trip id from `useLocalSearchParams<{ id }>()`. It reads the trip's C
   then drops the summary from the store.
 - `shareTrip(header)` — opens the OS share sheet (`expo-sharing`) for the trip's CSV.
 
-Native modules (`expo-file-system` / `expo-sharing`) are loaded via variable specifiers so the
-project builds and unit-tests without them present — the same dependency-tolerant pattern as
-`useDtcExport` / `useErrorLogExport`.
+Native modules (`expo-file-system/legacy` / `expo-sharing`) are loaded via variable specifiers so
+the project builds and unit-tests without them present — the same dependency-tolerant pattern as
+`useDtcExport` / `useErrorLogExport`. The file system is the **legacy** entry point: on this Expo
+SDK the root `expo-file-system` has no `documentDirectory`, so the CSV would never be written on a
+device. The backup ([backup](./backup.md)) reads and writes the same `trip-<id>.csv` files.
 
 ## GPS track (`api/trackRecorder.ts`)
 

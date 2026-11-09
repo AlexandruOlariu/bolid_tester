@@ -1,6 +1,6 @@
 /** `loadTrip` reads a trip's CSV once and returns both its samples and its GPS track (plan 17). In
  *  the core project ts-jest compiles the variable-specifier `import()` to `require`, so the
- *  in-memory `expo-file-system` double below is what the hook really reads. */
+ *  in-memory `expo-file-system/legacy` double below is what the hook really reads. */
 const mockFiles = new Map<string, string>();
 const mockFs = {
   documentDirectory: 'file:///docs/',
@@ -17,7 +17,9 @@ const mockFs = {
     mockFiles.delete(uri);
   }),
 };
-jest.mock('expo-file-system', () => mockFs);
+// The root entry point as it is on this SDK: no `documentDirectory` (its legacy functions are
+// throwing stubs). The hook must use the legacy entry point, or the CSV is never written.
+jest.mock('expo-file-system', () => ({}));
 jest.mock('expo-file-system/legacy', () => mockFs);
 
 import { toCsv, trackFromCsv, type Trip } from '@/shared/obd-core';

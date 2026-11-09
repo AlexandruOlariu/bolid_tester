@@ -21,7 +21,6 @@
 import { useEffect, useRef } from 'react';
 import {
   AlertEngine,
-  defaultRules,
   deriveDiagnosticEvents,
   diffReadiness,
   DiagSnapshot,
@@ -92,14 +91,13 @@ export function EngineHost(): null {
   const info = useSessionStore((s) => s.info);
   const intervalMs = useSettingsStore((s) => s.pollIntervalMs);
 
-  // Seed sensible default alert rules once the effective PID set is known — regardless of whether
-  // the Alerts screen was ever opened.
-  const rules = useAlertsStore((s) => s.rules);
-  const setRules = useAlertsStore((s) => s.setRules);
+  // Offer the starter alert rules once the effective PID set is known — regardless of whether the
+  // Alerts screen was ever opened. Each starter rule is offered once (`seededIds`, persisted): a
+  // later car adds the ones the first car lacked, and a rule the user deleted is not re-added.
+  const seedDefaults = useAlertsStore((s) => s.seedDefaults);
   useEffect(() => {
-    if (rules.length === 0 && info?.supportedPids?.length)
-      setRules(defaultRules(info.supportedPids));
-  }, [info, rules.length, setRules]);
+    if (info?.supportedPids?.length) seedDefaults(info.supportedPids);
+  }, [info, seedDefaults]);
 
   // VIN auto-select (plan 06): every new connection's VIN is checked once against the garage —
   // reconnecting a car you added selects it again (Settings → "Recognise my cars by VIN"). Keyed on

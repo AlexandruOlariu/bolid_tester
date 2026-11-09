@@ -101,6 +101,8 @@ Work in waves; plans inside a wave are independent and can run on parallel branc
 - **Persistence.** Durable stores use `zustand/persist` with `fileStateStorage` from
   `src/shared/state/persistStorage.ts`, a `name` of the form `bolid.<area>`, an explicit `version`,
   and a `migrate`/`merge` when the shape changes. Never persist secrets outside `secureApiKey.ts`.
+  A new persisted store also gets a row in `PERSISTED_STORES` (`src/features/backup/api/registry.ts`),
+  the one list backup / restore reads; `storeVersions.test.ts` fails without it (plan 18).
 - **Errors.** Recoverable failures go through `logError({ source, error, severity?, context? })`
   from `src/shared/state/errorLogStore.ts`; never `console.*`.
 - **Native modules** that may be absent in tests are imported with a variable specifier

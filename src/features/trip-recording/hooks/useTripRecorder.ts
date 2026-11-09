@@ -3,7 +3,11 @@
  *  the CSV file lifecycle for a finished trip: write on stop, lazy-load on open, delete on remove,
  *  and share/export. Native modules (expo-file-system / expo-sharing) are loaded via variable
  *  specifiers so the project builds and unit-tests without them present — the same
- *  dependency-tolerant pattern as useDtcExport / useErrorLogExport. See docs/features/trip-recording.md. */
+ *  dependency-tolerant pattern as useDtcExport / useErrorLogExport. The file system is the
+ *  **legacy** entry point (`expo-file-system/legacy`): on this Expo SDK the root module has no
+ *  `documentDirectory` and its string read/write functions are throwing stubs, so the CSV would
+ *  never be written on a device (see can-sniffer/api/captureExport.ts). The backup (plan 18) reads
+ *  and writes the same `documentDirectory/trip-<id>.csv`. See docs/features/trip-recording.md. */
 import {
   Trip,
   TripHeader,
@@ -55,7 +59,7 @@ export async function stopRecording(): Promise<Trip> {
     ...(track.length > 0 ? { track } : {}),
   };
   try {
-    const FileSystem = await import('expo-file-system' as string);
+    const FileSystem = await import('expo-file-system/legacy' as string);
     const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
     if (dir)
       await FileSystem.writeAsStringAsync(`${dir}${tripCsvName(trip.header.id)}`, toCsv(trip));
@@ -98,7 +102,7 @@ export interface LoadedTrip {
  *  with an empty track. */
 export async function loadTrip(header: TripHeader): Promise<LoadedTrip> {
   try {
-    const FileSystem = await import('expo-file-system' as string);
+    const FileSystem = await import('expo-file-system/legacy' as string);
     const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
     if (!dir) return { samples: [], track: [] };
     const uri = `${dir}${tripCsvName(header.id)}`;
@@ -125,7 +129,7 @@ export async function loadTripSamples(header: TripHeader): Promise<TripSample[]>
 /** Remove a trip: delete its CSV (idempotent, best-effort) then drop the summary from the store. */
 export async function deleteTrip(id: string): Promise<void> {
   try {
-    const FileSystem = await import('expo-file-system' as string);
+    const FileSystem = await import('expo-file-system/legacy' as string);
     const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
     if (dir) await FileSystem.deleteAsync(`${dir}${tripCsvName(id)}`, { idempotent: true });
   } catch (e) {
@@ -144,7 +148,7 @@ export async function deleteTrip(id: string): Promise<void> {
  *  when the file or sharing is unavailable (web/tests). */
 export async function shareTrip(header: TripHeader): Promise<string | null> {
   try {
-    const FileSystem = await import('expo-file-system' as string);
+    const FileSystem = await import('expo-file-system/legacy' as string);
     const Sharing = await import('expo-sharing' as string);
     const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
     if (!dir) return null;

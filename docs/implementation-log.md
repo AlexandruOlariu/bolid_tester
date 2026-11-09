@@ -5,6 +5,172 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 18 — Backup and restore, export everything (2026-11-09)
+
+[Plan 18](./plans/18-backup-restore.md) landed: **Settings → Data** and **More → Backup & restore**
+open `/backup`, where one tap writes a single plain JSON **backup file** (every persisted store +
+the trip recordings) to `documentDirectory/backups/` and shares it; **Choose a backup file…**
+validates a file, shows what it holds with a per-store checklist, snapshots the current data to
+`backups/pre-restore-<stamp>.json` first, then writes the stores back through their own `persist`
+migrations and rehydrates them without a restart; every store also exports alone as JSON, and
+history / module scans / maintenance as CSV. No cloud; the API keys are never in a backup. The plan
+has no deferred section, so nothing is pending on the car.
+
+- **Pure format (`src/shared/lib/backup.ts`, core tsconfig).** `BACKUP_FORMAT = 1`, the plan's
+  `BackupBundle` / `BackupStoreBlob` / `BackupTripFile` / `RawStoreFile` types, `parseEnvelope`
+  (missing version → 0, garbage → null), `envelopeFor`, `buildBackup` (absent / unreadable files
+  skipped, byte sizes summed), `redactBackup` + `redactState`, `validateBackup` / `parseBackup`
+  (hard errors vs warnings; unsafe trip ids such as `../settings` dropped), `planRestore`,
+  `serializeBackup`, `estimateBundleBytes`, `backupFileName` / `preRestoreFileName` (UTC
+  `yyyymmdd-hhmm`, sortable), `preRestoreFilesToDelete`, `uniqueFileName`, `countItems`,
+  `formatBytes` (B / kB / MB), `utf8Bytes`, `LARGE_BACKUP_BYTES` (50 MB warning).
+- **Persist layer.** `debouncedStorage` returns a `DebouncedStateStorage` with `flushNow(name?)`
+  (writes the pending value now, cancels the timer, resolves once the inner write landed); every
+  instance registers, and `flushPendingWrites()` flushes them all — before a backup reads the files
+  and before each restored file is written, so a stale debounced flush cannot undo a restore.
+- **Store fixes (the task's "also").** `alertsStore` now persists as `bolid.alerts` v1 (rules only;
+  `active` stays live; malformed rules dropped; with no stored rules the in-memory ones — defaults
+  EngineHost seeded — are kept) and `notificationsStore` as `bolid.notifications` v1 (prefs +
+  reminders; the OS `permission` stays live; `mergeNotifPrefs` lays the file over
+  `DEFAULT_NOTIF_PREFS`). `scanHistoryStore` (`bolid.scans`) and `carBackupStore`
+  (`bolid.carBackups`) shipped without a version (zustand wrote 0); both are now v1 with an
+  identity `migrateScans` / `migrateCarBackups` — without a `migrate`, zustand would have
+  discarded the stored scans and snapshots on the version bump.
+- **Backup slice (`src/features/backup/`, a composition slice like engine-host and report).**
+  `api/registry.ts` — `PERSISTED_STORES`, 13 rows in restore order (settings, garage, vehicle,
+  history, maintenance, trips, scans, carBackups, dashboard-layout, alerts, notifications,
+  onboarding, errors), each with a label, `restoreByDefault` (off for the error log and dismissed
+  hints), `version()`, `snapshot()`, `rehydrateFresh()`, `count()` and, for the three tables,
+  `csv()`; `STORE_NAMES`, `storeRef`, `currentVersions`. `api/storeCsv.ts` — RFC 4180 CSV of
+  history (one row per code of each fault-code check, a "No fault codes" row for a clean check),
+  scans (one row per module fault, UDS and TP2.0) and maintenance (one row per entry, km, newest
+  first). `api/backupService.ts` — `loadBackupModules`, `readStoreFiles`, `readTripFiles`,
+  `tripFilesSummary`, `createBackup`, `prunePreRestore` (keeps 3), `exportStore`, `readBackupFile`,
+  `pickBackupFile`, `restoreBackup`, `shareBackupFile`, `deleteBackupFile`. `model/backupStore.ts`
+  — `bolid.backups` v1, the last 20 files written (not part of any backup). `hooks/useBackup.ts`;
+  `ui/BackupScreen.tsx` (Back up · Restore from file · Backups on this phone · Export one part);
+  route `src/app/backup.tsx`, hidden `Tabs.Screen name="backup"`; **Settings → Data** section and a
+  **More → Backup & restore** entry.
+- **Install.** `expo-document-picker` `~56.0.4`, installed with
+  `npx expo install expo-document-picker -- --legacy-peer-deps`; the lockfile diff is only its
+  10-line entry. It is a native module, so an
+  installed build needs the next native build for **Choose a backup file…** (the screen says so
+  when the picker is missing; restore from the list still works).
+- **Simulator.** No new simulator behaviour: backup reads only what the stores already hold, so
+  `MockTransport` is unchanged. The plan's walk-through is a UI test: the simulated Golf with
+  `P0299` → fault read into history, module scan saved, a trip with its CSV, a maintenance entry, a
+  dashboard reorder, a dismissed hint → **Back up now** → every store and file cleared → pick the
+  kept file → restore → the same data, and the trip CSV is back.
+- **Tests (+91 tests, +5 suites: 1202 tests / 141 suites, including both rounds of review fixes below).** `shared/lib/backup.test.ts` (the
+  plan's list: envelope parsing, skipped files and sizes, redaction leaving other blobs
+  byte-identical, `format: 2` / non-array stores / string version rejected, unknown store warned,
+  round-trip, sortable names; plus unsafe trip ids, duplicates, prune order, unique names, UTF-8
+  sizes, metric byte units); `persistStorage.test.ts` (`flushNow` writes now and cancels the timer;
+  every key; `flushPendingWrites` waits for the inner write); `backup/api/backupService.test.ts`
+  (real stores over an in-memory file system: every store + trip files, no key in the file,
+  same-minute names, restore onto a cleared app, replace-not-merge, history v1 → v2 migration and
+  write-back at v2, v0 scans blob, newer version skipped while others restore, a planted key never
+  restored, a recording trip kept, 3 pre-restore snapshots kept, a failed snapshot restores
+  nothing, JSON export for every row, CSV for the three tables, picker cases);
+  `backup/api/storeVersions.test.ts` (registry equals every `persist(` store in `src/` minus
+  `bolid.backups`; versions ≥ 1; the four store migrations / persistence); `backup/api/storeCsv.test.ts`;
+  `backup/ui/BackupScreen.test.tsx` (back up with trips, double-confirm restore from a picked file
+  with the default checklist, a non-backup file explained, restore from the list, JSON / CSV export,
+  the simulator walk-through); `MoreScreen.test.tsx` and `SettingsScreen.test.tsx` (new entries).
+  Test harness: the in-memory file system reports `size` and has `readDirectoryAsync`;
+  `resetStores` also resets the alerts, notifications and backup-list stores.
+- **Docs.** New `features/backup.md`; `features/settings.md` (Data section), `features/more.md`,
+  `features/alerts.md` / `notifications.md` (now really persisted), `features/module-scan.md` /
+  `coding.md` (v1), `architecture.md` (backup as the third composition point; the registry is the
+  one list to update), `plans/README.md` (Persistence rule), `privacy-policy.md` + the in-app copy
+  (a backup is a plaintext file with VINs and never an API key), `phase2-mobile-app.md` (route
+  table), `roadmap.md` (✅). Context graph rebuilt; new curated concept `app-backup-restore`.
+- **Deviations.** (1) Registry rows expose closures (`version`, `snapshot`, `rehydrateFresh`,
+  `count`, `csv`) instead of the raw `api.persist` object, and restore calls `rehydrateFresh`, not
+  plain `rehydrate`: the stores' own `merge` functions union the file with what is in memory (a
+  start-up safety net), which would have made a restored history the union of old and new.
+  `rehydrateFresh` wraps the store's `merge` for one rehydrate so it runs against the initial values
+  of the persisted keys — the store's own `migrate` and `merge` still run, and live state (a trip
+  being recorded, active alerts, the in-memory API key) is untouched. (2) Every service function
+  takes the native modules as a parameter (`loadBackupModules()`), like `report/api/reportExport.ts`,
+  so the whole flow is tested in the core project; the platform is passed in rather than read from
+  `react-native`. (3) `planRestore(bundle, selected, currentVersions)` — "known" is the keys of
+  `currentVersions`. (4) `flushNow` is per storage plus the module-level `flushPendingWrites()`
+  (each store builds its own debounced storage inside `createJSONStorage`, so one exported flush
+  had to reach them all). (5) `redactBackup` blanks every non-empty `apiKey` at any depth to `""`
+  (the shape the settings store writes) instead of deleting `ai.apiKey` only, and also runs before a
+  restore. (6) Same-minute file names get a `-2` suffix (both backups and pre-restore snapshots), so
+  two restores in a minute cannot overwrite the first undo point. (7) The picker accepts JSON, text
+  and octet-stream (Android labels shared files inconsistently); the content is validated. (8) The
+  backup list also offers **Restore** (the undo path for a pre-restore snapshot), and the hook
+  tears the connection down before a restore (`connectionService.resetForRestore`). (9) Persisting alerts / notifications was "Out of
+  scope" in the plan; the task asked for it, so both persist and are registry rows. (10) The plan's
+  11-row table became 13 rows (garage from plan 06, plus alerts and notifications). (11) Per-store
+  JSON is `{ name, version, exportedAt, state }`. (12) "Reset all app data" (plan 07) has not
+  landed, so the walk-through clears stores with the test harness.
+- **Review fixes.** (a) **Restore vs the connection:** the hook called `disconnect()` only when a
+  session existed, so a restored `bolid.settings` could flip `adapterSource` / `simulatedVehicleId`
+  behind the service's back — an in-flight connect was not invalidated and the adapter log was not
+  cleared (a simulator log could be exported as a `source: 'car'` fixture). New
+  `connectionService.resetForRestore()` shares `switchAdapterSource`'s teardown (`connectEpoch++`,
+  abort reconnect, reset the session store, clear the adapter log, close the old session) and runs
+  before every restore; two tests in `connectionService.test.ts`. (b) **Older blob of a store
+  without `migrate`:** zustand discards it and `rehydrateFresh` had already reset the keys, so a
+  hand-edited `version: 0` wiped the store and was reported restored. `planRestore` now takes the
+  set of stores with a `migrate` (registry `migrates()` / `migratableStores()`) and skips such a
+  blob with "cannot upgrade". (c) **Silent write failure:** `fileStateStorage.setItem` swallows
+  errors, so the restore now reads each file back and skips a store whose file did not change.
+  (d) **Backup list cap:** a record dropping off the 20-entry list now has its file deleted
+  (`createBackup`), so old `bolid-backup-*.json` files no longer pile up unseen; the screen says the
+  newest 20 are kept. (e) **Stale URIs:** `BackupRecord` no longer stores the absolute `uri`
+  (iOS moves `documentDirectory` across updates); `backupFileUri(mods, fileName)` derives it at use
+  time (`readListedBackup`, `shareBackupFile`, `deleteBackupFile`), and the list's `merge` drops a
+  stored `uri`. (f) **Size estimate:** the warning looked at the trip CSVs only and used a binary
+  threshold (52.4 MB shown); the screen now shows "The backup file will be about X" — the stores
+  serialized as written (`storesEstimateBytes` → `estimateBundleBytes`) plus the trips when
+  included — and warns when that is above `LARGE_BACKUP_BYTES` = 50 000 000 (SI, as `formatBytes`
+  shows). (g) **Trip CSVs on a device:** `useTripRecorder.ts` (write on stop, load, delete, share)
+  now loads `expo-file-system/legacy` instead of the root module, which on SDK 56 has no
+  `documentDirectory` — so on a device a trip CSV is really written and a backup carries it; its
+  test now mocks the root module without `documentDirectory` to pin that.
+- **Second review fixes.** (h) **Starter alert rules once per id:** persisting `bolid.alerts` made
+  EngineHost's "seed `defaultRules` while the list is empty" keep the first car's PID-filtered set
+  for good (a later car never got the low-voltage / over-rev rule), and the `merge` fallback plus
+  the reseed brought every default back after the user deleted them all. `alertsStore` now persists
+  `seededIds` next to the rules and has `seedDefaults(supportedPids)`, which adds only the starter
+  rules the car supports that were never offered (no write when none is new); EngineHost calls it on
+  every connect. The `merge` keeps the stored rules even when empty, keeps a starter rule seeded in
+  memory during the hydration window only when the file never offered it, and treats a file without
+  `seededIds` that holds rules as already seeded (`sanitizeSeededIds`). Still `bolid.alerts` v1 (it
+  never shipped without the field). (i) **Rehydrate failure reported as restored:** zustand 5's
+  `hydrate()` swallows a throwing `migrate` / `merge` (it only hands the error to
+  `onRehydrateStorage`), so a hand-edited blob such as `bolid.trips` `{ trips: [{}] }` was listed as
+  restored while memory kept the old trips and the file held a blob the store cannot load.
+  `rehydrateFresh` now wraps `onRehydrateStorage` (chaining the store's own) to capture the error and
+  rethrow it; `restoreBackup` then skips the store and **puts its previous file back**
+  (`putBackStoreFile`, or removes it when there was none). (j) **Pre-restore evicting a user
+  backup:** the snapshot counted toward the 20-entry list, so restoring the oldest of 20 backups
+  deleted that very file. `withRecord` now caps each kind separately (20 backups the user made, plus
+  the pre-restore snapshots, which `prunePreRestore` trims to 3); the screen text says the automatic
+  snapshots are counted apart. (k) **Orphan trip CSVs:** a restored trips list left the CSVs of the
+  trips it dropped on disk where nothing could reach them, and "Trip recordings" without "Trips"
+  wrote CSVs for summaries not in the list. The restore now writes a trip CSV only for a trip in the
+  trips list after the stores are restored, and, when `bolid.trips` was restored, deletes the CSVs of
+  the trips that dropped out (the pre-restore snapshot holds them, so undo brings them back); the
+  checklist hint says "only for trips in the trips list". Tests: four starter-rule cases in
+  `storeVersions.test.ts`; in `backupService.test.ts` a merge-rejected blob skipped with its file
+  put back, a pre-restore snapshot not evicting the oldest of 20 backups, dropped trips' CSVs
+  deleted, and no CSV written for an unlisted trip.
+- **Discovery (not fixed, out of scope).** Seven other export hooks (adapter-health, coding backup
+  share, error-log, measuring log, DTC export, chart export, scan share) still load the **root**
+  `expo-file-system`, which on SDK 56 has no `documentDirectory` (its legacy functions are throwing
+  stubs — see the notes in `can-sniffer/api/captureExport.ts` and `report/api/reportExport.ts`), so
+  their share files are never written on a device. They are not part of the backup; switching them
+  to the legacy entry point is a small follow-up (the UI test harness mocks both entry points
+  identically, which hides it).
+
+---
+
 ## Plan 15 — Unified vehicle report (2026-11-09)
 
 [Plan 15](./plans/15-unified-vehicle-report.md) landed: one tap on **More → Vehicle report**,

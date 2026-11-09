@@ -31,6 +31,7 @@ import {
   connect,
   disconnect,
   FLAP_PAUSED_MESSAGE,
+  resetForRestore,
   switchAdapterSource,
   switchToRealAdapter,
 } from './connectionService';
@@ -100,6 +101,31 @@ describe('switchAdapterSource', () => {
     await switchAdapterSource('mock');
     await connect();
     expect(useSessionStore.getState().status).toBe('connected');
+  });
+});
+
+describe('resetForRestore (plan 18)', () => {
+  it('tears down a connected session and clears the adapter log', async () => {
+    await connect();
+    expect(adapterLogSnapshot().length).toBeGreaterThan(0);
+    await resetForRestore();
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('disconnected');
+    expect(s.session).toBeNull();
+    expect(adapterLogSnapshot()).toEqual([]);
+  });
+
+  it('drops a connect still in flight, so a restored source never inherits its session', async () => {
+    const pending = connect();
+    expect(useSessionStore.getState().session).toBeNull();
+    await resetForRestore();
+    // what a restored bolid.settings does behind the service's back
+    useSettingsStore.setState({ adapterSource: 'ble' });
+    await pending;
+    const s = useSessionStore.getState();
+    expect(s.status).toBe('disconnected');
+    expect(s.session).toBeNull();
+    expect(adapterLogSnapshot()).toEqual([]);
   });
 });
 

@@ -38,6 +38,7 @@ export const PRIVACY_POLICY: PolicySection[] = [
     heading: 'Sharing and exports',
     paragraphs: [
       'Files leave the phone only when you share or export them yourself — a report, a capture, a fixture, a backup or the error log — and they go to the app you pick in the share sheet.',
+      'A backup (Settings → Data → Backup & restore) is one plain-text file that you create and keep where you choose. It holds everything listed above, including your VINs, and is not encrypted, so keep it somewhere private. It never contains an AI API key.',
     ],
   },
   {

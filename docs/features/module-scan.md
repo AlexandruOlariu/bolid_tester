@@ -70,7 +70,8 @@ on top:
 - `scanReport` / `scanDiff` / `scanSearch` — pure formatters/logic (no I/O), unit-tested against
   fixtures and reused by the UI.
 - `moduleScanStore` (Zustand): `running`, `progress`, `results[]`, `lastScanTs`, `tp20`.
-- `scanHistoryStore` (persisted, capped `MAX_SCANS`, debounced writes + rehydration-merge safety net,
+- `scanHistoryStore` (persisted, `bolid.scans` **v1** since plan 18 — it shipped unversioned, so
+  zustand wrote 0; `migrateScans` keeps the same shape — capped `MAX_SCANS`, debounced writes + rehydration-merge safety net,
   mirroring `historyStore`): `scans[]` of `SavedScan` snapshots.
 - Profiles gain `modules?: DiagModule[]` (address, name, transport `uds|tp20`, headers, simulator
   seeds). The Golf ships engine + ABS + cluster (UDS, illustrative) and the gateway as `tp20`.

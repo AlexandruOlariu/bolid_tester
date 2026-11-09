@@ -6,6 +6,7 @@ the OS notification centre and as in-app banners. Three sources feed it: **thres
 
 > **Scope (chosen): foreground + local.** Notifications are delivered via on-device local
 > notifications (`expo-notifications`). Two honest limits:
+>
 > 1. **Live monitoring needs the session active.** Alert and diagnostic notifications fire while the
 >    app is connected to the adapter (foreground / app-active). There is **no** continuous background
 >    OBD2 monitoring — BLE background execution on iOS/Android is too constrained to promise it.
@@ -13,6 +14,7 @@ the OS notification centre and as in-app banners. Three sources feed it: **thres
 >    because the OS holds the scheduled notification — they do not depend on a live connection.
 
 ## Sources
+
 - **Threshold alerts** — when [`alertService`](./alerts.md) raises a `warn`/`critical` alert, it also
   emits a local notification (respecting a per-severity toggle). Critical alerts can use a distinct
   channel/sound.
@@ -25,6 +27,7 @@ the OS notification centre and as in-app banners. Three sources feed it: **thres
 - **Maintenance reminders** — user-defined, **date-** and/or **mileage-based** (see below).
 
 ## Maintenance reminders
+
 - A reminder: `{ title, due }` where `due` is a **date** ("inspection 2026-09"), a **mileage target**,
   or both; with a lead time ("notify 7 days / 200 km before").
 - **Mileage source, honestly:** odometer is **not** a standard OBD2 PID (it lives on the
@@ -35,6 +38,7 @@ the OS notification centre and as in-app banners. Three sources feed it: **thres
   app next has a fresh mileage figure and then (if close) scheduled.
 
 ## UI
+
 - **NotificationsScreen** (or a Settings section):
   - **Permission** prompt + status; deep-link to OS settings if denied.
   - **Per-category toggles**: alerts (by severity), connection events, diagnostic events, trip saved,
@@ -44,11 +48,13 @@ the OS notification centre and as in-app banners. Three sources feed it: **thres
 - A small unread/active indicator on the relevant tab.
 
 ## hooks
+
 - `useNotificationPermission()` — request/read permission status.
 - `useNotificationPrefs()` — persisted per-category toggles + quiet hours.
 - `useMaintenanceReminders()` — CRUD reminders; schedule/cancel OS notifications.
 
 ## api (service layer)
+
 - `notificationService` — the **single** place that calls `expo-notifications`. Exposes
   `notify({ category, title, body, severity })`, applies prefs/quiet-hours/dedupe, sets up Android
   channels + iOS categories, and schedules/cancels date-based reminders. Other features call it; they
@@ -58,10 +64,16 @@ the OS notification centre and as in-app banners. Three sources feed it: **thres
   [`alerts`](./alerts.md).
 
 ## model
-- `notificationsStore` (Zustand, persisted): `prefs`, `reminders: MaintenanceReminder[]`,
-  `permissionStatus`, and a short in-app `history` of recent notifications.
+
+- `notificationsStore` (Zustand, persisted as `bolid.notifications` v1 since plan 18 — it was in
+  memory only before, so every launch forgot the choices): `prefs` and
+  `reminders: MaintenanceReminder[]` are written; `permission` (the OS permission state) is live
+  and never written. `mergeNotifPrefs` lays a stored file over `DEFAULT_NOTIF_PREFS`, so a
+  category added later keeps its default and a wrong-typed value is ignored. Included in
+  [backups](./backup.md). (A short in-app `history` of recent notifications is not built.)
 
 ## Behavior
+
 - **Hosted app-wide by `EngineHost`** (mounted once in `_layout.tsx`): the connection/diagnostic
   edge-detection and the `setNotifPrefs` sync run whether or not the Notifications screen is mounted.
   The diagnostic snapshot is fed **real** state — `milOn`/`dtcCount` from the latest fault-codes read
@@ -76,6 +88,7 @@ the OS notification centre and as in-app banners. Three sources feed it: **thres
   trip produces the corresponding notification through the same path.
 
 ## Acceptance
+
 - With permission granted, a simulator overheat raises both an in-app banner and a local
   notification; muting that category suppresses the notification but keeps the in-app banner.
 - A date-based maintenance reminder scheduled for the near future fires even with the app closed and

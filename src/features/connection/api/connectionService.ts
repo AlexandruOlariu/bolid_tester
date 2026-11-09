@@ -389,6 +389,15 @@ export async function disconnect(): Promise<void> {
  *  reverse). A no-op when the source is unchanged. */
 export async function switchAdapterSource(source: AdapterSource): Promise<void> {
   if (useSettingsStore.getState().adapterSource === source) return;
+  const session = invalidateConnection();
+  useSettingsStore.getState().setAdapterSource(source);
+  await closeOldSession(session, 'connection/switch-adapter');
+}
+
+/** The synchronous half of a source change: invalidate any in-flight connect (`connectEpoch`),
+ *  cancel a pending auto-reconnect, detach the status watcher, reset the session store and clear
+ *  the adapter log. Returns the session that was live, for the caller to close. */
+function invalidateConnection(): DiagnosticSession | null {
   connectEpoch++;
   abortReconnect();
   detachStatusWatch();
@@ -396,13 +405,26 @@ export async function switchAdapterSource(source: AdapterSource): Promise<void> 
   const { session } = useSessionStore.getState();
   useSessionStore.getState().reset();
   clearAdapterLog();
-  useSettingsStore.getState().setAdapterSource(source);
+  return session;
+}
+
+async function closeOldSession(session: DiagnosticSession | null, source: string): Promise<void> {
   if (!session) return;
   try {
     await session.disconnect();
   } catch (e) {
-    logError({ source: 'connection/switch-adapter', error: e, severity: 'warning' });
+    logError({ source, error: e, severity: 'warning' });
   }
+}
+
+/** Before a data restore (plan 18): a restored `bolid.settings` can change the adapter source and
+ *  the simulated car behind this service's back, so the connection is torn down exactly as
+ *  `switchAdapterSource` does it — an in-flight connect is invalidated (it tears itself down
+ *  instead of publishing a session built for the old source), auto-reconnect is cancelled, the
+ *  session store is reset and the adapter log is cleared (a log from the old source must never be
+ *  exported as a replay fixture labelled with the restored one); then the old session is closed. */
+export async function resetForRestore(): Promise<void> {
+  await closeOldSession(invalidateConnection(), 'connection/restore');
 }
 
 /** Leave simulator mode for the real Bluetooth adapter (the simulator banner's / Connect screen's

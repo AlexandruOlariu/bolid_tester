@@ -8,7 +8,11 @@ export const fileSystemMock = {
   documentDirectory: 'file:///test/',
   cacheDirectory: 'file:///test-cache/',
   EncodingType: { UTF8: 'utf8', Base64: 'base64' },
-  getInfoAsync: jest.fn(async (uri: string) => ({ exists: memoryFiles.has(uri), uri })),
+  getInfoAsync: jest.fn(async (uri: string) => ({
+    exists: memoryFiles.has(uri),
+    uri,
+    size: memoryFiles.get(uri)?.length,
+  })),
   readAsStringAsync: jest.fn(async (uri: string) => {
     const v = memoryFiles.get(uri);
     if (v === undefined) throw new Error(`ENOENT: ${uri}`);
@@ -21,6 +25,12 @@ export const fileSystemMock = {
     memoryFiles.delete(uri);
   }),
   makeDirectoryAsync: jest.fn(async () => undefined),
+  // The direct children of a directory URI (the backup list prunes old pre-restore snapshots).
+  readDirectoryAsync: jest.fn(async (dir: string) =>
+    [...memoryFiles.keys()]
+      .filter((k) => k.startsWith(dir) && !k.slice(dir.length).includes('/'))
+      .map((k) => k.slice(dir.length)),
+  ),
   moveAsync: jest.fn(async ({ from, to }: { from: string; to: string }) => {
     const v = memoryFiles.get(from);
     if (v === undefined) throw new Error(`ENOENT: ${from}`);

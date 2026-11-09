@@ -153,7 +153,8 @@ dated JSON snapshot — the safety net VCDS users keep in a drawer.
 protocol, modules: [{ reqHeader, address?, name, partNumber?, softwareVersion?, coding: {did,
 bytes, hex} | null, adaptations: [{did, name, unit?, raw, value}] }] }`. Pure diff/summary helpers
   (`diffBackupModule`, `summarizeCarBackup`) support the restore preview and headline counts.
-- **Store** `carBackupStore` (persisted, capped `MAX_CAR_BACKUPS = 10`, debounced + rehydration-merge
+- **Store** `carBackupStore` (persisted as `bolid.carBackups` **v1** since plan 18 — it shipped
+  unversioned, so zustand wrote 0; `migrateCarBackups` keeps the same shape — capped `MAX_CAR_BACKUPS = 10`, debounced + rehydration-merge
   safety net, like `scanHistoryStore`). **Export/share** as `.json`.
 - **Restore is per-module and gated.** Coding restore is exactly the existing gated coding write
   (`useCoding.write(codingModule, snapshotBytes)` → backup + verify), behind unlock + confirm.

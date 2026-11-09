@@ -112,6 +112,13 @@ renderers live in `src/shared/lib/vehicleReport.ts` and take the report's own na
 feature types; the slice's `api/sections.ts` maps each store shape into them. No feature imports the
 report slice (the Faults screen's report snapshot, `dtcCheckFromRead`, is in `src/shared/lib`).
 
+**Backup.** The third sanctioned composition point is `features/backup`
+([spec](./features/backup.md), plan 18): backup, restore and per-store export need every persisted
+store, so `api/registry.ts` imports them all. That registry (`PERSISTED_STORES`) is **the one list
+to update when a store gains `persist`** — `storeVersions.test.ts` fails when a `bolid.*` store is
+missing from it. The bundle format, validation, redaction and restore plan are pure, in
+`src/shared/lib/backup.ts`. No feature imports the backup slice.
+
 **Specs.** Every slice has a spec in `docs/features/<slug>.md` (see [docs/README](./README.md));
 `src/shared/lib/featureDocsSync.test.ts` enforces it.
 
@@ -136,7 +143,10 @@ Shared stores (`src/shared/state/`), used by several features:
   `adapterLog` ring buffer.
 
 Per-feature stores live in their slice's `model/`. Persisted stores use `fileStateStorage`, a
-`bolid.<area>` name, an explicit version and a `migrate` when the shape changes.
+`bolid.<area>` name, an explicit version and a `migrate` when the shape changes, and are listed in
+the backup registry (`src/features/backup/api/registry.ts`, see **Backup** above) so a backup
+holds them. Stores on `debouncedStorage` can be flushed at once with `flushPendingWrites()` (the
+backup reads complete files).
 
 ## Error handling & resilience
 

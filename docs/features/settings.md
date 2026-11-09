@@ -71,6 +71,10 @@ Developer and runtime settings.
     dispatcher. A Test / Detect that finishes after the provider or address changed is dropped (no
     model written into the new provider, no stale status). See [ai-diagnose → Providers](./ai-diagnose.md#providers).
   - Units (metric default), poll interval, theme (system/light/dark).
+  - **Data** (plan 18) — one line on keeping a copy or moving to a new phone ("Nothing goes to the
+    cloud"), with **Backup & restore** and **Export data…**, both opening `/backup`
+    ([backup](./backup.md): one file with every store and the trip recordings, restore with a
+    pre-restore snapshot, per-store JSON / CSV). The AI keys are never in a backup.
   - **About** (plan 08) — "Bolid Tester <version>" (`APP_NAME` / `APP_VERSION` from
     `shared/lib/appInfo.ts`, read from `app.json`; the version is also the OTA runtime version), a
     note that OTA updates only reach the same version and are checked only from **More → Check for
@@ -169,6 +173,7 @@ Developer and runtime settings.
 - With the simulator and **Injected DTCs: None**, Faults shows no codes; **Custom…** `P0135` shows
   `P0135`.
 - App is fully usable end-to-end in simulator mode.
+- **Data** → **Backup & restore** / **Export data…** open the backup screen.
 - **About** shows the app version from `app.json`; **Privacy policy** expands every section of
   `docs/privacy-policy.md` and collapses again.
 - Log shows every command/response pair.

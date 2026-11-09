@@ -45,6 +45,16 @@
     "relates"
   ],
   [
+    "concept:app-backup-restore",
+    "concept:state-architecture",
+    "relates"
+  ],
+  [
+    "concept:app-backup-restore",
+    "feature:backup",
+    "relates"
+  ],
+  [
     "concept:app-settings",
     "concept:state-architecture",
     "relates"
@@ -1905,6 +1915,11 @@
     "documents"
   ],
   [
+    "doc:features/backup",
+    "feature:backup",
+    "documents"
+  ],
+  [
     "doc:features/battery-health",
     "feature:adapter-health",
     "documents"
@@ -2273,6 +2288,101 @@
     "feature:alerts",
     "doc:features/alerts",
     "named"
+  ],
+  [
+    "feature:alerts",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "core:analysis/maintenance",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:alerts",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:coding",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:connection",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:live-data",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:maintenance",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:module-scan",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:notifications",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:onboarding",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:trip-recording",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "lib:backup",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:vehicleStore",
+    "imports"
   ],
   [
     "feature:battery-health",
@@ -3135,6 +3245,11 @@
     "imports"
   ],
   [
+    "feature:notifications",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
     "feature:onboarding",
     "doc:features/onboarding",
     "named"
@@ -3817,6 +3932,11 @@
   [
     "screen:alerts",
     "feature:alerts",
+    "serves"
+  ],
+  [
+    "screen:backup",
+    "feature:backup",
     "serves"
   ],
   [

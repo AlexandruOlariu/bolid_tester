@@ -34,6 +34,9 @@ import { useAdaptationsStore } from '@/features/adaptations/model/adaptationsSto
 import { useScanHistoryStore } from '@/features/module-scan/model/scanHistoryStore';
 import { useInspectionStore } from '@/features/inspection/model/inspectionStore';
 import { useBatteryStore } from '@/features/battery-health/model/batteryStore';
+import { useAlertsStore } from '@/features/alerts/model/alertsStore';
+import { useNotificationsStore } from '@/features/notifications/model/notificationsStore';
+import { useBackupStore } from '@/features/backup/model/backupStore';
 import { memoryFiles } from './mocks/fileSystem';
 import { setMockFocused, setMockSearchParams } from './mocks/router';
 
@@ -66,6 +69,9 @@ const STORES: AnyStore[] = [
   useScanHistoryStore,
   useInspectionStore,
   useBatteryStore,
+  useAlertsStore,
+  useNotificationsStore,
+  useBackupStore,
 ];
 
 /** Each store's state (actions included) captured at module load, before any test touched it. */

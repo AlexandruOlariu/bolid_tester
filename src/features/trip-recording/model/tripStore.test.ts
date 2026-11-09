@@ -8,9 +8,8 @@ jest.mock('expo-file-system/legacy', () => ({
   writeAsStringAsync: jest.fn(async () => undefined),
   deleteAsync: jest.fn(async () => undefined),
 }));
-
-// The trip CSV write: no document directory, so stopRecording skips the file and keeps the summary.
-jest.mock('expo-file-system', () => ({ documentDirectory: null }));
+// The trip CSV goes through the same legacy entry point: no document directory, so stopRecording
+// skips the file and keeps the summary.
 
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { stopRecording } from '../hooks/useTripRecorder';

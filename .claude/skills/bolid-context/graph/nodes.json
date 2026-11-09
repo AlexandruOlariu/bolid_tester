@@ -52,6 +52,25 @@
     ],
     "type": "concept"
   },
+  "concept:app-backup-restore": {
+    "path": null,
+    "summary": "App-level backup/restore (plan 18): one plain JSON file (format 1) with every persisted bolid.* store envelope + trip CSVs, API keys redacted; restor\u2026",
+    "tokens": [
+      "app",
+      "backup",
+      "bundle",
+      "csv",
+      "export",
+      "import",
+      "json",
+      "migrate",
+      "persist",
+      "registry",
+      "restore",
+      "snapshot"
+    ],
+    "type": "concept"
+  },
   "concept:app-settings": {
     "path": null,
     "summary": "Runtime + developer settings: units, behavior toggles, and the raw adapter I/O log (bytes for debugging). Backed by settingsStore.",
@@ -1691,6 +1710,14 @@
     ],
     "type": "doc"
   },
+  "doc:features/backup": {
+    "path": "docs/features/backup.md",
+    "summary": "Feature: backup",
+    "tokens": [
+      "backup"
+    ],
+    "type": "doc"
+  },
   "doc:features/battery-health": {
     "path": "docs/features/battery-health.md",
     "summary": "Feature: battery-health",
@@ -2722,6 +2749,20 @@
     ],
     "type": "feature"
   },
+  "feature:backup": {
+    "path": "src/features/backup",
+    "summary": "**Backup & restore** (plan 18, [plan](../plans/18-backup-restore.md)): every persisted store",
+    "tests": [
+      "src/features/backup/api/backupService.test.ts",
+      "src/features/backup/api/storeCsv.test.ts",
+      "src/features/backup/api/storeVersions.test.ts",
+      "src/features/backup/ui/BackupScreen.test.tsx"
+    ],
+    "tokens": [
+      "backup"
+    ],
+    "type": "feature"
+  },
   "feature:battery-health": {
     "path": "src/features/battery-health",
     "summary": "Track the **12 V battery and charging system** from system voltage: resting voltage \u2192 state of",
@@ -3081,6 +3122,17 @@
     ],
     "type": "lib"
   },
+  "lib:backup": {
+    "path": "src/shared/lib/backup.ts",
+    "summary": "The app backup bundle (plan 18): every persisted store's zustand envelope plus the trip CSV files, in **one plain JSON file** the user keeps anywhere.",
+    "tests": [
+      "src/shared/lib/backup.test.ts"
+    ],
+    "tokens": [
+      "backup"
+    ],
+    "type": "lib"
+  },
   "lib:base64": {
     "path": "src/shared/lib/base64.ts",
     "summary": "Minimal base64 <-> bytes, used by the BLE transport (react-native-ble-plx exchanges base64).",
@@ -3207,6 +3259,14 @@
     "summary": "Route screen 'alerts' (expo-router).",
     "tokens": [
       "alerts"
+    ],
+    "type": "screen"
+  },
+  "screen:backup": {
+    "path": "src/app/backup.tsx",
+    "summary": "Route screen 'backup' (expo-router).",
+    "tokens": [
+      "backup"
     ],
     "type": "screen"
   },

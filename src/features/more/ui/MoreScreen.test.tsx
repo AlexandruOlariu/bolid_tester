@@ -28,6 +28,7 @@ const ENTRY_TITLES = [
   'Routines & output tests',
   'Notifications',
   'Bus sniffer',
+  'Backup & restore',
   'Error log',
 ];
 
@@ -53,6 +54,13 @@ describe('MoreScreen', () => {
 
     fireEvent.press(screen.getByRole('button', { name: entryName('Error log') }));
     expect(mockPush).toHaveBeenCalledWith('/error-log');
+  });
+
+  it('tapping Backup & restore opens /backup', () => {
+    renderWithProviders(<MoreScreen />);
+
+    fireEvent.press(screen.getByRole('button', { name: entryName('Backup & restore') }));
+    expect(mockPush).toHaveBeenCalledWith('/backup');
   });
 
   it('tapping Vehicle report opens /report', () => {

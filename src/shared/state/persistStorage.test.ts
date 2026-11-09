@@ -11,7 +11,7 @@ jest.mock('expo-file-system/legacy', () => ({
 }));
 
 import type { StateStorage } from 'zustand/middleware';
-import { debouncedStorage } from './persistStorage';
+import { debouncedStorage, flushPendingWrites } from './persistStorage';
 
 function fakeInner() {
   return {
@@ -76,5 +76,58 @@ describe('debouncedStorage', () => {
 
     expect(inner.setItem).not.toHaveBeenCalled();
     expect(inner.removeItem).toHaveBeenCalledWith('k');
+  });
+
+  it('flushNow writes the pending value immediately and cancels the timer', async () => {
+    const inner = fakeInner();
+    const s = debouncedStorage(inner, 500);
+
+    s.setItem('k', '1');
+    s.setItem('k', '2');
+    await s.flushNow('k');
+    expect(inner.setItem).toHaveBeenCalledTimes(1);
+    expect(inner.setItem).toHaveBeenCalledWith('k', '2');
+
+    // the cancelled timer never fires a second (stale) write
+    jest.advanceTimersByTime(1000);
+    expect(inner.setItem).toHaveBeenCalledTimes(1);
+  });
+
+  it('flushNow without a key flushes every pending key; nothing pending is a no-op', async () => {
+    const inner = fakeInner();
+    const s = debouncedStorage(inner, 500);
+    await s.flushNow();
+    expect(inner.setItem).not.toHaveBeenCalled();
+
+    s.setItem('a', 'x');
+    s.setItem('b', 'y');
+    await s.flushNow();
+    expect(inner.setItem).toHaveBeenCalledWith('a', 'x');
+    expect(inner.setItem).toHaveBeenCalledWith('b', 'y');
+    jest.advanceTimersByTime(1000);
+    expect(inner.setItem).toHaveBeenCalledTimes(2);
+  });
+
+  it('flushPendingWrites flushes every debounced storage and waits for the inner write', async () => {
+    let landed = false;
+    const slow = fakeInner();
+    slow.setItem.mockImplementation(() =>
+      Promise.resolve()
+        .then(() => undefined)
+        .then(() => {
+          landed = true;
+          return undefined;
+        }),
+    );
+    const a = debouncedStorage(slow, 500);
+    const other = fakeInner();
+    const b = debouncedStorage(other, 2000);
+    a.setItem('x', '1');
+    b.setItem('y', '2');
+
+    await flushPendingWrites();
+    expect(landed).toBe(true);
+    expect(slow.setItem).toHaveBeenCalledWith('x', '1');
+    expect(other.setItem).toHaveBeenCalledWith('y', '2');
   });
 });

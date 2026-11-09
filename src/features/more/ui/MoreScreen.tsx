@@ -26,6 +26,7 @@ import {
   HeartPulse,
   DownloadCloud,
   FileStack,
+  Archive,
 } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
 import { checkForUpdate, fetchAndReload } from '../api/updates';
@@ -139,6 +140,12 @@ const ENTRIES: Entry[] = [
     title: 'Bus sniffer',
     subtitle: 'Raw CAN/K-line monitor (ATMA); save and share captures',
     Icon: Radio,
+  },
+  {
+    route: '/backup',
+    title: 'Backup & restore',
+    subtitle: 'All your data in one file; restore it on any phone',
+    Icon: Archive,
   },
   {
     route: '/error-log',

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { ScrollView, YStack, XStack, Text, Paragraph, Button, Card, Input, Spinner } from 'tamagui';
 import { Screen } from '@/shared/ui';
 import { useSettingsStore, parseDtcList } from '@/shared/state/settingsStore';
@@ -445,6 +446,33 @@ function AboutSection() {
   );
 }
 
+/** **Data** (plan 18): the way to the Backup & restore screen — one file with every store and the
+ *  trip recordings, restore from such a file, and per-store JSON / CSV export. */
+function DataSection() {
+  const router = useRouter();
+  return (
+    <YStack gap="$2">
+      <SectionLabel>Data</SectionLabel>
+      <SegGroup>
+        <YStack gap="$2">
+          <Paragraph fontSize="$2">
+            Keep a copy of your garage, history, scans, trips and maintenance log, or move them to a
+            new phone. Nothing goes to the cloud; you choose where the file goes.
+          </Paragraph>
+          <XStack gap="$2" flexWrap="wrap">
+            <Button size="$3" onPress={() => router.push('/backup')}>
+              Backup & restore
+            </Button>
+            <Button size="$3" onPress={() => router.push('/backup')}>
+              Export data…
+            </Button>
+          </XStack>
+        </YStack>
+      </SegGroup>
+    </YStack>
+  );
+}
+
 /** Warning for an adapter log that wrapped: the export would start mid-session. */
 function wrappedText(dropped: number): string {
   return `the oldest ${dropped} lines were dropped, so the export starts mid-session. Clear the log and record a shorter flow.`;
@@ -697,6 +725,8 @@ export function SettingsScreen() {
           </ScrollView>
         </Card>
       </YStack>
+
+      <DataSection />
 
       <AboutSection />
 

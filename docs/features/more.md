@@ -34,6 +34,7 @@ It owns no data; each entry routes to another feature's screen.
   | Routines & output tests | `/routines`        | [routines](./routines.md)                       |
   | Notifications           | `/notifications`   | [notifications](./notifications.md)             |
   | Bus sniffer             | `/sniffer`         | [can-sniffer](./can-sniffer.md)                 |
+  | Backup & restore        | `/backup`          | [backup](./backup.md)                           |
   | Error log               | `/error-log`       | [error-log](./error-log.md)                     |
 
 - A last row, **Check for updates** ("Over-the-air app updates"), shows a spinner and "Checking…"

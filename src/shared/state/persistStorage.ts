@@ -74,6 +74,16 @@ export const fileStateStorage: StateStorage = {
   },
 };
 
+/** A debounced storage can also write its pending values *now* (`flushNow`). */
+export interface DebouncedStateStorage extends StateStorage {
+  /** Write the pending value of `name` (or of every key) immediately and cancel its timer; resolves
+   *  once the inner writes have landed. */
+  flushNow: (name?: string) => Promise<void>;
+}
+
+/** Every debounced storage created so far, so a backup can flush them all (`flushPendingWrites`). */
+const liveDebounced = new Set<DebouncedStateStorage>();
+
 /** Wrap a `StateStorage` so `setItem` writes are **debounced** per key: rapid successive writes
  *  coalesce into a single trailing flush `ms` after the last one. zustand-persist rewrites the whole
  *  JSON file on every state mutation; for stores that mutate in bursts (history, trips) that is a lot
@@ -84,17 +94,23 @@ export const fileStateStorage: StateStorage = {
  *  but NOT for the error log, whose whole job is to survive a crash — it stays on the un-debounced
  *  `fileStateStorage` (see the fatal-error 150 ms flush in errorLogStore). `getItem` is passed
  *  straight through (hydration must be immediate); `removeItem` cancels any pending write for that
- *  key first so a clear can't be undone by a stale flush landing after it. */
-export function debouncedStorage(inner: StateStorage, ms: number): StateStorage {
+ *  key first so a clear can't be undone by a stale flush landing after it. `flushNow` writes the
+ *  pending values at once (the backup reads complete files, plan 18). */
+export function debouncedStorage(inner: StateStorage, ms: number): DebouncedStateStorage {
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
   const pending = new Map<string, string>();
 
-  const flush = (name: string): void => {
+  const flush = (name: string): Promise<void> => {
+    const t = timers.get(name);
+    if (t) clearTimeout(t);
     timers.delete(name);
     const value = pending.get(name);
-    if (value === undefined) return;
+    if (value === undefined) return Promise.resolve();
     pending.delete(name);
-    void inner.setItem(name, value);
+    return Promise.resolve(inner.setItem(name, value)).then(
+      () => undefined,
+      () => undefined,
+    );
   };
 
   const cancel = (name: string): void => {
@@ -104,17 +120,32 @@ export function debouncedStorage(inner: StateStorage, ms: number): StateStorage 
     pending.delete(name);
   };
 
-  return {
+  const storage: DebouncedStateStorage = {
     getItem: (name) => inner.getItem(name),
     setItem: (name, value) => {
       pending.set(name, value);
       const existing = timers.get(name);
       if (existing) clearTimeout(existing);
-      timers.set(name, setTimeout(() => flush(name), ms));
+      timers.set(
+        name,
+        setTimeout(() => void flush(name), ms),
+      );
     },
     removeItem: (name) => {
       cancel(name);
       return inner.removeItem(name);
     },
+    flushNow: async (name) => {
+      const names = name === undefined ? [...pending.keys()] : [name];
+      await Promise.all(names.map(flush));
+    },
   };
+  liveDebounced.add(storage);
+  return storage;
+}
+
+/** Write every debounced store's pending value now (backup and restore, plan 18): the backup then
+ *  reads complete files, and no stale flush can land on a file the restore just wrote. */
+export async function flushPendingWrites(): Promise<void> {
+  await Promise.all([...liveDebounced].map((s) => s.flushNow()));
 }
