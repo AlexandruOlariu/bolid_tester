@@ -38,6 +38,13 @@ Reachable from the **More** tab (`/ai-diagnose`). Every run is saved to [History
     as alternating bubbles (selectable text) and **Clear**. Disabled with a hint for an on-device
     report (see [Follow-up questions](#follow-up-questions)).
   - A **notice** banner explains any fallback (AI off / not configured / no key / unreachable).
+- **AiReportView** (`ui/AiReportView.tsx`, exported from the slice's `index.ts`, plan 16) — a saved
+  report, read-only: the overall banner, the finding cards (with the car's fault guides), the
+  recommended actions as a plain list (no Clear / Re-run buttons — the run is over) and the
+  disclaimer with the run time. The [History timeline](./history.md) opens it in a sheet when an AI
+  row is tapped, passing `onNavigate` (its close) so a fault guide's "Related data" / "Open
+  routine" button closes the sheet before it navigates. The screen and the view share `OverallBanner`, `FindingCard` and the action icons
+  from that file.
 
 ## Focused run ("Explain with AI")
 

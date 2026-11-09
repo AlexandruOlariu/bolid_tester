@@ -123,6 +123,15 @@ missing from it. The bundle format, validation, redaction and restore plan are p
 `src/shared/lib/backup.ts`. No feature imports the backup slice: Settings' **Reset all app data**
 (plan 07, `resetAllAppData`) is handed in by the route `src/app/settings.tsx` as a prop.
 
+**History.** The fourth sanctioned composition point is `features/history`
+([spec](./features/history.md), plan 16): the per-car timeline merges AI runs, fault-code checks
+and reports (`historyStore`) with the module-scan, trip, maintenance and coding-backup stores, and
+re-opens a saved AI report through the ai-diagnose slice's `AiReportView`. The merge, filters and
+day grouping are pure, in `src/shared/lib/timeline.ts` (no state or feature imports); the slice's
+`api/timelineSources.ts` maps each store's records into `TimelineItem`s. No feature imports the
+history slice; it reaches the other screens only through routes (`/module-scan?after=&before=`,
+`/trip-detail?id=`, `/maintenance`, `/coding`).
+
 **Specs.** Every slice has a spec in `docs/features/<slug>.md` (see [docs/README](./README.md));
 `src/shared/lib/featureDocsSync.test.ts` enforces it.
 

@@ -80,9 +80,9 @@ export const MORE_SECTIONS: MoreSection[] = [
       {
         route: '/history',
         title: 'History',
-        subtitle: 'Past diagnoses, fault reads and reports',
+        subtitle: 'Timeline of diagnoses, scans, trips, service and reports',
         icon: 'history',
-        keywords: ['past', 'saved'],
+        keywords: ['past', 'saved', 'timeline'],
       },
       {
         route: '/report',

@@ -163,6 +163,11 @@ The [report](./report.md) slice (plan 15) is the second sanctioned composition p
 document for the whole car is its job, so it reads the module-scan, inspection, battery, AI and
 maintenance stores; nothing imports it back.
 
+The [history](./history.md) slice (plan 16) is another: the per-car timeline's job is to merge
+every source, so it reads the module-scan, trip-recording, maintenance and coding stores, and the
+ai-diagnose slice's `AiReportView` (alongside its older `fault-codes` → `useDtcExport` import);
+nothing imports it back.
+
 ## api / model
 
 - `index.ts` exports `EngineHost`, `computePollPids`, `enabledRulePids`, `planSweep`,

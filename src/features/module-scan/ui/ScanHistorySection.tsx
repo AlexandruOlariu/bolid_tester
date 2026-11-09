@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams, useNavigation } from 'expo-router';
 import { YStack, XStack, Paragraph, H4, Button, Input } from 'tamagui';
 import { useScanShare } from '../hooks/useScanShare';
 import { searchScan } from '../api/scanSearch';
 import { diffScans, type ModuleDiff } from '../api/scanDiff';
+import { historyVehicleKey } from '@/shared/state/historyStore';
 import { useScanHistoryStore, type SavedScan } from '../model/scanHistoryStore';
 
 const fmtDate = (ts: number) => new Date(ts).toLocaleString();
@@ -11,7 +13,12 @@ const fmtDate = (ts: number) => new Date(ts).toLocaleString();
 function Badge({ label, tone }: { label: string; tone: 'red' | 'green' | 'yellow' | 'alt2' }) {
   const color = tone === 'alt2' ? undefined : `$${tone}10`;
   return (
-    <Paragraph size="$2" fontFamily="$mono" theme={tone === 'alt2' ? 'alt2' : undefined} color={color}>
+    <Paragraph
+      size="$2"
+      fontFamily="$mono"
+      theme={tone === 'alt2' ? 'alt2' : undefined}
+      color={color}
+    >
       {label}
     </Paragraph>
   );
@@ -93,8 +100,12 @@ function DiffRow({ m }: { m: ModuleDiff }) {
         <Paragraph flex={1}>{m.name}</Paragraph>
         {m.status === 'added' ? <Badge label="new module" tone="yellow" /> : null}
         {m.status === 'removed' ? <Badge label="gone" tone="alt2" /> : null}
-        {m.faultsAppeared.length ? <Badge label={`+${m.faultsAppeared.length}`} tone="red" /> : null}
-        {m.faultsCleared.length ? <Badge label={`−${m.faultsCleared.length}`} tone="green" /> : null}
+        {m.faultsAppeared.length ? (
+          <Badge label={`+${m.faultsAppeared.length}`} tone="red" />
+        ) : null}
+        {m.faultsCleared.length ? (
+          <Badge label={`−${m.faultsCleared.length}`} tone="green" />
+        ) : null}
       </XStack>
       {m.faultsAppeared.map((d) => (
         <Paragraph key={`a-${d.display}`} size="$2" color="$red10">
@@ -120,12 +131,51 @@ function DiffRow({ m }: { m: ModuleDiff }) {
   );
 }
 
-/** Pick two saved scans (default latest vs previous) and render the grouped diff. */
-function CompareSection({ scans }: { scans: SavedScan[] }) {
-  const [beforeId, setBeforeId] = useState<string>(scans[1]?.id ?? '');
-  const [afterId, setAfterId] = useState<string>(scans[0]?.id ?? '');
+/** The id of the scan saved just before `afterId` **for the same car** (`scans` is newest first),
+ *  or '' when that is the car's first scan. */
+export function baselineFor(scans: SavedScan[], afterId: string): string {
+  const i = scans.findIndex((s) => s.id === afterId);
+  if (i < 0) return '';
+  const key = historyVehicleKey(scans[i].vehicle);
+  return scans.slice(i + 1).find((o) => historyVehicleKey(o.vehicle) === key)?.id ?? '';
+}
 
-  const before = scans.find((s) => s.id === beforeId) ?? scans[1];
+/** The Before id a deep link asks for: its own `before`, else the same car's previous scan (none
+ *  for a car's first scan — never another car's scan or the After scan itself). */
+function linkedBefore(scans: SavedScan[], beforeId?: string, afterId?: string): string | undefined {
+  if (beforeId) return beforeId;
+  if (afterId) return baselineFor(scans, afterId);
+  return undefined;
+}
+
+/** Pick two saved scans (default latest vs previous, or the ids a deep link hands in) and render
+ *  the grouped diff. A later deep link with new ids re-seeds both pickers; a link with only `after`
+ *  (a car's first scan, from the History timeline) seeds Before with that car's previous scan, or
+ *  leaves it empty when there is none. */
+export function CompareSection({
+  scans,
+  initialBeforeId,
+  initialAfterId,
+}: {
+  scans: SavedScan[];
+  initialBeforeId?: string;
+  initialAfterId?: string;
+}) {
+  const [beforeId, setBeforeId] = useState<string>(
+    () => linkedBefore(scans, initialBeforeId, initialAfterId) ?? scans[1]?.id ?? '',
+  );
+  const [afterId, setAfterId] = useState<string>(initialAfterId ?? scans[0]?.id ?? '');
+  useEffect(() => {
+    if (initialAfterId) setAfterId(initialAfterId);
+    const linked = linkedBefore(scans, initialBeforeId, initialAfterId);
+    if (linked !== undefined) setBeforeId(linked);
+    // Re-seed only when a new link arrives, not when the scan list changes underneath.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialBeforeId, initialAfterId]);
+
+  // An empty Before (a car's first scan) stays empty until the user picks one; a stale id (the
+  // scan was dropped by the cap) falls back to the previous scan.
+  const before = beforeId ? (scans.find((s) => s.id === beforeId) ?? scans[1]) : undefined;
   const after = scans.find((s) => s.id === afterId) ?? scans[0];
   const diff = useMemo(() => (before && after ? diffScans(before, after) : null), [before, after]);
   const changed = diff ? diff.modules.filter((m) => m.status !== 'unchanged') : [];
@@ -163,6 +213,11 @@ function CompareSection({ scans }: { scans: SavedScan[] }) {
       <H4>Compare scans</H4>
       <Picker title="Before (baseline)" selectedId={before?.id ?? ''} onSelect={setBeforeId} />
       <Picker title="After" selectedId={after?.id ?? ''} onSelect={setAfterId} />
+      {after && !before ? (
+        <Paragraph theme="alt2" size="$2">
+          No earlier scan of this car — pick a baseline above.
+        </Paragraph>
+      ) : null}
       {diff && before && after ? (
         before.id === after.id ? (
           <Paragraph theme="alt2" size="$2">
@@ -189,10 +244,30 @@ function CompareSection({ scans }: { scans: SavedScan[] }) {
   );
 }
 
+/** The first value of a route param (expo-router hands repeated params as an array). */
+function firstParam(v: string | string[] | undefined): string | undefined {
+  const one = Array.isArray(v) ? v[0] : v;
+  return one || undefined;
+}
+
 /** Saved-scan tools shown below the live scan: share the latest report, search its faults, and
- *  compare two scans. Reads the persisted scan history (auto-saved after each scan). */
+ *  compare two scans. Reads the persisted scan history (auto-saved after each scan). The History
+ *  timeline (plan 16) deep-links here as `/module-scan?after=<id>&before=<id>`: the ids seed the
+ *  Compare pickers, then the params are cleared on this route so the same link works again after
+ *  the pickers were changed by hand. */
 export function ScanHistorySection() {
   const scans = useScanHistoryStore((s) => s.scans);
+  const params = useLocalSearchParams<{ before?: string | string[]; after?: string | string[] }>();
+  const navigation = useNavigation<{
+    setParams(params: { before?: string; after?: string }): void;
+  }>();
+  const before = firstParam(params.before);
+  const after = firstParam(params.after);
+  // Children's effects run first, so CompareSection has taken the ids before they are cleared.
+  useEffect(() => {
+    if (before || after) navigation.setParams({ before: undefined, after: undefined });
+  }, [before, after, navigation]);
+
   if (!scans.length) return null;
   const latest = scans[0];
 
@@ -201,7 +276,9 @@ export function ScanHistorySection() {
       <H4>Saved scans ({scans.length})</H4>
       <ShareRow latest={latest} />
       <SearchSection latest={latest} />
-      {scans.length >= 2 ? <CompareSection scans={scans} /> : null}
+      {scans.length >= 2 ? (
+        <CompareSection scans={scans} initialBeforeId={before} initialAfterId={after} />
+      ) : null}
     </YStack>
   );
 }

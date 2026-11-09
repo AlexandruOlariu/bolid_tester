@@ -61,6 +61,16 @@ on top:
   the latest scan, a **fault search** box filtering the latest scan, and a **Compare** picker
   (default latest vs previous) rendering the diff grouped by module with appeared/cleared/changed
   badges.
+- **Route params `before` / `after`** (plan 16) — `/module-scan?after=<scan id>&before=<scan id>`
+  pre-selects the Compare pickers (`CompareSection`'s `initialBeforeId` / `initialAfterId`). With
+  only `after` (a car's first scan), Before is the same car's previous scan (`baselineFor`), else
+  empty with "No earlier scan of this car — pick a baseline above." — never another car's scan or
+  the After scan itself. The [History timeline](./history.md) links each saved scan this way, with
+  the previous scan of the same car as `before`. `ScanHistorySection` reads them
+  with `useLocalSearchParams`, and once the pickers have taken them clears them on this route
+  (`navigation.setParams`), so the same link works again after the pickers were changed by hand;
+  a new pair of ids re-seeds the pickers while the (hidden-tab) screen stays mounted. Covered by
+  `ui/ScanHistorySection.test.tsx`.
 
 ## Discover modules (plan 25)
 

@@ -740,6 +740,36 @@
     "relates"
   ],
   [
+    "concept:per-car-timeline",
+    "concept:diagnostic-history",
+    "relates"
+  ],
+  [
+    "concept:per-car-timeline",
+    "concept:maintenance-log",
+    "relates"
+  ],
+  [
+    "concept:per-car-timeline",
+    "concept:scan-history-diff",
+    "relates"
+  ],
+  [
+    "concept:per-car-timeline",
+    "concept:trip-recording",
+    "relates"
+  ],
+  [
+    "concept:per-car-timeline",
+    "doc:features/history",
+    "relates"
+  ],
+  [
+    "concept:per-car-timeline",
+    "feature:history",
+    "relates"
+  ],
+  [
     "concept:performance-tests",
     "concept:live-data-charts",
     "relates"
@@ -3246,12 +3276,42 @@
   ],
   [
     "feature:history",
+    "core:analysis/maintenance",
+    "imports"
+  ],
+  [
+    "feature:history",
     "doc:features/history",
     "named"
   ],
   [
     "feature:history",
+    "feature:ai-diagnose",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "feature:coding",
+    "imports"
+  ],
+  [
+    "feature:history",
     "feature:fault-codes",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "feature:maintenance",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "feature:module-scan",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "feature:trip-recording",
     "imports"
   ],
   [
@@ -3261,12 +3321,42 @@
   ],
   [
     "feature:history",
+    "lib:timeline",
+    "imports"
+  ],
+  [
+    "feature:history",
     "lib:vehicleReport",
     "imports"
   ],
   [
     "feature:history",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:history",
     "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "vehicle:resolve",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -4373,6 +4463,11 @@
     "lib:seedKey",
     "lib:validate",
     "imports"
+  ],
+  [
+    "lib:timeline",
+    "doc:plans/16-per-car-timeline",
+    "named"
   ],
   [
     "lib:types",

@@ -226,7 +226,7 @@
   },
   "concept:diagnostic-history": {
     "path": null,
-    "summary": "On-device, file-backed history of every AI auto-diagnose run and fault-code check, each linked to a car (VIN or profile). Unlimited retention until c\u2026",
+    "summary": "On-device, file-backed history of every AI auto-diagnose run, fault-code check and generated report (historyStore, capped at 200), each linked to a c\u2026",
     "tokens": [
       "car",
       "diagnostic",
@@ -655,6 +655,24 @@
       "pipeline",
       "request",
       "response"
+    ],
+    "type": "concept"
+  },
+  "concept:per-car-timeline": {
+    "path": null,
+    "summary": "History screen = per-car timeline (plan 16): pure merge/group in shared/lib/timeline.ts over adapters (features/history/api/timelineSources.ts) for A\u2026",
+    "tokens": [
+      "car",
+      "chronological",
+      "compare",
+      "day",
+      "deep",
+      "history",
+      "link",
+      "merge",
+      "per",
+      "per-car",
+      "timeline"
     ],
     "type": "concept"
   },
@@ -3109,8 +3127,10 @@
   },
   "feature:history": {
     "path": "src/features/history",
-    "summary": "A persistent, on-device **history** of diagnostic activity: every **AI auto-diagnose run**, every",
+    "summary": "The **per-car timeline** ([plan 16](../plans/16-per-car-timeline.md)): one chronological view of",
     "tests": [
+      "src/features/history/api/reportFile.test.ts",
+      "src/features/history/api/timelineSources.test.ts",
       "src/features/history/ui/HistoryScreen.test.tsx"
     ],
     "tokens": [
@@ -3175,7 +3195,8 @@
       "src/features/module-scan/api/scanReport.test.ts",
       "src/features/module-scan/api/scanSearch.test.ts",
       "src/features/module-scan/model/scanHistoryStore.test.ts",
-      "src/features/module-scan/ui/ModuleScanScreen.test.tsx"
+      "src/features/module-scan/ui/ModuleScanScreen.test.tsx",
+      "src/features/module-scan/ui/ScanHistorySection.test.tsx"
     ],
     "tokens": [
       "module",
@@ -3467,6 +3488,17 @@
     "tokens": [
       "key",
       "seed"
+    ],
+    "type": "lib"
+  },
+  "lib:timeline": {
+    "path": "src/shared/lib/timeline.ts",
+    "summary": "The per-car timeline (plan 16): one chronological list that merges every source of \"what happened to this car\" \u2014 AI runs, fault-code checks, saved mo\u2026",
+    "tests": [
+      "src/shared/lib/timeline.test.ts"
+    ],
+    "tokens": [
+      "timeline"
     ],
     "type": "lib"
   },

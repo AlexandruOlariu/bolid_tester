@@ -5,6 +5,110 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 16 — Per-car timeline (2026-11-09)
+
+[Plan 16](./plans/16-per-car-timeline.md) landed: **History is now the per-car timeline** — one
+chronological view that merges AI runs, fault-code checks, saved module scans, trips, maintenance
+entries, coding backups and generated reports, grouped by day, filterable by car, kind and text,
+with deep links. Same slice, same `/history` route, title "History", subtitle "Everything that
+happened to this car". The plan has no deferred section, so nothing waits for the car.
+
+- **Pure merge (`src/shared/lib/timeline.ts`).** `TimelineKind` / `TimelineItem` / `TimelineDay` /
+  `TimelineFilter`, `TIMELINE_KINDS`, `timelineId`, `mergeTimeline` (flatten, filter by kinds /
+  car / inclusive time window / case-insensitive text over title + subtitle, dedupe by id with the
+  first winning, stable sort newest first), `groupByDay` (local calendar day, newest first),
+  `summarizeTimeline` (every kind counted). No state or feature imports.
+- **Adapters (`features/history/api/timelineSources.ts`, pure).** `fromHistory`, `fromScans`,
+  `fromTrips`, `fromMaintenance`, `fromBackups` with the plan's title / subtitle / tone / link
+  table: AI "AI diagnosis · healthy / needs attention / urgent" toned by verdict; fault-code checks
+  bad with the MIL on, warn with any code; scans "Auto-scan · n faults" warn on faults, linking
+  `/module-scan?after=<id>&before=<previous scan of the same car>`; trips "Trip · 23.4 km" (one
+  decimal) to `/trip-detail?id=`; maintenance "Service: <item>" (unknown item → "Service") to
+  `/maintenance`; backups "Coding backup · n modules" to `/coding`; reports "Report (PDF)" with the
+  section titles. Trips are capped at the newest 500 (`MAX_TIMELINE_TRIPS`).
+- **`hooks/useTimeline.ts`** reads the history, scan, trip, maintenance and coding-backup stores and
+  the garage, maps maintenance buckets to their car (`maintenanceVehicle`: `vin:` → the garage car
+  learned with that VIN, `id:` → that profile, the parked `legacy:v1` bucket skipped) and trips by
+  `tripCarKey` + header VIN, named like the Trips screen (`carLabel`: "Removed car" /
+  "Unknown car").
+- **Report re-share (`features/history/api/reportFile.ts`).** `reshareReport(entry, mods)` →
+  `shared` / `missing` / `unavailable`: checks `<documentDirectory><fileName>` with `getInfoAsync`,
+  opens the share sheet with the format's MIME type, logs a failing share as
+  `history/reshare-report`; `loadReshareModules` uses the variable-specifier imports.
+- **Scan compare deep link.** `CompareSection` (now exported) takes `initialBeforeId` /
+  `initialAfterId` and re-seeds when they change; `ScanHistorySection` reads
+  `useLocalSearchParams<{ before, after }>()` and, once the pickers have them, clears the params on
+  its route (`navigation.setParams`) so the same link works again after a manual change.
+- **`AiReportView`** (`ai-diagnose/ui/AiReportView.tsx`, exported from the slice's `index.ts`): the
+  overall banner, finding cards (with guides), the actions as a read-only list and the disclaimer.
+  `OverallBanner`, `FindingCard`, the severity / verdict tables and `ACTION_ICON` moved there from
+  `AiDiagnoseScreen.tsx`, which now imports them (no behaviour change on the Diagnose screen).
+- **HistoryScreen rewrite.** Car chips across every source (falling back to "All cars" when the
+  chosen car has nothing left), multi-select kind chips with counts (All · AI · Faults · Scans ·
+  Trips · Service · Backups · Reports), a **Filter** input, day headers, compact rows (kind icon,
+  tone bar, time, the car while several are listed, chevron when tappable, an accessibility label
+  and button role). Taps: links via `router.push`, AI rows open the saved report in a sheet,
+  report rows re-share or alert "File no longer on device". **Export** (the listed fault-code
+  checks as Markdown) stays; **Clear** clears `historyStore` only and says scans, trips, service
+  entries and coding backups are kept. Per-filter empty states.
+- **More.** The History row's subtitle reads "Timeline of diagnoses, scans, trips, service and
+  reports" (keyword `timeline`).
+- **Tests.** `timeline.test.ts` (sort, dedupe, each filter, local-midnight split, counts),
+  `timelineSources.test.ts` (tone rules, the previous same-car scan as `before`, trip km with one
+  decimal, maintenance names, TP2.0 counts, backups), `reportFile.test.ts` (re-share, missing,
+  unavailable, failure log, the loader), `HistoryScreen.test.tsx` rewritten (all seven sources on
+  one day in order, day headers, kind / car / text filters, scan / trip / maintenance / backup
+  links, the AI sheet, report re-share, Export, Clear keeping the other stores, empty state) and
+  the new `ScanHistorySection.test.tsx` (default pair vs the deep-linked pair showing the cleared
+  fault, params consumed).
+- **Docs.** [history](./features/history.md) rewritten as the timeline spec (sources table, cars,
+  filters, deep links, what Clear deletes, the simulator walk-through),
+  [module-scan](./features/module-scan.md) (`before` / `after` route params),
+  [ai-diagnose](./features/ai-diagnose.md) (`AiReportView`),
+  [architecture](./architecture.md) (history as the fourth composition slice),
+  [engine-host](./features/engine-host.md#the-composition-rule) (history's feature imports), the
+  roadmap (✅). Context graph: concept `per-car-timeline` added, `diagnostic-history` refreshed
+  (it still said "unlimited retention"), graph rebuilt.
+- **Deviations.**
+  - Plan 06 had already landed, so maintenance uses the per-car buckets (`byVehicle`) instead of
+    the plan's interim "all entries under the selected car"; `fromMaintenance` takes one bucket's
+    entries plus its car, and the hook resolves the bucket key to the car.
+  - `fromTrips(trips, labelFor)` calls `labelFor(carId, vin)` with `tripCarKey(trip)` (the plan-06
+    `vehicleId`, else `header.profileId`) rather than the bare `header.profileId`; the key is
+    `historyVehicleKey({ id: carId, vin: header.vin, label })` as planned.
+  - Trip title falls back to the GPS distance, then to plain "Trip", when the OBD distance is null
+    (the plan assumed a number). Scan counts include TP2.0 modules and faults on pre-UDS cars.
+  - The report re-share lives in the history slice (`api/reportFile.ts`, its own small MIME map)
+    instead of importing the report slice, so "nothing imports the report slice" stays true.
+  - `AiReportView` takes `{ report, profileId, ranAt }` and is a new file rather than an export of
+    the screen's internal `ReportView` (whose Clear / Re-run / follow-up props do not apply to a
+    saved run).
+  - The scan-compare params are cleared after use (`navigation.setParams`), as the AI screen does
+    for `focus`, so a repeated link re-seeds the pickers on the hidden tab that stays mounted.
+  - The plan's simulator walk-through is a manual check (documented in the history spec); the
+    automated coverage seeds the seven stores directly in `HistoryScreen.test.tsx` and drives the
+    deep-linked compare in `ScanHistorySection.test.tsx`. No new adapter command, so
+    `MockTransport` is unchanged.
+- **Review follow-ups.**
+  - A compare link that carries only `after` (a car's first scan) no longer leaves Before at the
+    default `scans[1]` or at a stale earlier pick (which could be another car's scan or the After
+    scan itself): `CompareSection` seeds Before with `baselineFor(scans, after)`, the same car's
+    previous scan, else leaves it empty and says "No earlier scan of this car — pick a baseline
+    above."; one effect re-seeds both pickers per link. Tests: After-only to a later scan, a car's
+    first scan, and a second link on the still-mounted section.
+  - The scan row's "{answered}/{total} modules answered" leaves out UDS results `skipped` (a full
+    scan keeps every TP2.0 module a second time as a skipped UDS result) and TP2.0 modules the
+    gateway lists as `not-installed`, so a pre-UDS car no longer counts modules twice or counts
+    unfitted ones (`timelineSources.test.ts`, rule in history.md).
+  - `AiReportView` / `FindingCard` take an optional `onNavigate`, passed to the fault guide's
+    `GuideLinks`; History's AI sheet passes its close, so "Related data" / "Open routine" close
+    the sheet before navigating (as `DtcDetailSheet` does). Tested in `HistoryScreen.test.tsx`.
+  - Export now has a real test: it presses Export and checks the file stem
+    `bolid-fault-history` and the Markdown body (title, only the listed car's checks) handed to
+    `useDtcExport().exportReport` (mocked; its file / share path is the Faults screen's).
+
+---
+
 ## Plan 07 — Information architecture and metric only (2026-11-09)
 
 [Plan 07](./plans/07-information-architecture.md) landed: More is a grouped, searchable hub with
