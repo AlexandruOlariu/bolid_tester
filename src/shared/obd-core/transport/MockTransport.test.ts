@@ -1,6 +1,8 @@
 import { MockTransport } from './MockTransport';
 import type { TransportStatus } from './Transport';
 import type { SimScenario } from './MockTransport';
+import { buildScenario, kwpLoginSeeds } from './scenarios';
+import { getVehicleProfile } from '../../vehicles';
 import { bytesToString, stringToBytes } from '../../lib/bytes';
 
 const scenario: SimScenario = { protocol: 'ISO_15765_4_CAN_11_500', supportedPids: ['0105'] };
@@ -179,5 +181,125 @@ describe('MockTransport dropResponses (plan 12)', () => {
     t.dropResponses(1, { includeAt: true });
     expect(await listen(t, 'ATZ')).toBe('');
     expect(await listen(t, 'ATZ')).toContain('ELM327');
+  });
+});
+
+describe('MockTransport KWP2000 login and local identifiers (plan 22)', () => {
+  const HEADER = '8101F1';
+  const kwp = (): MockTransport =>
+    new MockTransport({
+      protocol: 'ISO_9141_2',
+      supportedPids: ['010C'],
+      kwpLocals: { [HEADER]: { '2A': [0x55], '2B': [0x01] } },
+      kwpLogins: { [HEADER]: { code: 12345 } },
+      kwpLoginRequired: ['2A'],
+    });
+  const one = async (t: MockTransport, cmd: string) => dataLines(await ask(t, cmd))[0];
+
+  async function addressed(): Promise<MockTransport> {
+    const t = kwp();
+    await t.connect();
+    expect(await one(t, 'ATSH' + HEADER)).toBe('OK');
+    return t;
+  }
+
+  it('21 returns the seeded bytes, NO DATA for an unknown lid', async () => {
+    const t = await addressed();
+    expect(await one(t, '212A')).toBe('612A55');
+    expect(await one(t, '2199')).toBe('NODATA');
+  });
+
+  it('refuses 3B with 7F3B33 before login, accepts it after 2B with the right code', async () => {
+    const t = await addressed();
+    expect(await one(t, '1085')).toBe('5085');
+    expect(await one(t, '3B2A5A')).toBe('7F3B33');
+    expect(await one(t, '212A')).toBe('612A55'); // untouched
+    expect(await one(t, '2B3039000000')).toBe('6B');
+    expect(await one(t, '3B2A5A')).toBe('7B2A');
+    expect(await one(t, '212A')).toBe('612A5A');
+  });
+
+  it('drops the login on a session restart (10 85)', async () => {
+    const t = await addressed();
+    expect(await one(t, '2B3039000000')).toBe('6B');
+    expect(await one(t, '1085')).toBe('5085');
+    expect(await one(t, '3B2A5A')).toBe('7F3B33');
+  });
+
+  it('answers a wrong code with 7F2B35 and stays logged out', async () => {
+    const t = await addressed();
+    expect(await one(t, '2B0001000000')).toBe('7F2B35');
+    expect(await one(t, '3B2A5A')).toBe('7F3B33');
+  });
+
+  it('writes a lid that needs no login, and refuses an unknown lid with 7F3B31', async () => {
+    const t = await addressed();
+    expect(await one(t, '3B2B02')).toBe('7B2B');
+    expect(await one(t, '3B9901')).toBe('7F3B31');
+  });
+
+  it('a module without a login service answers 7F2B11', async () => {
+    const t = new MockTransport({
+      protocol: 'ISO_9141_2',
+      supportedPids: [],
+      kwpLocals: { '*': { '2A': [0x55] } },
+    });
+    await t.connect();
+    expect(await one(t, '2B3039000000')).toBe('7F2B11');
+    // The '*' store answers with default (functional) addressing.
+    expect(await one(t, '212A')).toBe('612A55');
+  });
+});
+
+describe('buildScenario KWP seeding (plan 22)', () => {
+  it("seeds the Passat's KWP channel, its login gate and the simulator-only placeholder", () => {
+    const s = buildScenario('passat-b55-19tdi');
+    expect(s.kwpLocals).toEqual({ '8101F1': { '2A': [0x55] } });
+    expect(s.kwpLoginRequired).toEqual(['2A']);
+    expect(s.kwpLogins).toEqual({ '8101F1': { code: 12345 } });
+    // KWP channels are not UDS coding stores.
+    expect(s.coding?.['8101F1']).toBeUndefined();
+  });
+
+  it('lets a test pin its own login code, and leaves CAN cars without KWP fields', () => {
+    expect(
+      buildScenario('passat-b55-19tdi', { kwpLogins: { '8101F1': { code: 4242 } } }).kwpLogins,
+    ).toEqual({ '8101F1': { code: 4242 } });
+    const golf = buildScenario('golf-plus-2009-20tdi');
+    expect(golf.kwpLocals).toBeUndefined();
+    expect(golf.kwpLogins).toBeUndefined();
+    expect(golf.kwpLoginRequired).toBeUndefined();
+  });
+
+  it("a profile's documented login code replaces the placeholder (address matched like the code book)", () => {
+    const passat = getVehicleProfile('passat-b55-19tdi');
+    // buildScenario seeds through kwpLoginSeeds.
+    expect(buildScenario('passat-b55-19tdi').kwpLogins).toEqual(
+      kwpLoginSeeds('passat-b55-19tdi', passat),
+    );
+    const documented = {
+      ...passat,
+      loginCodes: [
+        { address: ' 01 ', code: 4711, wsc: 42, purpose: 'Idle', source: 'documented' as const },
+      ],
+    };
+    expect(kwpLoginSeeds('passat-b55-19tdi', documented)).toEqual({
+      '8101F1': { code: 4711, wsc: 42 },
+    });
+    // Lower-case module addresses on either side still match.
+    const lower = {
+      adaptations: (passat.adaptations ?? []).map((a) => ({ ...a, address: '0a' })),
+      loginCodes: [{ address: '0A', code: 777, purpose: '', source: 'user-entered' as const }],
+    };
+    expect(kwpLoginSeeds('passat-b55-19tdi', lower)).toEqual({ '8101F1': { code: 777 } });
+    // A code for another module leaves the placeholder; a profile without KWP channels seeds none.
+    const other = {
+      ...passat,
+      loginCodes: [{ address: '17', code: 1, purpose: '', source: 'documented' as const }],
+    };
+    expect(kwpLoginSeeds('passat-b55-19tdi', other)).toEqual({ '8101F1': { code: 12345 } });
+    expect(
+      kwpLoginSeeds('golf-plus-2009-20tdi', getVehicleProfile('golf-plus-2009-20tdi')),
+    ).toEqual({});
   });
 });

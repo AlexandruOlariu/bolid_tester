@@ -11,6 +11,7 @@ import {
   type LearnedIdentity,
   type UserVehicle,
 } from '@/shared/vehicles/userVehicle';
+import { sanitizeLoginCodes } from '@/shared/vehicles/loginBook';
 
 export const GARAGE_VERSION = 1;
 
@@ -54,9 +55,18 @@ function sanitizeLearned(raw: unknown): LearnedIdentity | undefined {
   return l as LearnedIdentity;
 }
 
+/** The car with its code book (plan 22) reduced to well-formed entries, or without one. */
+function withSaneLoginCodes(v: UserVehicle): UserVehicle {
+  if (v.loginCodes === undefined) return v;
+  const loginCodes = sanitizeLoginCodes(v.loginCodes);
+  const { loginCodes: _raw, ...rest } = v;
+  return loginCodes ? { ...rest, loginCodes } : rest;
+}
+
 /** Keep only well-formed garage records from a persisted blob (a hand-edited or truncated file must
  *  not crash profile resolution or the Vehicle screen). A record without a usable id / name / base
- *  is dropped; a malformed `learned` block is stripped and the car kept as an unlearned one. */
+ *  is dropped; a malformed `learned` block is stripped and the car kept as an unlearned one;
+ *  malformed login codes are dropped. */
 export function sanitizeGarage(persisted: unknown): UserVehicle[] {
   const list = (persisted as { vehicles?: unknown } | null)?.vehicles;
   if (!Array.isArray(list)) return [];
@@ -72,15 +82,16 @@ export function sanitizeGarage(persisted: unknown): UserVehicle[] {
     ) {
       continue;
     }
-    if (v.learned === undefined) {
-      out.push(v);
+    const car = withSaneLoginCodes(v);
+    if (car.learned === undefined) {
+      out.push(car);
       continue;
     }
-    const learned = sanitizeLearned(v.learned);
+    const learned = sanitizeLearned(car.learned);
     if (learned) {
-      out.push(v);
+      out.push(car);
     } else {
-      const { learned: _dropped, ...rest } = v;
+      const { learned: _dropped, ...rest } = car;
       out.push(rest);
     }
   }

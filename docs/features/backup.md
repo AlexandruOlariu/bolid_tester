@@ -67,6 +67,7 @@ registry misses one. Rows, in restore order:
 | `bolid.settings`         | Settings                                        |     | yes                 |
 | `bolid.garage`           | Garage (my cars)                                |     | yes                 |
 | `bolid.vehicle`          | Selected vehicle                                |     | yes                 |
+| `bolid.loginBook`        | Module login codes (code book)                  |     | yes                 |
 | `bolid.history`          | History (diagnoses, fault-code checks, reports) | yes | yes                 |
 | `bolid.maintenance`      | Maintenance log                                 | yes | yes                 |
 | `bolid.trips`            | Trips                                           |     | yes                 |

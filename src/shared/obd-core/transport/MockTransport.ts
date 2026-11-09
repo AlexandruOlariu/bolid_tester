@@ -48,6 +48,15 @@ export interface SimScenario {
     storedDtcs?: string[];
     pendingDtcs?: string[];
   }[];
+  /** KWP2000 local identifiers (plan 22), per ATSH header (or '*' for the functional / single
+   *  K-line ECU): lid -> mutable bytes. Read via `21 <lid>`, written via `3B <lid> <data>`. */
+  kwpLocals?: Record<string, Record<string, number[]>>;
+  /** Login codes the simulated KWP module accepts (`2B`): header | '*' -> { code, wsc? }. A `wsc`
+   *  left out accepts any workshop code. */
+  kwpLogins?: Record<string, { code: number; wsc?: number }>;
+  /** Local identifiers whose `3B` write answers `7F 3B 33` until a matching `2B` login succeeded
+   *  in the current diagnostic session (a `10 xx` restarts the session and drops the login). */
+  kwpLoginRequired?: string[];
   latencyMs?: number;
   emitSearching?: boolean;
   /** Adapter auto-sleep: after this idle gap (ms since the last write or reply) the next non-empty command is
@@ -101,6 +110,9 @@ export class MockTransport implements Transport {
   /** `dropResponses` budget: the next N matching commands get no reply at all. */
   private dropBudget = 0;
   private dropIncludesAt = false;
+  /** KWP login state (plan 22): the headers (or '*') that passed a `2B` login in their current
+   *  diagnostic session. */
+  private loggedIn = new Set<string>();
 
   constructor(public scenario: SimScenario) {}
 
@@ -319,6 +331,50 @@ export class MockTransport implements Transport {
     return lines.join('\r');
   }
 
+  /** Key of the KWP module currently addressed: the ATSH header, or '*' with default addressing. */
+  private kwpKey(): string {
+    return this.header ?? '*';
+  }
+
+  /** KWP2000 local-identifier store of the addressed module (header, else the '*' fallback). */
+  private kwpStore(): Record<string, number[]> | undefined {
+    const locals = this.scenario.kwpLocals;
+    return locals?.[this.kwpKey()] ?? locals?.['*'];
+  }
+
+  /** KWP2000 login (`2B`), ReadDataByLocalIdentifier (`21`) and WriteDataByLocalIdentifier (`3B`)
+   *  — plan 22. Null when `h` is not one of them. */
+  private respondKwp(h: string): string | null {
+    if (h.startsWith('2B') && h.length === 12) {
+      const want = this.scenario.kwpLogins?.[this.kwpKey()] ?? this.scenario.kwpLogins?.['*'];
+      if (!want) return '7F2B11'; // this module has no login service
+      const code = parseInt(h.slice(2, 6), 16);
+      const wsc = parseInt(h.slice(6, 12), 16);
+      if (code !== want.code || (want.wsc !== undefined && wsc !== want.wsc)) {
+        this.loggedIn.delete(this.kwpKey());
+        return '7F2B35';
+      }
+      this.loggedIn.add(this.kwpKey());
+      return '6B';
+    }
+    if (h.startsWith('21') && h.length === 4) {
+      const lid = h.slice(2, 4);
+      const data = this.kwpStore()?.[lid];
+      return data ? '61' + lid + toHex(data) : 'NO DATA';
+    }
+    if (h.startsWith('3B') && h.length >= 6) {
+      const lid = h.slice(2, 4);
+      const store = this.kwpStore();
+      if (!store || !(lid in store)) return '7F3B31';
+      if (this.scenario.kwpLoginRequired?.includes(lid) && !this.loggedIn.has(this.kwpKey())) {
+        return '7F3B33';
+      }
+      store[lid] = parseHexBytes(h.slice(4));
+      return '7B' + lid;
+    }
+    return null;
+  }
+
   private respondObd(h0: string): string {
     const h = h0.replace(/\s+/g, '');
 
@@ -365,7 +421,13 @@ export class MockTransport implements Transport {
     }
 
     // UDS / KWP module services (coding, service reset).
-    if (h.startsWith('10') && h.length >= 4) return '50' + h.slice(2, 4); // (Start)DiagnosticSession
+    if (h.startsWith('10') && h.length >= 4) {
+      // (Start)DiagnosticSession. Like a real module, a session (re)start drops a KWP login.
+      this.loggedIn.delete(this.kwpKey());
+      return '50' + h.slice(2, 4);
+    }
+    const kwp = this.respondKwp(h);
+    if (kwp !== null) return kwp;
     if (h === '3E00') return '7E00'; // TesterPresent
     // RoutineControl / StartRoutine (UDS 31 <sub> <id> or KWP 31 <lid>) — echo a positive response.
     if (h.startsWith('31') && h.length >= 4) {

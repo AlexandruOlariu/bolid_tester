@@ -101,15 +101,42 @@ export interface ServiceReset {
   experimental: true;
 }
 
+/** A login code for a pre-UDS (KWP2000) VAG module — the five-digit number VCDS asks for in its
+ *  "Login – 11" screen (plan 22). The app ships none: profiles only ever carry codes documented
+ *  from the owner's own VCDS logs, and the code book holds what the user entered. */
+export interface LoginCodeEntry {
+  /** VAG module address as VCDS shows it ('17' cluster, '46' comfort, '01' engine). */
+  address: string;
+  /** 0–65535. */
+  code: number;
+  /** Workshop code, 0–99999; default 0. */
+  wsc?: number;
+  /** What the code is for, e.g. 'Idle speed adaptation'. */
+  purpose: string;
+  /** Where it came from; profiles only ever carry codes documented from the owner's own VCDS logs. */
+  source: 'owner-vcds-log' | 'user-entered' | 'documented';
+}
+
 /** An EXPERIMENTAL adaptation channel (VCDS-style "adaptation"): a small numeric module value
- *  read via UDS 22 and written via 2E, with backup + verify. Bounds are on the DISPLAY value
- *  (raw*scale+offset). Channels with `security` are read-only unless the profile supplies a
- *  seed/key algorithm. See docs/features/adaptations.md. */
+ *  with backup + verify. UDS channels (the default) read via 22 and write via 2E over CAN; KWP
+ *  channels (`transport: 'kwp'`, K-line KWP2000) read via 21 and write via 3B, optionally after a
+ *  `2B` login. Bounds are on the DISPLAY value (raw*scale+offset). Channels with `security` are
+ *  read-only unless the profile supplies a seed/key algorithm. See docs/features/adaptations.md. */
 export interface AdaptationChannel {
   module: string;
+  /** VAG module address as VCDS shows it ('01' engine, '17' cluster) — the code-book key for
+   *  `login` channels. */
+  address?: string;
   reqHeader: string;
   rxFilter: string;
+  /** UDS: the 2-byte DID (4 hex). KWP: the 1-byte local identifier (2 hex). */
   did: string;
+  /** 'uds' (CAN, 22 / 2E; the default) or 'kwp' (K-line KWP2000, 21 / 3B). */
+  transport?: 'uds' | 'kwp';
+  /** KWP only: a `2B` login is required before writing (the code comes from the code book). */
+  login?: boolean;
+  /** KWP only: diagnostic session byte entered before a read or write (default 0x85). */
+  session?: number;
   name: string;
   unit?: string;
   byteCount: number;
@@ -248,8 +275,12 @@ export interface VehicleProfile {
   modules?: DiagModule[];
   /** Addresses the (simulated) gateway reports installed — drives the TP2.0 scan. */
   gatewayInstallList?: number[];
-  /** Experimental, CAN-only adaptation channels. See docs/features/adaptations.md. */
+  /** Experimental adaptation channels (UDS over CAN, or KWP over K-line). See
+   *  docs/features/adaptations.md. */
   adaptations?: AdaptationChannel[];
+  /** Module login codes documented from the owner's own VCDS logs (plan 22). Never shipped
+   *  otherwise; the user's own codes live in the code book (garage / login book). */
+  loginCodes?: LoginCodeEntry[];
   /** Experimental, CAN-only guided routines (output tests / basic settings). */
   routines?: GuidedRoutine[];
   notes: string;

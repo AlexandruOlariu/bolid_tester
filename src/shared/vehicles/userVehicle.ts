@@ -9,7 +9,7 @@ import type { ProtocolId } from '../obd-core/obd/protocols';
 import type { DtcMake } from '../obd-core/obd/dtcDatabase';
 import type { SessionInfo } from '../obd-core/session/DiagnosticSession';
 import { decodeVin } from '../obd-core/obd/vinDecode';
-import type { Fuel, VehicleProfile } from './types';
+import type { Fuel, LoginCodeEntry, VehicleProfile } from './types';
 
 /** What a live connection told us about the car. */
 export interface LearnedIdentity {
@@ -34,6 +34,8 @@ export interface UserVehicle {
   baseProfileId: string;
   learned?: LearnedIdentity;
   notes?: string;
+  /** The car's code book (plan 22): module login codes the user chose to remember. */
+  loginCodes?: LoginCodeEntry[];
   createdAt: number;
   updatedAt: number;
 }
@@ -70,6 +72,7 @@ export function buildUserProfile(user: UserVehicle, base: VehicleProfile): Vehic
     if (base.extendedPids) profile.extendedPids = base.extendedPids;
     if (base.modules) profile.modules = base.modules;
     if (base.adaptations) profile.adaptations = base.adaptations;
+    if (base.loginCodes) profile.loginCodes = base.loginCodes;
     if (base.routines) profile.routines = base.routines;
     if (base.codingModules) profile.codingModules = base.codingModules;
     if (base.codingPresets) profile.codingPresets = base.codingPresets;

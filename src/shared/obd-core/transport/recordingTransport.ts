@@ -9,12 +9,17 @@ import { fixtureFromLog, LoggedIo, ReplayFixture, ReplayFixtureMeta } from './lo
 import { DiagnosticSession } from '../session/DiagnosticSession';
 import { Elm327Options } from '../elm327/Elm327Client';
 import { bytesToString } from '../../lib/bytes';
+import { redactCommand } from './redact';
 
-/** Log text of an outbound command: line endings removed, trimmed (a bare-CR wake-up is ''). */
+/** Log text of an outbound command: line endings removed, trimmed (a bare-CR wake-up is ''). A
+ *  KWP login (`2B` + code) is redacted (`redactCommand`), so the owner's login code never reaches
+ *  the adapter log or an exported replay fixture. */
 export function logTxText(bytes: Uint8Array): string {
-  return bytesToString(bytes)
-    .replace(/[\r\n]/g, '')
-    .trim();
+  return redactCommand(
+    bytesToString(bytes)
+      .replace(/[\r\n]/g, '')
+      .trim(),
+  );
 }
 
 /** Log text of one inbound chunk: the `>` prompt removed and every line break kept as a single

@@ -48,6 +48,7 @@ import { useDashboardLayoutStore } from '@/features/live-data/model/dashboardLay
 import { useOnboardingStore } from '@/features/onboarding/model/onboardingStore';
 import { useAlertsStore } from '@/features/alerts/model/alertsStore';
 import { useNotificationsStore } from '@/features/notifications/model/notificationsStore';
+import { useLoginBookStore } from '@/features/adaptations/model/loginBookStore';
 import { parseBackup, type BackupBundle } from '@/shared/lib/backup';
 import { MAX_BACKUP_RECORDS, useBackupStore } from '../model/backupStore';
 import { STORE_NAMES, PERSISTED_STORES } from './registry';
@@ -100,6 +101,7 @@ const STORES: AnyStore[] = [
   useOnboardingStore,
   useAlertsStore,
   useNotificationsStore,
+  useLoginBookStore,
   useBackupStore,
 ];
 const INITIAL = STORES.map((s) => ({ s, state: s.getState() }));
@@ -197,6 +199,12 @@ function populate(): void {
     label: 'Coolant hot',
   });
   useNotificationsStore.getState().toggleCategory('trip');
+  useLoginBookStore.getState().remember('id:passat-b55-19tdi', {
+    address: '01',
+    code: 4242,
+    purpose: 'Idle speed adaptation',
+    source: 'user-entered',
+  });
 }
 
 async function settle(): Promise<void> {
@@ -421,6 +429,9 @@ describe('restoreBackup', () => {
     expect(useOnboardingStore.getState().dismissed).toEqual(['live-hint']);
     expect(useAlertsStore.getState().rules.map((r) => r.id)).toEqual(['r1']);
     expect(useNotificationsStore.getState().prefs.categories.trip).toBe(false);
+    expect(useLoginBookStore.getState().byVehicle['id:passat-b55-19tdi']).toEqual([
+      { address: '01', code: 4242, purpose: 'Idle speed adaptation', source: 'user-entered' },
+    ]);
 
     // the snapshot of the (empty) data before the restore
     expect(res.snapshot.kind).toBe('pre-restore');

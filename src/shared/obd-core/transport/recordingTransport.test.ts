@@ -4,6 +4,7 @@ import { MockTransport } from './MockTransport';
 import { buildScenario } from './scenarios';
 import { DiagnosticSession } from '../session/DiagnosticSession';
 import { stringToBytes } from '../../lib/bytes';
+import { REDACTED_LOGIN, redactCommand } from './redact';
 
 const OPTS = { commandTimeoutMs: 1000, firstCommandTimeoutMs: 1000 };
 
@@ -14,6 +15,15 @@ describe('log text normalisation', () => {
     expect(logRxText(stringToBytes('43 01 01 13\r\n43 00\n\r>'))).toBe('43 01 01 13\r43 00\r');
     // Not trimmed: a notification that ends mid-line must not lose the boundary.
     expect(logRxText(stringToBytes('41 0C '))).toBe('41 0C ');
+  });
+
+  it('tx redacts a KWP login (2B + code + workshop code), and nothing else', () => {
+    expect(logTxText(stringToBytes('2B3039000000\r'))).toBe(REDACTED_LOGIN);
+    expect(logTxText(stringToBytes('2B 30 39 00 00 2A\r'))).toBe(REDACTED_LOGIN);
+    expect(logTxText(stringToBytes('2B3039000000\r'))).not.toContain('3039');
+    expect(redactCommand('1085')).toBe('1085');
+    expect(redactCommand('3B2A5A')).toBe('3B2A5A');
+    expect(redactCommand('ATSH8101F1')).toBe('ATSH8101F1');
   });
 });
 

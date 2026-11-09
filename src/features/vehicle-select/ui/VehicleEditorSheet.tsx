@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { Sheet, YStack, XStack, Text, Paragraph, Button, Input, TextArea } from 'tamagui';
 import { useGarageStore } from '@/shared/state/garageStore';
-import { VEHICLE_PROFILES, type UserVehicle } from '@/shared/vehicles';
+import { formatLoginCode } from '@/shared/obd-core';
+import {
+  MASKED_LOGIN_CODE,
+  VEHICLE_PROFILES,
+  removeLoginCode,
+  type LoginCodeEntry,
+  type UserVehicle,
+} from '@/shared/vehicles';
 import {
   FUELS,
   draftFromVehicle,
@@ -13,7 +20,8 @@ import {
 import { useGarageExport } from '../hooks/useGarageExport';
 
 /** Add or edit a garage car (plan 06): name, year, fuel, the built-in profile it inherits from and
- *  notes. `vehicle` null + `open` = add a new car; a vehicle = edit it. The footer shares the whole
+ *  notes; for an existing car also its **login codes** (plan 22 code book: remembered on the
+ *  Adaptations screen, listed masked here, deleted on Save). `vehicle` null + `open` = add a new car; a vehicle = edit it. The footer shares the whole
  *  garage as JSON. See docs/features/vehicle-select.md. */
 export function VehicleEditorSheet({
   open,
@@ -68,6 +76,8 @@ export function EditorBody({
     vehicle ? draftFromVehicle(vehicle) : emptyDraft(),
   );
   const [showErrors, setShowErrors] = useState(false);
+  const [loginCodes, setLoginCodes] = useState<LoginCodeEntry[]>(() => vehicle?.loginCodes ?? []);
+  const [revealed, setRevealed] = useState<string | null>(null);
   const { exportGarage, busy } = useGarageExport();
   const errors = validateDraft(draft);
   const set = (patch: Partial<VehicleDraft>) => setDraft((d) => ({ ...d, ...patch }));
@@ -80,7 +90,10 @@ export function EditorBody({
     const fields = draftToVehicle(draft);
     const garage = useGarageStore.getState();
     if (vehicle) {
-      garage.update(vehicle.id, fields);
+      garage.update(vehicle.id, {
+        ...fields,
+        loginCodes: loginCodes.length ? loginCodes : undefined,
+      });
       const saved = useGarageStore.getState().vehicles.find((v) => v.id === vehicle.id);
       if (saved) onSaved?.(saved);
     } else {
@@ -173,6 +186,57 @@ export function EditorBody({
           accessibilityLabel="Notes"
         />
       </YStack>
+
+      {vehicle ? (
+        <YStack gap="$2">
+          <Paragraph fontWeight="700">Login codes</Paragraph>
+          <Paragraph theme="alt2" fontSize="$2">
+            Module login codes you chose to remember for this car on the Adaptations screen. The app
+            ships none.
+          </Paragraph>
+          {loginCodes.length === 0 ? (
+            <Paragraph theme="alt2" fontSize="$2">
+              No login codes saved for this car.
+            </Paragraph>
+          ) : (
+            loginCodes.map((e) => (
+              <XStack
+                key={e.address}
+                gap="$2"
+                alignItems="center"
+                backgroundColor="$color2"
+                padding="$2"
+                borderRadius="$3"
+              >
+                <YStack flex={1}>
+                  <Paragraph fontWeight="700">
+                    Module {e.address}
+                    {e.purpose ? ` · ${e.purpose}` : ''}
+                  </Paragraph>
+                  <Paragraph theme="alt2" fontSize="$2">
+                    Code {revealed === e.address ? formatLoginCode(e.code) : MASKED_LOGIN_CODE}
+                  </Paragraph>
+                </YStack>
+                <Button
+                  size="$2"
+                  onPress={() => setRevealed((r) => (r === e.address ? null : e.address))}
+                  accessibilityLabel={`${revealed === e.address ? 'Hide' : 'Show'} login code for module ${e.address}`}
+                >
+                  {revealed === e.address ? 'Hide' : 'Show'}
+                </Button>
+                <Button
+                  size="$2"
+                  theme="red"
+                  onPress={() => setLoginCodes((l) => removeLoginCode(l, e.address))}
+                  accessibilityLabel={`Delete login code for module ${e.address}`}
+                >
+                  Delete
+                </Button>
+              </XStack>
+            ))
+          )}
+        </YStack>
+      ) : null}
 
       <XStack gap="$3">
         <Button flex={1} onPress={onClose}>

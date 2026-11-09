@@ -470,6 +470,21 @@
     "relates"
   ],
   [
+    "concept:kwp-login-code-book",
+    "concept:adaptation-channels",
+    "relates"
+  ],
+  [
+    "concept:kwp-login-code-book",
+    "concept:mock-simulator",
+    "relates"
+  ],
+  [
+    "concept:kwp-login-code-book",
+    "feature:adaptations",
+    "relates"
+  ],
+  [
     "concept:live-data-charts",
     "core:analysis/chartBuffer",
     "relates"
@@ -1135,6 +1150,21 @@
     "imports"
   ],
   [
+    "core:coding/kwpLogin",
+    "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "core:coding/kwpLogin",
+    "doc:plans/22-kwp-login-code-book",
+    "named"
+  ],
+  [
+    "core:coding/kwpLogin",
+    "vehicle:loginBook",
+    "named"
+  ],
+  [
     "core:coding/presets",
     "core:coding/coding",
     "imports"
@@ -1157,6 +1187,11 @@
   [
     "core:elm327/Elm327Client",
     "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "core:elm327/Elm327Client",
+    "core:transport/redact",
     "imports"
   ],
   [
@@ -1416,6 +1451,11 @@
   ],
   [
     "core:public-api",
+    "core:coding/kwpLogin",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:coding/presets",
     "imports"
   ],
@@ -1557,6 +1597,11 @@
   [
     "core:public-api",
     "core:transport/recordingTransport",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:transport/redact",
     "imports"
   ],
   [
@@ -1786,6 +1831,11 @@
   ],
   [
     "core:transport/recordingTransport",
+    "core:transport/redact",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
     "doc:features/trip-recording",
     "named"
   ],
@@ -1812,6 +1862,11 @@
   [
     "core:transport/scenarios",
     "vehicle:registry",
+    "imports"
+  ],
+  [
+    "core:transport/scenarios",
+    "vehicle:types",
     "imports"
   ],
   [
@@ -2131,6 +2186,11 @@
   ],
   [
     "feature:adaptations",
+    "core:coding/kwpLogin",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
     "core:coding/udsCoding",
     "imports"
   ],
@@ -2166,12 +2226,37 @@
   ],
   [
     "feature:adaptations",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
     "store:sessionStore",
     "imports"
   ],
   [
     "feature:adaptations",
+    "vehicle:loginBook",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
     "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -2297,6 +2382,11 @@
   [
     "feature:backup",
     "core:analysis/maintenance",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:adaptations",
     "imports"
   ],
   [
@@ -3726,6 +3816,11 @@
   ],
   [
     "feature:vehicle-select",
+    "core:coding/kwpLogin",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
     "core:obd/protocols",
     "imports"
   ],
@@ -3767,6 +3862,11 @@
   [
     "feature:vehicle-select",
     "store:vehicleStore",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "vehicle:loginBook",
     "imports"
   ],
   [
@@ -4341,6 +4441,11 @@
   ],
   [
     "store:garageStore",
+    "vehicle:loginBook",
+    "imports"
+  ],
+  [
+    "store:garageStore",
     "vehicle:userVehicle",
     "imports"
   ],
@@ -4550,6 +4655,16 @@
     "imports"
   ],
   [
+    "vehicle:loginBook",
+    "doc:plans/22-kwp-login-code-book",
+    "named"
+  ],
+  [
+    "vehicle:loginBook",
+    "vehicle:types",
+    "imports"
+  ],
+  [
     "vehicle:passat-b55-19tdi",
     "doc:plans/19-ai-provider-presets",
     "named"
@@ -4592,6 +4707,11 @@
   [
     "vehicle:registry",
     "vehicle:golf-plus-2009-20tdi",
+    "imports"
+  ],
+  [
+    "vehicle:registry",
+    "vehicle:loginBook",
     "imports"
   ],
   [

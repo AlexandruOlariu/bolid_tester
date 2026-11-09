@@ -55,6 +55,21 @@ temp · `0111` accelerator/throttle · `011F` run time · `0142` module voltage
 None. **Mode 22 (UDS) does not apply** to this K-line/KWP2000 ECU; VAG measuring-group blocks are not
 accessible generically. This is the documented limit, not an app bug.
 
+## Adaptations (illustrative KWP channel)
+
+One **illustrative** KWP2000 adaptation channel is declared on the **engine ECU** (`address '01'`,
+header `8101F1`): local identifier `2A` "Idle speed adaptation", 1 byte, × 10 rpm, bounds
+800–1000 rpm, `transport: 'kwp'`, `login: true`, session `0x85`. It is a **placeholder** so the
+whole login → backup → write → verify flow ([adaptations](../features/adaptations.md#kwp-login-plan-22))
+runs in the simulator; the local id, scaling and bounds are unconfirmed until a capture of a VCDS
+session on this ECU confirms them. It is not an extended PID, so the front matter is unaffected.
+No login code ships — the owner enters it (code book); the in-app simulator accepts only its
+placeholder `12345`.
+
+The **KWP1281 limit** stands: the instrument cluster, comfort and climate modules speak KWP1281
+(ISO 9141 byte-ACK), which a generic ELM327 cannot address, so no channels are declared for them
+and the service reminder is reset with the dash-stalk procedure on the Service reset screen.
+
 ## On-car checklist (mirrored into `testChecklist`)
 
 1. Connect over BLE, ignition on. Expect a brief `BUS INIT` / `SEARCHING...`.

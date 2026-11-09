@@ -1,5 +1,11 @@
 import { useCallback } from 'react';
-import { serviceReset, isCan, isKLine, isModuleUnreachableError } from '@/shared/obd-core';
+import {
+  serviceReset,
+  describeUnlockFailure,
+  isCan,
+  isKLine,
+  isModuleUnreachableError,
+} from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
@@ -81,7 +87,7 @@ export function useServiceReset() {
               (descriptor.obdUnreachable ??
                 'The adapter could not reach this module over the current link.') +
               manualHint
-          : `Failed: ${msg}`,
+          : (describeUnlockFailure(e) ?? `Failed: ${msg}`),
       );
       return false;
     } finally {

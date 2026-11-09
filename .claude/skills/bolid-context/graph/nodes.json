@@ -426,6 +426,26 @@
     ],
     "type": "concept"
   },
+  "concept:kwp-login-code-book": {
+    "path": null,
+    "summary": "VAG KWP2000 login (VCDS 'Login - 11'): 2B + 2-byte code + 3-byte workshop code -> 6B, 7F 2B 35 = code rejected (core kwpLogin). KWP adaptation channe\u2026",
+    "tokens": [
+      "1281",
+      "2b",
+      "adaptation",
+      "book",
+      "code",
+      "kline",
+      "kwp",
+      "kwp2000",
+      "login",
+      "loginbook",
+      "remember",
+      "workshop",
+      "wsc"
+    ],
+    "type": "concept"
+  },
   "concept:live-data-charts": {
     "path": null,
     "summary": "Live telemetry: poll Mode 01 PIDs, ring-buffer samples (chartBuffer) and render gauges/charts. The hot path for live-data and live-charts.",
@@ -1005,6 +1025,19 @@
     ],
     "type": "core"
   },
+  "core:coding/kwpLogin": {
+    "path": "src/shared/obd-core/coding/kwpLogin.ts",
+    "summary": "VAG KWP2000 login (plan 22) \u2014 the \"Login \u2013 11\" step VCDS performs before a pre-UDS module accepts an adaptation write.",
+    "tests": [
+      "src/shared/obd-core/coding/kwpLogin.test.ts"
+    ],
+    "tokens": [
+      "coding",
+      "kwp",
+      "login"
+    ],
+    "type": "core"
+  },
   "core:coding/presets": {
     "path": "src/shared/obd-core/coding/presets.ts",
     "summary": "One-tap coding presets (\"tweaks\", OBDeleven-style): a curated per-profile toggle compiled down to the existing gated coding write (backup \u2192 write \u2192 v\u2026",
@@ -1543,6 +1576,15 @@
     ],
     "tokens": [
       "recording",
+      "transport"
+    ],
+    "type": "core"
+  },
+  "core:transport/redact": {
+    "path": "src/shared/obd-core/transport/redact.ts",
+    "summary": "Redaction for command text that leaves the bus: the adapter I/O log, replay fixtures and error messages.",
+    "tokens": [
+      "redact",
       "transport"
     ],
     "type": "core"
@@ -2712,6 +2754,12 @@
   "feature:adaptations": {
     "path": "src/features/adaptations",
     "summary": "VCDS-style **adaptation channels**: small numeric module values (idle offset, base duties, service",
+    "tests": [
+      "src/features/adaptations/api/adaptationService.test.ts",
+      "src/features/adaptations/api/codeBook.test.ts",
+      "src/features/adaptations/hooks/useAdaptations.test.tsx",
+      "src/features/adaptations/ui/AdaptationsScreen.test.tsx"
+    ],
     "tokens": [
       "adaptations"
     ],
@@ -3037,7 +3085,7 @@
   },
   "feature:service-reset": {
     "path": "src/features/service-reset",
-    "summary": "Reset the **service interval / oil-service reminder** (\"SRI reset\" \u2014 the *service now / service in",
+    "summary": "Reset the **service interval / oil-service reminder** (\"SRI reset\" \u2014 the _service now / service in",
     "tokens": [
       "reset",
       "service"
@@ -3790,6 +3838,18 @@
       "golf",
       "plus",
       "tdi"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:loginBook": {
+    "path": "src/shared/vehicles/loginBook.ts",
+    "summary": "The per-car **code book** (plan 22): resolve, add and remove KWP module login codes.",
+    "tests": [
+      "src/shared/vehicles/loginBook.test.ts"
+    ],
+    "tokens": [
+      "book",
+      "login"
     ],
     "type": "vehicle"
   },

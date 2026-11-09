@@ -4,6 +4,7 @@
 
 import {
   DiagnosticSession,
+  describeUnlockFailure,
   startGuidedRoutine,
   stopGuidedRoutine,
   testerPresent,
@@ -38,14 +39,16 @@ export async function checkInterlocks(
 
   if (il.requireEngineOff) {
     if (rpm === null) failures.push('Cannot verify the engine is off — RPM is unreadable.');
-    else if (rpm > 0) failures.push(`Engine must be OFF (ignition on) — currently ${Math.round(rpm)} rpm.`);
+    else if (rpm > 0)
+      failures.push(`Engine must be OFF (ignition on) — currently ${Math.round(rpm)} rpm.`);
   }
   if (il.requireIdle) {
     if (rpm === null || rpm < 400) failures.push('Engine must be RUNNING at idle.');
     else if (rpm > 1200) failures.push(`Engine must idle — currently ${Math.round(rpm)} rpm.`);
   }
   if (il.maxSpeedKmh !== undefined) {
-    if (speed === null) failures.push('Cannot verify the vehicle is stationary — speed is unreadable.');
+    if (speed === null)
+      failures.push('Cannot verify the vehicle is stationary — speed is unreadable.');
     else if (speed > il.maxSpeedKmh) {
       failures.push(`Vehicle must be stationary — currently ${Math.round(speed)} km/h.`);
     }
@@ -70,7 +73,10 @@ export async function checkInterlocksDuringRun(
   }
 }
 
-export async function startRoutine(session: DiagnosticSession, routine: GuidedRoutine): Promise<void> {
+export async function startRoutine(
+  session: DiagnosticSession,
+  routine: GuidedRoutine,
+): Promise<void> {
   await session.setHeader(routine.reqHeader);
   await session.setRxFilter(routine.rxFilter);
   await startGuidedRoutine((cmd) => session.send(cmd), {
@@ -99,9 +105,8 @@ export function describeRoutineFailure(err: unknown, routine: GuidedRoutine): st
       case 0x35: // invalidKey
         return 'Security unlock was rejected (NRC 0x35 invalid key) — the seed→key algorithm is wrong for this ECU.';
       case 0x36: // exceedNumberOfAttempts
-        return 'Too many failed security-unlock attempts (NRC 0x36) — the module is locked out. Cycle the ignition and wait before retrying.';
       case 0x37: // requiredTimeDelayNotExpired
-        return 'The module is enforcing a security lockout delay (NRC 0x37). Wait a moment and retry.';
+        return describeUnlockFailure(err) ?? err.message;
       case 0x11: // serviceNotSupported
       case 0x12: // subFunctionNotSupported
       case 0x31: // requestOutOfRange
@@ -133,7 +138,10 @@ export function describeRoutineFailure(err: unknown, routine: GuidedRoutine): st
 }
 
 /** Stop + always restore default addressing (header AND rx filter), even when the stop fails. */
-export async function stopRoutine(session: DiagnosticSession, routine: GuidedRoutine): Promise<void> {
+export async function stopRoutine(
+  session: DiagnosticSession,
+  routine: GuidedRoutine,
+): Promise<void> {
   try {
     await stopGuidedRoutine((cmd) => session.send(cmd), {
       service: routine.service,

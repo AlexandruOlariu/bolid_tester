@@ -5,6 +5,106 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 22 — KWP login entry and the per-car code book (2026-11-09)
+
+[Plan 22](./plans/22-kwp-login-code-book.md) landed: pre-UDS VAG modules on K-line can now be
+adapted behind a **KWP2000 login** (`2B`, VCDS "Login – 11"). A login channel's **Write** opens a
+login sheet (masked five-digit code, optional workshop code, **Remember for this car**); the code
+book keeps remembered codes per car; the simulator models `2B` / `21` / `3B` end to end. The app
+ships **no login codes**. The plan's deferred part — TP2.0 pre-UDS modules on the Golf (cluster
+`17`, comfort `46`) — is untouched and still needs the on-car session.
+
+- **Core (`obd-core/coding/kwpLogin.ts`, pure, exported).** `kwpLogin(send, code, wsc = 0)` —
+  `2B` + 2-byte BE code + 3-byte BE workshop code (`kwpLoginRequest`, range-checked before any
+  send), positive `6B`, `7F 2B 35` rethrown as `UdsError` nrc 0x35 "Login code rejected";
+  `formatLoginCode`, `parseLoginCode`, `parseWorkshopCode`, `describeLoginFailure`.
+  `describeUnlockFailure(err)` in `udsCoding.ts` now holds the NRC 0x36 / 0x37 lockout texts:
+  `routineService.describeRoutineFailure` delegates to it (texts unchanged) and the service-reset
+  hook uses it for a lockout instead of a bare "Failed: …".
+- **Types.** `LoginCodeEntry { address, code, wsc?, purpose, source }`; `VehicleProfile.loginCodes?`,
+  `UserVehicle.loginCodes?` (inherited by a garage car from a non-generic base like the other
+  per-car arrays); `AdaptationChannel.transport?: 'uds' | 'kwp'`, `login?`, `session?`, `address?`.
+  `shared/vehicles/loginBook.ts` — `loginCodeFor` (user entry over the profile's), `upsertLoginCode`
+  (one code per address), `removeLoginCode`, `sanitizeLoginCodes`, `MASKED_LOGIN_CODE`;
+  `sanitizeGarage` drops malformed codes.
+- **Simulator.** `SimScenario.kwpLocals` / `kwpLogins` / `kwpLoginRequired`; `MockTransport`
+  answers `2B` (`6B` / `7F2B35` / `7F2B11` with no login service), `21` (`61 <lid> …` / `NO DATA`),
+  `3B` (`7B`, `7F3B33` before login, `7F3B31` unknown lid) and drops a header's login on `10 xx`.
+  `buildScenario` seeds KWP channels into `kwpLocals` (not into the UDS `coding` store) and the
+  login gate, and `kwpLogins` from a simulator-only placeholder replaced by a profile's
+  documented codes (`kwpLoginSeeds`, addresses matched trimmed / case-insensitive like
+  `loginCodeFor`).
+- **Adaptations.** `adaptationService`: KWP read (`10 <session>` unless the per-screen cache
+  says it is open → `21`; `AdaptationsScreen` provides one `KwpSessionCacheContext` that every
+  row's `useAdaptations` shares), KWP write (bounds → `Login required` refusal with **no bus
+  traffic** when the code is missing → `10` → `2B` → backup `21` → `3B` → re-read → verify), K-line
+  addressing without a receive filter, `resetAddressing()` in `finally`; `WriteOutcome` gains
+  `loginRejected` / `loginRequired` / `loginAccepted` (set only once the `2B` got its `6B`). `useAdaptations` offers UDS channels on CAN and KWP channels on
+  K-line, exposes `loginInfo` / `forgetLogin`, and `write` / `restore` take an optional
+  `LoginInput` and return the outcome; a code is remembered only when ticked **and** the outcome
+  says `loginAccepted` (never after a bounds / security refusal, a failed session start, a dead
+  link or a `7F 2B 36/37/11/33`), and kept out of the error log; the `2B` request itself is
+  redacted (`obd-core/transport/redact.ts`, `redactCommand` → `2B <login code redacted>`) by
+  `logTxText` — so in the adapter I/O log and every replay fixture exported from it — and in the
+  ELM timeout error text; a remembered code the module rejects (NRC 0x35) is forgotten.
+  `api/codeBook.ts` (`userCodeBook` — for a registry car only the primary key's book: `vin:` once
+  the car reported a VIN, else `id:`; `preVinCodeBook` — with a VIN known, the `id:` book as a
+  pre-fill only, never sent without the sheet and never deleted by this car; `loginFor`,
+  `rememberLoginCode`, `forgetLoginCode` (primary key only), `loginBookKeys`); `model/loginBookStore.ts` — `bolid.loginBook` v1 (with
+  `migrate` / sanitizing `merge`), registered in `PERSISTED_STORES` and in the UI-test store reset.
+- **UI.** `ui/LoginSheet.tsx` (`LoginSheet` + testable `LoginForm`); `ChannelRow`: the login step
+  before the confirm (and before a one-tap restore), status line "Login: remembered (01 · …)" with
+  **Forget** / "Login: needed", a rejected code is never re-sent without the sheet nor
+  pre-filled (and a rejected remembered code is dropped from the code book); the
+  screen states the KWP1281 limit on K-line with a link to Service reset. The vehicle editor lists
+  a garage car's login codes (masked, Show / Delete, applied on Save).
+- **Passat profile.** One illustrative KWP channel on the engine ECU: address `01`, header
+  `8101F1`, local id `2A` "Idle speed adaptation", 1 byte × 10 rpm, 800–1000 rpm, `login: true`,
+  `experimental` — a placeholder until a capture confirms it. KWP1281 modules stay undeclared.
+- **Also fixed.** `ChannelRow` selected `s.backups.filter(…)` inside the zustand selector — a new
+  array on every call, which loops forever under React 19 ("getSnapshot should be cached"); the
+  screen had no component test, so it never showed. It now selects the array and filters in a
+  `useMemo`.
+- **Tests (+56 tests, +6 suites: 1258 tests / 147 suites).** `kwpLogin.test.ts` (request bytes
+  `2B 30 39 00 00 00`, `6B`, `7F 2B 35` → nrc 0x35, range, parse / format, the shared lockout
+  texts); `loginBook.test.ts` (user over profile, missing → null, edits, sanitizing);
+  `MockTransport.test.ts` (`3B` → `7F3B33` before login, accepted after the right `2B`, refused
+  again after `10 85`; wrong code → `7F2B35`; `21` seeded bytes; `buildScenario` seeding, a
+  profile's documented code replacing the placeholder, `0a` / `0A` addresses matching);
+  `adaptations/api/adaptationService.test.ts` (Passat over a logging transport: no login → nothing
+  sent, out of bounds → nothing sent, right code → verified with the exact command order, wrong
+  code → "rejected" and nothing written, re-login after a session restart, Golf UDS unchanged);
+  `adaptations/api/codeBook.test.ts` (login book / garage, never `bolid.settings`, a pre-VIN code
+  is a pre-fill only and another car never inherits or deletes it, sanitizing);
+  `adaptations/ui/AdaptationsScreen.test.tsx` (the acceptance walk-through on the simulated
+  Passat, a pre-VIN code opens the sheet pre-filled and survives a rejection, Golf never shows a
+  login); `adaptations/hooks/useAdaptations.test.tsx` (two hooks under the screen provider send
+  one `10 85`, without it two); `recordingTransport.test.ts` (a `2B` is logged redacted); `VehicleSelectScreen.test.tsx` (editor section);
+  `backupService.test.ts` now populates and restores the login book.
+- **Deviations.** (1) `LoginCodeEntry.confirmed?: Confirmation` is left out — plan 25's
+  `Confirmation` type does not exist yet; add it with plan 25. (2) `AdaptationChannel` also gains
+  `address` (the code-book key; the plan names address `'01'` for the Passat channel but did not
+  list the field). (3) The simulator accepts a **simulator-only placeholder** code `12345` for the
+  Passat engine (`SIM_KWP_LOGINS` in `scenarios.ts`) so the in-app simulator can walk the
+  acceptance flow; it is a demo value, not a login code for any real module, and is never put in a
+  code book. The plan had seeded `kwpLogins` only from profile codes (none). (4) Header for the
+  illustrative channel is `8101F1` (ISO 14230 physical, target `01`, tester `F1`); unconfirmed.
+  (5) The `loginBookStore` lives in the adaptations slice (`features/adaptations/model/`) rather
+  than `shared/state`; only the adaptations screen and the backup registry read it. (6) A
+  remembered code is stored only after the module accepted the login — `WriteOutcome.loginAccepted`,
+  set right after `kwpLogin` resolves (the plan did not say when); a remembered code the module
+  rejects is forgotten rather than kept with a per-row "ask again" flag (which a remount or a later
+  write reset). (7) A
+  profile-documented code pre-fills the sheet but does not skip it — only the user's own
+  remembered entry skips it. (8) Restores (backup / known default) on a login channel go through
+  the same login step. (9) Plan 13's import does not exist yet; the garage JSON export already
+  carries `loginCodes` (10) Review fixes: a registry car's code-book lookup reads
+  only its primary login-book key, and a code remembered before the VIN was known only pre-fills
+  the sheet once a VIN is known (an earlier merge of both keys let one car send — and on rejection
+  delete — another car's code); the `2B` request is redacted in the adapter log and replay
+  fixtures (the plan only kept the code out of the error log); the KWP session cache is shared by
+  every row through a screen-level context instead of one per row.
+
 ## Plan 18 — Backup and restore, export everything (2026-11-09)
 
 [Plan 18](./plans/18-backup-restore.md) landed: **Settings → Data** and **More → Backup & restore**

@@ -33,3 +33,4 @@ export function vehicleLabel(profile: VehicleProfile): string {
 export * from './types';
 export * from './vinSuggest';
 export * from './userVehicle';
+export * from './loginBook';

@@ -2,7 +2,7 @@
  *  the tests. See docs/simulator.md. */
 
 import { SimScenario } from './MockTransport';
-import { getVehicleProfile } from '../../vehicles';
+import { getVehicleProfile, type VehicleProfile } from '../../vehicles';
 import { isKLine, ProtocolId } from '../obd/protocols';
 import { asciiToBytes } from '../../lib/bytes';
 
@@ -35,6 +35,42 @@ const SAMPLE_CALIDS: Record<string, string> = {
   'fiat-punto-2008-12': '55230047AA',
   'passat-b55-19tdi': '038906019KC 4896',
 };
+
+/** Simulator-only KWP login placeholders (plan 22), per profile: ATSH header -> the code the
+ *  SIMULATED module accepts, so the login sheet can be walked end to end in the in-app simulator.
+ *  `12345` is a demo value, not a login code for any real module — the app ships no login codes
+ *  (the code book holds only what the owner enters). A code the profile documents from the
+ *  owner's VCDS logs (`loginCodes`) replaces it. */
+const SIM_KWP_LOGINS: Record<string, NonNullable<SimScenario['kwpLogins']>> = {
+  'passat-b55-19tdi': { '8101F1': { code: 12345 } },
+};
+
+const normAddress = (address: string) => address.trim().toUpperCase();
+
+/** The login codes the simulated KWP modules accept, per ATSH header: the simulator-only
+ *  placeholder for `profileId`, replaced on every KWP channel's header by a code the profile
+ *  documents (`loginCodes`) for that channel's module address. Addresses match the way the app's
+ *  code book resolves them (`loginCodeFor`: trimmed, case-insensitive), so a code the app would
+ *  send is the code the simulator accepts. Empty when the profile has no KWP channel. */
+export function kwpLoginSeeds(
+  profileId: string,
+  profile: Pick<VehicleProfile, 'adaptations' | 'loginCodes'>,
+): NonNullable<SimScenario['kwpLogins']> {
+  const kwpChannels = (profile.adaptations ?? []).filter((a) => a.transport === 'kwp');
+  if (!kwpChannels.length) return {};
+  const seeds: NonNullable<SimScenario['kwpLogins']> = { ...(SIM_KWP_LOGINS[profileId] ?? {}) };
+  for (const entry of profile.loginCodes ?? []) {
+    const address = normAddress(entry.address);
+    for (const ch of kwpChannels) {
+      if (!ch.address || normAddress(ch.address) !== address) continue;
+      seeds[ch.reqHeader] = {
+        code: entry.code,
+        ...(entry.wsc !== undefined ? { wsc: entry.wsc } : {}),
+      };
+    }
+  }
+  return seeds;
+}
 
 /** Per-profile `ATMA` streams (played cyclically, one line per 30 ms). The Golf Plus (PQ35) OBD
  *  port sits behind the gateway, so a sniff there sees diagnostic traffic, not the powertrain bus:
@@ -105,12 +141,25 @@ export function buildScenario(
         return acc;
       }, {})
     : undefined;
-  const adaptationSeeds = profile.adaptations?.length
-    ? profile.adaptations.reduce<Record<string, Record<string, number[]>>>((acc, a) => {
+  const udsChannels = (profile.adaptations ?? []).filter((a) => (a.transport ?? 'uds') === 'uds');
+  const adaptationSeeds = udsChannels.length
+    ? udsChannels.reduce<Record<string, Record<string, number[]>>>((acc, a) => {
         (acc[a.reqHeader] ??= {})[a.did] = a.sampleValue.slice();
         return acc;
       }, {})
     : undefined;
+  // KWP adaptation channels (plan 22): local identifiers per header, the login-gated lids, and the
+  // login codes the simulated module accepts: the simulator-only placeholder, replaced by any code
+  // the PROFILE documents (none ship). Tests pass `kwpLogins` explicitly to pin their own.
+  const kwpChannels = (profile.adaptations ?? []).filter((a) => a.transport === 'kwp');
+  const kwpLocals = kwpChannels.length
+    ? kwpChannels.reduce<Record<string, Record<string, number[]>>>((acc, a) => {
+        (acc[a.reqHeader] ??= {})[a.did] = a.sampleValue.slice();
+        return acc;
+      }, {})
+    : undefined;
+  const kwpLoginRequired = kwpChannels.filter((a) => a.login).map((a) => a.did);
+  const kwpLogins = kwpLoginSeeds(profileId, profile);
   const udsModules = (profile.modules ?? []).filter((m) => m.transport === 'uds' && m.reqHeader);
   const moduleDtcs = udsModules.length
     ? udsModules.reduce<NonNullable<SimScenario['moduleDtcs']>>((acc, m) => {
@@ -218,6 +267,9 @@ export function buildScenario(
     iuprCompression,
     monitorFrames,
     secondaryEcus: SIM_SECONDARY_ECUS[profileId],
+    kwpLocals,
+    kwpLogins: Object.keys(kwpLogins).length ? kwpLogins : undefined,
+    kwpLoginRequired: kwpLoginRequired.length ? kwpLoginRequired : undefined,
     latencyMs: kline ? 5 : 0,
     emitSearching: kline,
   };

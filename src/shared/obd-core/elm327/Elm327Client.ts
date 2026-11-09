@@ -10,6 +10,7 @@
  *     can never resolve the next command. */
 
 import { Transport } from '../transport/Transport';
+import { redactCommand } from '../transport/redact';
 import { bytesToString, stringToBytes } from '../../lib/bytes';
 import { parseElmResponse, ParsedResponse } from './responseParser';
 import { ProtocolId, protocolFromElmNumber } from '../obd/protocols';
@@ -242,7 +243,7 @@ export class Elm327Client {
           this.lastCmd = null;
           // The reply may still be on its way: drain it so it can't resolve the next command.
           this.startDrain();
-          reject(new Error(`ELM327 timeout after ${timeout}ms for "${cmd}"`));
+          reject(new Error(`ELM327 timeout after ${timeout}ms for "${redactCommand(cmd)}"`));
         }
       }, timeout);
       this.pending = { resolve, reject, timer };

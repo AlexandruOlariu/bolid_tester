@@ -20,6 +20,7 @@ import { useDashboardLayoutStore } from '@/features/live-data/model/dashboardLay
 import { useOnboardingStore } from '@/features/onboarding/model/onboardingStore';
 import { useAlertsStore } from '@/features/alerts/model/alertsStore';
 import { useNotificationsStore } from '@/features/notifications/model/notificationsStore';
+import { useLoginBookStore } from '@/features/adaptations/model/loginBookStore';
 import { countItems } from '@/shared/lib/backup';
 import { historyCsv, maintenanceCsv, maintenanceEntryCount, scansCsv } from './storeCsv';
 
@@ -128,6 +129,14 @@ export const PERSISTED_STORES: PersistedStoreRef[] = [
   ref('bolid.settings', 'Settings', useSettingsStore, { count: none }),
   ref('bolid.garage', 'Garage (my cars)', useGarageStore),
   ref('bolid.vehicle', 'Selected vehicle', useVehicleStore, { count: none }),
+  ref('bolid.loginBook', 'Module login codes (code book)', useLoginBookStore, {
+    count: (state) => {
+      const byVehicle = (state as { byVehicle?: Record<string, unknown[]> } | null)?.byVehicle;
+      return byVehicle
+        ? Object.values(byVehicle).reduce((n, l) => n + (Array.isArray(l) ? l.length : 0), 0)
+        : 0;
+    },
+  }),
   ref('bolid.history', 'History (diagnoses, fault-code checks, reports)', useHistoryStore, {
     csv: historyCsv,
   }),

@@ -44,8 +44,9 @@ Garage cars and learned profiles landed with [plan 06](../plans/06-garage-learne
 ## Garage cars and learned profiles
 
 A garage car is a `UserVehicle` (`src/shared/vehicles/userVehicle.ts`):
-`{ id: 'user:<random>', name, year?, fuel, make?, baseProfileId, learned?, notes?, createdAt,
-updatedAt }`. `learned` is a `LearnedIdentity` read from the live `SessionInfo`
+`{ id: 'user:<random>', name, year?, fuel, make?, baseProfileId, learned?, notes?, loginCodes?,
+createdAt, updatedAt }`. `loginCodes` is the car's **code book** (plan 22): KWP module login codes
+the user chose to remember on the [Adaptations](./adaptations.md#code-book) screen. `learned` is a `LearnedIdentity` read from the live `SessionInfo`
 (`learnedFromSessionInfo`): protocol, the observed Mode 01 PID set, VIN, calibration id, adapter
 version, `learnedAt`.
 
@@ -57,9 +58,18 @@ version, `learnedAt`.
   `vinPatterns` = the learned VIN's first 8 characters, else the base's; `dtcModes` from the base;
 - the per-car experimental arrays (`extendedPids`, `modules`, `adaptations`, `routines`,
   `codingModules`, `codingPresets`, `serviceReset`, `moduleSensors`, `mode06Tests`,
-  `gatewayInstallList`) copied from the base **only when the base is not `generic`** — picking e.g.
-  the Golf as base is an explicit opt-in to the Golf's illustrative data;
+  `gatewayInstallList`, and any documented `loginCodes`) copied from the base **only when the base
+  is not `generic`** — picking e.g. the Golf as base is an explicit opt-in to the Golf's
+  illustrative data;
 - never `knownFaults`; `testChecklist` is `[]`.
+
+**Login codes in the editor.** Editing a garage car shows a **Login codes** section: one row per
+module (address, purpose, the code masked as `•••••` with a **Show** / **Hide** toggle) and
+**Delete**. A deletion takes effect on **Save** (Cancel keeps the code). A new car has no section —
+codes are added only by ticking **Remember for this car** in the login sheet. A registry car's
+remembered codes live in the login book (`bolid.loginBook`) instead and are forgotten from the
+Adaptations screen. Persisted codes are sanitized on load (`sanitizeLoginCodes`). The garage JSON
+export carries them.
 
 Fault guides are curated per registry profile; a garage car uses its base profile's guides
 (`curatedProfileId`).

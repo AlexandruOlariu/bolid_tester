@@ -194,4 +194,35 @@ describe('VehicleEditorSheet', () => {
     expect(save).toHaveBeenCalledWith([car]);
     save.mockRestore();
   });
+
+  it("lists the car's login codes masked, reveals one, and deletes it on Save (plan 22)", () => {
+    const car = useGarageStore.getState().add({
+      name: 'My Passat',
+      fuel: 'diesel',
+      baseProfileId: 'passat-b55-19tdi',
+      loginCodes: [
+        { address: '01', code: 1234, purpose: 'Idle speed adaptation', source: 'user-entered' },
+      ],
+    });
+    renderWithProviders(<EditorBody vehicle={car} onClose={jest.fn()} />);
+
+    expect(screen.getByText('Login codes')).toBeTruthy();
+    expect(screen.getByText('Module 01 · Idle speed adaptation')).toBeTruthy();
+    expect(screen.getByText('Code •••••')).toBeTruthy();
+    expect(screen.queryByText('Code 01234')).toBeNull();
+    fireEvent.press(screen.getByLabelText('Show login code for module 01'));
+    expect(screen.getByText('Code 01234')).toBeTruthy();
+
+    fireEvent.press(screen.getByLabelText('Delete login code for module 01'));
+    expect(screen.getByText('No login codes saved for this car.')).toBeTruthy();
+    // Not gone until Save.
+    expect(useGarageStore.getState().vehicles[0].loginCodes).toHaveLength(1);
+    fireEvent.press(screen.getByText('Save'));
+    expect(useGarageStore.getState().vehicles[0].loginCodes).toBeUndefined();
+  });
+
+  it('a new car has no login-codes section', () => {
+    renderWithProviders(<EditorBody vehicle={null} onClose={jest.fn()} />);
+    expect(screen.queryByText('Login codes')).toBeNull();
+  });
 });

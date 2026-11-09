@@ -45,6 +45,20 @@ from a vehicle profile.
   DIDs, the engine module's `sampleIdent.F187` as ASCII on the default header (the Golf answers
   `22 F187` with `03L906022LM`), so the label pack and its measuring groups resolve in the simulator
   (plan 14). The live poll loop reads `22:<DID>` keys the same way (`pollExtendedOnce`).
+- **KWP login and local identifiers (plan 22):** `kwpLocals` (header, or `'*'` for the
+  functional / single K-line ECU → local id → mutable bytes), `kwpLogins` (header | `'*'` →
+  `{ code, wsc? }`, the codes the simulated module accepts) and `kwpLoginRequired` (local ids whose
+  write needs a login). `2B` + 10 hex compares against `kwpLogins` → `6B`, or `7F 2B 35` for a
+  wrong code (`7F 2B 11` when the module has no login); `21 <lid>` → `61 <lid> <bytes>`, else
+  `NO DATA`; `3B <lid> <data>` → `7B <lid>` and stored, `7F 3B 33` when the lid needs a login and
+  none succeeded in this session, `7F 3B 31` for an unknown lid. A `10 xx` restarts the session
+  and drops that header's login, like a real module. `buildScenario` seeds `kwpLocals` and
+  `kwpLoginRequired` from channels with `transport: 'kwp'` (their `sampleValue`; KWP channels are
+  not put in the UDS `coding` store) and `kwpLogins` from a **simulator-only placeholder**
+  (`SIM_KWP_LOGINS`: the Passat engine accepts `12345`, a demo value that is not a login code for
+  any real module) replaced by any code the profile documents in `loginCodes` (`kwpLoginSeeds`;
+  module addresses match trimmed and case-insensitive, like the app's `loginCodeFor`). Tests pin
+  their own code with a `kwpLogins` override.
 - **Bus monitor (`ATMA`):** streams the scenario's `monitorFrames` cyclically (one line per 30 ms,
   no prompt) until any byte interrupts it. The **Golf** streams 30 illustrative frames across 4 ids
   (TP2.0 channel setup `200`→`201`, tester session `7E0`→`7E8`) so a saved sniffer capture has real
@@ -135,7 +149,9 @@ that got no reply are skipped.
   replay fixture** ([settings](./features/settings.md)). The log keeps the last 300 lines
   (`ADAPTER_LOG_CAPACITY`); when it wraps, Settings says so and the export records
   `meta.droppedEntries`. The adapter log and `RecordingTransport`
-  share one normalisation (`logTxText` / `logRxText`): rx chunks keep their line breaks.
+  share one normalisation (`logTxText` / `logRxText`): rx chunks keep their line breaks, and a KWP
+  login (`2B` + code) is logged as `2B <login code redacted>` (`transport/redact.ts`), so a
+  fixture never carries a login code.
 - **The simulator:** `RecordingTransport` (`transport/recordingTransport.ts`) wraps any transport
   and records tx/rx as `LoggedIo`; `recordSession(inner, run, meta, options?)` runs a scripted
   session over it (the callback calls `connect()` itself), disconnects (also on error) and returns `fixtureFromLog(log, meta.flow, { meta })`.
