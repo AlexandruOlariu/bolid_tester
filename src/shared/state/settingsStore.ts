@@ -6,7 +6,8 @@
  *  `adapterLog.ts`. This store no longer holds any log.
  *
  *  The AI `apiKey` is kept in runtime state but is NOT written to the settings file — it lives in the
- *  OS keystore (expo-secure-store), moved there on startup by `hydrateApiKey()` (finding F8). */
+ *  OS keystore (expo-secure-store), one slot per AI provider, moved there on startup by
+ *  `hydrateApiKey()` (finding F8, plan 19). */
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { fileStateStorage } from './persistStorage';
@@ -14,9 +15,18 @@ import { logError } from './errorLogStore';
 import {
   secureGetApiKey,
   secureSetApiKey,
+  secureGetLegacyApiKey,
+  secureDeleteLegacyApiKey,
   redactApiKey,
   planApiKeyHydration,
 } from './secureApiKey';
+import {
+  type AiProviderId,
+  type AiProviderMemory,
+  applyProviderPreset,
+  inferProvider,
+  isAiProviderId,
+} from '@/shared/obd-core';
 
 export type AdapterSource = 'mock' | 'ble';
 export type ThemePref = 'system' | 'light' | 'dark';
@@ -27,18 +37,25 @@ export type UnitSystem = 'metric' | 'imperial';
 /** Structured-output mode for the AI request (see obd-core `buildChatRequestBody`). */
 export type AiJsonMode = 'schema' | 'object' | 'off';
 
-/** Connection + behaviour settings for the AI auto-diagnosis feature (an OpenAI-compatible server
- *  such as LM Studio). Mirrors `AiClientConfig` in obd-core, plus an `enabled` toggle. */
+/** Connection + behaviour settings for the AI auto-diagnosis feature. Mirrors `AiClientConfig` in
+ *  obd-core, plus an `enabled` toggle and the provider preset (plan 19). */
 export interface AiSettings {
   enabled: boolean;
+  /** Which provider preset the settings follow (local server, OpenAI, Anthropic, custom). Picks the
+   *  wire in `getAiClient` and the keystore slot of `apiKey`. */
+  provider: AiProviderId;
   /** Server base URL, with or without a trailing `/v1` (normalised when used). */
   baseUrl: string;
   model: string;
-  /** Optional bearer token; most local servers ignore it. */
+  /** The current provider's API key, runtime only: never written to the settings file (it lives in
+   *  the keystore slot `bolid.ai.apiKey.<provider>`). Most local servers ignore it. */
   apiKey: string;
   timeoutMs: number;
   /** Structured-output mode: 'schema' (json_schema), 'object' (json_object), or 'off' (plain text). */
   jsonMode: AiJsonMode;
+  /** URL / model / output mode last used with each other provider, restored when switching back
+   *  (`applyProviderPreset`). Never holds a key. */
+  remembered: Partial<Record<AiProviderId, AiProviderMemory>>;
 }
 
 export interface SettingsState {
@@ -67,11 +84,13 @@ export interface SettingsState {
 
 export const DEFAULT_AI_SETTINGS: AiSettings = {
   enabled: true,
+  provider: 'local',
   baseUrl: '',
   model: '',
   apiKey: '',
   timeoutMs: 30000,
   jsonMode: 'schema',
+  remembered: {},
 };
 
 /** Codes the simulator accepts for injection: a letter (P/C/B/U), a first digit 0–3, then three hex
@@ -91,15 +110,18 @@ export function parseDtcList(text: string): string[] {
 }
 
 /** Persisted settings schema version. v2 = production defaults (real adapter, no injected DTC);
- *  v3 = auto-reconnect on by default (plan 12); v4 = VIN auto-select of garage cars (plan 06). */
-export const SETTINGS_VERSION = 4;
+ *  v3 = auto-reconnect on by default (plan 12); v4 = VIN auto-select of garage cars (plan 06);
+ *  v5 = AI provider presets (plan 19). */
+export const SETTINGS_VERSION = 5;
 
 /** Step a persisted blob up to `SETTINGS_VERSION`. Each step only fills *missing* fields with the new
  *  default — an explicit stored choice always survives (a tester who chose the simulator, or turned
  *  auto-reconnect off, must not be flipped under them).
  *   - v1 → v2: production defaults (`adapterSource: 'ble'`, `injectedDtcs: []`).
  *   - v2 → v3: `autoReconnect: true`.
- *   - v3 → v4: `autoSelectByVin: true`. */
+ *   - v3 → v4: `autoSelectByVin: true`.
+ *   - v4 → v5: `ai.provider` inferred from the stored server URL (`inferProvider`: api.openai.com →
+ *     openai, api.anthropic.com → anthropic, blank → local, anything else → custom). */
 export function migrateSettings(persisted: unknown, fromVersion: number): Partial<SettingsState> {
   let p = { ...((persisted ?? {}) as Partial<SettingsState>) };
   if (fromVersion < 2) {
@@ -110,6 +132,16 @@ export function migrateSettings(persisted: unknown, fromVersion: number): Partia
   }
   if (fromVersion < 4) {
     p = { ...p, autoSelectByVin: p.autoSelectByVin ?? true };
+  }
+  if (fromVersion < 5 && p.ai) {
+    const ai = p.ai as Partial<AiSettings>;
+    p = {
+      ...p,
+      ai: {
+        ...ai,
+        provider: isAiProviderId(ai.provider) ? ai.provider : inferProvider(ai.baseUrl ?? ''),
+      } as AiSettings,
+    };
   }
   return p;
 }
@@ -139,14 +171,25 @@ export const useSettingsStore = create<SettingsState>()(
       setAutoReconnect: (autoReconnect) => set({ autoReconnect }),
       setAutoSelectByVin: (autoSelectByVin) => set({ autoSelectByVin }),
       setTheme: (theme) => set({ theme }),
-      setAi: (patch) =>
-        set((s) => {
-          // A changed apiKey is written to the OS keystore, never to the settings file (F8).
-          // Best-effort: secureSetApiKey logs a warning and returns false when the keystore is
-          // unavailable, in which case the key lives only in memory for the session.
-          if (patch.apiKey !== undefined) void secureSetApiKey(patch.apiKey);
-          return { ai: { ...s.ai, ...patch } };
-        }),
+      setAi: (patch) => {
+        const prev = useSettingsStore.getState().ai;
+        const { provider, ...rest } = patch;
+        const switching = provider !== undefined && provider !== prev.provider;
+        // A provider switch applies that provider's preset (URL / model / output mode) and swaps in
+        // its own key: the in-memory one at once, then the keystore slot (loadApiKeyFor).
+        let next: AiSettings = switching ? applyProviderPreset(prev, provider) : prev;
+        if (switching) next = { ...next, apiKey: sessionKeys.get(next.provider) ?? '' };
+        next = { ...next, ...rest };
+        // A changed apiKey is written to the provider's keystore slot, never to the settings file
+        // (F8). Best-effort: secureSetApiKey logs a warning and returns false when the keystore is
+        // unavailable, in which case the key lives only in memory for the session.
+        if (rest.apiKey !== undefined) {
+          sessionKeys.set(next.provider, rest.apiKey);
+          void secureSetApiKey(next.provider, rest.apiKey);
+        }
+        set({ ai: next });
+        if (switching && rest.apiKey === undefined) void loadApiKeyFor(next.provider, next.apiKey);
+      },
     }),
     {
       name: 'bolid.settings',
@@ -171,7 +214,9 @@ export const useSettingsStore = create<SettingsState>()(
       // then migrates it into the keystore and rewrites the file without it.
       merge: (persisted, current) => {
         const p = (persisted ?? {}) as Partial<SettingsState>;
-        return { ...current, ...p, ai: { ...current.ai, ...(p.ai ?? {}) } };
+        const ai = { ...current.ai, ...(p.ai ?? {}) };
+        if (!isAiProviderId(ai.provider)) ai.provider = inferProvider(ai.baseUrl);
+        return { ...current, ...p, ai };
       },
       // Once the persisted blob is in memory, reconcile the apiKey with the keystore (migrate a legacy
       // plaintext key out of the file, or load the stored key into runtime state).
@@ -183,26 +228,61 @@ export const useSettingsStore = create<SettingsState>()(
   ),
 );
 
-/** Startup reconciliation of the AI apiKey with the OS keystore (finding F8). Runs once the settings
- *  store has hydrated (wired to `onRehydrateStorage`):
- *   - a legacy plaintext key found in the settings blob is moved into the keystore, then a partialized
- *     rewrite strips it from `bolid.settings.json` (the key stays in runtime state), and
- *   - otherwise the keystore key, if any, is loaded into runtime state.
- *  Best-effort and idempotent — degrades to in-memory-only when the keystore is unavailable. */
+/** Keys entered this session, per provider. Keeps a provider switch working when the keystore is
+ *  unavailable (Expo Go, web, tests), where keys live in memory only (documented degradation). */
+const sessionKeys = new Map<AiProviderId, string>();
+
+/** Load `provider`'s key from its keystore slot into runtime state, unless the user switched away
+ *  again or typed a key meanwhile (the runtime key is no longer `shownKey`, the one set on the
+ *  switch). Writes runtime state only; never the keystore. */
+async function loadApiKeyFor(provider: AiProviderId, shownKey: string): Promise<void> {
+  try {
+    const key = await secureGetApiKey(provider);
+    if (key === null) return;
+    const { ai } = useSettingsStore.getState();
+    if (ai.provider !== provider || ai.apiKey !== shownKey) return;
+    useSettingsStore.setState({ ai: { ...ai, apiKey: key } });
+  } catch (e) {
+    logError({ source: 'secure-store/load', error: e, severity: 'warning' });
+  }
+}
+
+/** Startup reconciliation of the AI apiKey with the OS keystore (finding F8, per provider since
+ *  plan 19). Runs once the settings store has hydrated (wired to `onRehydrateStorage`):
+ *   - a pre-F8 plaintext key found in the settings blob is moved into the current provider's slot,
+ *     then a partialized rewrite strips it from `bolid.settings.json` (the key stays in runtime state),
+ *   - otherwise the provider's slot key, if any, is loaded into runtime state,
+ *   - otherwise a pre-plan-19 single-slot key (`bolid.ai.apiKey`) is moved into the provider's slot,
+ *  and the legacy single slot is deleted once read, but only when its key is safe (loaded from the
+ *  provider slot, or the move into it succeeded). Best-effort and idempotent — degrades to
+ *  in-memory-only when the keystore is unavailable. */
 export async function hydrateApiKey(): Promise<void> {
   try {
-    const blobKey = useSettingsStore.getState().ai.apiKey;
-    // Only touch the keystore when there is no legacy key to migrate (migration overwrites it anyway).
-    const secureKey = blobKey && blobKey.trim() ? null : await secureGetApiKey();
-    const plan = planApiKeyHydration(blobKey, secureKey);
+    const { provider, apiKey: blobKey } = useSettingsStore.getState().ai;
+    const hasPlaintext = !!(blobKey && blobKey.trim());
+    // Only touch the provider slot when there is no plaintext key to migrate (migration overwrites it).
+    const secureKey = hasPlaintext ? null : await secureGetApiKey(provider);
+    const legacyKey = await secureGetLegacyApiKey();
+    const plan = planApiKeyHydration(provider, blobKey, secureKey, legacyKey);
+    // The legacy slot may only go once its key is safe elsewhere: a failed move keeps it, so the
+    // next start retries the migration instead of losing the key.
+    let legacySafeToDrop = plan.action !== 'migrate';
     if (plan.action === 'migrate') {
-      await secureSetApiKey(plan.key);
-      // Force a partialized write so the plaintext key leaves bolid.settings.json now; the spread
-      // keeps the key in runtime state (partialize redacts it on the way to disk).
-      useSettingsStore.setState((s) => ({ ai: { ...s.ai } }));
+      legacySafeToDrop = await secureSetApiKey(plan.provider, plan.key);
+      sessionKeys.set(plan.provider, plan.key);
+      // Force a partialized write so a plaintext key leaves bolid.settings.json now; the key is set
+      // in runtime state (partialize redacts it on the way to disk).
+      useSettingsStore.setState((s) =>
+        s.ai.provider === plan.provider
+          ? { ai: { ...s.ai, apiKey: plan.key } }
+          : { ai: { ...s.ai } },
+      );
     } else if (plan.action === 'load') {
-      useSettingsStore.getState().setAi({ apiKey: plan.key });
+      const { ai } = useSettingsStore.getState();
+      if (ai.provider === plan.provider && !ai.apiKey)
+        useSettingsStore.setState({ ai: { ...ai, apiKey: plan.key } });
     }
+    if (plan.dropLegacy && legacySafeToDrop) await secureDeleteLegacyApiKey();
   } catch (e) {
     logError({ source: 'secure-store/hydrate', error: e, severity: 'warning' });
   }

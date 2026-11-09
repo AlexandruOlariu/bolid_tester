@@ -7,9 +7,16 @@ import {
   overallFromFindings,
   parseAiReport,
   buildDiagnosisMessages,
+  buildFollowUpMessages,
+  buildFollowUpSystemPrompt,
+  buildSystemPrompt,
+  followUpSuggestions,
+  MAX_FOLLOWUP_TURNS,
+  SUGGESTED_FOLLOWUPS,
   DiagnosticSnapshot,
   AiChatMessage,
   AiFinding,
+  AiReport,
 } from './aiDiagnosis';
 import type { LiveValue } from '../session/DiagnosticSession';
 
@@ -323,5 +330,103 @@ describe('focused diagnosis (Explain with AI)', () => {
     );
     const generic = localHeuristicReport(snapshot(), { focusCode: 'P1557' });
     expect(generic.findings[0].detail).not.toMatch(/charge pressure/i);
+  });
+});
+
+describe('guide citations (plan 19)', () => {
+  const guides = [
+    { code: 'P0401', note: 'EGR flow/position fault. Run the EGR valve output test.' },
+    { code: 'P2015', note: 'Intake manifold flap (V157). Run the V157 basic setting.' },
+  ];
+
+  it('summarizeSnapshot appends the known checks for this car', () => {
+    const text = summarizeSnapshot(snapshot(), guides);
+    expect(text).toContain('Known checks for this car:');
+    expect(text).toContain('- P0401: EGR flow/position fault.');
+    expect(text.indexOf('Known checks')).toBeGreaterThan(text.indexOf('Live readings'));
+  });
+
+  it('uses the snapshot guides by default and adds nothing without any', () => {
+    expect(summarizeSnapshot(snapshot({ guides }))).toContain('- P2015: Intake manifold flap');
+    expect(summarizeSnapshot(snapshot())).not.toContain('Known checks');
+    expect(buildDiagnosisMessages(snapshot({ guides }))[1].content).toContain('Known checks');
+  });
+
+  it('the system prompt asks the model to mention a listed check', () => {
+    expect(buildSystemPrompt()).toMatch(/known check.*mention it in `detail`/i);
+  });
+});
+
+describe('follow-up questions (plan 19)', () => {
+  const report: AiReport = {
+    overall: 'attention',
+    summary: 'EGR needs a look.',
+    findings: [{ title: 'EGR', severity: 'warn', detail: 'Flow low', codes: ['P0401'] }],
+    actions: [{ type: 'recheck', label: 'Re-run' }],
+    source: 'ai',
+    disclaimer: 'AI disclaimer',
+  };
+  const turns = (n: number): AiChatMessage[] =>
+    Array.from({ length: n }, (_, i) => ({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: `turn ${i}`,
+    }));
+
+  it('system, snapshot, report, conversation, question — in that order', () => {
+    const msgs = buildFollowUpMessages(snapshot(), report, turns(2), '  Is it safe to drive? ');
+    expect(msgs.map((m) => m.role)).toEqual([
+      'system',
+      'user',
+      'assistant',
+      'user',
+      'assistant',
+      'user',
+    ]);
+    expect(msgs[1].content).toContain('Vehicle: VW Golf Plus 2009');
+    expect(JSON.parse(msgs[2].content)).toEqual({
+      overall: 'attention',
+      summary: 'EGR needs a look.',
+      findings: report.findings,
+      actions: report.actions,
+    });
+    expect(msgs[3].content).toBe('turn 0');
+    expect(msgs[msgs.length - 1]).toEqual({ role: 'user', content: 'Is it safe to drive?' });
+  });
+
+  it('keeps only the last MAX_FOLLOWUP_TURNS conversation messages', () => {
+    expect(MAX_FOLLOWUP_TURNS).toBe(8);
+    const msgs = buildFollowUpMessages(snapshot(), report, turns(10), 'Next?');
+    const kept = msgs.slice(3, -1);
+    expect(kept).toHaveLength(MAX_FOLLOWUP_TURNS);
+    expect(kept[0].content).toBe('turn 2'); // turns 0 and 1 dropped
+    expect(kept[0].role).toBe('user');
+  });
+
+  it('the follow-up system prompt has no JSON schema hint and asks for a short plain answer', () => {
+    const sys = buildFollowUpSystemPrompt();
+    expect(sys).not.toContain('Return ONLY a JSON object');
+    expect(sys).not.toContain('"findings"');
+    expect(sys).toMatch(/120 words/);
+    expect(sys).toMatch(/cite codes by id/);
+    expect(buildSystemPrompt()).toContain('Return ONLY a JSON object');
+  });
+
+  it('suggestions resolve {code} from the report, or drop it', () => {
+    expect(SUGGESTED_FOLLOWUPS).toContain('What does {code} mean for this car?');
+    expect(followUpSuggestions(report)).toEqual([
+      'What should I check first?',
+      'Is it safe to drive?',
+      'Which finding is most urgent?',
+      'What does P0401 mean for this car?',
+    ]);
+    const noCodes = followUpSuggestions({ ...report, findings: [] });
+    expect(noCodes).toHaveLength(3);
+    expect(noCodes.join(' ')).not.toContain('{code}');
+  });
+
+  it('a focus code puts its question first', () => {
+    const s = followUpSuggestions(report, 'p2015');
+    expect(s[0]).toBe('What does P2015 mean for this car?');
+    expect(s.filter((q) => q.startsWith('What does'))).toHaveLength(1);
   });
 });

@@ -1,7 +1,8 @@
 /** Thin I/O wrapper around an OpenAI-compatible chat server (LM Studio, llama.cpp server, Ollama's
- *  OpenAI shim, etc.). The request/response *shaping* is pure and lives in obd-core
- *  (`analysis/aiDiagnosis`); this file only performs the network call, with a timeout and friendly
- *  errors. Lives in `shared` so features don't depend on one another. See docs/features/ai-diagnose.md. */
+ *  OpenAI shim, the OpenAI cloud API, etc.). The request/response *shaping* is pure and lives in
+ *  obd-core (`analysis/aiDiagnosis`); this file only performs the network call (through `http.ts`,
+ *  with a timeout and friendly errors). Lives in `shared` so features don't depend on one another.
+ *  See docs/features/ai-diagnose.md. */
 
 import {
   AiChatMessage,
@@ -10,42 +11,9 @@ import {
   extractMessageContent,
   normalizeBaseUrl,
 } from '@/shared/obd-core';
+import { AiClientError, fetchJson } from './http';
 
-export class AiClientError extends Error {}
-
-async function fetchJson(url: string, init: RequestInit, timeoutMs: number): Promise<unknown> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), Math.max(1000, timeoutMs));
-  let res: Response;
-  try {
-    res = await fetch(url, { ...init, signal: controller.signal });
-  } catch (e) {
-    const aborted = e instanceof Error && e.name === 'AbortError';
-    throw new AiClientError(
-      aborted
-        ? `Request timed out after ${Math.round(timeoutMs / 1000)}s. Is the server reachable at this address?`
-        : `Could not reach the AI server. Check the base URL and that the phone and server are on the same network. (${e instanceof Error ? e.message : String(e)})`,
-    );
-  } finally {
-    clearTimeout(timer);
-  }
-
-  if (!res.ok) {
-    let body = '';
-    try {
-      body = await res.text();
-    } catch {
-      // ignore
-    }
-    throw new AiClientError(`Server returned ${res.status} ${res.statusText}. ${body.slice(0, 300)}`.trim());
-  }
-
-  try {
-    return await res.json();
-  } catch {
-    throw new AiClientError('Server response was not valid JSON.');
-  }
-}
+export { AiClientError } from './http';
 
 function authHeaders(config: AiClientConfig): Record<string, string> {
   const h: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -53,7 +21,7 @@ function authHeaders(config: AiClientConfig): Record<string, string> {
   return h;
 }
 
-function requireBase(config: AiClientConfig): string {
+export function requireBase(config: AiClientConfig): string {
   const base = normalizeBaseUrl(config.baseUrl);
   if (!base) throw new AiClientError('No AI server URL is set. Add it in Settings → AI assistant.');
   return base;
@@ -81,14 +49,19 @@ export async function chatCompletion(
   config: AiClientConfig,
 ): Promise<string | null> {
   const base = requireBase(config);
-  if (!config.model) throw new AiClientError('No model is selected. Set one in Settings → AI assistant.');
+  if (!config.model)
+    throw new AiClientError('No model is selected. Set one in Settings → AI assistant.');
   const url = `${base}/chat/completions`;
   const headers = authHeaders(config);
   const timeout = config.timeoutMs ?? 30000;
   const body = buildChatRequestBody(messages, config);
 
   try {
-    const json = await fetchJson(url, { method: 'POST', headers, body: JSON.stringify(body) }, timeout);
+    const json = await fetchJson(
+      url,
+      { method: 'POST', headers, body: JSON.stringify(body) },
+      timeout,
+    );
     return extractMessageContent(json);
   } catch (e) {
     const isFormatRejection =

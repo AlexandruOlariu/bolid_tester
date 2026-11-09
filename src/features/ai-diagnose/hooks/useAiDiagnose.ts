@@ -3,17 +3,22 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { useHistoryStore } from '@/shared/state/historyStore';
 import { logError } from '@/shared/state/errorLogStore';
 import { getActiveProfile, useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
+import { curatedProfileId } from '@/shared/vehicles';
 import type { DiagnosisOptions } from '@/shared/obd-core';
 import { useAiDiagnoseStore } from '../model/aiDiagnoseStore';
 import * as diagnoseService from '../api/diagnoseService';
 
 /** Orchestrates a one-tap diagnosis: gather → analyse (AI or local) → store report + save to history.
  *  `run({ focusCode })` focuses the analysis on one fault code (fault-codes "Explain with AI").
- *  Also exposes a gated clear-codes that re-runs the diagnosis afterwards. */
+ *  `ask(question)` sends a follow-up question about the report (plan 19). Also exposes a gated
+ *  clear-codes that re-runs the diagnosis afterwards. */
 export function useAiDiagnose() {
   const status = useSessionStore((s) => s.status);
   // The selected car's DTC make, so a focused code reads the same as on the Faults screen.
-  const make = useActiveProfile().make;
+  const profile = useActiveProfile();
+  const make = profile.make;
+  // Fault guides are curated per registry profile; a garage car uses its base profile's guides.
+  const guideProfileId = curatedProfileId(profile);
   const {
     phase,
     progress,
@@ -22,6 +27,9 @@ export function useAiDiagnose() {
     error,
     ranAt,
     focusCode,
+    conversation,
+    asking,
+    askError,
     setFocusCode,
     setPhase,
     setSnapshot,
@@ -73,6 +81,43 @@ export function useAiDiagnose() {
     return ok;
   }, [run]);
 
+  const ask = useCallback(async (question: string): Promise<void> => {
+    const q = question.trim();
+    const st = useAiDiagnoseStore.getState();
+    if (!q || st.asking || !st.report || !st.snapshot) return;
+    st.setAsking(true);
+    // A re-run (new report, which also resets `asking`) or a Clear while the question is in flight
+    // makes its answer stale: drop it rather than add it to a conversation it was not asked in.
+    const stale = (): boolean => {
+      const cur = useAiDiagnoseStore.getState();
+      if (cur.report !== st.report) return true;
+      if (cur.conversation !== st.conversation) {
+        cur.setAsking(false);
+        return true;
+      }
+      return false;
+    };
+    try {
+      const answer = await diagnoseService.followUp(st.snapshot, st.report, st.conversation, q);
+      if (stale()) return;
+      useAiDiagnoseStore.getState().pushTurn(q, answer);
+    } catch (e) {
+      if (stale()) return;
+      useAiDiagnoseStore.getState().setAskError(e instanceof Error ? e.message : String(e));
+      logError({
+        source: 'ai-diagnose',
+        error: e,
+        severity: 'warning',
+        context: { phase: 'follow-up' },
+      });
+    }
+  }, []);
+
+  const clearConversation = useCallback(
+    () => useAiDiagnoseStore.getState().clearConversation(),
+    [],
+  );
+
   const busy = phase === 'gathering' || phase === 'analyzing';
 
   return {
@@ -85,8 +130,14 @@ export function useAiDiagnose() {
     ranAt,
     focusCode,
     make,
+    guideProfileId,
     busy,
     run,
     clearCodes,
+    conversation,
+    asking,
+    askError,
+    ask,
+    clearConversation,
   };
 }

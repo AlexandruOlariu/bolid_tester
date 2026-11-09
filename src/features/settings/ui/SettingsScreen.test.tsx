@@ -1,10 +1,11 @@
 import React from 'react';
-import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { connectSimulator } from '@test/simulator';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { APP_VERSION } from '@/shared/lib/appInfo';
+import { setAiFetch } from '@/shared/ai';
 import {
   ADAPTER_LOG_CAPACITY,
   appendAdapterLog,
@@ -197,5 +198,98 @@ describe('SettingsScreen', () => {
       expect(screen.getByText(/The log is full: the oldest 5 lines were dropped/)).toBeTruthy(),
     );
     expect(screen.queryByText(/Clear the log before recording the next flow/)).toBeNull();
+  });
+});
+
+describe('SettingsScreen AI provider (plan 19)', () => {
+  afterEach(() => setAiFetch(null));
+
+  it('Anthropic fills the URL and model, hides Structured output and shows the key field', async () => {
+    renderWithProviders(<SettingsScreen />);
+    expect(screen.getByTestId('ai-structured-output')).toBeTruthy();
+    expect(screen.queryByLabelText('Anthropic API key')).toBeNull();
+
+    fireEvent.press(screen.getByText('Anthropic'));
+
+    await waitFor(() => expect(useSettingsStore.getState().ai.provider).toBe('anthropic'));
+    const { ai } = useSettingsStore.getState();
+    expect(ai.baseUrl).toBe('https://api.anthropic.com');
+    expect(ai.model).toBe('claude-sonnet-5-5');
+    expect(ai.jsonMode).toBe('off');
+    expect(screen.getByTestId('ai-fixed-url')).toHaveTextContent('https://api.anthropic.com');
+    expect(screen.queryByTestId('ai-structured-output')).toBeNull();
+    expect(screen.getByLabelText('Anthropic API key')).toBeTruthy();
+    expect(screen.getByText(/secure keystore, never in backups/)).toBeTruthy();
+    expect(screen.getByText(/console\.anthropic\.com/)).toBeTruthy();
+  });
+
+  it('Edit on a cloud URL flips to Custom and keeps the address', async () => {
+    renderWithProviders(<SettingsScreen />);
+    fireEvent.press(screen.getByText('OpenAI'));
+    await waitFor(() => expect(useSettingsStore.getState().ai.provider).toBe('openai'));
+
+    fireEvent.press(screen.getByLabelText('Edit the server address (switches to Custom)'));
+
+    const { ai } = useSettingsStore.getState();
+    expect(ai.provider).toBe('custom');
+    expect(ai.baseUrl).toBe('https://api.openai.com');
+    expect(screen.queryByTestId('ai-fixed-url')).toBeNull();
+    expect(screen.getByLabelText('Custom API key')).toBeTruthy();
+  });
+
+  it('Test connection on Anthropic calls the Messages API models list with the key', async () => {
+    const calls: { url: string; headers: Record<string, string> }[] = [];
+    setAiFetch(async (url, init) => {
+      calls.push({ url, headers: init.headers as Record<string, string> });
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({ data: [{ id: 'claude-sonnet-5-5' }, { id: 'claude-opus-5-5' }] }),
+        text: async () => '',
+      } as Response;
+    });
+    renderWithProviders(<SettingsScreen />);
+    fireEvent.press(screen.getByText('Anthropic'));
+    fireEvent.changeText(screen.getByLabelText('Anthropic API key'), 'sk-ant-test');
+
+    fireEvent.press(screen.getByText('Test connection'));
+
+    expect(await screen.findByText(/Connected ✓ — 2 model\(s\)/)).toBeTruthy();
+    expect(calls[0].url).toMatch(/^https:\/\/api\.anthropic\.com\/v1\/models/);
+    expect(calls[0].headers['x-api-key']).toBe('sk-ant-test');
+    expect(useSettingsStore.getState().ai.apiKey).toBe('sk-ant-test');
+  });
+
+  it('a Detect that finishes after a provider switch does not touch the new provider', async () => {
+    let respond: () => void = () => {};
+    setAiFetch(
+      () =>
+        new Promise<Response>((resolve) => {
+          respond = () =>
+            resolve({
+              ok: true,
+              status: 200,
+              statusText: 'OK',
+              json: async () => ({ data: [{ id: 'lmstudio-local-model' }] }),
+              text: async () => '',
+            } as Response);
+        }),
+    );
+    useSettingsStore.setState((s) => ({
+      ai: { ...s.ai, provider: 'local', baseUrl: 'http://192.168.1.50:1234' },
+    }));
+    renderWithProviders(<SettingsScreen />);
+    fireEvent.press(screen.getByText('Detect model'));
+    expect(await screen.findByText('Connecting…')).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Anthropic'));
+    await waitFor(() => expect(useSettingsStore.getState().ai.provider).toBe('anthropic'));
+    await act(async () => respond());
+
+    await waitFor(() => expect(screen.getByText('Detect model')).toBeEnabled());
+    expect(useSettingsStore.getState().ai.model).toBe('claude-sonnet-5-5');
+    expect(screen.queryByText(/Connected ✓/)).toBeNull();
+    expect(screen.queryByText('Connecting…')).toBeNull();
   });
 });

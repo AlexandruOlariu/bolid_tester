@@ -36,6 +36,7 @@ export * from './analysis/fuelEconomy';
 export * from './analysis/chartBuffer';
 export * from './analysis/notifications';
 export * from './analysis/aiDiagnosis';
+export * from './analysis/aiProviders';
 export * from './analysis/battery';
 export * from './analysis/dpf';
 export * from './analysis/maintenance';

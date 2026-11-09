@@ -11,8 +11,13 @@ import {
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useGarageStore } from '@/shared/state/garageStore';
 import { VEHICLE_PROFILES } from '@/shared/vehicles';
-import { normalizeBaseUrl } from '@/shared/obd-core';
-import { listModels, AiClientError } from '@/shared/ai';
+import {
+  AI_PROVIDER_IDS,
+  AI_PROVIDER_PRESETS,
+  normalizeBaseUrl,
+  type AiProviderId,
+} from '@/shared/obd-core';
+import { getAiClient, AiClientError } from '@/shared/ai';
 import { logError } from '@/shared/state/errorLogStore';
 import { useLogFixtureExport } from '../hooks/useLogFixtureExport';
 import { DEFAULT_FLOW_NAME, fixtureVehicleId } from '../model/replayExport';
@@ -58,24 +63,43 @@ function AiSection() {
   const setAi = useSettingsStore((s) => s.setAi);
   const [testing, setTesting] = useState(false);
   const [statusText, setStatusText] = useState<string | null>(null);
+  const preset = AI_PROVIDER_PRESETS[ai.provider] ?? AI_PROVIDER_PRESETS.local;
+  const fixedUrl = !!preset.baseUrl;
+  const anthropic = preset.wire === 'anthropic-messages';
+
+  const switchProvider = (provider: AiProviderId) => {
+    setStatusText(null);
+    setAi({ provider });
+  };
 
   const test = async (autofillModel: boolean) => {
     setTesting(true);
     setStatusText('Connecting…');
+    // The owner may switch provider (or edit the address) while the request runs: its model list
+    // and status then belong to settings no longer shown, so they are dropped, not applied.
+    const stale = () => {
+      const cur = useSettingsStore.getState().ai;
+      if (cur.provider === ai.provider && cur.baseUrl === ai.baseUrl) return false;
+      setStatusText(null);
+      return true;
+    };
     try {
-      const models = await listModels(ai);
+      const models = await getAiClient(ai).listModels();
+      if (stale()) return;
       if (models.length === 0) {
         setStatusText(
           'Connected, but the server lists no models. Load a model on the server first.',
         );
       } else {
-        if (autofillModel) setAi({ model: models[0] });
+        // A cloud list is long: keep a listed model there; a local server's first model is the loaded one.
+        if (autofillModel && !(fixedUrl && models.includes(ai.model))) setAi({ model: models[0] });
         const shown = models.slice(0, 4).join(', ');
         setStatusText(
           `Connected ✓ — ${models.length} model(s): ${shown}${models.length > 4 ? '…' : ''}`,
         );
       }
     } catch (e) {
+      if (stale()) return;
       setStatusText(
         `Failed: ${e instanceof AiClientError || e instanceof Error ? e.message : String(e)}`,
       );
@@ -83,12 +107,14 @@ function AiSection() {
         source: 'settings/ai-test',
         error: e,
         severity: 'warning',
-        context: { baseUrl: ai.baseUrl },
+        context: { provider: ai.provider, baseUrl: ai.baseUrl },
       });
     } finally {
       setTesting(false);
     }
   };
+
+  const target = anthropic ? 'messages' : 'chat/completions';
 
   return (
     <YStack gap="$2">
@@ -103,22 +129,80 @@ function AiSection() {
 
           <YStack gap="$1">
             <Paragraph theme="alt2" fontSize="$2">
-              Server URL (OpenAI-compatible, e.g. LM Studio)
+              Provider
             </Paragraph>
-            <Input
-              value={ai.baseUrl}
-              onChangeText={(t) => setAi({ baseUrl: t })}
-              placeholder="http://192.168.1.50:1234"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-            />
+            <XStack gap="$2" flexWrap="wrap">
+              {AI_PROVIDER_IDS.map((id) => (
+                <Seg
+                  key={id}
+                  active={ai.provider === id}
+                  label={AI_PROVIDER_PRESETS[id].label}
+                  onPress={() => switchProvider(id)}
+                />
+              ))}
+            </XStack>
+            <Paragraph theme="alt2" fontSize="$1">
+              {preset.hint}
+            </Paragraph>
+          </YStack>
+
+          <YStack gap="$1">
+            <Paragraph theme="alt2" fontSize="$2">
+              {fixedUrl ? 'Server URL' : 'Server URL (OpenAI-compatible, e.g. LM Studio or Ollama)'}
+            </Paragraph>
+            {fixedUrl ? (
+              <XStack gap="$2" alignItems="center">
+                <Paragraph flex={1} fontSize="$3" testID="ai-fixed-url">
+                  {ai.baseUrl}
+                </Paragraph>
+                <Button
+                  size="$2"
+                  chromeless
+                  accessibilityLabel="Edit the server address (switches to Custom)"
+                  onPress={() =>
+                    setAi({ provider: 'custom', baseUrl: ai.baseUrl, model: ai.model })
+                  }
+                >
+                  Edit
+                </Button>
+              </XStack>
+            ) : (
+              <Input
+                value={ai.baseUrl}
+                onChangeText={(t) => setAi({ baseUrl: t })}
+                placeholder="http://192.168.1.50:1234"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+            )}
             {ai.baseUrl ? (
               <Paragraph theme="alt2" fontSize="$1">
-                → {normalizeBaseUrl(ai.baseUrl)}/chat/completions
+                → {normalizeBaseUrl(ai.baseUrl)}/{target}
               </Paragraph>
             ) : null}
           </YStack>
+
+          {ai.provider !== 'local' ? (
+            <YStack gap="$1">
+              <Paragraph theme="alt2" fontSize="$2">
+                {preset.needsKey ? 'API key' : 'API key (optional)'}
+              </Paragraph>
+              <Input
+                value={ai.apiKey}
+                onChangeText={(t) => setAi({ apiKey: t.trim() })}
+                placeholder={preset.needsKey ? 'Paste your API key' : 'Only if the server asks'}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                accessibilityLabel={`${preset.label} API key`}
+              />
+              <Paragraph theme="alt2" fontSize="$1">
+                Stored in the phone's secure keystore, never in backups. Each provider keeps its own
+                key.
+              </Paragraph>
+            </YStack>
+          ) : null}
 
           <YStack gap="$1">
             <Paragraph theme="alt2" fontSize="$2">
@@ -127,36 +211,39 @@ function AiSection() {
             <Input
               value={ai.model}
               onChangeText={(t) => setAi({ model: t })}
-              placeholder="e.g. qwen2.5-7b-instruct"
+              placeholder={preset.defaultModel || 'e.g. qwen2.5-7b-instruct'}
               autoCapitalize="none"
               autoCorrect={false}
             />
           </YStack>
 
-          <YStack gap="$1">
-            <XStack gap="$2" alignItems="center" flexWrap="wrap">
-              <Paragraph flex={1}>Structured output</Paragraph>
-              <Seg
-                active={ai.jsonMode === 'schema'}
-                label="Schema"
-                onPress={() => setAi({ jsonMode: 'schema' })}
-              />
-              <Seg
-                active={ai.jsonMode === 'object'}
-                label="JSON"
-                onPress={() => setAi({ jsonMode: 'object' })}
-              />
-              <Seg
-                active={ai.jsonMode === 'off'}
-                label="Off"
-                onPress={() => setAi({ jsonMode: 'off' })}
-              />
-            </XStack>
-            <Paragraph theme="alt2" fontSize="$1">
-              Schema = json_schema (LM Studio / current OpenAI). JSON = json_object (older OpenAI).
-              Off = plain text. The app auto-falls back to text if the server rejects the format.
-            </Paragraph>
-          </YStack>
+          {anthropic ? null : (
+            <YStack gap="$1" testID="ai-structured-output">
+              <XStack gap="$2" alignItems="center" flexWrap="wrap">
+                <Paragraph flex={1}>Structured output</Paragraph>
+                <Seg
+                  active={ai.jsonMode === 'schema'}
+                  label="Schema"
+                  onPress={() => setAi({ jsonMode: 'schema' })}
+                />
+                <Seg
+                  active={ai.jsonMode === 'object'}
+                  label="JSON"
+                  onPress={() => setAi({ jsonMode: 'object' })}
+                />
+                <Seg
+                  active={ai.jsonMode === 'off'}
+                  label="Off"
+                  onPress={() => setAi({ jsonMode: 'off' })}
+                />
+              </XStack>
+              <Paragraph theme="alt2" fontSize="$1">
+                Schema = json_schema (LM Studio / current OpenAI). JSON = json_object (older
+                OpenAI). Off = plain text. The app auto-falls back to text if the server rejects the
+                format.
+              </Paragraph>
+            </YStack>
+          )}
 
           <XStack gap="$2" alignItems="center" flexWrap="wrap">
             <Paragraph>Timeout</Paragraph>

@@ -59,6 +59,15 @@ export interface DiagnosticSnapshot {
   live: LiveValue[];
   /** Details of the selected/identified vehicle profile, given to the model as default context. */
   vehicle?: VehicleContext;
+  /** Curated per-car fault guides that match the read codes (plan 19), listed to the model as
+   *  "Known checks for this car" so its findings can point at them. */
+  guides?: KnownCheck[];
+}
+
+/** One curated check for a read fault code: the code and the guide's short note. */
+export interface KnownCheck {
+  code: string;
+  note: string;
 }
 
 export interface AiFinding {
@@ -154,8 +163,12 @@ function liveLine(v: LiveValue): string {
 }
 
 /** Deterministic, human-readable digest of the snapshot. Used both as the model's evidence and as
- *  the body of the local fallback report, so the two stay consistent. */
-export function summarizeSnapshot(s: DiagnosticSnapshot): string {
+ *  the body of the local fallback report, so the two stay consistent. `guides` (default: the
+ *  snapshot's own `guides`) appends a "Known checks for this car" section. */
+export function summarizeSnapshot(
+  s: DiagnosticSnapshot,
+  guides: KnownCheck[] | undefined = s.guides,
+): string {
   const lines: string[] = [];
   if (s.vehicle) {
     const v = s.vehicle;
@@ -211,6 +224,11 @@ export function summarizeSnapshot(s: DiagnosticSnapshot): string {
     for (const v of s.live) lines.push(liveLine(v));
   } else {
     lines.push('Live readings: none captured.');
+  }
+
+  if (guides && guides.length) {
+    lines.push('Known checks for this car:');
+    for (const g of guides) lines.push(`- ${g.code}: ${g.note}`);
   }
 
   return lines.join('\n');
@@ -412,24 +430,105 @@ const REPORT_SCHEMA_HINT = `Return ONLY a JSON object, no prose, no markdown fen
   ]
 }`;
 
+const PROMPT_INTRO = [
+  'You are an expert automotive diagnostic assistant embedded in a generic OBD2/EOBD scan-tool app.',
+  'You receive a snapshot read from a car’s engine/emissions ECU over a standard ELM327 adapter and',
+  'produce a concise, practical health assessment for the car’s owner.',
+];
+
+const PROMPT_RULES = [
+  '- The snapshot starts with the vehicle’s details (make/model/year/engine/fuel where known) — tailor your analysis to that specific car and its fuel type.',
+  '- Use ONLY the data provided. Do not invent readings, mileage, or codes that are not present.',
+  '- A generic OBD2 adapter only reaches the engine/emissions ECU — do not claim ABS/airbag/transmission findings.',
+  '- Be specific and prioritise. Map symptoms to the most likely causes; say what to check.',
+  '- When a finding relates to a listed known check ("Known checks for this car"), mention it in `detail`.',
+  '- Do not give a definitive repair guarantee; you are an aid, not a substitute for a mechanic.',
+];
+
+const REPORT_RULES = [
+  '- Severities: "critical" = stop/urgent safety or damage risk; "warn" = needs attention soon; "info" = FYI; "ok" = normal.',
+  '- Set "overall" to the worst severity among findings ("urgent" if any critical, "attention" if any warn, else "ok").',
+  '- Only suggest "clear_dtcs" when codes are present; clearing is destructive and the user must confirm it.',
+];
+
 export function buildSystemPrompt(): string {
   return [
-    'You are an expert automotive diagnostic assistant embedded in a generic OBD2/EOBD scan-tool app.',
-    'You receive a snapshot read from a car’s engine/emissions ECU over a standard ELM327 adapter and',
-    'produce a concise, practical health assessment for the car’s owner.',
+    ...PROMPT_INTRO,
     '',
     'Rules:',
-    '- The snapshot starts with the vehicle’s details (make/model/year/engine/fuel where known) — tailor your analysis to that specific car and its fuel type.',
-    '- Use ONLY the data provided. Do not invent readings, mileage, or codes that are not present.',
-    '- A generic OBD2 adapter only reaches the engine/emissions ECU — do not claim ABS/airbag/transmission findings.',
-    '- Be specific and prioritise. Map symptoms to the most likely causes; say what to check.',
-    '- Severities: "critical" = stop/urgent safety or damage risk; "warn" = needs attention soon; "info" = FYI; "ok" = normal.',
-    '- Set "overall" to the worst severity among findings ("urgent" if any critical, "attention" if any warn, else "ok").',
-    '- Only suggest "clear_dtcs" when codes are present; clearing is destructive and the user must confirm it.',
-    '- Do not give a definitive repair guarantee; you are an aid, not a substitute for a mechanic.',
+    ...PROMPT_RULES,
+    ...REPORT_RULES,
     '',
     REPORT_SCHEMA_HINT,
   ].join('\n');
+}
+
+/** System prompt for follow-up questions about a report: the same rules, no JSON schema hint, and
+ *  a short plain-language answer that cites codes by id. */
+export function buildFollowUpSystemPrompt(): string {
+  return [
+    ...PROMPT_INTRO,
+    'The owner has read your report and now asks follow-up questions about it.',
+    '',
+    'Rules:',
+    ...PROMPT_RULES,
+    '- Clearing codes is destructive and the owner must confirm it in the app. Never claim you can run anything on the car.',
+    '- Answer in plain language, 120 words or fewer, cite codes by id. No JSON, no tables.',
+  ].join('\n');
+}
+
+/** Follow-up messages (user + assistant) kept in the prompt; older turns are dropped. */
+export const MAX_FOLLOWUP_TURNS = 8;
+
+/** Suggested follow-up questions. `{code}` is replaced by a code from the report (or dropped when
+ *  the report names none) by {@link followUpSuggestions}. */
+export const SUGGESTED_FOLLOWUPS: string[] = [
+  'What should I check first?',
+  'Is it safe to drive?',
+  'Which finding is most urgent?',
+  'What does {code} mean for this car?',
+];
+
+/** The suggestion chips for a report: {@link SUGGESTED_FOLLOWUPS} with `{code}` resolved. With a
+ *  focus code ("Explain with AI") the question about that code comes first. */
+export function followUpSuggestions(report: AiReport, focusCode?: string | null): string[] {
+  const focus = normalizeFocus(focusCode ?? undefined);
+  const code = focus || report.findings.find((f) => f.codes?.length)?.codes?.[0] || '';
+  const resolved = SUGGESTED_FOLLOWUPS.flatMap((q) =>
+    q.includes('{code}') ? (code ? [q.replace('{code}', code)] : []) : [q],
+  );
+  if (!focus) return resolved;
+  const focused = `What does ${focus} mean for this car?`;
+  return [focused, ...resolved.filter((q) => q !== focused)];
+}
+
+/** Messages for one follow-up question: the follow-up system prompt, the snapshot digest, the
+ *  report as the assistant's previous answer, the last {@link MAX_FOLLOWUP_TURNS} conversation
+ *  messages, then the new question. */
+export function buildFollowUpMessages(
+  snapshot: DiagnosticSnapshot,
+  report: AiReport,
+  conversation: AiChatMessage[],
+  question: string,
+): AiChatMessage[] {
+  const reportBody = {
+    overall: report.overall,
+    summary: report.summary,
+    findings: report.findings,
+    actions: report.actions,
+  };
+  return [
+    { role: 'system', content: buildFollowUpSystemPrompt() },
+    {
+      role: 'user',
+      content:
+        'Here is the OBD2 snapshot from my car. Analyse it and return the JSON report.\n\n' +
+        summarizeSnapshot(snapshot),
+    },
+    { role: 'assistant', content: JSON.stringify(reportBody) },
+    ...conversation.filter((m) => m.role !== 'system').slice(-MAX_FOLLOWUP_TURNS),
+    { role: 'user', content: question.trim() },
+  ];
 }
 
 /** The extra user line sent when the run is focused on one fault code. */

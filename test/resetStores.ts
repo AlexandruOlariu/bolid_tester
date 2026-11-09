@@ -26,6 +26,7 @@ import { useLinkStore } from '@/features/connection/model/linkStore';
 import { useScanStore } from '@/features/connection/model/scanStore';
 import { useMaintenanceStore } from '@/features/maintenance/model/maintenanceStore';
 import { useTripStore } from '@/features/trip-recording/model/tripStore';
+import { useAiDiagnoseStore } from '@/features/ai-diagnose/model/aiDiagnoseStore';
 import { memoryFiles } from './mocks/fileSystem';
 import { setMockFocused, setMockSearchParams } from './mocks/router';
 
@@ -50,6 +51,7 @@ const STORES: AnyStore[] = [
   useLinkStore,
   useScanStore,
   useChartsStore,
+  useAiDiagnoseStore,
 ];
 
 /** Each store's state (actions included) captured at module load, before any test touched it. */

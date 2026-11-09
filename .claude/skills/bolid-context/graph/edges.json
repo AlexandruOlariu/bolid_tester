@@ -26,6 +26,11 @@
   ],
   [
     "concept:ai-diagnose-flow",
+    "core:analysis/aiProviders",
+    "relates"
+  ],
+  [
+    "concept:ai-diagnose-flow",
     "doc:features/ai-diagnose",
     "relates"
   ],
@@ -1045,6 +1050,11 @@
     "imports"
   ],
   [
+    "core:analysis/aiProviders",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
     "core:analysis/alerts",
     "doc:features/alerts",
     "named"
@@ -1317,6 +1327,11 @@
   [
     "core:public-api",
     "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:analysis/aiProviders",
     "imports"
   ],
   [
@@ -2161,6 +2176,11 @@
   ],
   [
     "feature:ai-diagnose",
+    "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
     "core:obd/dtc",
     "imports"
   ],
@@ -2178,6 +2198,11 @@
     "feature:ai-diagnose",
     "doc:features/ai-diagnose",
     "named"
+  ],
+  [
+    "feature:ai-diagnose",
+    "feature:fault-codes",
+    "imports"
   ],
   [
     "feature:ai-diagnose",
@@ -2211,12 +2236,22 @@
   ],
   [
     "feature:ai-diagnose",
+    "vehicle:faultGuides",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
     "vehicle:registry",
     "imports"
   ],
   [
     "feature:ai-diagnose",
     "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -3256,6 +3291,11 @@
   ],
   [
     "feature:settings",
+    "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "core:transport/logReplay",
     "imports"
   ],
@@ -3871,6 +3911,11 @@
   ],
   [
     "service:ai",
+    "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "service:ai",
     "doc:features/ai-diagnose",
     "named"
   ],
@@ -4001,6 +4046,11 @@
   ],
   [
     "store:secureApiKey",
+    "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "store:secureApiKey",
     "doc:plans/23-security-access-plugins",
     "named"
   ],
@@ -4017,6 +4067,11 @@
   [
     "store:sessionStore",
     "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "store:settingsStore",
+    "core:analysis/aiProviders",
     "imports"
   ],
   [

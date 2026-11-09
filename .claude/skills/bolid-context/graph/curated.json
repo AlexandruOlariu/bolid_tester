@@ -54,8 +54,8 @@
       "summary": "ECU coding / adaptations: writing DIDs over UDS. Higher-risk than reads — guarded paths live in the coding module.",
       "tokens": ["coding","uds","adaptation","write","ecu","did","long","code"] },
     { "id": "ai-diagnose-flow",
-      "summary": "AI Diagnose: snapshot fault codes + live readings -> aiDiagnosis builds the prompt -> AI client (OpenAI-compatible) -> human-readable diagnosis.",
-      "tokens": ["ai","diagnose","diagnosis","llm","openai","prompt","advice"] },
+      "summary": "AI Diagnose: snapshot fault codes + live readings + per-car guide notes -> aiDiagnosis builds the prompt -> getAiClient dispatcher (provider preset picks the wire: OpenAI-compatible chat or native Anthropic Messages; mock://ai in dev) -> report, then bounded follow-up questions. Keys: one keystore slot per provider.",
+      "tokens": ["ai","diagnose","diagnosis","llm","openai","anthropic","claude","provider","preset","follow-up","prompt","advice"] },
     { "id": "error-resilience",
       "summary": "Resilience pattern: recoverable failures are captured via logError into errorLogStore (the single logging zone, shown in the Error Log screen) rather than crashing the session.",
       "tokens": ["error","resilience","logging","recover","failure","fault","log"] },
@@ -247,6 +247,7 @@
     ["concept:ecu-coding", "doc:features/coding", "relates"],
 
     ["concept:ai-diagnose-flow", "core:analysis/aiDiagnosis", "relates"],
+    ["concept:ai-diagnose-flow", "core:analysis/aiProviders", "relates"],
     ["concept:ai-diagnose-flow", "service:ai", "relates"],
     ["concept:ai-diagnose-flow", "feature:ai-diagnose", "relates"],
     ["concept:ai-diagnose-flow", "doc:features/ai-diagnose", "relates"],

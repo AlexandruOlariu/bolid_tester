@@ -33,16 +33,21 @@
   },
   "concept:ai-diagnose-flow": {
     "path": null,
-    "summary": "AI Diagnose: snapshot fault codes + live readings -> aiDiagnosis builds the prompt -> AI client (OpenAI-compatible) -> human-readable diagnosis.",
+    "summary": "AI Diagnose: snapshot fault codes + live readings + per-car guide notes -> aiDiagnosis builds the prompt -> getAiClient dispatcher (provider preset p\u2026",
     "tokens": [
       "advice",
       "ai",
+      "anthropic",
+      "claude",
       "diagnose",
       "diagnosis",
       "flow",
+      "follow-up",
       "llm",
       "openai",
-      "prompt"
+      "preset",
+      "prompt",
+      "provider"
     ],
     "type": "concept"
   },
@@ -794,6 +799,19 @@
       "ai",
       "analysis",
       "diagnosis"
+    ],
+    "type": "core"
+  },
+  "core:analysis/aiProviders": {
+    "path": "src/shared/obd-core/analysis/aiProviders.ts",
+    "summary": "AI provider presets and the Anthropic Messages wire shaping (plan 19).",
+    "tests": [
+      "src/shared/obd-core/analysis/aiProviders.test.ts"
+    ],
+    "tokens": [
+      "ai",
+      "analysis",
+      "providers"
     ],
     "type": "core"
   },
@@ -2677,7 +2695,10 @@
   },
   "feature:ai-diagnose": {
     "path": "src/features/ai-diagnose",
-    "summary": "**One-tap, AI-assisted health check.** Reads the car in one pass, sends a structured snapshot to a",
+    "summary": "**One-tap, AI-assisted health check.** Reads the car in one pass, sends a structured snapshot to the",
+    "tests": [
+      "src/features/ai-diagnose/ui/AiDiagnoseScreen.test.tsx"
+    ],
     "tokens": [
       "ai",
       "diagnose"
@@ -3359,7 +3380,7 @@
   },
   "service:ai": {
     "path": "src/shared/ai",
-    "summary": "AI client (OpenAI-compatible) for the diagnose feature.",
+    "summary": "Canned AI \"server\" for development (plan 19).",
     "tokens": [
       "ai",
       "client",
@@ -3484,7 +3505,7 @@
   },
   "store:secureApiKey": {
     "path": "src/shared/state/secureApiKey.ts",
-    "summary": "Secure storage for the AI `apiKey` (finding F8).",
+    "summary": "Secure storage for the AI API keys (finding F8, per provider since plan 19).",
     "tests": [
       "src/shared/state/secureApiKey.test.ts"
     ],

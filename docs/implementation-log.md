@@ -5,6 +5,113 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 19 — AI provider presets, follow-up questions, guide citations (2026-11-09)
+
+[Plan 19](./plans/19-ai-provider-presets.md) landed: the AI assistant works with a **local server**,
+**OpenAI**, **Anthropic** (native Messages API) or a **custom** OpenAI-compatible server, each with
+its own defaults and its own keystore slot; the owner can ask **follow-up questions** about a report
+in a bounded conversation; findings **cite the per-car fault guides** with the same deep-link
+buttons as the Faults screen, and the model is told about them. The plan has no deferred section;
+the only owner step is optional (Test connection against a real cloud key).
+
+- **Core (`shared/obd-core/analysis/aiProviders.ts`, exported from `obd-core/index.ts`).**
+  `AI_PROVIDER_PRESETS` (`local` / `openai` / `anthropic` / `custom`: wire, base URL, default model,
+  JSON mode, `needsKey`, `canListModels`, hint), `inferProvider` (api.openai.com / api.anthropic.com
+  / blank / other), `resolveProvider`, `applyProviderPreset` (applied only on a switch; remembers the
+  previous provider's URL / model / output mode in `ai.remembered`, never a key), `aiConfigProblem`
+  (plain-words reason the AI can't run), `MOCK_AI_URL` / `isMockAiUrl`, and the Anthropic shaping:
+  `buildAnthropicRequestBody` (system split out, consecutive same-role turns merged, leading
+  assistant turn fixed, `max_tokens` default 8192, no sampling params / prefill / `response_format`),
+  `extractAnthropicContent`, `anthropicStopReason`, `anthropicHeaders`.
+- **Core (`aiDiagnosis.ts`).** `DiagnosticSnapshot.guides?: KnownCheck[]`; `summarizeSnapshot(s,
+guides = s.guides)` appends "Known checks for this car"; the system prompt gains "When a finding
+  relates to a listed known check, mention it in `detail`" (prompt split into intro / rules / report
+  rules so the follow-up prompt reuses them); `buildFollowUpSystemPrompt` (no schema hint, ≤ 120
+  words, cite codes by id), `MAX_FOLLOWUP_TURNS = 8`, `buildFollowUpMessages`, `SUGGESTED_FOLLOWUPS`
+  and `followUpSuggestions(report, focusCode)`.
+- **I/O (`shared/ai`).** `http.ts` (moved `AiClientError` + `fetchJson`, injectable `fetch` via
+  `setAiFetch`, 401/403/404/429 hints), `anthropicClient.ts` (`GET /v1/models?limit=100`,
+  `POST /v1/messages`, refusal → error, key required), `openaiClient.ts` (uses `http.ts`, exports
+  `requireBase`), dispatcher `getAiClient(settings): AiClient { listModels, chat(messages, { json }) }`
+  in `index.ts` (wire from the preset; `json: false` forces plain text on the OpenAI wire), and the
+  dev mock `__mocks__/mockAiServer.ts` for `mock://ai`.
+- **Settings.** `AiSettings.provider` (default `local`) + `remembered`; `SETTINGS_VERSION` 5 with
+  v4 → v5 `provider = inferProvider(baseUrl)`; `merge` infers a missing provider. `setAi({ provider })`
+  applies the preset only on a real switch and swaps in that provider's key (this session's memory at
+  once, then its keystore slot unless the user typed meanwhile). `secureApiKey.ts`: one slot per
+  provider `bolid.ai.apiKey.<provider>` (`apiKeyStoreKey`, `secureGetApiKey(provider)`,
+  `secureSetApiKey(provider, key)`), legacy single slot read + deleted
+  (`secureGetLegacyApiKey` / `secureDeleteLegacyApiKey`), `planApiKeyHydration(provider, fileKey,
+slotKey, legacyKey)` → migrate (file / legacy-slot) · load · none, with `dropLegacy`.
+  `AiSection`: Provider segment + hint, URL input (local / custom) or read-only URL with **Edit** →
+  Custom, API key field (`secureTextEntry`, keystore note), Model + Detect, Structured output hidden
+  for Anthropic, Test connection through the dispatcher.
+- **AI Diagnose.** `gatherSnapshot()` collects `knownChecksFor(curatedProfileId(profile), codes)`;
+  `analyze()` uses `aiConfigProblem` + `getAiClient(ai).chat(…, { json: true })`; `followUp()` (friendly
+  error for an on-device report / missing setup / empty answer). Store: `conversation`, `asking`,
+  `askError`, `pushTurn`, `clearConversation` (cleared by a new report and `reset()`). Hook: `ask()`,
+  `clearConversation()`, `guideProfileId`. Screen: `FindingCard` shows "Known check for this car" +
+  `GuideLinks` for curated guides; **Ask about this report** card (chips, input + send, bubbles,
+  Clear; disabled with a hint for a local report). `GuideLinks` is exported from
+  `@/features/fault-codes`.
+- **Docs.** `ai-diagnose.md` (providers table, Anthropic wire, follow-ups, guide citations, mock AI
+  server, data flow, layers), `settings.md` (AI section, per-provider keys, v5 migration),
+  `privacy-policy.md` + `privacyPolicy.ts` (data sent to the chosen provider, follow-ups, cloud
+  providers, one key per provider). Context graph: `concept:ai-diagnose-flow` updated + linked to
+  `core:analysis/aiProviders`.
+- **Tests (+63 tests, +3 suites: 1011 tests / 126 suites, review fixes included).** `aiProviders.test.ts` (hosts and blanks,
+  presets, local → anthropic → local restores URL / model / mode, remembered cloud model, URL
+  carry-over rules, config problems, Anthropic body / content / headers / stop reason),
+  `aiDiagnosis.test.ts` (known-checks section, system rule, follow-up structure, bounded to 8, no
+  schema hint, suggestions + focus), `secureApiKey.test.ts` (per-provider slots with an in-memory
+  keystore, legacy migration plan), `settingsStore.test.ts` (v5, v4 → v5 inference, v4 OpenAI blob
+  rehydration, provider switch keeps per-provider keys and the local URL, keystore load on switch,
+  legacy-slot and plaintext-file hydration), `shared/ai/aiClient.test.ts` (dispatcher: Anthropic →
+  `/v1/messages` + `x-api-key` + version, models list, refusal, 401 hint, URL inference; OpenAI →
+  bearer + `response_format`, `json: false`, local without auth; `mock://ai` only with `__DEV__`),
+  `AiDiagnoseScreen.test.tsx` (mock://ai on the simulator Golf with P0401 + P2015: guide notes,
+  Related data → `/extended?dids=170E%2C170F`, Open routine → `/routines`, snapshot guides; chips
+  and free text append bubbles, Clear; 6th prompt drops the 1st turn; focus chip first; local report
+  disables follow-ups), `SettingsScreen.test.tsx` (Anthropic fills URL + model, hides Structured
+  output, shows the key field; Edit → Custom; Test connection hits the Anthropic models list with the
+  key).
+- **Deviations.** (1) `anthropic-version: 2026-10-21` instead of the plan's `2023-06-01`: the
+  current API version per the `claude-api` reference; the app sends none of the fields it removed.
+  (2) Raw `fetch` (as the plan specifies) rather than the `@anthropic-ai/sdk` package: no new
+  dependency in the React Native bundle, one shared timeout / error path, injectable for tests.
+  (3) `buildAnthropicRequestBody` default `max_tokens` is 8192, not 2048: current Claude models
+  think adaptively by default and thinking counts against `max_tokens`, so 2048 could truncate the
+  JSON report. Server-side refusal fallbacks are not sent (the model is user-selectable and older
+  models reject the parameter); a `refusal` stop becomes an error and the local report. (4) Extra
+  header `anthropic-dangerous-direct-browser-access: true` so a web build (plan 28) can call the API
+  with the user's own key. (5) OpenAI default model `gpt-5-mini` could not be confirmed against a
+  live `GET /v1/models` (no network calls allowed); **Detect model** replaces it. (6) The custom
+  preset has `needsKey: false` (key optional, field shown) — custom servers vary. (7)
+  `applyProviderPreset` lives in core (generic over the preset fields) and remembers URL / model /
+  mode per provider in `ai.remembered`, which is how "keeps the user's local URL when switching
+  back" works. (8) The `GuideLinks` extraction already existed (`fault-codes/ui/DtcGuideParts.tsx`,
+  plan 05) — only exported from the slice index; its buttons are labelled **Related data** / **Open
+  routine** (the plan's "Measuring blocks" / "Routine"). Guide notes show only for curated guides,
+  not `GENERIC_GUIDE`, and one per distinct guide. (9) Plan 05's `focus` param makes "What does
+  <focus> mean for this car?" the **first suggestion chip** rather than sending a question
+  automatically (no unrequested network call; the focused report already explains the code). (10)
+  The conversation stays on screen in full; only the prompt is bounded to `MAX_FOLLOWUP_TURNS`
+  messages. (11) The mock server is selected only when `__DEV__` is on, but it is a static import, so
+  it is in the bundle (inert in release builds) rather than excluded. (12) `secureApiKey.ts` gained a test seam, `setSecureStoreModule`, so the keystore tests inject an in-memory double instead of relying on the variable-specifier `import()` under Jest (it resolved intermittently in parallel runs). (13) Plan 18 (backup) has not
+  landed yet; the "backup never contains a key" acceptance holds because keys never enter the
+  persisted settings blob (`redactApiKey`), which is what a backup would read.
+- **Review fixes.** (a) `hydrateApiKey` deletes the legacy single slot only when its key is safe: on
+  a `load`, or when `secureSetApiKey` into the provider slot returned true — a failed write keeps the
+  legacy slot so the next start retries (test: failing keystore write keeps `bolid.ai.apiKey`).
+  (b) `useAiDiagnose().ask()` drops an answer (or error) that resolves after the report changed
+  (`setReport` resets the conversation) or the conversation was cleared, instead of pushing it into
+  the new report's conversation (screen test: a late answer after `setReport` is not shown).
+  (c) Settings `AiSection` Test connection / Detect model drop their result when the provider or base
+  URL changed while the request ran, so an old provider's model never lands in the new provider's
+  settings (screen test: Detect on Local, switch to Anthropic, model stays `claude-sonnet-5-5`).
+
+---
+
 ## Plan 17 — Trip detail map (2026-11-09)
 
 [Plan 17](./plans/17-trip-detail-map.md) landed: a saved trip opens on its own screen with the GPS

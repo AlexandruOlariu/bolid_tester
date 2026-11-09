@@ -57,6 +57,19 @@ Developer and runtime settings.
     `meta.droppedEntries: N`. The file goes into
     `src/shared/obd-core/transport/fixtures/<vehicleId>/` — see
     [simulator.md → Replay fixtures](../simulator.md#replay-fixtures).
+  - **AI assistant (auto-diagnose)** (plan 19) — **Enabled**, then a **Provider** segment
+    (**Local server** · **OpenAI** · **Anthropic** · **Custom**) with the preset's one-line hint.
+    Switching provider applies that preset once (`setAi({ provider })` →
+    `applyProviderPreset`): Anthropic fills `https://api.anthropic.com`, `claude-sonnet-5-5` and
+    structured output off; OpenAI fills `https://api.openai.com` and `gpt-5-mini`; local / custom
+    get back the URL, model and output mode last used with them (`ai.remembered`, never a key).
+    **Server URL** is an input for local / custom and read-only for OpenAI / Anthropic, whose
+    **Edit** button flips to **Custom** keeping the address. **API key** (hidden for local; optional
+    for custom; `secureTextEntry`) with the note "Stored in the phone's secure keystore, never in
+    backups. Each provider keeps its own key." **Model** + **Detect model**, **Structured output**
+    (hidden for Anthropic), **Timeout**, **Test connection** — all through the `getAiClient`
+    dispatcher. A Test / Detect that finishes after the provider or address changed is dropped (no
+    model written into the new provider, no stale status). See [ai-diagnose → Providers](./ai-diagnose.md#providers).
   - Units (metric default), poll interval, theme (system/light/dark).
   - **About** (plan 08) — "Bolid Tester <version>" (`APP_NAME` / `APP_VERSION` from
     `shared/lib/appInfo.ts`, read from `app.json`; the version is also the OTA runtime version), a
@@ -96,9 +109,23 @@ Developer and runtime settings.
 ## model
 
 - `settingsStore` (Zustand, **persisted**): `adapterSource`, `simulatedVehicleId`, `injectedDtcs`,
-  `units`, `pollIntervalMs`, `autoReconnect`, `autoSelectByVin`, `theme`, and the `ai` config (server URL, model,
-  structured-output mode, timeout, key). It no longer holds the adapter I/O log (see above).
-- Persisted as `bolid.settings` at **version 4**. Defaults: `adapterSource: 'ble'`,
+  `units`, `pollIntervalMs`, `autoReconnect`, `autoSelectByVin`, `theme`, and the `ai` config
+  (`provider`, server URL, model, structured-output mode, timeout, `remembered` per-provider URL /
+  model / mode, and the current provider's key in runtime state only). It no longer holds the
+  adapter I/O log (see above).
+- **API keys (finding F8, per provider since plan 19)** live only in the OS keystore
+  (`shared/state/secureApiKey.ts`, expo-secure-store), one slot per provider:
+  `bolid.ai.apiKey.<provider>` (`apiKeyStoreKey`). `partialize` writes `ai` through `redactApiKey`,
+  so no key ever reaches `bolid.settings.json` (nor anything built from it). `setAi({ apiKey })`
+  writes the current provider's slot; a provider switch shows that provider's key at once (from
+  this session's memory) and then loads its slot. At startup `hydrateApiKey()` runs
+  `planApiKeyHydration(provider, fileKey, slotKey, legacyKey)`: a plaintext key still in an old
+  settings file moves into the current provider's slot and leaves the file; else the slot key is
+  loaded; else a pre-plan-19 single-slot key (`bolid.ai.apiKey`) moves into the current provider's
+  slot; the legacy slot is deleted once its key is safe (loaded from the provider slot, or the move
+  into it succeeded — a failed keystore write keeps it for the next start). Without the native module (Expo Go, web, tests) keys
+  live in memory for the session.
+- Persisted as `bolid.settings` at **version 5**. Defaults: `adapterSource: 'ble'`,
   `simulatedVehicleId: 'golf-plus-2009-20tdi'`, `injectedDtcs: []`, `autoReconnect: true`,
   `autoSelectByVin: true`. `simulatedVehicleId` may be a registry id or a garage `user:` id.
 - **Migrations** (`migrateSettings`, pure and unit-tested; each step only fills _missing_ fields, so
@@ -112,7 +139,11 @@ Developer and runtime settings.
     (the old default was `false`) — only fresh installs and partial blobs get it on.
   - **v3 → v4** (plan 06): `autoSelectByVin: p.autoSelectByVin ?? true`. No earlier version wrote
     the field, so every upgraded install and every fresh install gets it on; every v3 field is kept.
-  - From v4 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults.
+  - **v4 → v5** (plan 19): `ai.provider = inferProvider(ai.baseUrl)` (api.openai.com → `openai`,
+    api.anthropic.com → `anthropic`, blank → `local`, anything else → `custom`); every other `ai`
+    field is kept and a blob without `ai` stays without it (the defaults fill it).
+  - From v5 on it is the identity. The existing `merge` still deep-merges `ai` over the defaults
+    (and infers `provider` if a blob somehow lacks a valid one).
 - **Known limitation:** v1's `partialize` always wrote `adapterSource` and `injectedDtcs`, so every
   real v1 file carries them — including installs that never chose anything and just persisted the
   old defaults (`'mock'`, `['P0299']`). The migration cannot tell those apart from a deliberate

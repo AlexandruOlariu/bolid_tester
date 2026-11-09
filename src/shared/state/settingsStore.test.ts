@@ -1,4 +1,5 @@
-/** Production defaults + the settings migrations (v1 → v2 plan 01, v2 → v3 plan 12, v3 → v4 plan 06). settingsStore pulls in
+/** Production defaults + the settings migrations (v1 → v2 plan 01, v2 → v3 plan 12, v3 → v4 plan 06,
+ *  v4 → v5 plan 19) and the AI provider switch with per-provider keys (plan 19). settingsStore pulls in
  *  persistStorage -> expo-file-system (ESM, not transformed for the node test env), so the file system
  *  is mocked with an in-memory map; that also lets the persist round-trip below exercise the real
  *  `migrate` wiring, not just the pure helper. */
@@ -17,7 +18,31 @@ jest.mock('expo-file-system/legacy', () => ({
   }),
 }));
 
-import { migrateSettings, parseDtcList, SETTINGS_VERSION, useSettingsStore } from './settingsStore';
+// In-memory keystore, injected (setSecureStoreModule) so no test depends on the variable-specifier
+// import() of expo-secure-store resolving under Jest.
+const keystore = new Map<string, string>();
+const memoryKeystore = {
+  getItemAsync: async (k: string) => keystore.get(k) ?? null,
+  setItemAsync: async (k: string, v: string) => {
+    keystore.set(k, v);
+  },
+  deleteItemAsync: async (k: string) => {
+    keystore.delete(k);
+  },
+};
+
+import {
+  DEFAULT_AI_SETTINGS,
+  hydrateApiKey,
+  migrateSettings,
+  parseDtcList,
+  SETTINGS_VERSION,
+  useSettingsStore,
+} from './settingsStore';
+import { setSecureStoreModule } from './secureApiKey';
+
+beforeAll(() => setSecureStoreModule(memoryKeystore));
+afterAll(() => setSecureStoreModule(undefined));
 
 const SETTINGS_FILE = '/tmp/bolid-test/bolid.settings.json';
 
@@ -37,9 +62,14 @@ describe('settings defaults', () => {
     expect(useSettingsStore.getInitialState().autoSelectByVin).toBe(true);
   });
 
-  it('persists at schema version 4', () => {
-    expect(SETTINGS_VERSION).toBe(4);
-    expect(useSettingsStore.persist.getOptions().version).toBe(4);
+  it('persists at schema version 5', () => {
+    expect(SETTINGS_VERSION).toBe(5);
+    expect(useSettingsStore.persist.getOptions().version).toBe(5);
+  });
+
+  it('a fresh install starts on the local-server provider (plan 19)', () => {
+    expect(useSettingsStore.getInitialState().ai.provider).toBe('local');
+    expect(DEFAULT_AI_SETTINGS.remembered).toEqual({});
   });
 });
 
@@ -95,15 +125,34 @@ describe('migrateSettings', () => {
     });
   });
 
-  it('is the identity from v4 on', () => {
+  it('v4 → v5 infers the AI provider from the stored server URL (plan 19)', () => {
+    const ai = (baseUrl: string) => ({ ...DEFAULT_AI_SETTINGS, baseUrl, provider: undefined });
+    const provider = (baseUrl: string) =>
+      migrateSettings({ ai: ai(baseUrl) } as never, 4).ai?.provider;
+    expect(provider('https://api.openai.com/v1')).toBe('openai');
+    expect(provider('https://api.anthropic.com')).toBe('anthropic');
+    expect(provider('')).toBe('local');
+    expect(provider('http://192.168.1.50:1234')).toBe('custom');
+    // every other ai field is kept
+    expect(migrateSettings({ ai: ai('http://h:1') } as never, 4).ai).toMatchObject({
+      baseUrl: 'http://h:1',
+      model: '',
+      jsonMode: 'schema',
+    });
+    // a blob without an ai section stays without one (merge fills the defaults)
+    expect(migrateSettings({ theme: 'dark' as const }, 4)).toEqual({ theme: 'dark' });
+  });
+
+  it('is the identity from v5 on', () => {
     const blob = {
       adapterSource: 'mock' as const,
       injectedDtcs: ['P0420'],
       theme: 'light' as const,
+      ai: { ...DEFAULT_AI_SETTINGS, provider: 'local' as const, baseUrl: 'https://api.openai.com' },
     };
-    expect(migrateSettings(blob, 4)).toEqual(blob);
+    expect(migrateSettings(blob, 5)).toEqual(blob);
     const partial = { theme: 'dark' as const };
-    expect(migrateSettings(partial, 4)).toEqual(partial);
+    expect(migrateSettings(partial, 5)).toEqual(partial);
   });
 });
 
@@ -159,6 +208,141 @@ describe('persisted v1 blob rehydration', () => {
     expect(s.autoSelectByVin).toBe(true);
     expect(s.adapterSource).toBe('mock');
     expect(s.autoReconnect).toBe(false);
+  });
+});
+
+describe('persisted v4 blob rehydration (plan 19)', () => {
+  beforeEach(() => {
+    files.clear();
+    keystore.clear();
+    useSettingsStore.setState(useSettingsStore.getInitialState(), true);
+  });
+
+  it('a v4 blob pointing at OpenAI opens on the OpenAI provider', async () => {
+    files.set(
+      SETTINGS_FILE,
+      JSON.stringify({
+        state: {
+          ai: {
+            enabled: true,
+            baseUrl: 'https://api.openai.com',
+            model: 'gpt-x',
+            apiKey: '',
+            timeoutMs: 30000,
+            jsonMode: 'schema',
+          },
+        },
+        version: 4,
+      }),
+    );
+    await useSettingsStore.persist.rehydrate();
+    const { ai } = useSettingsStore.getState();
+    expect(ai.provider).toBe('openai');
+    expect(ai.model).toBe('gpt-x');
+    expect(ai.remembered).toEqual({});
+  });
+});
+
+describe('AI provider switch and per-provider keys (plan 19)', () => {
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+  beforeEach(() => {
+    files.clear();
+    keystore.clear();
+    useSettingsStore.setState(useSettingsStore.getInitialState(), true);
+  });
+
+  it('switching to Anthropic applies the preset and keeps the local URL for later', () => {
+    const { setAi } = useSettingsStore.getState();
+    setAi({ baseUrl: 'http://192.168.1.50:1234', model: 'qwen' });
+    setAi({ provider: 'anthropic' });
+    let ai = useSettingsStore.getState().ai;
+    expect(ai).toMatchObject({
+      provider: 'anthropic',
+      baseUrl: 'https://api.anthropic.com',
+      model: 'claude-sonnet-5-5',
+      jsonMode: 'off',
+    });
+    setAi({ provider: 'local' });
+    ai = useSettingsStore.getState().ai;
+    expect(ai).toMatchObject({
+      provider: 'local',
+      baseUrl: 'http://192.168.1.50:1234',
+      model: 'qwen',
+    });
+  });
+
+  it('a patch without a provider change never re-applies the preset', () => {
+    const { setAi } = useSettingsStore.getState();
+    setAi({ provider: 'anthropic' });
+    setAi({ model: 'claude-opus-5-5' });
+    setAi({ provider: 'anthropic', timeoutMs: 60000 });
+    expect(useSettingsStore.getState().ai).toMatchObject({
+      model: 'claude-opus-5-5',
+      timeoutMs: 60000,
+    });
+  });
+
+  it('each provider keeps its own key: one keystore slot per provider, none in the file', async () => {
+    const { setAi } = useSettingsStore.getState();
+    setAi({ provider: 'openai' });
+    setAi({ apiKey: 'sk-openai' });
+    setAi({ provider: 'anthropic' });
+    expect(useSettingsStore.getState().ai.apiKey).toBe('');
+    setAi({ apiKey: 'sk-ant' });
+    setAi({ provider: 'openai' });
+    expect(useSettingsStore.getState().ai.apiKey).toBe('sk-openai');
+    await flush();
+    expect(keystore.get('bolid.ai.apiKey.openai')).toBe('sk-openai');
+    expect(keystore.get('bolid.ai.apiKey.anthropic')).toBe('sk-ant');
+    expect(files.get(SETTINGS_FILE) ?? '').not.toContain('sk-');
+  });
+
+  it('switching provider loads that provider key from the keystore', async () => {
+    keystore.set('bolid.ai.apiKey.anthropic', 'sk-ant-stored');
+    useSettingsStore.getState().setAi({ provider: 'anthropic' });
+    await flush();
+    await flush();
+    expect(useSettingsStore.getState().ai.apiKey).toBe('sk-ant-stored');
+  });
+
+  it('hydrateApiKey moves a pre-plan-19 single-slot key into the current provider slot', async () => {
+    keystore.set('bolid.ai.apiKey', 'sk-legacy');
+    useSettingsStore.setState((s) => ({ ai: { ...s.ai, provider: 'custom' } }));
+    await hydrateApiKey();
+    expect(keystore.get('bolid.ai.apiKey.custom')).toBe('sk-legacy');
+    expect(keystore.has('bolid.ai.apiKey')).toBe(false);
+    expect(useSettingsStore.getState().ai.apiKey).toBe('sk-legacy');
+  });
+
+  it('hydrateApiKey keeps the single-slot key when moving it into the provider slot fails', async () => {
+    keystore.set('bolid.ai.apiKey', 'sk-legacy');
+    useSettingsStore.setState((s) => ({ ai: { ...s.ai, provider: 'custom', apiKey: '' } }));
+    const failingWrites = {
+      ...memoryKeystore,
+      setItemAsync: async () => {
+        throw new Error('keystore locked');
+      },
+    };
+    setSecureStoreModule(failingWrites);
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      await hydrateApiKey();
+    } finally {
+      setSecureStoreModule(memoryKeystore);
+      warn.mockRestore();
+    }
+    expect(keystore.has('bolid.ai.apiKey.custom')).toBe(false);
+    expect(keystore.get('bolid.ai.apiKey')).toBe('sk-legacy');
+    expect(useSettingsStore.getState().ai.apiKey).toBe('sk-legacy');
+  });
+
+  it('hydrateApiKey moves a plaintext file key out of the file into the provider slot', async () => {
+    useSettingsStore.setState((s) => ({ ai: { ...s.ai, provider: 'openai', apiKey: 'sk-file' } }));
+    await hydrateApiKey();
+    await flush();
+    expect(keystore.get('bolid.ai.apiKey.openai')).toBe('sk-file');
+    expect(useSettingsStore.getState().ai.apiKey).toBe('sk-file');
+    expect(files.get(SETTINGS_FILE) ?? '').not.toContain('sk-file');
   });
 });
 

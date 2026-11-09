@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-native';
 import { useIsFocused, useLocalSearchParams, useNavigation } from 'expo-router';
-import { YStack, XStack, Card, Text, Paragraph, Button, Spinner } from 'tamagui';
+import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Input } from 'tamagui';
 import {
   Stethoscope,
   Sparkles,
@@ -14,11 +14,14 @@ import {
   Search,
   Wrench,
   Activity,
+  MessageCircle,
+  Send,
 } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { describeDtc } from '@/shared/obd-core';
+import { describeDtc, followUpSuggestions, vagCodeForDtc } from '@/shared/obd-core';
 import type {
+  AiChatMessage,
   AiReport,
   AiFinding,
   AiAction,
@@ -26,6 +29,10 @@ import type {
   DtcMake,
   OverallHealth,
 } from '@/shared/obd-core';
+import { GENERIC_GUIDE, matchFaultGuide, type FaultGuide } from '@/shared/vehicles/faultGuides';
+// The one cross-feature import of this slice: the fault guide's deep-link buttons, from the
+// fault-codes public index (same buttons as on the Faults screen).
+import { GuideLinks } from '@/features/fault-codes';
 import { useAiDiagnose } from '../hooks/useAiDiagnose';
 
 const SEV_COLOR: Record<DiagSeverity, string> = {
@@ -87,8 +94,19 @@ function OverallBanner({ report }: { report: AiReport }) {
   );
 }
 
-function FindingCard({ finding }: { finding: AiFinding }) {
+/** The curated guides (not the generic fallback) for a finding's codes, one per distinct guide. */
+function findingGuides(profileId: string, codes: string[] | undefined): FaultGuide[] {
+  const out: FaultGuide[] = [];
+  for (const code of codes ?? []) {
+    const g = matchFaultGuide(profileId, code, vagCodeForDtc(code) || undefined);
+    if (g !== GENERIC_GUIDE && !out.includes(g)) out.push(g);
+  }
+  return out;
+}
+
+function FindingCard({ finding, profileId }: { finding: AiFinding; profileId: string }) {
   const color = SEV_COLOR[finding.severity];
+  const guides = findingGuides(profileId, finding.codes);
   return (
     <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor={color} gap="$1">
       <XStack justifyContent="space-between" alignItems="center" gap="$2">
@@ -123,11 +141,142 @@ function FindingCard({ finding }: { finding: AiFinding }) {
           ))}
         </XStack>
       ) : null}
+      {guides.map((g, i) => (
+        <YStack
+          key={`g-${i}`}
+          gap="$2"
+          marginTop="$1"
+          backgroundColor="$color2"
+          padding="$2"
+          borderRadius="$3"
+        >
+          <Paragraph fontSize="$2">Known check for this car: {g.note}</Paragraph>
+          <GuideLinks guide={g} />
+        </YStack>
+      ))}
       {finding.likelyCauses && finding.likelyCauses.length > 0 ? (
         <Paragraph theme="alt2" fontSize="$2" marginTop="$1">
           Likely causes: {finding.likelyCauses.join('; ')}.
         </Paragraph>
       ) : null}
+    </Card>
+  );
+}
+
+function Bubble({ message }: { message: AiChatMessage }) {
+  const mine = message.role === 'user';
+  return (
+    <XStack justifyContent={mine ? 'flex-end' : 'flex-start'}>
+      <YStack
+        maxWidth="88%"
+        padding="$2"
+        borderRadius="$4"
+        backgroundColor={mine ? '$green5' : '$color3'}
+        testID={mine ? 'followup-question' : 'followup-answer'}
+      >
+        <Text fontSize="$3" selectable>
+          {message.content}
+        </Text>
+      </YStack>
+    </XStack>
+  );
+}
+
+/** "Ask about this report" (plan 19): suggestion chips, a free-text question and the conversation
+ *  as alternating bubbles. Disabled for an on-device (rule-based) report. */
+function FollowUpCard({
+  report,
+  focusCode,
+  conversation,
+  asking,
+  askError,
+  onAsk,
+  onClear,
+}: {
+  report: AiReport;
+  focusCode: string | null;
+  conversation: AiChatMessage[];
+  asking: boolean;
+  askError: string | null;
+  onAsk: (question: string) => void;
+  onClear: () => void;
+}) {
+  const [draft, setDraft] = useState('');
+  const disabled = report.source === 'local';
+  const send = (q: string) => {
+    if (!q.trim() || asking || disabled) return;
+    onAsk(q);
+    setDraft('');
+  };
+  return (
+    <Card bordered padding="$3" gap="$2">
+      <XStack alignItems="center" gap="$2">
+        <MessageCircle size={18} color="#8B949E" />
+        <Text fontWeight="800" fontSize="$5" flex={1}>
+          Ask about this report
+        </Text>
+        {conversation.length > 0 ? (
+          <Button
+            size="$2"
+            chromeless
+            onPress={onClear}
+            accessibilityLabel="Clear the conversation"
+          >
+            Clear
+          </Button>
+        ) : null}
+      </XStack>
+      {disabled ? (
+        <Paragraph theme="alt2" fontSize="$2">
+          Follow-up questions need an AI provider. This report came from the on-device rules; set up
+          a provider in Settings → AI assistant and re-run the diagnosis.
+        </Paragraph>
+      ) : (
+        <>
+          <XStack flexWrap="wrap" gap="$2">
+            {followUpSuggestions(report, focusCode).map((q) => (
+              <Button key={q} size="$2" theme="blue" disabled={asking} onPress={() => send(q)}>
+                {q}
+              </Button>
+            ))}
+          </XStack>
+          {conversation.map((m, i) => (
+            <Bubble key={`m-${i}`} message={m} />
+          ))}
+          {asking ? (
+            <XStack alignItems="center" gap="$2">
+              <Spinner />
+              <Paragraph theme="alt2" fontSize="$2">
+                Asking the AI…
+              </Paragraph>
+            </XStack>
+          ) : null}
+          {askError ? (
+            <Paragraph color="$red10" fontSize="$2">
+              {askError}
+            </Paragraph>
+          ) : null}
+          <XStack gap="$2" alignItems="center">
+            <Input
+              flex={1}
+              value={draft}
+              onChangeText={setDraft}
+              placeholder="Ask a question about this report"
+              editable={!asking}
+              onSubmitEditing={() => send(draft)}
+              returnKeyType="send"
+              accessibilityLabel="Follow-up question"
+            />
+            <Button
+              theme="green"
+              disabled={asking || !draft.trim()}
+              onPress={() => send(draft)}
+              icon={() => <Send size={16} color="#fff" />}
+              accessibilityLabel="Send the question"
+            />
+          </XStack>
+        </>
+      )}
     </Card>
   );
 }
@@ -190,14 +339,18 @@ function ReportView({
   report,
   notice,
   ranAt,
+  profileId,
   onClear,
   onRecheck,
+  followUp,
 }: {
   report: AiReport;
   notice: string | null;
   ranAt: number | null;
+  profileId: string;
   onClear: () => void;
   onRecheck: () => void;
+  followUp: React.ReactNode;
 }) {
   return (
     <YStack gap="$3">
@@ -215,7 +368,7 @@ function ReportView({
             Findings ({report.findings.length})
           </Text>
           {report.findings.map((f, i) => (
-            <FindingCard key={`f-${i}`} finding={f} />
+            <FindingCard key={`f-${i}`} finding={f} profileId={profileId} />
           ))}
         </YStack>
       ) : (
@@ -223,6 +376,8 @@ function ReportView({
       )}
 
       <ActionsView actions={report.actions} onClear={onClear} onRecheck={onRecheck} />
+
+      {followUp}
 
       <Paragraph theme="alt2" fontSize="$1" marginTop="$2">
         {report.disclaimer}
@@ -249,8 +404,25 @@ function FocusCard({ code, make }: { code: string; make?: DtcMake }) {
 
 export function AiDiagnoseScreen() {
   const status = useSessionStore((s) => s.status);
-  const { phase, progress, report, notice, error, ranAt, focusCode, make, busy, run, clearCodes } =
-    useAiDiagnose();
+  const {
+    phase,
+    progress,
+    report,
+    notice,
+    error,
+    ranAt,
+    focusCode,
+    make,
+    guideProfileId,
+    busy,
+    run,
+    clearCodes,
+    conversation,
+    asking,
+    askError,
+    ask,
+    clearConversation,
+  } = useAiDiagnose();
   const params = useLocalSearchParams<{ focus?: string | string[] }>();
   const rawFocus = Array.isArray(params.focus) ? params.focus[0] : params.focus;
   const focusParam = rawFocus?.trim().toUpperCase() || undefined;
@@ -333,8 +505,20 @@ export function AiDiagnoseScreen() {
           report={report}
           notice={notice}
           ranAt={ranAt}
+          profileId={guideProfileId}
           onClear={confirmClear}
           onRecheck={recheck}
+          followUp={
+            <FollowUpCard
+              report={report}
+              focusCode={focusCode}
+              conversation={conversation}
+              asking={asking}
+              askError={askError}
+              onAsk={(q) => void ask(q)}
+              onClear={clearConversation}
+            />
+          }
         />
       ) : null}
 
