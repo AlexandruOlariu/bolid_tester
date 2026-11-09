@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button, Switch } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { Screen, VerificationBadge } from '@/shared/ui';
 import type { GuidedRoutine } from '@/shared/vehicles';
 import { useRoutinesStore } from '../model/routinesStore';
 import { useRoutines } from '../hooks/useRoutines';
@@ -20,10 +20,12 @@ function RoutineRow({ routine }: { routine: GuidedRoutine }) {
     <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$4">
       <H4>{routine.name}</H4>
       <Paragraph theme="alt2" size="$2">
-        {routine.module} · {routine.kind === 'outputTest' ? 'output test (2F)' : 'basic setting (31)'} ·
-        id {routine.id}
-        {routine.vcdsGroup !== undefined ? ` · VCDS group ${routine.vcdsGroup}` : ''} · ⚠ experimental
+        {routine.module} ·{' '}
+        {routine.kind === 'outputTest' ? 'output test (2F)' : 'basic setting (31)'} · id{' '}
+        {routine.id}
+        {routine.vcdsGroup !== undefined ? ` · VCDS group ${routine.vcdsGroup}` : ''}
       </Paragraph>
+      <VerificationBadge item={routine} testID={`verify-routine-${routine.id}`} />
       <Paragraph size="$2">{routine.description}</Paragraph>
       {routine.unavailableReason ? (
         <Paragraph theme="alt1" size="$2">

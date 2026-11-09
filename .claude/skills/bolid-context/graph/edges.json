@@ -110,6 +110,21 @@
     "relates"
   ],
   [
+    "concept:capture-analyzer",
+    "concept:coding-tweaks-backup",
+    "relates"
+  ],
+  [
+    "concept:capture-analyzer",
+    "concept:guided-routines",
+    "relates"
+  ],
+  [
+    "concept:capture-analyzer",
+    "concept:module-scan",
+    "relates"
+  ],
+  [
     "concept:coding-tweaks-backup",
     "concept:adaptation-channels",
     "relates"
@@ -122,6 +137,16 @@
   [
     "concept:coding-tweaks-backup",
     "feature:coding",
+    "relates"
+  ],
+  [
+    "concept:confirmation-evidence",
+    "concept:capture-analyzer",
+    "relates"
+  ],
+  [
+    "concept:confirmation-evidence",
+    "concept:vehicle-profiles",
     "relates"
   ],
   [
@@ -1090,6 +1115,16 @@
     "named"
   ],
   [
+    "core:analysis/captureAnalyzer",
+    "doc:plans/03-sniffer-capture",
+    "named"
+  ],
+  [
+    "core:analysis/captureAnalyzer",
+    "doc:plans/25-post-capture-confirmation",
+    "named"
+  ],
+  [
     "core:analysis/dpf",
     "doc:features/dpf",
     "named"
@@ -1171,7 +1206,17 @@
   ],
   [
     "core:coding/presets",
+    "core:confirmation",
+    "imports"
+  ],
+  [
+    "core:coding/presets",
     "doc:plans/19-ai-provider-presets",
+    "named"
+  ],
+  [
+    "core:confirmation",
+    "doc:plans/25-post-capture-confirmation",
     "named"
   ],
   [
@@ -1391,6 +1436,11 @@
   ],
   [
     "core:public-api",
+    "core:analysis/captureAnalyzer",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:analysis/chartBuffer",
     "imports"
   ],
@@ -1462,6 +1512,11 @@
   [
     "core:public-api",
     "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:confirmation",
     "imports"
   ],
   [
@@ -1611,6 +1666,11 @@
   ],
   [
     "core:public-api",
+    "core:uds/discoverModules",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:uds/guidedRoutine",
     "imports"
   ],
@@ -1627,6 +1687,11 @@
   [
     "core:public-api",
     "core:uds/vagDtcs",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:uds/vagHeaders",
     "imports"
   ],
   [
@@ -1902,6 +1967,31 @@
   [
     "core:transport/simFixtures",
     "vehicle:registry",
+    "imports"
+  ],
+  [
+    "core:uds/discoverModules",
+    "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "core:uds/discoverModules",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "core:uds/discoverModules",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "core:uds/discoverModules",
+    "core:uds/udsModule",
+    "imports"
+  ],
+  [
+    "core:uds/discoverModules",
+    "core:uds/vagHeaders",
     "imports"
   ],
   [
@@ -2521,16 +2611,6 @@
   ],
   [
     "feature:can-sniffer",
-    "doc:features/can-sniffer",
-    "named"
-  ],
-  [
-    "feature:can-sniffer",
-    "doc:plans/03-sniffer-capture",
-    "named"
-  ],
-  [
-    "feature:can-sniffer",
     "feature:vehicle-select",
     "imports"
   ],
@@ -2747,6 +2827,11 @@
   [
     "feature:dpf",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:dpf",
+    "vehicle:confirmation",
     "imports"
   ],
   [
@@ -3256,12 +3341,22 @@
   ],
   [
     "feature:module-scan",
+    "core:uds/discoverModules",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
     "core:uds/testerPresent",
     "imports"
   ],
   [
     "feature:module-scan",
     "core:uds/udsModule",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:uds/vagHeaders",
     "imports"
   ],
   [
@@ -3277,6 +3372,11 @@
   [
     "feature:module-scan",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "store:garageStore",
     "imports"
   ],
   [
@@ -3307,6 +3407,11 @@
   [
     "feature:module-scan",
     "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -3582,6 +3687,11 @@
   [
     "feature:sensor-readings",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:sensor-tests",
+    "core:confirmation",
     "imports"
   ],
   [
@@ -4266,16 +4376,6 @@
   ],
   [
     "screen:sniffer",
-    "doc:features/can-sniffer",
-    "named"
-  ],
-  [
-    "screen:sniffer",
-    "doc:plans/03-sniffer-capture",
-    "named"
-  ],
-  [
-    "screen:sniffer",
     "feature:can-sniffer",
     "serves"
   ],
@@ -4610,6 +4710,26 @@
     "imports"
   ],
   [
+    "ui:VerificationBadge",
+    "vehicle:confirmation",
+    "imports"
+  ],
+  [
+    "vehicle:confirmation",
+    "core:confirmation",
+    "imports"
+  ],
+  [
+    "vehicle:confirmation",
+    "doc:plans/25-post-capture-confirmation",
+    "named"
+  ],
+  [
+    "vehicle:confirmation",
+    "vehicle:types",
+    "imports"
+  ],
+  [
     "vehicle:faultGuides",
     "doc:features/fault-codes",
     "named"
@@ -4696,6 +4816,11 @@
   ],
   [
     "vehicle:registry",
+    "vehicle:confirmation",
+    "imports"
+  ],
+  [
+    "vehicle:registry",
     "vehicle:fiat-punto-2008-12",
     "imports"
   ],
@@ -4757,6 +4882,11 @@
   [
     "vehicle:types",
     "core:coding/presets",
+    "imports"
+  ],
+  [
+    "vehicle:types",
+    "core:confirmation",
     "imports"
   ],
   [

@@ -303,3 +303,32 @@ describe('buildScenario KWP seeding (plan 22)', () => {
     ).toEqual({});
   });
 });
+
+describe('MockTransport extended DIDs belong to the engine (plan 25)', () => {
+  /** The whole payload as one hex string (the ELM multi-frame printout de-framed). */
+  const payload = async (t: MockTransport, cmd: string) =>
+    dataLines(await ask(t, cmd))
+      .filter((l, i, all) => !(i === 0 && all.length > 1 && /^[0-9A-F]{3}$/.test(l)))
+      .map((l) => l.replace(/^[0-9A-F]:/, ''))
+      .join('');
+
+  it('answers 22 F187 / 22 1701 with default addressing and on 7E0 only', async () => {
+    const t = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+    await t.connect();
+    expect(await payload(t, '22F187')).toMatch(/^62F187/);
+    expect(await payload(t, '221701')).toMatch(/^621701/);
+    await ask(t, 'ATSH7E0');
+    expect(await payload(t, '221701')).toMatch(/^621701/);
+    // Another module's header: no engine DIDs (module discovery would otherwise "find" the engine
+    // on every candidate). The BCM still answers its own coding DID.
+    await ask(t, 'ATSH70E');
+    expect(await payload(t, '22F187')).toBe('NODATA');
+    expect(await payload(t, '221701')).toBe('NODATA');
+    expect(await payload(t, '22F1A0')).toMatch(/^62F1A0/);
+    // A module with its own ident answers it, not the engine's.
+    await ask(t, 'ATSH760');
+    expect(await payload(t, '22F187')).toBe(
+      '62F187' + Buffer.from('1K0907379AC').toString('hex').toUpperCase(),
+    );
+  });
+});

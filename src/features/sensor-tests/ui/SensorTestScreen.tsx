@@ -1,6 +1,6 @@
 import React from 'react';
-import { YStack, Paragraph, H4, Button } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
+import { Screen, VerificationBadge } from '@/shared/ui';
 import { useSensorTestStore } from '../model/sensorTestStore';
 import { useSensorTests } from '../hooks/useSensorTests';
 
@@ -35,7 +35,9 @@ export function SensorTestScreen() {
             mode05.map((r, i) => (
               <Paragraph key={i}>
                 {r.name} · sensor {r.sensor} ·{' '}
-                {r.volts !== null ? `${r.volts.toFixed(3)} V` : `raw ${r.values.map((b) => b.toString(16).padStart(2, '0')).join(' ')}`}
+                {r.volts !== null
+                  ? `${r.volts.toFixed(3)} V`
+                  : `raw ${r.values.map((b) => b.toString(16).padStart(2, '0')).join(' ')}`}
               </Paragraph>
             ))
           ) : (
@@ -50,12 +52,19 @@ export function SensorTestScreen() {
         <YStack gap="$1">
           <H4>Modules (experimental)</H4>
           <Paragraph theme="alt2" size="$2">
-            Unverified, CAN-only. Confirm against the real vehicle before trusting values.
+            CAN-only, per-car addressing. Trust a value only once its badge says it was confirmed on
+            this car.
           </Paragraph>
           {moduleReadings.map((m, i) => (
-            <Paragraph key={i}>
-              {m.name}: {m.value != null ? `${m.value} ${m.unit}` : '—'} · raw {m.raw}
-            </Paragraph>
+            <XStack key={i} gap="$2" alignItems="center" flexWrap="wrap">
+              <Paragraph>
+                {m.name}: {m.value != null ? `${m.value} ${m.unit}` : '—'} · raw {m.raw}
+              </Paragraph>
+              <VerificationBadge
+                item={{ experimental: true, confirmed: m.confirmed }}
+                testID={`verify-sensor-${i}`}
+              />
+            </XStack>
           ))}
         </YStack>
       ) : (

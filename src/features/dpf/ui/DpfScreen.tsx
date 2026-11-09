@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { XStack, Paragraph, H3, Button, Card } from 'tamagui';
 import { Screen, ValueCard } from '@/shared/ui';
+import { allConfirmed } from '@/shared/vehicles';
 import { useDpf } from '../hooks/useDpf';
 
 const STATUS: Record<string, { color: string; label: string }> = {
@@ -13,7 +14,7 @@ const STATUS: Record<string, { color: string; label: string }> = {
 };
 
 export function DpfScreen() {
-  const { available, values, report, running, refresh } = useDpf();
+  const { available, values, report, running, refresh, dieselPids } = useDpf();
 
   useEffect(() => {
     if (available) void refresh();
@@ -25,8 +26,8 @@ export function DpfScreen() {
       <Screen title="DPF / regen">
         <Paragraph theme="alt2">
           The DPF monitor needs a diesel profile with DPF PIDs on a CAN (UDS) link. It is hidden for
-          petrol cars and K-line cars (no Mode 22). Select the Golf TDI (or another diesel CAN profile)
-          to use it.
+          petrol cars and K-line cars (no Mode 22). Select the Golf TDI (or another diesel CAN
+          profile) to use it.
         </Paragraph>
       </Screen>
     );
@@ -34,7 +35,14 @@ export function DpfScreen() {
 
   const s = report ? (STATUS[report.status] ?? STATUS.unknown) : STATUS.unknown;
   return (
-    <Screen title="DPF / regen" subtitle="⚠ Experimental Mode 22 reads — confirm values on the car.">
+    <Screen
+      title="DPF / regen"
+      subtitle={
+        allConfirmed(dieselPids)
+          ? 'All DIDs confirmed on this car'
+          : '⚠ Experimental Mode 22 reads — confirm values on the car.'
+      }
+    >
       <Card bordered padding="$3" backgroundColor="$color2">
         <H3 color={s.color}>{s.label}</H3>
         {report?.sootPct != null ? <Paragraph>Soot load {report.sootPct}%</Paragraph> : null}

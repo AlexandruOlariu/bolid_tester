@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { Screen, VerificationBadge } from '@/shared/ui';
 import { useServiceResetStore } from '../model/serviceResetStore';
 import { useServiceReset } from '../hooks/useServiceReset';
 
@@ -15,7 +15,8 @@ export function ServiceResetScreen() {
       <Screen title="Service reset">
         <Paragraph theme="alt2">
           Service-interval reset is unavailable for this car / protocol. It is experimental and
-          profile-gated — it needs a CAN (UDS) link, or a K-line (KWP2000) link for cars that use it.
+          profile-gated — it needs a CAN (UDS) link, or a K-line (KWP2000) link for cars that use
+          it.
         </Paragraph>
       </Screen>
     );
@@ -81,6 +82,7 @@ export function ServiceResetScreen() {
           {descriptor.routineId ? ` · routine ${descriptor.routineId}` : ''} · header{' '}
           {descriptor.reqHeader}
         </Paragraph>
+        <VerificationBadge item={descriptor} testID="verify-service-reset" />
         {obdUnreachable ? (
           <Paragraph theme="alt1" size="$2">
             ⚠ {obdUnreachable}

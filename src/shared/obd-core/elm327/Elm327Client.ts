@@ -77,6 +77,11 @@ export class Elm327Client {
   private monitorRelease: (() => void) | null = null;
   /** Raised default per-command timeout for slow links (K-line). Overrides options.commandTimeoutMs. */
   private slowTimeoutMs: number | null = null;
+  /** Temporary per-command timeouts set by `withCommandTimeout` (e.g. a short module-discovery
+   *  probe), one entry per active call; the newest active one wins over the slow / configured
+   *  default, and an explicit `raw(cmd, ms)` still wins over it. A list, not a saved-and-restored
+   *  field, so overlapping (non-nested) calls cannot leave an override behind. */
+  private timeoutOverrides: { ms: number }[] = [];
   /** Last time a byte went out or came in (ms). 0 = never — the adapter may already be asleep. */
   private lastIoAt = 0;
   /** The last command the adapter is known to have run (for the bare-CR repeat-safety check), or
@@ -110,6 +115,21 @@ export class Elm327Client {
    *  and KWP routines take longer than CAN). Pass null to revert to the configured default. */
   setSlow(ms: number | null = 12000): void {
     this.slowTimeoutMs = ms;
+  }
+
+  /** Run `fn` with every command it sends timing out after `ms` instead of the default — for probes
+   *  where a silent target is the common case (module discovery, plan 25) and a full 4 s timeout
+   *  per candidate would make the scan crawl. The override is removed afterwards, even when `fn`
+   *  throws, and even when another `withCommandTimeout` call overlaps this one. */
+  async withCommandTimeout<T>(ms: number, fn: () => Promise<T>): Promise<T> {
+    const entry = { ms };
+    this.timeoutOverrides.push(entry);
+    try {
+      return await fn();
+    } finally {
+      const i = this.timeoutOverrides.indexOf(entry);
+      if (i >= 0) this.timeoutOverrides.splice(i, 1);
+    }
   }
 
   private onData = (bytes: Uint8Array): void => {
@@ -234,7 +254,12 @@ export class Elm327Client {
     return new Promise<string>((resolve, reject) => {
       this.attach();
       this.buffer = '';
-      const timeout = timeoutMs ?? this.slowTimeoutMs ?? this.options.commandTimeoutMs ?? 4000;
+      const timeout =
+        timeoutMs ??
+        this.timeoutOverrides[this.timeoutOverrides.length - 1]?.ms ??
+        this.slowTimeoutMs ??
+        this.options.commandTimeoutMs ??
+        4000;
       const timer = setTimeout(() => {
         if (this.pending) {
           this.pending = null;

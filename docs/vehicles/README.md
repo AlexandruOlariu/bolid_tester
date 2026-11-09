@@ -68,6 +68,34 @@ type VehicleProfile = {
 };
 ```
 
+### `confirmed` — evidence that an item was checked on the car
+
+Every per-car item a profile declares — `extendedPids`, `modules`, `routines`, `adaptations`,
+`codingModules`, `codingPresets`, `moduleSensors`, `loginCodes` and `serviceReset` — may carry
+`confirmed?: Confirmation` ([plan 25](../plans/25-post-capture-confirmation.md);
+`src/shared/obd-core/confirmation.ts`):
+
+```ts
+confirmed: {
+  on: '2026-11-20', // ISO date, YYYY-MM-DD
+  source: 'sniffer-capture', // | 'on-car' | 'vcds-log'
+  fixture: 'docs/captures/golf-plus-2009-20tdi-group121-2026-11-20.csv', // the evidence
+  note: 'VCDS Basic Settings Group 121 ON → 31 01 0301',
+}
+```
+
+`experimental` keeps its meaning (non-standard, per-car data); `confirmed` records **where the
+proof lives**. The screens show one badge per item (`VerificationBadge`, `verificationState` in
+`src/shared/vehicles/confirmation.ts`): green **Standard OBD2** when `experimental: false`, blue
+**Confirmed <date> (<source>)** when `confirmed` is set, amber **Illustrative — not yet confirmed on
+this car** otherwise.
+
+**The evidence rule** (enforced by `vehicle-docs-sync.test.ts` through `confirmationProblems`):
+`on` is a `YYYY-MM-DD` date, and `fixture`, when set, is a repo-relative path under
+`src/shared/obd-core/transport/fixtures/` (a plan-02 car fixture) or `docs/captures/` (a sniffer
+capture, see [captures](../captures/README.md)) **that exists**. A bogus path fails CI. Confirmation
+is always a reviewed, hand-made profile edit — the analyzer never promotes findings by itself.
+
 ### `make` — manufacturer fault-code texts
 
 `make` picks the manufacturer table the [DTC database](../features/fault-codes.md#dtc-database)
@@ -98,7 +126,8 @@ checked by the `vehicle-docs-sync` test. Users do not need one to diagnose their
   car, protocol and PIDs from the learned data when present, everything else from the base. The
   per-car experimental arrays (Mode 22 PIDs, modules, coding, adaptations, routines, service reset,
   module sensors, Mode 06, gateway list) are inherited **only from a non-generic base**; known faults
-  and the on-car checklist never are.
+  and the on-car checklist never are. Modules the user added from **Discover modules**
+  (`UserVehicle.modules`, plan 25) are merged over the base's list on any base.
 - Garage cars live on the phone (`bolid.garage`) and have **no Markdown here**. The sync test applies
   to the registry only; nothing in this folder changes when a user adds a car.
 - When a user's car deserves curated data (extended PIDs, modules, a fault history), it graduates

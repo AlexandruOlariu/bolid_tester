@@ -52,3 +52,7 @@ export * from './uds/udsModule';
 export * from './uds/guidedRoutine';
 export * from './uds/testerPresent';
 export * from './uds/vagDtcs';
+export * from './uds/vagHeaders';
+export * from './uds/discoverModules';
+export * from './analysis/captureAnalyzer';
+export * from './confirmation';

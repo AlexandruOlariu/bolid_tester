@@ -33,6 +33,10 @@ jobs:
       # plugins/withReleaseSigning.js against the generated-gradle fixture + one version everywhere.
       - name: Release config (signing plugin, version sync)
         run: npm run check:release
+      # The capture analyzer CLI runs the TypeScript analyzer through Node's type stripping (plan 25);
+      # exercise that path on the committed synthetic capture.
+      - name: Capture analyzer CLI smoke
+        run: npm run check:capture
 
   build-android:
     needs: verify

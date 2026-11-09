@@ -46,8 +46,9 @@ app.json`), so app.json lands in the same commit as the bump. Never edit the thr
 | push to `main`          | ✅       | APK + AAB artifact; release-signed if the secret exists, else debug-signed with a warning | —              | —                      |
 | push of a `v*` tag      | ✅       | APK + AAB, **must** be release-signed                                                     | ✅ created     | ✅ `production` branch |
 
-- `verify`: lint, both typechecks, all Jest tests, and `npm run check:release`
-  (`scripts/check-signing-plugin.mjs` + `scripts/check-version-sync.mjs`).
+- `verify`: lint, both typechecks, all Jest tests, `npm run check:release`
+  (`scripts/check-signing-plugin.mjs` + `scripts/check-version-sync.mjs`) and `npm run check:capture`
+  (the capture analyzer CLI on the synthetic capture, plan 25).
 - `build-android`, in order: tag = `v<package.json version>` (tags only) → restore the keystore from
   `ANDROID_KEYSTORE_B64` into `$RUNNER_TEMP` and export `BOLID_KEYSTORE_PATH` (a tag build **fails
   here** when the secret is missing, instead of publishing a debug-signed release) → `expo prebuild`

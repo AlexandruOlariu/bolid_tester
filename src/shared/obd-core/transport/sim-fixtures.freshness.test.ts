@@ -8,6 +8,8 @@ import { ReplayFixture } from './logReplay';
 const HINT = 'run `npm run fixtures:sim` and commit the result';
 
 describe('simulator fixtures are fresh', () => {
+  // Re-recording every vehicle × flow takes ~5 s on its own — jest's default per-test limit — so it
+  // timed out under a loaded full run. The margin is for that, not for a hang.
   it('every committed sim-*.json equals a fresh recording, and none is missing or stale', async () => {
     const fresh = await recordAllSimFixtures();
     const committed = Object.fromEntries(
@@ -24,7 +26,7 @@ describe('simulator fixtures are fresh', () => {
       const roundTripped = JSON.parse(serializeFixture(fixture)) as ReplayFixture;
       expect({ rel, fixture: committed[rel] }).toEqual({ rel, fixture: roundTripped });
     }
-  });
+  }, 30_000);
 
   it('recording is deterministic, and a changed scenario value no longer matches', async () => {
     const committed = readFixtureFiles().find(

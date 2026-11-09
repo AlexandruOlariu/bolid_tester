@@ -51,7 +51,8 @@ the algorithm or the module must need none.
 
 ## UI
 
-- **ServiceResetScreen** — shows the target module + method, a prominent experimental/danger banner,
+- **ServiceResetScreen** — shows the target module + method with a **verification badge** (`VerificationBadge`, plan 25): green "Standard OBD2", blue "Confirmed <date> (<source>)" once the profile item carries `confirmed` evidence, amber "Illustrative — not yet confirmed on this car" otherwise, a prominent
+  experimental/danger banner,
   a single **Reset service interval** action behind a confirm, and the result (success / the raw
   negative response). Hidden entirely on non-CAN links and when no profile descriptor exists.
 

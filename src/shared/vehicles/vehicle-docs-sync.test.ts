@@ -9,9 +9,12 @@ import {
   validationFrontMatterProblems,
 } from './validatedOn';
 import { readFixtureFiles } from '../obd-core/transport/fixtureFiles';
+import { confirmationProblems } from './confirmation';
 
 // docs are authoritative; this guards that code profiles stay in sync with their Markdown.
 const DOCS_DIR = path.resolve(__dirname, '../../../docs/vehicles');
+const REPO_ROOT = path.resolve(__dirname, '../../..');
+const repoFileExists = (rel: string) => fs.existsSync(path.join(REPO_ROOT, rel));
 
 const readFrontMatter = (file: string) => parseFrontMatter(fs.readFileSync(file, 'utf8'));
 
@@ -36,11 +39,21 @@ describe('vehicle docs ↔ code sync', () => {
       expect(validationFrontMatterProblems(readFrontMatter(file), p.expectedProtocol)).toEqual([]);
     });
 
+    it(`${p.id}: every confirmed item has a valid date and committed evidence`, () => {
+      // Plan 25: `confirmed.fixture` must name a committed plan-02 fixture or docs/captures file.
+      expect(confirmationProblems(p, repoFileExists)).toEqual([]);
+    });
+
     it(`${p.id}: the "Validated on the car" table lists exactly the committed car fixtures`, () => {
       const rows = parseValidatedOnTable(fs.readFileSync(file, 'utf8'));
       expect(validatedOnTableProblems(rows, carFixturesFor(p.id, fixtures))).toEqual([]);
     });
   }
+
+  it('the evidence directory for sniffer captures exists', () => {
+    expect(repoFileExists('docs/captures/README.md')).toBe(true);
+    expect(repoFileExists('docs/captures/synthetic-golf.csv')).toBe(true);
+  });
 
   it('every vehicle doc has a registered profile', () => {
     const ids = new Set(VEHICLE_PROFILES.map((p) => p.id));

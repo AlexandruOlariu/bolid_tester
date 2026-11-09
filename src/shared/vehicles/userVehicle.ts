@@ -9,7 +9,7 @@ import type { ProtocolId } from '../obd-core/obd/protocols';
 import type { DtcMake } from '../obd-core/obd/dtcDatabase';
 import type { SessionInfo } from '../obd-core/session/DiagnosticSession';
 import { decodeVin } from '../obd-core/obd/vinDecode';
-import type { Fuel, LoginCodeEntry, VehicleProfile } from './types';
+import type { DiagModule, Fuel, LoginCodeEntry, VehicleProfile } from './types';
 
 /** What a live connection told us about the car. */
 export interface LearnedIdentity {
@@ -36,6 +36,10 @@ export interface UserVehicle {
   notes?: string;
   /** The car's code book (plan 22): module login codes the user chose to remember. */
   loginCodes?: LoginCodeEntry[];
+  /** Modules the user added from **Discover modules** (plan 25), merged over the base profile's
+   *  module list by `buildUserProfile` (a user entry replaces the base's with the same transport +
+   *  address). */
+  modules?: DiagModule[];
   createdAt: number;
   updatedAt: number;
 }
@@ -81,7 +85,63 @@ export function buildUserProfile(user: UserVehicle, base: VehicleProfile): Vehic
     if (base.mode06Tests) profile.mode06Tests = base.mode06Tests;
     if (base.gatewayInstallList) profile.gatewayInstallList = base.gatewayInstallList;
   }
+  // Discovered modules apply on ANY base — discovery is how a generic-base car gets a module map.
+  if (user.modules?.length) profile.modules = mergeModules(profile.modules ?? [], user.modules);
   return profile;
+}
+
+/** A module's identity in a module list: transport + VAG address. The same address can appear
+ *  once per transport (the Golf lists cluster `17` on UDS and on TP2.0), so anything that keys
+ *  modules (scan results, Clear, React keys) uses this, never the address alone. */
+export const diagModuleKey = (m: Pick<DiagModule, 'transport' | 'address'>): string =>
+  `${m.transport}:${m.address.toUpperCase()}`;
+
+/** `base` with every `extra` module added; an extra replaces a base entry with the same transport
+ *  and address (in place), so a discovered address overrides the profile's illustrative one. */
+export function mergeModules(base: DiagModule[], extra: DiagModule[]): DiagModule[] {
+  const out = base.slice();
+  for (const m of extra) {
+    const i = out.findIndex((x) => diagModuleKey(x) === diagModuleKey(m));
+    if (i >= 0) out[i] = m;
+    else out.push(m);
+  }
+  return out;
+}
+
+const HEX_ID = /^[0-9A-Fa-f]{3}(?:[0-9A-Fa-f]{5})?$/;
+
+/** Keep only well-formed user modules from persisted data (UDS with a request header and reply
+ *  filter, or TP2.0 with a logical address); undefined when none survive. */
+export function sanitizeUserModules(raw: unknown): DiagModule[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out: DiagModule[] = [];
+  for (const x of raw) {
+    if (!x || typeof x !== 'object') continue;
+    const m = x as Partial<DiagModule>;
+    if (typeof m.address !== 'string' || !/^[0-9A-Fa-f]{2}$/.test(m.address)) continue;
+    if (typeof m.name !== 'string' || typeof m.experimental !== 'boolean') continue;
+    if (m.transport === 'uds') {
+      if (typeof m.reqHeader !== 'string' || !HEX_ID.test(m.reqHeader)) continue;
+      if (typeof m.rxFilter !== 'string' || !HEX_ID.test(m.rxFilter)) continue;
+      out.push({
+        address: m.address,
+        name: m.name,
+        transport: 'uds',
+        reqHeader: m.reqHeader,
+        rxFilter: m.rxFilter,
+        experimental: m.experimental,
+      });
+    } else if (m.transport === 'tp20' && typeof m.tp20Address === 'number') {
+      out.push({
+        address: m.address,
+        name: m.name,
+        transport: 'tp20',
+        tp20Address: m.tp20Address,
+        experimental: m.experimental,
+      });
+    }
+  }
+  return out.length ? out : undefined;
 }
 
 /** Registry id whose per-car curated data (fault guides) applies to `profile`: its own id for a

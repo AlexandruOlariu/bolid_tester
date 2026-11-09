@@ -330,6 +330,12 @@ export class DiagnosticSession {
     return out;
   }
 
+  /** Run `fn` with a shorter (or longer) per-command timeout — see
+   *  `Elm327Client.withCommandTimeout`. Used by module discovery (plan 25). */
+  withCommandTimeout<T>(ms: number, fn: () => Promise<T>): Promise<T> {
+    return this.client.withCommandTimeout(ms, fn);
+  }
+
   /** Low-level UDS/raw send: resolves with response bytes (service byte first) or null on a notice.
    *  Used by the coding flow (obd-core/coding/udsCoding) and module sensor reads. */
   async send(cmd: string): Promise<number[] | null> {

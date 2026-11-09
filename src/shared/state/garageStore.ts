@@ -8,6 +8,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { fileStateStorage } from './persistStorage';
 import {
   USER_VEHICLE_PREFIX,
+  sanitizeUserModules,
   type LearnedIdentity,
   type UserVehicle,
 } from '@/shared/vehicles/userVehicle';
@@ -63,10 +64,18 @@ function withSaneLoginCodes(v: UserVehicle): UserVehicle {
   return loginCodes ? { ...rest, loginCodes } : rest;
 }
 
+/** The car with its discovered modules (plan 25) reduced to well-formed entries, or without. */
+function withSaneModules(v: UserVehicle): UserVehicle {
+  if (v.modules === undefined) return v;
+  const modules = sanitizeUserModules(v.modules);
+  const { modules: _raw, ...rest } = v;
+  return modules ? { ...rest, modules } : rest;
+}
+
 /** Keep only well-formed garage records from a persisted blob (a hand-edited or truncated file must
  *  not crash profile resolution or the Vehicle screen). A record without a usable id / name / base
  *  is dropped; a malformed `learned` block is stripped and the car kept as an unlearned one;
- *  malformed login codes are dropped. */
+ *  malformed login codes and discovered modules are dropped. */
 export function sanitizeGarage(persisted: unknown): UserVehicle[] {
   const list = (persisted as { vehicles?: unknown } | null)?.vehicles;
   if (!Array.isArray(list)) return [];
@@ -82,7 +91,7 @@ export function sanitizeGarage(persisted: unknown): UserVehicle[] {
     ) {
       continue;
     }
-    const car = withSaneLoginCodes(v);
+    const car = withSaneModules(withSaneLoginCodes(v));
     if (car.learned === undefined) {
       out.push(car);
       continue;

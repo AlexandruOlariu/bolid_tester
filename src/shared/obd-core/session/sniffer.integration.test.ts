@@ -19,7 +19,9 @@ describe('CAN sniffer against the simulator', () => {
       agg.add(line);
     });
     expect(session.sniffing).toBe(true);
-    await new Promise((r) => setTimeout(r, 200));
+    // Stream until a few frames arrived (a fixed 200 ms window saw only 3 under a loaded full run).
+    const deadline = Date.now() + 3000;
+    while (lines <= 3 && Date.now() < deadline) await new Promise((r) => setTimeout(r, 50));
     await session.stopSniffer();
     expect(session.sniffing).toBe(false);
 

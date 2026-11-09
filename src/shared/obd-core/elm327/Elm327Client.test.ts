@@ -54,6 +54,47 @@ describe('Elm327Client', () => {
     await expect(c.raw('ATZ', 30)).rejects.toThrow(/timeout/i);
   });
 
+  it('withCommandTimeout shortens the timeout for its commands only, then restores it', async () => {
+    const dead: Transport = {
+      status: 'connected',
+      connect: async () => undefined,
+      disconnect: async () => undefined,
+      write: async () => undefined,
+      onData: () => () => undefined,
+      onStatusChange: () => () => undefined,
+    };
+    const c = new Elm327Client(dead, { commandTimeoutMs: 600, wakeAfterIdleMs: 0 });
+    c.attach();
+    await expect(c.withCommandTimeout(40, () => c.raw('ATI'))).rejects.toThrow(
+      /timeout after 40ms/,
+    );
+    // Restored: the next command waits for the configured 600 ms again.
+    await expect(c.raw('ATI')).rejects.toThrow(/timeout after 600ms/);
+  });
+
+  it('withCommandTimeout leaves no override behind when two calls overlap without nesting', async () => {
+    const dead: Transport = {
+      status: 'connected',
+      connect: async () => undefined,
+      disconnect: async () => undefined,
+      write: async () => undefined,
+      onData: () => () => undefined,
+      onStatusChange: () => () => undefined,
+    };
+    const c = new Elm327Client(dead, { commandTimeoutMs: 300, wakeAfterIdleMs: 0 });
+    c.attach();
+    let releaseA!: () => void;
+    let releaseB!: () => void;
+    const a = c.withCommandTimeout(20, () => new Promise<void>((resolve) => (releaseA = resolve)));
+    const b = c.withCommandTimeout(30, () => new Promise<void>((resolve) => (releaseB = resolve)));
+    // A finishes first, then B: a saved-and-restored field would end up stuck at A's 20 ms.
+    releaseA();
+    await a;
+    releaseB();
+    await b;
+    await expect(c.raw('ATI')).rejects.toThrow(/timeout after 300ms/);
+  });
+
   describe('drain-until-prompt after a timeout (plan 12)', () => {
     it('never hands a late reply to the next command', async () => {
       // The simulator answers 200 ms late; the first command gives up after 50 ms. Without the

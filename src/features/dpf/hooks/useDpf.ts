@@ -47,5 +47,5 @@ export function useDpf() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- dieselPids derives from the listed profile (memoised active profile)
   }, [session, profile, set]);
 
-  return { available, values, report, running, refresh };
+  return { available, values, report, running, refresh, dieselPids };
 }

@@ -33,6 +33,8 @@ import { useBackupWorkStore } from '@/features/coding/model/backupWorkStore';
 import { useAdaptationsStore } from '@/features/adaptations/model/adaptationsStore';
 import { useLoginBookStore } from '@/features/adaptations/model/loginBookStore';
 import { useScanHistoryStore } from '@/features/module-scan/model/scanHistoryStore';
+import { useModuleScanStore } from '@/features/module-scan/model/moduleScanStore';
+import { useDpfStore } from '@/features/dpf/model/dpfStore';
 import { useInspectionStore } from '@/features/inspection/model/inspectionStore';
 import { useBatteryStore } from '@/features/battery-health/model/batteryStore';
 import { useAlertsStore } from '@/features/alerts/model/alertsStore';
@@ -69,6 +71,8 @@ const STORES: AnyStore[] = [
   useAdaptationsStore,
   useLoginBookStore,
   useScanHistoryStore,
+  useModuleScanStore,
+  useDpfStore,
   useInspectionStore,
   useBatteryStore,
   useAlertsStore,

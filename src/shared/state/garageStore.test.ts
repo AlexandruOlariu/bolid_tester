@@ -154,6 +154,33 @@ describe('garageStore', () => {
     });
   });
 
+  it('sanitizeGarage keeps well-formed discovered modules and drops the rest (plan 25)', () => {
+    const base = {
+      name: 'A',
+      baseProfileId: 'generic',
+      fuel: 'petrol',
+      createdAt: 1,
+      updatedAt: 1,
+    };
+    const hvac = {
+      address: '08',
+      name: 'HVAC',
+      transport: 'uds',
+      reqHeader: '746',
+      rxFilter: '7B0',
+      experimental: true,
+    };
+    const out = sanitizeGarage({
+      vehicles: [
+        { ...base, id: 'user:a', modules: [hvac, { address: 'x' }] },
+        { ...base, id: 'user:b', modules: [{ address: 'x' }] },
+      ],
+    });
+    expect(out[0].modules).toEqual([hvac]);
+    expect('modules' in out[1]).toBe(false);
+    expect(resolveProfile('user:a', out).modules).toEqual([hvac]);
+  });
+
   it('rehydration keeps a car added during the async read and drops malformed records', async () => {
     const stored = {
       id: 'user:stored',

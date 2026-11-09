@@ -3,6 +3,9 @@
 import { ProtocolId } from '../obd-core/obd/protocols';
 import type { CodingPreset } from '../obd-core/coding/presets';
 import type { DtcMake } from '../obd-core/obd/dtcDatabase';
+import type { Confirmation } from '../obd-core/confirmation';
+
+export type { Confirmation } from '../obd-core/confirmation';
 
 export type Fuel = 'diesel' | 'petrol' | 'lpg' | 'hybrid' | 'other';
 export type DtcMode = '03' | '07' | '0A';
@@ -29,6 +32,9 @@ export interface ExtendedPid {
   /** Bytes the simulator returns for this DID (after `62 <did>`). */
   sampleResponse: number[];
   decode: (data: number[]) => number;
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** A standardized Mode 06 monitor we surface for this car. sampleResponse is the full response
@@ -51,6 +57,9 @@ export interface ModuleSensor {
   experimental: true;
   sampleResponse: number[]; // bytes the simulator returns after 62 <did>
   decode: (data: number[]) => number;
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** An EXPERIMENTAL codeable module. Ships DISABLED; see docs/features/coding.md for the safety
@@ -68,6 +77,9 @@ export interface CodingModule {
    *  for extra bit names. Illustrative if set — confirm on the real car. */
   partNumber?: string;
   experimental: true;
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** An EXPERIMENTAL service-interval ("oil service / SRI") reset descriptor for a module (usually the
@@ -99,6 +111,9 @@ export interface ServiceReset {
    *  an explicit "try anyway". The simulator still answers, so the flow stays testable. */
   obdUnreachable?: string;
   experimental: true;
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** A login code for a pre-UDS (KWP2000) VAG module — the five-digit number VCDS asks for in its
@@ -115,6 +130,9 @@ export interface LoginCodeEntry {
   purpose: string;
   /** Where it came from; profiles only ever carry codes documented from the owner's own VCDS logs. */
   source: 'owner-vcds-log' | 'user-entered' | 'documented';
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** An EXPERIMENTAL adaptation channel (VCDS-style "adaptation"): a small numeric module value
@@ -150,6 +168,9 @@ export interface AdaptationChannel {
   experimental: true;
   /** Simulator seed (mutable in the sim via 2E, like coding). */
   sampleValue: number[];
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** An EXPERIMENTAL guided routine: a UDS output test (2F) or basic setting (31) with explicit
@@ -192,6 +213,9 @@ export interface GuidedRoutine {
    *  demoable. */
   unavailableReason?: string;
   experimental: true;
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** A diagnosable control module for the per-module scan ("auto-scan"). UDS modules are addressed
@@ -218,6 +242,9 @@ export interface DiagModule {
    *  5-digit code as a number (decimal of the 2-byte DTC, e.g. 928 → 00928); `status` the KWP
    *  status byte. Illustrative, like the UDS sampleDtcs. */
   tp20SampleDtcs?: { code: number; status?: number }[];
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** A fault this exact car is known to report, taken from real diagnostic history (VCDS / OBD2

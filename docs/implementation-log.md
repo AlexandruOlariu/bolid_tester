@@ -5,6 +5,165 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 25 — Confirmation metadata, module discovery and the capture analyzer (2026-11-09)
+
+[Plan 25](./plans/25-post-capture-confirmation.md) landed in the simulator: every per-car profile
+item can now record **evidence** that it was checked on the real car, the screens badge each item
+green / blue / amber, **Discover modules** finds a car's real UDS module map, and a **capture
+analyzer** (library + CLI) turns a sniffer CSV into decoded request / response pairs and
+fingerprints. Nothing in the Golf profile is marked confirmed yet — the plan's whole "Deferred until
+an on-car session" section (discovery on the Golf, the Group 121 / DPF / service-reset captures,
+TP2.0 timing, the VCDS before / after BCM reads) is untouched and still needs the car.
+
+- **`Confirmation` (`obd-core/confirmation.ts`, exported).** `{ on, source: 'sniffer-capture' |
+'on-car' | 'vcds-log', fixture?, note? }`; `confirmed?` on `ExtendedPid`, `DiagModule`,
+  `GuidedRoutine`, `AdaptationChannel`, `CodingModule`, `ServiceReset`, `ModuleSensor`,
+  `LoginCodeEntry` (the field plan 22 left out) and `CodingPreset`. Pure helpers in
+  `shared/vehicles/confirmation.ts`: `verificationState` (`experimental: false` → standard, else
+  `confirmed` → confirmed, else unverified), `verificationText` ("Standard OBD2" / "Confirmed
+  2026-11-20 (sniffer capture)" / "Illustrative — not yet confirmed on this car"), `allConfirmed`,
+  `profileConfirmations`, `confirmationProblems(profile, exists)`.
+- **Evidence rule.** `vehicle-docs-sync.test.ts` runs `confirmationProblems` on every registry
+  profile: `on` must be `YYYY-MM-DD`, `fixture` must sit under
+  `src/shared/obd-core/transport/fixtures/` or `docs/captures/` (no `..`) and exist. Proved with a
+  temporary edit (ABS module `confirmed` → `docs/captures/bogus.csv` fails, the synthetic capture
+  passes) and pinned by unit tests on a fake profile. New `docs/captures/` (README, `.gitkeep`).
+- **`VerificationBadge` (`shared/ui`).** Replaces the per-item warnings on Extended PIDs (the
+  `EXPERIMENTAL` pill), Module scan (expanded row), Routines, Adaptations, Coding → Tweaks (per
+  preset), Service reset and Sensor tests (per module reading; `ModuleReading.confirmed`). Screen
+  subtitles stay general warnings; DPF's says "All DIDs confirmed on this car" once every
+  `dpf` / `diesel` DID is confirmed (`useDpf` now returns `dieselPids`).
+- **Module discovery.** `obd-core/uds/vagHeaders.ts` — `VAG_UDS_HEADER_CANDIDATES` (15 entries by
+  VCDS address, source marked per entry: ISO / profile / community) and `discoveryCandidates`
+  (adds a profile's own UDS pairs). `obd-core/uds/discoverModules.ts` — `discoverUdsModules`:
+  per candidate `ATSH` / `ATCRA` / `22 F187`, ident on any answer (a `7F 22 xx` still counts),
+  `answered` / `silent` / `error`, `resetAddressing()` in `finally` after every candidate, a 1 s
+  command timeout while probing (`DISCOVERY_TIMEOUT_MS`). New `Elm327Client.withCommandTimeout` /
+  `DiagnosticSession.withCommandTimeout` (restores the previous timeout even on a throw).
+  Module scan: **Discover modules** (`DiscoverySection`), also on an 11-bit CAN link with no module
+  list;
+  **Add to this car's module list** stores the module in `UserVehicle.modules` for a garage car
+  (merged over the base by `buildUserProfile` / `mergeModules`, on any base; `sanitizeGarage` drops
+  malformed entries via `sanitizeUserModules`), and shows the pasteable `DiagModule` literal
+  (`diagModuleLiteral`, with the read ident as `sampleIdent`) for a built-in profile.
+  `moduleScanStore` gains `discovery` / `discoveryProgress` (and joins the UI-test store reset).
+- **Simulator.** `MockTransport` answered profile extended DIDs (incl. the engine's `F187`) on
+  **any** header, so discovery would have "found" the engine on every candidate. On CAN they now
+  answer with default addressing or on `7E0` only; a module header answers `22 F1xx` only from its
+  seeded `moduleIdent`. The Golf discovery finds exactly `7E0`, `760`, `714`.
+- **Capture analyzer (`obd-core/analysis/captureAnalyzer.ts`, self-contained).** `parseCaptureCsv`
+  (plan-03 CSV, CRLF / LF, `# raw:` block, malformed rows kept), `reassembleCaptureIsoTp` (raw
+  SF / FF / CF with sequence check / FC attached to the opposite stream, truncation flagged),
+  `decodeUds` (the plan's 17 services + `7F` with ISO 14229 NRC names; a `2B` login code is never
+  printed), `pairRequests` (skips `7F xx 78` response-pending, stops when the tester moves on),
+  `summarizeTp20` (setups on `0x200`, answers on `0x201`–`0x2FF`, data channels from the `D0` ids
+  plus `0x300`–`0x3FF` plus a `0x600`–`0x7FF` id that sends a TP2.0-only opcode, `A3` keep-alives), `analyzeCapture` (`aroundMs` / `windowMs` / `onlyId`,
+  diagnostic ids only by default), `fingerprintKey`, `renderReportMarkdown`. CLI
+  `scripts/analyze-capture.mjs` (`--around`, `--window`, `--id`, `--json`, `--all-ids`,
+  `--expect`, `--quiet`) imports the `.ts` file through Node type stripping; `npm run
+analyze:capture`, `npm run check:capture` (in `npm run ci` and a CI `verify` step) on the
+  committed `docs/captures/synthetic-golf.csv`, which the analyzer test generates with
+  `formatCaptureCsv` (`UPDATE_FIXTURES=1` rewrites it; the test fails when it drifts).
+- **Tweaks groundwork.** `compareCodingSnapshots(before, after, presets)` in
+  `obd-core/coding/presets.ts` → per preset `on` / `off` / `none`.
+- **Docs.** New [captures/README.md](./captures/README.md); [module-scan](./features/module-scan.md)
+  (Discover modules); the badge states in
+  [extended-pids](./features/extended-pids.md), [routines](./features/routines.md),
+  [adaptations](./features/adaptations.md), [coding](./features/coding.md),
+  [service-reset](./features/service-reset.md), [dpf](./features/dpf.md);
+  [vehicles/README](./vehicles/README.md) (`confirmed` and the evidence rule, garage modules);
+  [simulator](./simulator.md), [testing](./testing.md), [release](./release.md); roadmap v0.6
+  rows flipped (on-car pending). Context graph: concepts `confirmation-evidence`,
+  `capture-analyzer`.
+- **Tests (+50 tests, +6 suites: 1308 tests / 153 suites).** `confirmation.test.ts` (three states,
+  text, evidence rule); `discoverModules.test.ts` (Golf: exactly `7E0` / `760` / `714` answered
+  with the seeded part numbers, the rest silent, progress once per candidate, `ATSH7DF` + bare
+  `ATCRA` after every candidate, only `22` reads, standard reads afterwards, link errors restore
+  addressing, a negative reply counts); `captureAnalyzer.test.ts` (the synthetic capture: SF
+  `10 03`, the 20-byte FF / CF / FC part number with `flowControlFrom === '7E0'`, `31 01 0301`,
+  `7F 31 33` → `securityAccessDenied`, one TP2.0 setup pair, three keep-alives, CRLF, the `# raw:`
+  junk line; pending / unanswered pairing; the CLI via `spawnSync`); `presets.test.ts`
+  (`compareCodingSnapshots`: DRL for byte 0 bit 0 both ways, none for an unrelated byte or a
+  spill-over); `MockTransport.test.ts` (engine DIDs not on `70E`); `Elm327Client.test.ts`
+  (`withCommandTimeout`); `userVehicle.test.ts` / `garageStore.test.ts` (module merge, sanitizing);
+  `discovery.test.ts`; `ModuleScanScreen.test.tsx` (the acceptance walk-through, a garage car
+  adding a module, the literal for a built-in profile, module badges); `VerificationBadge.test.tsx`.
+- **Deviations.** (1) The raw-frame ISO-TP function is `reassembleCaptureIsoTp`, not
+  `reassembleIsoTp` — that name is already exported by `elm327/responseParser` and both go through
+  `obd-core/index.ts`. (2) `UdsDecoded` gains `service` (the request SID a positive / negative
+  belongs to; `sid` stays the raw first byte); `RequestResponsePair` gains `pending`;
+  `CaptureReport` gains `filter`; `DiscoveredModule` gains `reason` (for `error`). (3)
+  `analyzeCapture` options add `pairWindowMs` (the request → response window, since `windowMs` is
+  the `--around` half-width) and `allIds`; by default only diagnostic ids (`0x600`–`0x7FF`,
+  `18DA` / `18DB`) are reassembled, and TP2.0 ids are never parsed as ISO-TP — otherwise bus
+  broadcasts and `0x200` setups decode as junk requests. (4) The CLI suppresses Node's
+  `MODULE_TYPELESS_PACKAGE_JSON` warning (the repo cannot set `"type": "module"`) and adds
+  `--expect` / `--quiet` so the smoke step is cross-platform; `check:capture` also runs in
+  `npm run ci`. (5) The plan said the simulator already answered `22 F187` only on seeded headers;
+  since plan 14 it did not (see Simulator above), so `MockTransport` changed. (6) The candidate
+  list is the plan's (with `52` at `74C` / `7B6` as written); `2B` and `37` have no well-known pair
+  and are omitted. (7) A `confirmed` item that is also `experimental: false` stays "Standard OBD2"
+  (the plan's precedence) — so the Golf engine module (standard ISO pair) cannot turn blue; the
+  acceptance's "flip to blue" is covered on an experimental item (unit + badge tests). (8) The DPF
+  subtitle reads "All DIDs confirmed on this car". (9) `CodingBackup.test.tsx` gets a 20 s test
+  timeout as a margin for a loaded machine; the real cause of its slowness is in the third review
+  fixes below.
+- **Review fixes.** (1) The capture report leaked a KWP `2B` login code: `decodeUds` hid it in
+  `summary`, but the fingerprint `example` and the `--json` request `bytes` carried the raw payload.
+  `analyzeCapture` now cuts a `2B` request down to its service byte (`IsoTpMessage.redacted`), so
+  the example reads `7E0 2B (login code not shown) → 6B` and no output form holds the code (test on
+  the Markdown and the JSON). (2) Module scan keyed modules by address alone, so the Golf's UDS and
+  TP2.0 cluster `17` (and a discovered UDS module next to a TP2.0 one) collapsed into one result,
+  Clear could hit the wrong module and React saw duplicate keys. `diagModuleKey` (transport +
+  address, exported from `shared/vehicles`, also used by `mergeModules`) now keys `upsertResult`,
+  `clearOne` and the rows. (3) A discovery is stamped with the car and session it ran on
+  (`moduleScanStore.discoveryOwner`); `useModuleScan` drops a stale one (another garage car or
+  connection) instead of showing it, and `addDiscovered` refuses to write it into the current car.
+  (4) `Elm327Client.withCommandTimeout` kept one saved-and-restored field, so two overlapping (not
+  nested) calls could leave the 1 s override set for the rest of the session; it now keeps one
+  entry per active call. `discover`, `scanAll` and `scanGateway` also return early while the store
+  says a scan is running (a double tap before the button re-renders disabled). (5) Badge-site
+  tests: DPF subtitle (warning while any DID is unconfirmed, "All DIDs confirmed on this car" once
+  all are), Extended PIDs, Routines, Adaptations, Coding → Tweaks, Service reset and Sensor tests
+  (new `verify-sensor-<i>` testID) each assert the amber badge and the blue one for a confirmed
+  item, via the `@test/confirmation` helper that marks a registry item confirmed for one test.
+  `CodingBackup.test.tsx` waits up to 8 s per step (it flaked once at 4 s in the full run).
+  +17 tests, +5 suites: 1325 tests / 158 suites.
+- **Second review fixes.** (1) Discover modules was offered on any CAN link, including 29-bit CAN
+  and J1939, where `functionalHeader()` is null, so `resetAddressing()` could not restore `ATSH`
+  and standard reads went to the last candidate's header until reconnect. New `isCan11` (protocols)
+  gates `canDiscover` / `discover`, and `discoverUdsModules` itself throws before sending anything
+  on any other protocol. (2) 08 and 46 share `746` / `7B0`, but nothing told them apart: the pair
+  was probed twice and both rows showed the same ident. Candidates now carry optional
+  `identHints`; `groupCandidatesByPair` makes one probe per distinct pair (14 probes for the 15
+  candidates, progress counts probes), `pickCandidateByIdent` picks the address from the ident's
+  system name / strings (else the first), and the result lists the others as
+  `DiscoveredModule.alternatives`. The row explains the shared pair and offers **Record as 46 …
+  instead** before adding (the add and the literal use the chosen address). (3) The module-row
+  badge testID is `verify-module-<diagModuleKey>` (e.g. `verify-module-uds:17`), so the UDS and
+  TP2.0 cluster rows no longer share one. +5 tests: 29-bit refusal (core + screen), the shared-pair
+  probe and pick, `pickCandidateByIdent`, switching the address before adding, both cluster badges.
+- **Third review fixes.** (1) `npm run ci` was not reliably green: `CodingBackup.test.tsx` failed
+  under the full parallel run even with the 8 s waits. Cause: two `waitFor`s polled
+  `expect(within(panel).getAllByText('equal')).toHaveLength(2)` while the panel re-read the car.
+  Each failing poll pretty-prints the matched host elements (and the tree above them), ~0.6 s of
+  blocked event loop, which starved the simulator's replies (each command ~500 ms instead of
+  ~15 ms). They now count with `queryAllByText('equal').length`; the two restore tests drop from
+  4.9 / 6.8 s to 1.7 / 1.5 s alone. `sim-fixtures.freshness.test.ts` (re-records all 12 fixtures,
+  ~4.9 s alone) gets an explicit 30 s timeout; it hit jest's 5 s default under load. The plan-03
+  `sniffer.integration.test.ts` counted frames in a fixed 200 ms window and once saw only 3 under
+  load; it now streams until more than 3 arrived (3 s deadline). (2) The DPF
+  subtitle test left the screen's mount-time Mode 22 reads running past the test; they timed out
+  against the closed session and logged after jest finished ("Cannot log after tests are done",
+  "Jest did not exit"). It now waits for `useDpfStore` to finish the refresh, and `useDpfStore`
+  joins the UI-test store reset. (3) The capture analyzer only knew a TP2.0 channel from a `D0`
+  setup answer or `0x300`–`0x3FF`. In a capture trimmed past the setup (as captures/README asks),
+  the tester's `0x740` was reassembled as ISO-TP, so its data packets read as fake requests and it
+  was missing from the channel list. `summarizeTp20` now also takes a `0x600`–`0x7FF` id that sends
+  a TP2.0-only opcode (`A0` / `A1` / `A3` / `A4` / `A8`, `9x` / `Bx` ACK — never ISO-TP, whose PCI
+  nibble is 0–3). +2 tests: a trimmed `740` / `300` capture (channels listed, no pairs), and plain
+  `7E0` / `7E8` ISO-TP not taken as a channel.
+
 ## Plan 22 — KWP login entry and the per-car code book (2026-11-09)
 
 [Plan 22](./plans/22-kwp-login-code-book.md) landed: pre-UDS VAG modules on K-line can now be

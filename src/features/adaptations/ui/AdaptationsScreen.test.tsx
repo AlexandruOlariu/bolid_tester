@@ -3,9 +3,11 @@
  *  placeholder code 12345 (not a real login code). Also: the Golf's UDS channels never ask for a
  *  login. */
 import React from 'react';
-import { act, fireEvent, screen } from '@testing-library/react-native';
+import { act, fireEvent, screen, within } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { connectSimulator } from '@test/simulator';
+import { CONFIRMED_TEXT, ILLUSTRATIVE_TEXT, confirmItems } from '@test/confirmation';
+import { getVehicleProfile } from '@/shared/vehicles';
 import { useVehicleStore } from '@/shared/state/vehicleStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useAdaptationsStore } from '../model/adaptationsStore';
@@ -183,5 +185,24 @@ describe('AdaptationsScreen — UDS channels (simulated Golf)', () => {
     expect(screen.queryByText('Module login')).toBeNull();
     await press('Confirm write');
     expect(await screen.findByText('Write verified.')).toBeTruthy();
+  });
+
+  it('badges each channel: illustrative, or confirmed once it carries evidence (plan 25)', async () => {
+    const [first, second] = getVehicleProfile('golf-plus-2009-20tdi').adaptations!;
+    const undo = confirmItems([first]);
+    try {
+      useVehicleStore.setState({ selectedProfileId: 'golf-plus-2009-20tdi' });
+      await connectSimulator({ vehicleId: 'golf-plus-2009-20tdi' });
+      renderWithProviders(<AdaptationsScreen />);
+      expect(
+        within(screen.getByTestId(`verify-channel-${first.did}`)).getByText(CONFIRMED_TEXT),
+      ).toBeTruthy();
+      expect(
+        within(screen.getByTestId(`verify-channel-${second.did}`)).getByText(ILLUSTRATIVE_TEXT),
+      ).toBeTruthy();
+      expect(screen.queryByText(/Experimental \/ unverified channel/)).toBeNull();
+    } finally {
+      undo();
+    }
   });
 });

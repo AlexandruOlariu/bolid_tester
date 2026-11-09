@@ -34,3 +34,4 @@ export * from './types';
 export * from './vinSuggest';
 export * from './userVehicle';
 export * from './loginBook';
+export * from './confirmation';

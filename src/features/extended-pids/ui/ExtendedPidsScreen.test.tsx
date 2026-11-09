@@ -6,6 +6,8 @@ import React from 'react';
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { connectSimulator } from '@test/simulator';
+import { CONFIRMED_TEXT, ILLUSTRATIVE_TEXT, confirmItems } from '@test/confirmation';
+import { getVehicleProfile } from '@/shared/vehicles';
 import { mockPush, setMockFocused } from '@test/mocks/router';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useVehicleStore } from '@/shared/state/vehicleStore';
@@ -127,5 +129,22 @@ describe('ExtendedPidsScreen', () => {
     renderWithProviders(<ExtendedPidsScreen />);
     const keys = Object.values(useLiveDataStore.getState().registrations).flat();
     expect(keys).toContain('22:1701');
+  });
+
+  it('badges each DID: illustrative, or confirmed once it carries evidence (plan 25)', async () => {
+    const pids = getVehicleProfile('golf-plus-2009-20tdi').extendedPids!;
+    const soot = pids.find((p) => p.did === '1701')!;
+    const load = pids.find((p) => p.did === '1702')!;
+    const undo = confirmItems([soot]);
+    try {
+      await golf();
+      expect(within(screen.getByTestId('verify-1701')).getByText(CONFIRMED_TEXT)).toBeTruthy();
+      expect(
+        within(screen.getByTestId(`verify-${load.did}`)).getByText(ILLUSTRATIVE_TEXT),
+      ).toBeTruthy();
+      expect(screen.queryByText('EXPERIMENTAL')).toBeNull();
+    } finally {
+      undo();
+    }
   });
 });

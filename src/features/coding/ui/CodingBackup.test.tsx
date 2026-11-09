@@ -31,7 +31,7 @@ async function backupThenChange(opts: { also3002?: boolean; beforeExpand?: () =>
   renderWithProviders(<CodingBackup />);
   fireEvent.press(screen.getByText('Create backup'));
   await waitFor(() => expect(useCarBackupStore.getState().backups).toHaveLength(1), {
-    timeout: 4000,
+    timeout: 8000,
   });
   // Change 3001 to 900 rpm through the same gated write the Adaptations screen uses.
   const session = useSessionStore.getState().session!;
@@ -61,12 +61,19 @@ async function compare() {
   const panel = screen.getByTestId('adaptation-restore-7E0');
   fireEvent.press(within(panel).getByText('Compare with car'));
   await waitFor(() => expect(within(panel).getByTestId('restore-row-3001')).toBeTruthy(), {
-    timeout: 4000,
+    timeout: 8000,
   });
   return panel;
 }
 
 describe('CodingBackup — adaptation restore', () => {
+  // Poll with cheap assertions only: a failing `expect(getAllBy…()).toHaveLength(n)` pretty-prints
+  // the matched host elements (and the Tamagui tree above them), ~0.6 s per poll. Polled while
+  // the panel re-reads the car, that blocks the event loop, starves the simulator's replies and
+  // made the restore tests take 5–7 s (and flake under a full parallel run). Count with
+  // `queryAllBy…().length` instead. The margins below are for a loaded CI machine.
+  jest.setTimeout(20_000);
+
   it('compares a backup with the car and lists restore / equal per channel', async () => {
     await backupThenChange();
     const panel = await compare();
@@ -109,11 +116,11 @@ describe('CodingBackup — adaptation restore', () => {
         expect(screen.getByTestId('adaptation-restore-message')).toHaveTextContent(
           'Write verified.',
         ),
-      { timeout: 4000 },
+      { timeout: 8000 },
     );
     // The panel re-compares: both channels now equal.
-    await waitFor(() => expect(within(panel).getAllByText('equal')).toHaveLength(2), {
-      timeout: 4000,
+    await waitFor(() => expect(within(panel).queryAllByText('equal').length).toBe(2), {
+      timeout: 8000,
     });
     // The current value was backed up into the adaptations store, and the car reads 850 again.
     expect(useAdaptationsStore.getState().backups[0]).toMatchObject({
@@ -140,10 +147,10 @@ describe('CodingBackup — adaptation restore', () => {
         expect(screen.getByTestId('adaptation-restore-message')).toHaveTextContent(
           'Restored 1 channel.',
         ),
-      { timeout: 4000 },
+      { timeout: 8000 },
     );
-    await waitFor(() => expect(within(panel).getAllByText('equal')).toHaveLength(2), {
-      timeout: 4000,
+    await waitFor(() => expect(within(panel).queryAllByText('equal').length).toBe(2), {
+      timeout: 8000,
     });
   });
 
@@ -182,7 +189,7 @@ describe('CodingBackup — adaptation restore', () => {
           expect(screen.getByTestId('adaptation-restore-message')).toHaveTextContent(
             'Stopped at 3001: Verify mismatch. Not restored: Idle speed offset (3001), EGR base duty (3002).',
           ),
-        { timeout: 4000 },
+        { timeout: 8000 },
       );
       // The first failure stopped the run: 3002 was never written.
       expect(spy).toHaveBeenCalledTimes(1);
@@ -190,7 +197,7 @@ describe('CodingBackup — adaptation restore', () => {
       spy.mockRestore();
     }
     // The panel re-compares (holding the shared gate) and still offers both channels.
-    await waitFor(() => expect(useBackupWorkStore.getState().busy).toBe(false), { timeout: 4000 });
+    await waitFor(() => expect(useBackupWorkStore.getState().busy).toBe(false), { timeout: 8000 });
     expect(within(panel).getByText('Restore all (2)')).toBeTruthy();
     expect(within(panel).getByText('2 adaptations differ')).toBeTruthy();
   });
@@ -263,7 +270,7 @@ describe('CodingBackup — adaptation restore', () => {
           expect(screen.getByTestId('adaptation-restore-message')).toHaveTextContent(
             'Failed: link lost',
           ),
-        { timeout: 4000 },
+        { timeout: 8000 },
       );
       expect(within(panel).queryByTestId('restore-row-3001')).toBeNull();
       expect(useBackupWorkStore.getState().busy).toBe(false);

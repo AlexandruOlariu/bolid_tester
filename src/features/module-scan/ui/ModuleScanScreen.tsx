@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { Screen, VerificationBadge } from '@/shared/ui';
+import { diagModuleKey } from '@/shared/vehicles';
 import { vagModuleName, vagNativeDtcText } from '@/shared/obd-core';
 import { useModuleScan } from '../hooks/useModuleScan';
 import { useModuleScanStore, ModuleScanResult } from '../model/moduleScanStore';
 import { ScanHistorySection } from './ScanHistorySection';
+import { DiscoverySection } from './DiscoverySection';
 
 const hex2 = (n: number) => n.toString(16).padStart(2, '0').toUpperCase();
 
@@ -37,7 +39,8 @@ function ModuleRow({
   running,
 }: {
   result: ModuleScanResult;
-  onClear: (address: string) => void;
+  /** Called with `diagModuleKey(module)`. */
+  onClear: (key: string) => void;
   running: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -68,11 +71,7 @@ function ModuleRow({
               {result.reason}
             </Paragraph>
           ) : null}
-          {m.experimental ? (
-            <Paragraph theme="alt2" size="$2">
-              ⚠ Addressing for this module is experimental / unverified — confirm on the real car.
-            </Paragraph>
-          ) : null}
+          <VerificationBadge item={m} testID={`verify-module-${diagModuleKey(m)}`} />
           {result.ident?.systemName ? (
             <Paragraph theme="alt2" size="$2">
               System: {result.ident.systemName}
@@ -117,7 +116,7 @@ function ModuleRow({
                   disabled={running}
                   onPress={() => {
                     setConfirmingClear(false);
-                    onClear(m.address);
+                    onClear(diagModuleKey(m));
                   }}
                 >
                   Confirm clear
@@ -135,8 +134,29 @@ function ModuleRow({
 }
 
 export function ModuleScanScreen() {
-  const { available, canScanTp20, modules, proto, scanAll, clearOne, scanGateway } =
-    useModuleScan();
+  const {
+    available,
+    canScanTp20,
+    canDiscover,
+    isGarageCar,
+    discovery: discovered,
+    modules,
+    proto,
+    scanAll,
+    clearOne,
+    scanGateway,
+    discover,
+    addDiscovered,
+  } = useModuleScan();
+  const discovery = canDiscover ? (
+    <DiscoverySection
+      discover={discover}
+      addDiscovered={addDiscovered}
+      isGarageCar={isGarageCar}
+      modules={modules}
+      discovery={discovered}
+    />
+  ) : null;
   const running = useModuleScanStore((s) => s.running);
   const progress = useModuleScanStore((s) => s.progress);
   const results = useModuleScanStore((s) => s.results);
@@ -151,10 +171,12 @@ export function ModuleScanScreen() {
           {modules.length === 0
             ? 'No control modules are declared for this vehicle profile. Module scan needs a ' +
               'profile with a module list (see the Golf Plus example) — the generic profile scans ' +
-              'the engine only, via the Fault codes screen.'
+              'the engine only, via the Fault codes screen.' +
+              (canDiscover ? ' Discover modules below finds the modules this car answers on.' : '')
             : 'Module scan needs a CAN (UDS) link. On K-line cars a generic ELM327 reaches the ' +
               'engine ECU only — use the Fault codes screen for engine faults.'}
         </Paragraph>
+        {discovery}
       </Screen>
     );
   }
@@ -173,8 +195,10 @@ export function ModuleScanScreen() {
         </Paragraph>
       ) : null}
       {results.map((r) => (
-        <ModuleRow key={r.module.address} result={r} onClear={clearOne} running={running} />
+        <ModuleRow key={diagModuleKey(r.module)} result={r} onClear={clearOne} running={running} />
       ))}
+
+      {discovery}
 
       {canScanTp20 ? (
         <YStack gap="$2" backgroundColor="$color2" borderRadius="$4" padding="$3">

@@ -142,6 +142,26 @@
     ],
     "type": "concept"
   },
+  "concept:capture-analyzer": {
+    "path": null,
+    "summary": "Plan 25 tooling to read real bytes off a sniffer CSV: obd-core/analysis/captureAnalyzer.ts (self-contained, no imports, run by scripts/analyze-captur\u2026",
+    "tokens": [
+      "analyze",
+      "analyzer",
+      "candidates",
+      "capture",
+      "csv",
+      "discover",
+      "discovery",
+      "fingerprint",
+      "headers",
+      "isotp",
+      "snapshot",
+      "sniffer",
+      "tp20"
+    ],
+    "type": "concept"
+  },
   "concept:coding-tweaks-backup": {
     "path": null,
     "summary": "One-tap coding presets (reversible curated toggles per profile, compiled to the gated coding write with on/off/unknown detection), the long-coding pe\u2026",
@@ -158,6 +178,24 @@
       "snapshot",
       "tweak",
       "tweaks"
+    ],
+    "type": "concept"
+  },
+  "concept:confirmation-evidence": {
+    "path": null,
+    "summary": "Plan 25 provenance: every per-car profile item (extendedPids, modules, routines, adaptations, coding modules/presets, module sensors, login codes, se\u2026",
+    "tokens": [
+      "badge",
+      "captures",
+      "confirmation",
+      "confirmed",
+      "evidence",
+      "fixture",
+      "illustrative",
+      "provenance",
+      "unverified",
+      "verification",
+      "verified"
     ],
     "type": "concept"
   },
@@ -879,6 +917,19 @@
     ],
     "type": "core"
   },
+  "core:analysis/captureAnalyzer": {
+    "path": "src/shared/obd-core/analysis/captureAnalyzer.ts",
+    "summary": "Capture analyzer (plan 25): turns a sniffer CSV (plan 03 format) into ISO-TP messages, request/response pairs with UDS / KWP2000 decoding, request \"f\u2026",
+    "tests": [
+      "src/shared/obd-core/analysis/captureAnalyzer.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "analyzer",
+      "capture"
+    ],
+    "type": "core"
+  },
   "core:analysis/chartBuffer": {
     "path": "src/shared/obd-core/analysis/chartBuffer.ts",
     "summary": "Pure time-series ring buffer + decimation for the live charts.",
@@ -1059,6 +1110,14 @@
     "tokens": [
       "coding",
       "uds"
+    ],
+    "type": "core"
+  },
+  "core:confirmation": {
+    "path": "src/shared/obd-core/confirmation.ts",
+    "summary": "Confirmation provenance (plan 25): the evidence that a per-car profile item (an extended DID, a module address, a routine id, a coding bit\u2026) was chec\u2026",
+    "tokens": [
+      "confirmation"
     ],
     "type": "core"
   },
@@ -1608,6 +1667,19 @@
     ],
     "type": "core"
   },
+  "core:uds/discoverModules": {
+    "path": "src/shared/obd-core/uds/discoverModules.ts",
+    "summary": "Module address discovery (plan 25): probe each candidate CAN id pair with `22 F187` (part number) and read the standard ident of every module that an\u2026",
+    "tests": [
+      "src/shared/obd-core/uds/discoverModules.test.ts"
+    ],
+    "tokens": [
+      "discover",
+      "modules",
+      "uds"
+    ],
+    "type": "core"
+  },
   "core:uds/guidedRoutine": {
     "path": "src/shared/obd-core/uds/guidedRoutine.ts",
     "summary": "Guided routines: UDS output tests (0x2F InputOutputControlByIdentifier) and basic settings (0x31 RoutineControl) with start/stop/results primitives.",
@@ -1651,6 +1723,16 @@
     "summary": "Compatibility re-export: the VAG native KWP 5-digit fault texts moved into the DTC database (`obd/dtcDatabase/manufacturer/vag.ts`, plan 05).",
     "tokens": [
       "dtcs",
+      "uds",
+      "vag"
+    ],
+    "type": "core"
+  },
+  "core:uds/vagHeaders": {
+    "path": "src/shared/obd-core/uds/vagHeaders.ts",
+    "summary": "Candidate 11-bit CAN tester \u2192 module / module \u2192 tester id pairs for VAG UDS modules, by VCDS diagnostic address (plan 25).",
+    "tokens": [
+      "headers",
       "uds",
       "vag"
     ],
@@ -1709,6 +1791,16 @@
       "11",
       "2026",
       "audit"
+    ],
+    "type": "doc"
+  },
+  "doc:captures/README": {
+    "path": "docs/captures/README.md",
+    "summary": "Sniffer captures",
+    "tokens": [
+      "captures",
+      "readme",
+      "sniffer"
     ],
     "type": "doc"
   },
@@ -2844,7 +2936,8 @@
       "src/features/coding/api/adaptationRestore.integration.test.ts",
       "src/features/coding/api/adaptationRestore.test.ts",
       "src/features/coding/api/carBackup.test.ts",
-      "src/features/coding/ui/CodingBackup.test.tsx"
+      "src/features/coding/ui/CodingBackup.test.tsx",
+      "src/features/coding/ui/CodingTweaks.test.tsx"
     ],
     "tokens": [
       "coding"
@@ -2869,6 +2962,9 @@
   "feature:dpf": {
     "path": "src/features/dpf",
     "summary": "A diesel-focused read-only view of the **diesel particulate filter**: soot load, ash load, distance",
+    "tests": [
+      "src/features/dpf/ui/DpfScreen.test.tsx"
+    ],
     "tokens": [
       "dpf"
     ],
@@ -2988,10 +3084,12 @@
     "path": "src/features/module-scan",
     "summary": "Scan every control module the profile declares: identification (part number, software version,",
     "tests": [
+      "src/features/module-scan/api/discovery.test.ts",
       "src/features/module-scan/api/scanDiff.test.ts",
       "src/features/module-scan/api/scanReport.test.ts",
       "src/features/module-scan/api/scanSearch.test.ts",
-      "src/features/module-scan/model/scanHistoryStore.test.ts"
+      "src/features/module-scan/model/scanHistoryStore.test.ts",
+      "src/features/module-scan/ui/ModuleScanScreen.test.tsx"
     ],
     "tokens": [
       "module",
@@ -3055,7 +3153,8 @@
     "path": "src/features/routines",
     "summary": "VCDS-style **output tests** (UDS `2F` InputOutputControlByIdentifier) and **basic settings**",
     "tests": [
-      "src/features/routines/api/routineService.test.ts"
+      "src/features/routines/api/routineService.test.ts",
+      "src/features/routines/ui/RoutinesScreen.test.tsx"
     ],
     "tokens": [
       "routines"
@@ -3077,6 +3176,9 @@
   "feature:sensor-tests": {
     "path": "src/features/sensor-tests",
     "summary": "Inspect and **actively test individual sensors** \u2014 watch a single sensor live while you actuate it",
+    "tests": [
+      "src/features/sensor-tests/ui/SensorTestScreen.test.tsx"
+    ],
     "tokens": [
       "sensor",
       "tests"
@@ -3086,6 +3188,9 @@
   "feature:service-reset": {
     "path": "src/features/service-reset",
     "summary": "Reset the **service interval / oil-service reminder** (\"SRI reset\" \u2014 the _service now / service in",
+    "tests": [
+      "src/features/service-reset/ui/ServiceResetScreen.test.tsx"
+    ],
     "tokens": [
       "reset",
       "service"
@@ -3797,6 +3902,29 @@
       "value"
     ],
     "type": "ui"
+  },
+  "ui:VerificationBadge": {
+    "path": "src/shared/ui/VerificationBadge.tsx",
+    "summary": "Verification pill for one per-car profile item (plan 25): green \"Standard OBD2\", blue \"Confirmed <date> (<source>)\", amber \"Illustrative \u2014 not yet co\u2026",
+    "tests": [
+      "src/shared/ui/VerificationBadge.test.tsx"
+    ],
+    "tokens": [
+      "badge",
+      "verification"
+    ],
+    "type": "ui"
+  },
+  "vehicle:confirmation": {
+    "path": "src/shared/vehicles/confirmation.ts",
+    "summary": "Verification state of a per-car profile item (plan 25): standard OBD2, confirmed on the real car (with evidence), or illustrative / not yet confirmed.",
+    "tests": [
+      "src/shared/vehicles/confirmation.test.ts"
+    ],
+    "tokens": [
+      "confirmation"
+    ],
+    "type": "vehicle"
   },
   "vehicle:faultGuides": {
     "path": "src/shared/vehicles/faultGuides.ts",

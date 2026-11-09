@@ -44,7 +44,11 @@ from a vehicle profile.
   `buildScenario` seeds every profile DID from its `sampleResponse` and, for a profile that declares
   DIDs, the engine module's `sampleIdent.F187` as ASCII on the default header (the Golf answers
   `22 F187` with `03L906022LM`), so the label pack and its measuring groups resolve in the simulator
-  (plan 14). The live poll loop reads `22:<DID>` keys the same way (`pollExtendedOnce`).
+  (plan 14). The live poll loop reads `22:<DID>` keys the same way (`pollExtendedOnce`). These are
+  the **engine's** DIDs: on CAN they answer with default addressing or on the engine header `7E0`
+  only, never on another module's `ATSH` header (plan 25) — a physically addressed `22 F187` there
+  answers only from that module's seeded `moduleIdent`, so **Discover modules** on the Golf finds
+  exactly `7E0`, `760` and `714`.
 - **KWP login and local identifiers (plan 22):** `kwpLocals` (header, or `'*'` for the
   functional / single K-line ECU → local id → mutable bytes), `kwpLogins` (header | `'*'` →
   `{ code, wsc? }`, the codes the simulated module accepts) and `kwpLoginRequired` (local ids whose

@@ -18,8 +18,8 @@ the first example.** This is opt-in and clearly marked experimental.
 ## UI
 
 - **ExtendedPidsScreen** — only shown when the active profile declares `extendedPids` **and** the link
-  is CAN. Each row: a **select toggle** (for logging), name, value, an "experimental / unverified"
-  badge, and the raw DID + response.
+  is CAN. Each row: a **select toggle** (for logging), name, value, a **verification badge** (`VerificationBadge`, plan 25): green "Standard OBD2", blue "Confirmed <date> (<source>)" once the profile item carries `confirmed` evidence, amber "Illustrative — not yet confirmed on this car" otherwise, and the
+  raw DID + response.
 - **Measuring-block log** card — start/stop a recording of the selected DIDs over time (see below).
 - Arriving from a fault-code **Guide** deep-link (`/extended?dids=1708,1701`) pre-selects and reads
   those DIDs, and highlights their rows ("from guide"). See [fault-codes](./fault-codes.md).
@@ -121,8 +121,8 @@ number, name, description, an "illustrative" badge and up to four live tiles (`V
 
 ## Acceptance
 
-- For the Golf simulator, the seeded experimental DID returns a plausible value with the
-  "unverified" badge.
+- For the Golf simulator, the seeded experimental DID returns a plausible value with the amber
+  "Illustrative — not yet confirmed on this car" badge (blue once the DID carries `confirmed`).
 - Golf simulator: values update live without a manual read; three measuring groups show; **Chart
   group** opens Charts with a four-series panel; **Log group** records only that group's DIDs
   (`ExtendedPidsScreen.test.tsx`).

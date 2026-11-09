@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button, Switch, Input } from 'tamagui';
 import { useRouter } from 'expo-router';
-import { Screen } from '@/shared/ui';
+import { Screen, VerificationBadge } from '@/shared/ui';
 import type { AdaptationChannel } from '@/shared/vehicles';
 import { useAdaptationsStore } from '../model/adaptationsStore';
 import {
@@ -99,9 +99,7 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
           {description}
         </Paragraph>
       ) : null}
-      <Paragraph theme="alt2" size="$2">
-        ⚠ Experimental / unverified channel — confirm behaviour on the real car.
-      </Paragraph>
+      <VerificationBadge item={ch} testID={`verify-channel-${ch.did}`} />
       {info ? (
         <XStack gap="$2" alignItems="center">
           <Paragraph theme="alt2" size="$2" flex={1}>

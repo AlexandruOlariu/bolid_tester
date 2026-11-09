@@ -133,6 +133,13 @@ profile (`codingPresets`, linked to a `codingModules` entry by ATSH header); pur
 `obd-core/coding/presets` apply/revert/detect it:
 
 - `detectPresetState(bytes, preset)` → `on` / `off` / `unknown` drives each row's state badge.
+- Each row also carries a **verification badge** (`VerificationBadge`, plan 25): green "Standard OBD2", blue "Confirmed <date> (<source>)" once the profile item carries `confirmed` evidence, amber "Illustrative — not yet confirmed on this car" otherwise — the bit positions are confirmed only with evidence
+  (`CodingPreset.confirmed`, plan 25).
+- `compareCodingSnapshots(before, after, presets)` → per preset `on` / `off` / `none`: which
+  shipped preset explains the difference between two BCM coding reads taken around a VCDS toggle.
+  It matches only when every changed bit lies inside the preset's edit masks and the after-read is
+  exactly its on (or off) state — so a wrong bit position shows up as `none`. The tool for
+  confirming a tweak from the owner's own before / after reads (plan 25, on-car step 6).
 - `applyPreset` / `revertPreset` compile the preset onto a coding value (masked, in place).
 - `useCoding.applyTweak(preset, on)` reads the live coding first (**backup-first**), compiles, then
   writes + verifies — never a bypass. Gated behind the same unlock + confirmation.

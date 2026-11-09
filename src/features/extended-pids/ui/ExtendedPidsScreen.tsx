@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Stack, Switch, H4 } from 'tamagui';
-import { Screen, ValueCard } from '@/shared/ui';
+import { Screen, ValueCard, VerificationBadge } from '@/shared/ui';
 import { toHex } from '@/shared/lib/hex';
 import { extendedKey } from '@/shared/obd-core/obd/liveKeys';
 import type { LiveValue } from '@/shared/obd-core/session/DiagnosticSession';
@@ -260,13 +260,7 @@ export function ExtendedPidsScreen() {
                     {p.name}
                   </Text>
                 </XStack>
-                {p.experimental ? (
-                  <Stack backgroundColor="$yellow8" borderRadius="$10" paddingHorizontal="$2">
-                    <Text fontSize="$1" color="black" fontWeight="700">
-                      EXPERIMENTAL
-                    </Text>
-                  </Stack>
-                ) : null}
+                <VerificationBadge item={p} testID={`verify-${p.did}`} />
               </XStack>
               <Text fontSize="$7" fontWeight="900">
                 {value != null ? `${value} ${p.unit}` : 'no data'}

@@ -49,6 +49,7 @@ export function useSensorTests() {
             unit: s.unit,
             value: data ? s.decode(data) : null,
             raw: data ? data.map((b) => b.toString(16).padStart(2, '0')).join(' ') : 'no data',
+            ...(s.confirmed ? { confirmed: s.confirmed } : {}),
           });
         }
         await session.resetAddressing();

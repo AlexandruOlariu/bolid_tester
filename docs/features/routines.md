@@ -45,8 +45,10 @@ excluded.
   values → interlock re-check (deterministic ordering, auto-stop + explicit message on
   violation); unmount stops any active routine; unlock switch gates every start; interlock
   failures render as an explicit "blocked" list, not an error.
-- **RoutinesScreen** — unlock switch, per routine: description, two-step confirm ("Check
-  interlocks & start"), live values + stop while running.
+- **RoutinesScreen** — unlock switch, per routine: a **verification badge** (`VerificationBadge`, plan 25): green "Standard OBD2", blue "Confirmed <date> (<source>)" once the profile item carries `confirmed` evidence, amber "Illustrative — not yet confirmed on this car" otherwise, description, two-step
+  confirm ("Check interlocks & start"), live values + stop while running. A routine's id is
+  confirmed from a sniffer capture with the capture analyzer (`npm run analyze:capture`, see
+  [captures](../captures/README.md)) — the `31 01 xxxx` fingerprint VCDS sent.
 - Profiles gain `routines?: GuidedRoutine[]`. The Golf ships: stationary DPF regen (31, requires
   idle + stationary), **Intake Manifold Runner/Motor (V157) adaptation** (VCDS Basic Settings
   Group 121 — the flap end-stop re-learn and the P2015/08213 fix check), EGR valve output test (2F,

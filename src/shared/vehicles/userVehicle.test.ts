@@ -9,7 +9,9 @@ import {
   livePidFilter,
   learnedFromSessionInfo,
   makeForVin,
+  mergeModules,
   pickVehicleForVin,
+  sanitizeUserModules,
   vinSuffix,
   type UserVehicle,
 } from './userVehicle';
@@ -52,6 +54,70 @@ describe('buildUserProfile', () => {
     expect(p.serviceReset).toBe(golf.serviceReset);
     expect(p.gatewayInstallList).toBe(golf.gatewayInstallList);
     expect(p.baseProfileId).toBe(golf.id);
+  });
+
+  it('merges discovered modules over the base list, on any base (plan 25)', () => {
+    const hvac = {
+      address: '08',
+      name: 'Auto HVAC',
+      transport: 'uds' as const,
+      reqHeader: '746',
+      rxFilter: '7B0',
+      experimental: true,
+    };
+    const fromGeneric = buildUserProfile(user({ modules: [hvac] }), generic);
+    expect(fromGeneric.modules).toEqual([hvac]);
+
+    const abs = {
+      ...hvac,
+      address: '03',
+      name: 'ABS (discovered)',
+      reqHeader: '713',
+      rxFilter: '77D',
+    };
+    const p = buildUserProfile(user({ baseProfileId: golf.id, modules: [abs, hvac] }), golf);
+    const golfModules = golf.modules ?? [];
+    expect(p.modules).toHaveLength(golfModules.length + 1);
+    // Same transport + address replaces the base entry in place; the TP2.0 '17' is untouched.
+    const i = golfModules.findIndex((m) => m.address === '03');
+    expect(p.modules?.[i]).toEqual(abs);
+    expect(p.modules?.[p.modules.length - 1]).toEqual(hvac);
+    expect(golf.modules?.[i].reqHeader).toBe('760'); // the registry profile is not mutated
+    expect(mergeModules([], [])).toEqual([]);
+  });
+
+  it('sanitizeUserModules keeps well-formed modules only', () => {
+    const ok = {
+      address: '08',
+      name: 'HVAC',
+      transport: 'uds',
+      reqHeader: '746',
+      rxFilter: '7B0',
+      experimental: true,
+    };
+    expect(
+      sanitizeUserModules([
+        ok,
+        { ...ok, reqHeader: 'ZZZ' },
+        { ...ok, address: '8' },
+        { ...ok, experimental: 'yes' },
+        {
+          address: '46',
+          name: 'Comfort',
+          transport: 'tp20',
+          tp20Address: 0x46,
+          experimental: true,
+        },
+        { address: '47', name: 'x', transport: 'tp20', experimental: true },
+        null,
+        'x',
+      ]),
+    ).toEqual([
+      ok,
+      { address: '46', name: 'Comfort', transport: 'tp20', tp20Address: 0x46, experimental: true },
+    ]);
+    expect(sanitizeUserModules('nope')).toBeUndefined();
+    expect(sanitizeUserModules([{ bad: 1 }])).toBeUndefined();
   });
 
   it('never inherits from generic, nor the known faults or checklist of any base', () => {

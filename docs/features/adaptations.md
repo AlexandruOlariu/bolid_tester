@@ -140,8 +140,9 @@ screen's manual procedure.
   take an optional `LoginInput`), the per-screen KWP session cache.
 - `api/codeBook.ts` — `userCodeBook`, `preVinCodeBook`, `loginFor`, `rememberLoginCode`,
   `forgetLoginCode`, `loginBookKeys` over the garage store and the login book.
-- **AdaptationsScreen** — unlock switch (off = read-only), per channel: current value, read,
-  numeric editor with explicit before→after confirm, restore-from-backup and restore-known-default.
+- **AdaptationsScreen** — unlock switch (off = read-only), per channel: current value, a **verification badge** (`VerificationBadge`, plan 25): green "Standard OBD2", blue "Confirmed <date> (<source>)" once the profile item carries `confirmed` evidence, amber "Illustrative — not yet confirmed on this car" otherwise,
+  read, numeric editor with explicit before→after confirm, restore-from-backup and
+  restore-known-default.
 - **Bounds guard.** `checkBounds` is a one-line wrapper over the core
   `adaptationBoundsError(ch, raw)` (`obd-core/coding/adaptationValue.ts`): non-null when the raw
   bytes are not `byteCount` wide or decode outside `min`/`max`. `writeChannel` applies it to every

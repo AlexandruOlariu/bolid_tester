@@ -18,7 +18,9 @@ export interface SimScenario {
   storedDtcs?: string[];
   pendingDtcs?: string[];
   permanentDtcs?: string[];
-  extendedDids?: Record<string, number[]>; // '1701' -> response data bytes (Mode 22)
+  /** Engine Mode 22 DIDs: '1701' -> response data bytes. Answered with default addressing or on the
+   *  engine header (7E0) only — not on another module's header (CAN). */
+  extendedDids?: Record<string, number[]>;
   /** Mode 06 monitor responses: mid -> full response bytes (including the 0x46 service byte). */
   mode06?: Record<string, number[]>;
   /** Module-scoped UDS 22 reads, keyed by the ATSH request header then DID -> data bytes. */
@@ -93,6 +95,9 @@ const SIM_PID_BYTES: Record<string, number[]> = {
   '015c': [0x82],
   '015e': [0x00, 0x1e],
 };
+
+/** ISO 15765-4 physical request id of the engine ECU (11-bit CAN). */
+const ENGINE_REQ_HEADER = '7E0';
 
 export class MockTransport implements Transport {
   status: TransportStatus = 'disconnected';
@@ -483,7 +488,12 @@ export class MockTransport implements Transport {
       if (moduleData) return '62' + did + toHex(moduleData);
       const identText = this.header ? this.scenario.moduleIdent?.[this.header]?.[did] : undefined;
       if (identText) return '62' + did + toHex(asciiToBytes(identText));
-      const data = this.scenario.extendedDids?.[did];
+      // Profile extended DIDs belong to the ENGINE ECU: they answer with default addressing or on
+      // the engine's own header, never on another module's (on CAN) — otherwise every physically
+      // addressed probe (`22 F187` module discovery, plan 25) would "find" the engine everywhere.
+      const engineAddressed =
+        !this.header || !isCan(this.scenario.protocol) || this.header === ENGINE_REQ_HEADER;
+      const data = engineAddressed ? this.scenario.extendedDids?.[did] : undefined;
       return data ? '62' + did + toHex(data) : 'NO DATA';
     }
 

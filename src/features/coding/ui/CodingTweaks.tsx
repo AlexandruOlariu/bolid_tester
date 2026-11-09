@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
 import type { CodingPreset, CodingPresetState } from '@/shared/obd-core';
+import { VerificationBadge } from '@/shared/ui';
 import { useCodingStore } from '../model/codingStore';
 import { useCoding } from '../hooks/useCoding';
 
@@ -42,13 +43,19 @@ function TweakRow({ preset }: { preset: CodingPreset }) {
             {mod.module}
           </Paragraph>
         </YStack>
-        <Paragraph size="$2" fontFamily="$mono" theme={badge.theme ? undefined : 'alt2'} color={badge.theme ? '$green10' : undefined}>
+        <Paragraph
+          size="$2"
+          fontFamily="$mono"
+          theme={badge.theme ? undefined : 'alt2'}
+          color={badge.theme ? '$green10' : undefined}
+        >
           {badge.label}
         </Paragraph>
       </XStack>
       <Paragraph theme="alt2" size="$2">
         {preset.description}
       </Paragraph>
+      <VerificationBadge item={preset} testID={`verify-tweak-${preset.id}`} />
 
       {pending === null ? (
         <XStack gap="$2">
@@ -108,7 +115,8 @@ export function CodingTweaks() {
       <H4>Tweaks</H4>
       <Paragraph theme="alt2" size="$2">
         Curated, reversible one-tap changes. Each reads + backs up the live coding, then writes and
-        re-verifies through the same guarded path. Experimental — confirm on the real car.
+        re-verifies through the same guarded path. Each badge says whether the bit positions were
+        confirmed on this car.
       </Paragraph>
       {presets.map((p) => (
         <TweakRow key={p.id} preset={p} />
