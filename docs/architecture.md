@@ -105,6 +105,13 @@ now re-exports of `src/shared/state/`). The
 [engine-host spec](./features/engine-host.md#the-composition-rule) lists them. New code should
 not add to the list.
 
+**Report.** The second sanctioned composition point is `features/report`
+([spec](./features/report.md), plan 15): the unified vehicle report reads the fault-code, module-scan,
+inspection, battery, AI and maintenance stores to build one shareable document. Its pure model and
+renderers live in `src/shared/lib/vehicleReport.ts` and take the report's own narrowed types, never
+feature types; the slice's `api/sections.ts` maps each store shape into them. No feature imports the
+report slice (the Faults screen's report snapshot, `dtcCheckFromRead`, is in `src/shared/lib`).
+
 **Specs.** Every slice has a spec in `docs/features/<slug>.md` (see [docs/README](./README.md));
 `src/shared/lib/featureDocsSync.test.ts` enforces it.
 

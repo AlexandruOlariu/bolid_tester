@@ -140,6 +140,7 @@ export default function RootLayout() {
               <Tabs.Screen name="extended" options={{ href: null, title: 'Extended PIDs' }} />
               <Tabs.Screen name="ai-diagnose" options={{ href: null, title: 'Diagnose (AI)' }} />
               <Tabs.Screen name="history" options={{ href: null, title: 'History' }} />
+              <Tabs.Screen name="report" options={{ href: null, title: 'Vehicle report' }} />
               <Tabs.Screen name="charts" options={{ href: null, title: 'Charts' }} />
               <Tabs.Screen name="performance" options={{ href: null, title: 'Performance' }} />
               <Tabs.Screen name="trips" options={{ href: null, title: 'Trips' }} />

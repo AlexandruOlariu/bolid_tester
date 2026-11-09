@@ -85,6 +85,7 @@ files in `src/app/` (expo-router); every hidden route is reached from **More** o
 | ------------------------ | ----------------- | ---------------------------------------------------------------------- |
 | `ai-diagnose`            | `/ai-diagnose`    | [`features/ai-diagnose.md`](./features/ai-diagnose.md)                 |
 | `history`                | `/history`        | [`features/history.md`](./features/history.md)                         |
+| `report`                 | `/report`         | [`features/report.md`](./features/report.md)                           |
 | `inspection`             | `/inspection`     | [`features/used-car-inspection.md`](./features/used-car-inspection.md) |
 | `battery-health`         | `/battery`        | [`features/battery-health.md`](./features/battery-health.md)           |
 | `dpf`                    | `/dpf`            | [`features/dpf.md`](./features/dpf.md)                                 |

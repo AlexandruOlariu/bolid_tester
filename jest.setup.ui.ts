@@ -49,6 +49,14 @@ jest.mock('expo-sharing', () => ({
   isAvailableAsync: jest.fn(async () => false),
   shareAsync: jest.fn(async () => undefined),
 }));
+// Print-to-PDF (plan 15): "prints" a placeholder PDF into the in-memory cache directory.
+jest.mock('expo-print', () => ({
+  printToFileAsync: jest.fn(async () => {
+    const uri = 'file:///test-cache/print.pdf';
+    require('./test/mocks/fileSystem').memoryFiles.set(uri, '%PDF-1.4 test');
+    return { uri, numberOfPages: 1 };
+  }),
+}));
 jest.mock('expo-notifications', () => ({
   setNotificationHandler: jest.fn(),
   getPermissionsAsync: jest.fn(async () => ({ granted: false, status: 'undetermined' })),

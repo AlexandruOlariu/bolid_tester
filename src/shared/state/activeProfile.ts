@@ -7,7 +7,9 @@
 import { useMemo } from 'react';
 import { useGarageStore } from '@/shared/state/garageStore';
 import { resolveProfile } from '@/shared/vehicles/resolve';
-import type { UserVehicle, VehicleProfile } from '@/shared/vehicles';
+import { vehicleLabel, type UserVehicle, type VehicleProfile } from '@/shared/vehicles';
+import type { HistoryVehicle } from './historyStore';
+import { useSessionStore } from './sessionStore';
 import { useVehicleStore } from './vehicleStore';
 
 /** Single-entry cache keyed on the (id, garage list) pair, so the hook and the non-hook helper hand
@@ -40,4 +42,17 @@ export function useActiveProfile(): VehicleProfile {
 export function getActiveUserVehicle(): UserVehicle | null {
   const id = useVehicleStore.getState().selectedProfileId;
   return useGarageStore.getState().vehicles.find((v) => v.id === id) ?? null;
+}
+
+/** The car an in-memory result belongs to, stamped when the result is published (fault read,
+ *  inspection, battery test, AI run): the active profile plus the live session's VIN, if any. The
+ *  unified vehicle report (plan 15) only uses an in-memory result whose stamp matches the car it is
+ *  built for, so switching the garage selection never files car A's results under car B. */
+export function activeCarStamp(): HistoryVehicle {
+  const profile = getActiveProfile();
+  return {
+    id: profile.id,
+    label: vehicleLabel(profile),
+    vin: useSessionStore.getState().info?.vin ?? null,
+  };
 }

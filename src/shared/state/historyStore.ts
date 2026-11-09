@@ -1,5 +1,5 @@
-/** Persistent history of diagnostic activity: every AI auto-diagnose run and every fault-code check,
- *  each **linked to a car**. File-backed (expo-file-system) via the shared persist storage, so it
+/** Persistent history of diagnostic activity: every AI auto-diagnose run, every fault-code check and
+ *  every generated vehicle report (plan 15), each **linked to a car**. File-backed (expo-file-system) via the shared persist storage, so it
  *  survives launches.
  *
  *  Retention is capped at `MAX_HISTORY` newest entries (oldest evicted) so the file can't grow
@@ -12,6 +12,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { fileStateStorage, debouncedStorage } from './persistStorage';
 import type { AiReport, Dtc } from '@/shared/obd-core';
+import type { ReportSectionId } from '@/shared/lib/vehicleReport';
 
 /** Identity of the car an entry belongs to. `vin` is the true per-car key when the ECU reports it;
  *  otherwise we fall back to the selected profile `id`. `label` is for display. */
@@ -59,7 +60,19 @@ export interface DtcHistoryEntry {
   monitorsTotal: number | null;
 }
 
-export type HistoryEntry = AiHistoryEntry | DtcHistoryEntry;
+/** A generated unified vehicle report (plan 15) — which sections it held, the format it was shared
+ *  in and the file name, so the per-car timeline (plan 16) can list it. */
+export interface ReportHistoryEntry {
+  kind: 'report';
+  id: string;
+  ts: number;
+  vehicle: HistoryVehicle;
+  sections: ReportSectionId[];
+  format: 'pdf' | 'html' | 'md';
+  fileName: string;
+}
+
+export type HistoryEntry = AiHistoryEntry | DtcHistoryEntry | ReportHistoryEntry;
 
 /** Hard cap on retained entries — newest kept, oldest dropped (mirrors `MAX_ERRORS` in
  *  errorLogStore), so the file and the launch-time hydration stay bounded. */
@@ -73,6 +86,7 @@ interface HistoryState {
   entries: HistoryEntry[];
   addAiRun: (e: Omit<AiHistoryEntry, 'kind' | 'id' | 'ts'> & { ts?: number }) => void;
   addDtcCheck: (e: Omit<DtcHistoryEntry, 'kind' | 'id' | 'ts'> & { ts?: number }) => void;
+  addReportRun: (e: Omit<ReportHistoryEntry, 'kind' | 'id' | 'ts'> & { ts?: number }) => void;
   remove: (id: string) => void;
   clear: () => void;
 }
@@ -96,7 +110,21 @@ export const useHistoryStore = create<HistoryState>()(
         })),
       addDtcCheck: ({ ts, ...rest }) =>
         set((s) => ({
-          entries: withEntry(s.entries, { kind: 'dtc', id: newId(), ts: ts ?? Date.now(), ...rest }),
+          entries: withEntry(s.entries, {
+            kind: 'dtc',
+            id: newId(),
+            ts: ts ?? Date.now(),
+            ...rest,
+          }),
+        })),
+      addReportRun: ({ ts, ...rest }) =>
+        set((s) => ({
+          entries: withEntry(s.entries, {
+            kind: 'report',
+            id: newId(),
+            ts: ts ?? Date.now(),
+            ...rest,
+          }),
         })),
       remove: (id) => set((s) => ({ entries: s.entries.filter((x) => x.id !== id) })),
       clear: () => set({ entries: [] }),
@@ -104,7 +132,9 @@ export const useHistoryStore = create<HistoryState>()(
     {
       name: 'bolid.history',
       version: 2,
-      storage: createJSONStorage(() => debouncedStorage(fileStateStorage, HISTORY_PERSIST_DEBOUNCE_MS)),
+      storage: createJSONStorage(() =>
+        debouncedStorage(fileStateStorage, HISTORY_PERSIST_DEBOUNCE_MS),
+      ),
       // v1 entries had a flat `vehicleLabel`; lift it into a `vehicle` descriptor.
       migrate: (persisted, version) => {
         const s = (persisted ?? {}) as { entries?: unknown };
@@ -115,7 +145,11 @@ export const useHistoryStore = create<HistoryState>()(
             if (e && typeof e === 'object' && !('vehicle' in e)) {
               return {
                 ...e,
-                vehicle: { id: 'unknown', label: (e.vehicleLabel as string) ?? 'Unknown vehicle', vin: null },
+                vehicle: {
+                  id: 'unknown',
+                  label: (e.vehicleLabel as string) ?? 'Unknown vehicle',
+                  vin: null,
+                },
               };
             }
             return e;

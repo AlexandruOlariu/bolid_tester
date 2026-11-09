@@ -14,6 +14,7 @@ It owns no data; each entry routes to another feature's screen.
   | ----------------------- | ------------------ | ----------------------------------------------- |
   | Diagnose (AI)           | `/ai-diagnose`     | [ai-diagnose](./ai-diagnose.md)                 |
   | History                 | `/history`         | [history](./history.md)                         |
+  | Vehicle report          | `/report`          | [report](./report.md)                           |
   | Used-car inspection     | `/inspection`      | [used-car-inspection](./used-car-inspection.md) |
   | DPF / regen             | `/dpf`             | [dpf](./dpf.md)                                 |
   | Battery & charging      | `/battery`         | [battery-health](./battery-health.md)           |

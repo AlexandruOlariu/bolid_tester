@@ -21,4 +21,10 @@ export const fileSystemMock = {
     memoryFiles.delete(uri);
   }),
   makeDirectoryAsync: jest.fn(async () => undefined),
+  moveAsync: jest.fn(async ({ from, to }: { from: string; to: string }) => {
+    const v = memoryFiles.get(from);
+    if (v === undefined) throw new Error(`ENOENT: ${from}`);
+    memoryFiles.set(to, v);
+    memoryFiles.delete(from);
+  }),
 };

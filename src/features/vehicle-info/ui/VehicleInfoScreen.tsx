@@ -23,6 +23,9 @@ export function VehicleInfoScreen() {
     return (
       <Screen title="Vehicle info">
         <Paragraph theme="alt2">Not connected.</Paragraph>
+        <Button theme="blue" onPress={() => router.push('/report')}>
+          Full vehicle report
+        </Button>
       </Screen>
     );
   }
@@ -58,6 +61,10 @@ export function VehicleInfoScreen() {
 
       <Button theme="blue" onPress={() => router.push('/vin-decode')}>
         Decode VIN
+      </Button>
+
+      <Button theme="green" onPress={() => router.push('/report')}>
+        Full vehicle report
       </Button>
     </Screen>
   );

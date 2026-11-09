@@ -5,6 +5,117 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 15 — Unified vehicle report (2026-11-09)
+
+[Plan 15](./plans/15-unified-vehicle-report.md) landed: one tap on **More → Vehicle report**,
+**Info → Full vehicle report** or **Faults → Full report** builds a single document for the active
+car — identity (VIN decode, protocol, adapter), readiness + fault codes with VAG numbers and freeze
+frames, the newest saved module scan, the inspection verdict, the battery result, the AI summary and
+the maintenance due list — and shares it as **PDF** (`expo-print`), **HTML** or **Markdown**. Every
+shared report is recorded in History. Everything above the plan's deferred section is shipped and
+exercised against the simulator; **on-car pending**: eyeball the PDF of a real 16-module Golf scan
+with TP2.0 modules once.
+
+- **Pure model (`src/shared/lib/vehicleReport.ts`, core tsconfig).** The plan's types
+  (`ReportIdentity`, `ReportScan`, `ReportInspection`, `ReportBattery`, `ReportAi`,
+  `ReportMaintenance`, `VehicleReportModel`, `ReportSectionId`, `VehicleReportInput`),
+  `buildVehicleReport` (fills `missing`), `reportSeverity` (worst of MIL on, inspection verdict, AI
+  overall, weak battery, any overdue item), `renderReportHtml` (self-contained, every string
+  escaped, `@media print` page breaks before Module scan and Maintenance), `renderReportMarkdown`
+  (one `## ` per present section, VAG numbers next to codes), `reportFileStem`
+  (`bolid-report-<VIN or profile>-<yyyymmdd-hhmm>`, UTC), `reportHeadline`, `reportSections`.
+  Metric only.
+- **CSS lift (`src/shared/lib/reportHtml.ts`).** `REPORT_CSS` + `escHtml` moved out of
+  `dtcReport.ts`; `buildDtcReportHtml` output verified byte-identical before / after (the existing
+  `dtcReport.test.ts` is unchanged and green). `dtcReport.ts` now also exports `dtcCheckBodyHtml`
+  (code tables + freeze frames, reused by the vehicle report), `freezeFramesHtml`, `milText`,
+  `totalCodes`, and **`dtcCheckFromRead`** — the live-read → `DtcCheckReport` mapping that replaced
+  `FaultCodesScreen`'s local `buildCheck`.
+- **Report slice (`src/features/report/`).** `api/sections.ts` (pure mappers: `faultsFromStores`,
+  `faultsFromHistory`, `scanFromSaved` with `statusFlagText` and header-identical counts,
+  `inspectionFrom`, `batteryFrom`, `aiFrom`, `maintenanceFrom` worst-first, `identityFrom` with
+  `decodeVin` / `PROTOCOL_LABELS`, `belongsToCar`, `collectReportSources`, `availableSections`);
+  `api/reportExport.ts` (`loadReportModules` — tolerant imports of `expo-file-system/legacy`,
+  `expo-sharing`, `expo-print`; `exportVehicleReport(model, format, mods)` — print → `moveAsync` to
+  `<stem>.pdf`, or write `<stem>.html` / `.md`; history record; share sheet; `report/export` errors);
+  `hooks/useVehicleReport.ts`, `hooks/useReportExport.ts`; `ui/ReportScreen.tsx` (preview card with
+  severity badge and counts, section checklist with "Not run yet" + **Run now**, Share PDF / HTML /
+  Markdown, PDF → HTML fallback). Route `src/app/report.tsx`, hidden `Tabs.Screen name="report"`.
+- **Stores.** `batteryStore.ranAt` (set by `setReport`, null when cleared).
+  `historyStore`: `ReportHistoryEntry` (`kind: 'report'`, sections, format, file name) +
+  `addReportRun`; additive, persist version stays 2. `HistoryScreen`: report card + a **Reports**
+  type filter.
+- **Install.** `expo-print` `~56.0.4` (the SDK 56 version `npx expo install` picks, no config
+  plugin), installed with `npm install expo-print@~56.0.4 --legacy-peer-deps` so the lockfile diff
+  is only the `expo-print` entry (see review fix (d)).
+- **Simulator.** No new simulator behaviour: the report only reads what Faults / Module scan /
+  Inspection / Battery / AI already produce. The integration test drives the simulated Golf with
+  `P0299` injected end to end.
+- **Tests (+60 tests, +7 suites: 1111 tests / 136 suites).** `vehicleReport.test.ts` (missing, badge MIL → urgent colour,
+  overdue → attention, stem VIN / profile id, `## ` per section, `<script>` escaped, metric guard,
+  offline "last connection"), `vehicleReport.integration.test.ts` (simulated Golf + `P0299`: six
+  sections, `00665`, module `01`, verdict, due list), `report/api/sections.test.ts` (scan counts
+  equal `formatAutoScanReport`'s header, maintenance worst-first, identity online / offline,
+  history fallback, car matching), `report/api/reportExport.test.ts` (PDF / HTML / MD with fake
+  modules, no printer, no directory, failure logged, history recorded),
+  `report/ui/ReportScreen.test.tsx` (disabled rows + Run now, offline HTML, six enabled sections
+  after the simulator walk-through, Share PDF writes a `.pdf`, unchecking removes a section, PDF →
+  HTML fallback, Markdown), `history/ui/HistoryScreen.test.tsx` (report card, Reports filter),
+  `battery-health/model/batteryStore.test.ts` (`ranAt`); `historyStore.test.ts` (`addReportRun`
+  under the cap), `MoreScreen.test.tsx` and `VehicleInfoScreen.test.tsx` (new entries). Test
+  harness: `expo-print` mock and `moveAsync` in the in-memory file system; `resetStores` now also
+  resets the scan-history, inspection and battery stores.
+- **Docs.** New `features/report.md`; `features/fault-codes.md` (snapshot moved to
+  `dtcCheckFromRead`, Full report button), `features/history.md` (report entries, Reports filter),
+  `features/battery-health.md` (`ranAt`), `features/more.md`, `features/vehicle-info.md`,
+  `features/engine-host.md` + `architecture.md` (report slice as the second composition point),
+  `phase2-mobile-app.md` (route table), `roadmap.md` (✅, on-car pending). Context graph rebuilt.
+- **Deviations.** (1) The live-read mapping lives in `src/shared/lib/dtcReport.ts` as
+  `dtcCheckFromRead` (with `faultsFromStores` in `sections.ts` as an alias), not only in
+  `features/report/api/sections.ts`: importing the report slice from `FaultCodesScreen` would have
+  added a feature → feature import. As a side effect the Faults HTML report now shows the protocol
+  label instead of the raw protocol id, plus the voltage and adapter name. (2) `ReportIdentity`
+  gained `connected` and `lastSeenAt` (the "last connection" line); `ReportScan` gained `preUds`
+  for TP2.0 modules (counts stay UDS-only, matching the text report's header). (3) The app version
+  comes from `APP_VERSION` (`@/shared/lib/appInfo`, app.json) rather than `expo-constants`.
+  (4) `reportSeverity` also counts a weak battery as attention. (5) Offline, faults and AI fall
+  back to the car's newest history entries, so a report after an app restart is not empty;
+  maintenance counts as available only once the car's logbook has an entry. (6) Never-run sections
+  are still requested, so the document lists them under "Not run yet"; unchecked ones are left out.
+  (7) The file I/O lives in `api/reportExport.ts` with injected modules (the UI test project
+  cannot run variable-specifier imports), and the plan's `DtcResult` path is
+  `src/shared/state/dtcStore.ts`, not `features/fault-codes/model/dtcStore.ts`.
+- **Review fixes.** (a) In-memory results now carry the car they belong to: `activeCarStamp()`
+  (`src/shared/state/activeProfile.ts`: active profile id + label + live session VIN) is stamped by
+  `dtcStore.set` (`readFor`), `inspectionStore.set` with a report, `batteryStore.setReport` and
+  `aiDiagnoseStore.setReport` (`ranFor`; null when the report is cleared / reset).
+  `collectReportSources` uses a live result only when its stamp passes `belongsToCar`, so reading
+  car A, disconnecting and switching the garage to car B no longer files A's codes, inspection,
+  battery or AI summary under B — the plan only asked for the scan to be car-filtered. (b)
+  `dtcStore.clearResults()` (Faults opened with no session) also nulls `readFor` (`lastReadAt`
+  stays for the first-run card), so an emptied list no longer beats the car's newest history
+  entry and the offline report keeps e.g. `P0299`. (c) `exportVehicleReport` catches a share-sheet
+  rejection after the file is written and recorded (warning logged, URI resolved), so Share PDF no
+  longer reports "PDF unavailable" and records a second HTML copy. Tests: two `sections.test.ts`
+  cases, one `reportExport.test.ts` case, `readFor` / `ranFor` assertions in `dtcStore.test.ts` and
+  `batteryStore.test.ts` (both now mock `expo-file-system/legacy`, since the stamp reads the
+  persisted garage / vehicle stores). (d) The first `expo-print` install ran without
+  `--legacy-peer-deps`, so npm also pulled unrequested peer dependencies into the lockfile and
+  `node_modules` (`react-native-reanimated` 4.7.1, `react-native-worklets` 0.13.1 — outside
+  `expo-modules-core`'s peer range, so `npm ls` failed — `react-native-gesture-handler` 3.5.0,
+  `@testing-library/dom`, `@react-native/babel-preset`, …) and dropped `"dev": true` flags; Expo
+  autolinking follows non-optional peers, so the next native build would have compiled them in.
+  The lockfile was restored from HEAD and `expo-print` reinstalled with `--legacy-peer-deps`: the
+  diff is now the 11-line `expo-print` entry and `npm ls` is clean. (e) The Faults **Full report**
+  button got a `FaultCodesScreen.test.tsx` case (`/report` pushed), like the More and Info entries. (f) The
+  offline identity's "last connection" (`lastSeenAt`) is now the newest time among every section
+  the report prints (scan, faults — live or history —, inspection, battery, AI) and the car's
+  newest DTC / AI history entries; before, it ignored the live inspection / battery / fault-read
+  times, so it could read older than a section below it, or be missing when only an inspection or
+  battery capture had run. One `sections.test.ts` case.
+
+---
+
 ## Plan 24 — Adaptation restore from a full-car backup (2026-11-09)
 
 [Plan 24](./plans/24-adaptation-restore.md) landed: the "clone my car" snapshot now restores

@@ -3,6 +3,7 @@ import { Alert, type AlertButton } from 'react-native';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { connectSimulator } from '@test/simulator';
+import { mockPush } from '@test/mocks/router';
 import { FaultCodesScreen } from './FaultCodesScreen';
 
 describe('FaultCodesScreen', () => {
@@ -36,6 +37,15 @@ describe('FaultCodesScreen', () => {
     expect(screen.queryByText('Hide guide')).toBeNull();
     fireEvent.press(screen.getByText('Guide'));
     expect(screen.getByText('Hide guide')).toBeTruthy();
+  });
+
+  it('opens the full vehicle report from "Full report"', async () => {
+    await connectSimulator({ injectedDtcs: ['P0299'] });
+    renderWithProviders(<FaultCodesScreen />);
+    await screen.findByText('P0299');
+
+    fireEvent.press(screen.getByText('Full report'));
+    expect(mockPush).toHaveBeenCalledWith('/report');
   });
 
   it('clears the codes after the confirmation and re-reads an empty list', async () => {

@@ -2020,6 +2020,11 @@
     "documents"
   ],
   [
+    "doc:features/report",
+    "feature:report",
+    "documents"
+  ],
+  [
     "doc:features/routines",
     "feature:routines",
     "documents"
@@ -2216,6 +2221,11 @@
   ],
   [
     "feature:ai-diagnose",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
     "store:errorLogStore",
     "imports"
   ],
@@ -2276,7 +2286,17 @@
   ],
   [
     "feature:battery-health",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:battery-health",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:battery-health",
+    "store:historyStore",
     "imports"
   ],
   [
@@ -2811,6 +2831,11 @@
   ],
   [
     "feature:history",
+    "lib:vehicleReport",
+    "imports"
+  ],
+  [
+    "feature:history",
     "store:historyStore",
     "imports"
   ],
@@ -2831,7 +2856,17 @@
   ],
   [
     "feature:inspection",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:inspection",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:inspection",
+    "store:historyStore",
     "imports"
   ],
   [
@@ -3142,6 +3177,126 @@
   [
     "feature:performance-tests",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:analysis/battery",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:analysis/inspection",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:analysis/maintenance",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:obd/dtcDatabase/manufacturer/vag",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:obd/vinDecode",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "feature:ai-diagnose",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "feature:battery-health",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "feature:inspection",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "feature:maintenance",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "feature:module-scan",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "lib:dtcReport",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "lib:vehicleReport",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:dtcStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "vehicle:types",
     "imports"
   ],
   [
@@ -3551,8 +3706,43 @@
   ],
   [
     "lib:dtcReport",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "lib:dtcReport",
+    "core:obd/readiness",
+    "imports"
+  ],
+  [
+    "lib:dtcReport",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "lib:dtcReport",
+    "lib:reportHtml",
+    "imports"
+  ],
+  [
+    "lib:reportHtml",
     "doc:plans/15-unified-vehicle-report",
     "named"
+  ],
+  [
+    "lib:vehicleReport",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "lib:vehicleReport",
+    "lib:dtcReport",
+    "imports"
+  ],
+  [
+    "lib:vehicleReport",
+    "lib:reportHtml",
+    "imports"
   ],
   [
     "screen:_layout",
@@ -3810,6 +4000,11 @@
     "serves"
   ],
   [
+    "screen:report",
+    "feature:report",
+    "serves"
+  ],
+  [
     "screen:routines",
     "doc:features/routines",
     "named"
@@ -3941,13 +4136,23 @@
   ],
   [
     "store:activeProfile",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
     "store:vehicleStore",
     "imports"
   ],
   [
     "store:activeProfile",
     "vehicle:registry",
-    "named"
+    "imports"
   ],
   [
     "store:activeProfile",
@@ -3977,6 +4182,16 @@
   [
     "store:dtcStore",
     "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "store:dtcStore",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "store:dtcStore",
+    "store:historyStore",
     "imports"
   ],
   [
@@ -4023,6 +4238,11 @@
     "store:historyStore",
     "doc:features/history",
     "named"
+  ],
+  [
+    "store:historyStore",
+    "lib:vehicleReport",
+    "imports"
   ],
   [
     "store:historyStore",

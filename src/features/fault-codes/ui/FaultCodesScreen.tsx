@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { Alert } from 'react-native';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Switch } from 'tamagui';
-import { Share2, FileText } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Share2, FileText, FileStack } from 'lucide-react-native';
 import { Screen, ValueCard } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { curatedProfileId, vehicleLabel } from '@/shared/vehicles';
 import { matchFaultGuide } from '@/shared/vehicles/faultGuides';
-import { formatDtcReport, buildDtcReportHtml, type DtcCheckReport } from '@/shared/lib/dtcReport';
+import {
+  formatDtcReport,
+  buildDtcReportHtml,
+  dtcCheckFromRead,
+  type DtcCheckReport,
+} from '@/shared/lib/dtcReport';
 import { vagCodeForDtc, type Dtc } from '@/shared/obd-core/obd/dtc';
 import type { MonitorStatus } from '@/shared/obd-core/obd/readiness';
 import { driveCyclePattern, DRIVE_CYCLE_DISCLAIMER } from '@/shared/obd-core';
@@ -224,38 +230,17 @@ export function FaultCodesScreen() {
   const { exportReport, busy: exporting } = useDtcExport();
   const [detail, setDetail] = useState<Dtc | null>(null);
 
+  const deviceName = useSessionStore((s) => s.deviceName);
+  const router = useRouter();
   // Snapshot the current read as the normalised report shape, shared by both the Markdown export and
-  // the HTML "send to my mechanic" report. `protocol` is HTML-only (ignored by the Markdown renderer).
-  const buildCheck = (): DtcCheckReport => {
-    const supported = readiness ? readiness.monitors.filter((m) => m.supported) : [];
-    return {
-      ts: Date.now(),
-      vehicleLabel: vehicleLabel(profile),
-      vin: info?.vin ?? null,
-      protocol: info?.protocol ?? null,
-      milOn: readiness ? readiness.milOn : null,
-      stored,
-      pending,
-      permanent,
-      monitorsComplete: readiness ? supported.filter((m) => m.complete).length : null,
-      monitorsTotal: readiness ? supported.length : null,
-      notReady: readiness ? supported.filter((m) => !m.complete).map((m) => m.name) : [],
-      freezeFrame: freezeFrames[0]
-        ? {
-            triggerDtc: freezeFrames[0].triggerDtc,
-            values: freezeFrames[0].values.map((v) => ({
-              name: v.name,
-              value: v.value,
-              unit: v.unit,
-            })),
-          }
-        : null,
-      freezeFrames: freezeFrames.map((ff) => ({
-        triggerDtc: ff.triggerDtc,
-        values: ff.values.map((v) => ({ name: v.name, value: v.value, unit: v.unit })),
-      })),
-    };
-  };
+  // the HTML "send to my mechanic" report (`dtcCheckFromRead`, also used by the vehicle report).
+  const buildCheck = (): DtcCheckReport =>
+    dtcCheckFromRead(
+      { stored, pending, permanent, readiness, freezeFrames },
+      info,
+      vehicleLabel(profile),
+      { adapter: deviceName },
+    );
 
   const onExport = async () => {
     const body = formatDtcReport([buildCheck()], { title: 'Bolid Tester — fault codes' });
@@ -347,6 +332,13 @@ export function FaultCodesScreen() {
           Share report
         </Button>
       </XStack>
+      <Button
+        marginTop="$2"
+        onPress={() => router.push('/report')}
+        icon={() => <FileStack size={18} color="#2bb673" />}
+      >
+        Full report
+      </Button>
       <DtcDetailSheet
         dtc={detail}
         profile={profile}

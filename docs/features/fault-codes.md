@@ -16,7 +16,13 @@ Read and clear Diagnostic Trouble Codes (DTCs), show freeze frame and readiness 
 - **Export report** (Markdown) and **Share report** (HTML) — both snapshot the current read (vehicle,
   VIN, protocol, MIL, readiness, stored/pending/permanent codes with VAG cross-reference numbers, and
   any freeze frames) and open the OS share sheet. Markdown is the plain-text export; the HTML report is
-  a self-contained, print-friendly "send to my mechanic" artifact.
+  a self-contained, print-friendly "send to my mechanic" artifact. The snapshot is
+  `dtcCheckFromRead(read, info, label, { adapter })` in `src/shared/lib/dtcReport.ts` (plan 15 moved
+  the screen's local `buildCheck` there so the [vehicle report](./report.md) shares it); since then
+  the HTML report also carries the protocol **label** (`PROTOCOL_LABELS`, not the raw id), the
+  adapter voltage and the adapter name.
+- **Full report** — opens the [unified vehicle report](./report.md) (`/report`): this read plus the
+  module scan, inspection, battery, AI summary and maintenance due list in one PDF / HTML / Markdown.
 
 ## Guided fault finding (6b.7)
 
@@ -145,7 +151,10 @@ coach helps finish them:
 
 - `dtcStore` (Zustand, lives in `src/shared/state/dtcStore.ts` because EngineHost and the
   onboarding first-run card read it too): `stored[]`, `pending[]`, `permanent[]`, `readiness`,
-  `freezeFrames[]`, plus in-memory `lastReadAt` (stamped only by a real read from a live session).
+  `freezeFrames[]`, plus in-memory `lastReadAt` (stamped only by a real read from a live session)
+  and `readFor` (the car the current results came from, `activeCarStamp()`; `clearResults()` sets
+  it back to null while `lastReadAt` stays) — the vehicle report uses the live read only when
+  `readFor` matches its car.
 - `coachStore` (Zustand): `enabled`, the coach's latest polled `readiness`, `updatedAt`. Shared by
   the Coach panel and the EngineHost watcher; `reset()` ends coach mode.
 

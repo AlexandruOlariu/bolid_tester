@@ -201,7 +201,9 @@ ask(question) → followUp(snapshot, report, conversation, question)
   `ask()`, `clearConversation()`, the guide profile id and a gated `clearCodes()` that re-runs
   afterwards.
 - **model** (`model/aiDiagnoseStore.ts`, Zustand) — `phase`, `progress`, `snapshot`, `report`,
-  `notice`, `error`, `conversation`, `asking`, `askError`.
+  `notice`, `error`, `ranAt`, `ranFor` (the car the report was produced for, `activeCarStamp()`;
+  the [vehicle report](./report.md) only uses a report stamped for its car), `conversation`,
+  `asking`, `askError`.
 - **AI client** (`@/shared/ai`) — `getAiClient` dispatcher over `openaiClient` (chat completions,
   `response_format` retry), `anthropicClient` (Messages API) and the dev mock; `http.ts` has the
   shared `fetchJson` (timeout via AbortController, friendly errors, injectable `fetch`). Lives in

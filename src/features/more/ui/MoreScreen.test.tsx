@@ -8,6 +8,7 @@ import { MoreScreen } from './MoreScreen';
 const ENTRY_TITLES = [
   'Diagnose (AI)',
   'History',
+  'Vehicle report',
   'Used-car inspection',
   'DPF / regen',
   'Battery & charging',
@@ -52,6 +53,13 @@ describe('MoreScreen', () => {
 
     fireEvent.press(screen.getByRole('button', { name: entryName('Error log') }));
     expect(mockPush).toHaveBeenCalledWith('/error-log');
+  });
+
+  it('tapping Vehicle report opens /report', () => {
+    renderWithProviders(<MoreScreen />);
+
+    fireEvent.press(screen.getByRole('button', { name: entryName('Vehicle report') }));
+    expect(mockPush).toHaveBeenCalledWith('/report');
   });
 
   it('"Check for updates" reports OTA as unavailable in a build without updates', async () => {

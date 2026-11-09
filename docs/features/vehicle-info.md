@@ -11,6 +11,8 @@ Show vehicle and adapter identity.
   version** (`ATI`), **Voltage** (`ATRV`, one decimal, V) and **Supported PIDs** (the count). Below
   it, the list of supported Mode 01 PIDs the ECU reported.
 - Buttons **Extended PIDs (experimental)** → `/extended` and **Decode VIN** → `/vin-decode`.
+- **Full vehicle report** → `/report` ([report](./report.md), plan 15) — shown connected and also
+  under "Not connected.", because the report builds from stored data offline.
 
 ## hooks
 

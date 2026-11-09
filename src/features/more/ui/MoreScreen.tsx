@@ -25,6 +25,7 @@ import {
   Radio,
   HeartPulse,
   DownloadCloud,
+  FileStack,
 } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
 import { checkForUpdate, fetchAndReload } from '../api/updates';
@@ -48,6 +49,12 @@ const ENTRIES: Entry[] = [
     title: 'History',
     subtitle: 'Past diagnoses & fault-code checks',
     Icon: History,
+  },
+  {
+    route: '/report',
+    title: 'Vehicle report',
+    subtitle: 'The whole car in one PDF to share',
+    Icon: FileStack,
   },
   {
     route: '/inspection',

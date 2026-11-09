@@ -1,13 +1,30 @@
 import React, { useMemo, useState } from 'react';
 import { Alert } from 'react-native';
 import { YStack, XStack, Card, Text, Paragraph, Button } from 'tamagui';
-import { Sparkles, Shield, TriangleAlert, Trash2, Car, Share2 } from 'lucide-react-native';
+import {
+  Sparkles,
+  Shield,
+  TriangleAlert,
+  Trash2,
+  Car,
+  Share2,
+  FileText,
+} from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
-import { useHistoryStore, historyVehicleKey, historyVehicleChipLabel } from '@/shared/state/historyStore';
-import type { AiHistoryEntry, DtcHistoryEntry } from '@/shared/state/historyStore';
+import {
+  useHistoryStore,
+  historyVehicleKey,
+  historyVehicleChipLabel,
+} from '@/shared/state/historyStore';
+import type {
+  AiHistoryEntry,
+  DtcHistoryEntry,
+  ReportHistoryEntry,
+} from '@/shared/state/historyStore';
 import type { OverallHealth } from '@/shared/obd-core';
 import { useDtcExport } from '@/features/fault-codes';
 import { formatDtcReport, type DtcCheckReport } from '@/shared/lib/dtcReport';
+import { REPORT_SECTION_TITLES } from '@/shared/lib/vehicleReport';
 
 const OVERALL_COLOR: Record<OverallHealth, string> = {
   ok: '#2bb673',
@@ -15,7 +32,13 @@ const OVERALL_COLOR: Record<OverallHealth, string> = {
   urgent: '#f85149',
 };
 
-type TypeFilter = 'all' | 'ai' | 'dtc';
+type TypeFilter = 'all' | 'ai' | 'dtc' | 'report';
+
+const FORMAT_LABEL: Record<ReportHistoryEntry['format'], string> = {
+  pdf: 'PDF',
+  html: 'HTML',
+  md: 'Markdown',
+};
 
 function fmtTime(ts: number): string {
   try {
@@ -47,7 +70,11 @@ function AiCard({ e }: { e: AiHistoryEntry }) {
   return (
     <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor={color} gap="$1">
       <XStack alignItems="center" gap="$2">
-        {e.source === 'ai' ? <Sparkles size={15} color={color} /> : <Shield size={15} color={color} />}
+        {e.source === 'ai' ? (
+          <Sparkles size={15} color={color} />
+        ) : (
+          <Shield size={15} color={color} />
+        )}
         <Text fontWeight="800" flex={1}>
           {e.vehicle.label}
         </Text>
@@ -98,6 +125,36 @@ function DtcCard({ e }: { e: DtcHistoryEntry }) {
   );
 }
 
+/** A generated vehicle report (plan 15): format, sections and file name. */
+function ReportCard({ e }: { e: ReportHistoryEntry }) {
+  const color = '#58a6ff';
+  return (
+    <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor={color} gap="$1">
+      <XStack alignItems="center" gap="$2">
+        <FileText size={15} color={color} />
+        <Text fontWeight="800" flex={1}>
+          {e.vehicle.label}
+        </Text>
+        <Text fontWeight="800" fontSize="$1" color={color}>
+          {FORMAT_LABEL[e.format]}
+        </Text>
+      </XStack>
+      <Paragraph theme="alt2" fontSize="$1">
+        Vehicle report · {fmtTime(e.ts)}
+      </Paragraph>
+      <VinLine vin={e.vehicle.vin} />
+      <Paragraph fontSize="$3">
+        {e.sections.length > 0
+          ? e.sections.map((id) => REPORT_SECTION_TITLES[id]).join(' · ')
+          : 'Identity only'}
+      </Paragraph>
+      <Paragraph theme="alt2" fontSize="$2">
+        {e.fileName}
+      </Paragraph>
+    </Card>
+  );
+}
+
 export function HistoryScreen() {
   const entries = useHistoryStore((s) => s.entries);
   const clear = useHistoryStore((s) => s.clear);
@@ -123,6 +180,7 @@ export function HistoryScreen() {
         if (carKey !== 'all' && historyVehicleKey(e.vehicle) !== carKey) return false;
         if (typeFilter === 'ai') return e.kind === 'ai';
         if (typeFilter === 'dtc') return e.kind === 'dtc';
+        if (typeFilter === 'report') return e.kind === 'report';
         return true;
       }),
     [entries, carKey, typeFilter],
@@ -153,7 +211,7 @@ export function HistoryScreen() {
   const confirmClear = () =>
     Alert.alert(
       'Clear history?',
-      'This permanently deletes all saved diagnoses and fault-code checks for every car.',
+      'This permanently deletes all saved diagnoses, fault-code checks and report records for every car.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Clear all', style: 'destructive', onPress: () => clear() },
@@ -161,7 +219,7 @@ export function HistoryScreen() {
     );
 
   return (
-    <Screen title="History" subtitle="Past AI diagnoses & fault-code checks, by car">
+    <Screen title="History" subtitle="Past AI diagnoses, fault-code checks & reports, by car">
       {cars.length > 1 ? (
         <YStack gap="$1">
           <XStack alignItems="center" gap="$2">
@@ -171,9 +229,18 @@ export function HistoryScreen() {
             </Paragraph>
           </XStack>
           <XStack gap="$2" flexWrap="wrap">
-            <Chip active={carKey === 'all'} label={`All cars (${entries.length})`} onPress={() => setCarKey('all')} />
+            <Chip
+              active={carKey === 'all'}
+              label={`All cars (${entries.length})`}
+              onPress={() => setCarKey('all')}
+            />
             {cars.map((c) => (
-              <Chip key={c.key} active={carKey === c.key} label={`${c.label} (${c.count})`} onPress={() => setCarKey(c.key)} />
+              <Chip
+                key={c.key}
+                active={carKey === c.key}
+                label={`${c.label} (${c.count})`}
+                onPress={() => setCarKey(c.key)}
+              />
             ))}
           </XStack>
         </YStack>
@@ -183,6 +250,11 @@ export function HistoryScreen() {
         <Chip active={typeFilter === 'all'} label="All" onPress={() => setTypeFilter('all')} />
         <Chip active={typeFilter === 'ai'} label="AI" onPress={() => setTypeFilter('ai')} />
         <Chip active={typeFilter === 'dtc'} label="Faults" onPress={() => setTypeFilter('dtc')} />
+        <Chip
+          active={typeFilter === 'report'}
+          label="Reports"
+          onPress={() => setTypeFilter('report')}
+        />
         <XStack flex={1} />
         {dtcShown.length > 0 ? (
           <Button
@@ -195,7 +267,12 @@ export function HistoryScreen() {
           </Button>
         ) : null}
         {entries.length > 0 ? (
-          <Button size="$2" theme="red" onPress={confirmClear} icon={() => <Trash2 size={15} color="#fff" />}>
+          <Button
+            size="$2"
+            theme="red"
+            onPress={confirmClear}
+            icon={() => <Trash2 size={15} color="#fff" />}
+          >
             Clear
           </Button>
         ) : null}
@@ -209,7 +286,15 @@ export function HistoryScreen() {
         </Paragraph>
       ) : (
         <YStack gap="$2">
-          {shown.map((e) => (e.kind === 'ai' ? <AiCard key={e.id} e={e} /> : <DtcCard key={e.id} e={e} />))}
+          {shown.map((e) =>
+            e.kind === 'ai' ? (
+              <AiCard key={e.id} e={e} />
+            ) : e.kind === 'dtc' ? (
+              <DtcCard key={e.id} e={e} />
+            ) : (
+              <ReportCard key={e.id} e={e} />
+            ),
+          )}
         </YStack>
       )}
     </Screen>

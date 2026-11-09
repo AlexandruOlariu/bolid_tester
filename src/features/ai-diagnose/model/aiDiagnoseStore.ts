@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import type { AiChatMessage, AiReport, DiagnosticSnapshot } from '@/shared/obd-core';
+import { activeCarStamp } from '@/shared/state/activeProfile';
+import type { HistoryVehicle } from '@/shared/state/historyStore';
 
 export type RunPhase = 'idle' | 'gathering' | 'analyzing' | 'done' | 'error';
 
@@ -12,6 +14,9 @@ interface AiDiagnoseState {
   notice: string | null;
   error: string | null;
   ranAt: number | null;
+  /** The car `report` was produced for (`activeCarStamp()` when it landed), or null with no
+   *  report — the unified vehicle report only uses a report stamped for its car. */
+  ranFor: HistoryVehicle | null;
   /** Fault code the last run was focused on ("Explain with AI"), or null for a full diagnosis. */
   focusCode: string | null;
   /** Follow-up questions about the current report and their answers (user/assistant pairs, oldest
@@ -40,6 +45,7 @@ export const useAiDiagnoseStore = create<AiDiagnoseState>((set) => ({
   notice: null,
   error: null,
   ranAt: null,
+  ranFor: null,
   focusCode: null,
   conversation: [],
   asking: false,
@@ -67,6 +73,7 @@ export const useAiDiagnoseStore = create<AiDiagnoseState>((set) => ({
       notice,
       phase: 'done',
       ranAt: Date.now(),
+      ranFor: activeCarStamp(),
       error: null,
       progress: null,
       conversation: [],
@@ -83,6 +90,7 @@ export const useAiDiagnoseStore = create<AiDiagnoseState>((set) => ({
       notice: null,
       error: null,
       ranAt: null,
+      ranFor: null,
       focusCode: null,
       conversation: [],
       asking: false,

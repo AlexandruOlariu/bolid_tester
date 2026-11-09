@@ -159,6 +159,10 @@ slices import another feature (production code, tests excluded):
 This is layering debt, not a pattern to copy. A new cross-cutting engine goes here (or into a
 shared store), never into a new feature → feature import.
 
+The [report](./report.md) slice (plan 15) is the second sanctioned composition point: building one
+document for the whole car is its job, so it reads the module-scan, inspection, battery, AI and
+maintenance stores; nothing imports it back.
+
 ## api / model
 
 - `index.ts` exports `EngineHost`, `computePollPids`, `enabledRulePids`, `planSweep`,

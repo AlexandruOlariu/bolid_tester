@@ -28,5 +28,14 @@ describe('VehicleInfoScreen', () => {
 
     fireEvent.press(screen.getByText('Decode VIN'));
     expect(mockPush).toHaveBeenCalledWith('/vin-decode');
+
+    fireEvent.press(screen.getByText('Full vehicle report'));
+    expect(mockPush).toHaveBeenCalledWith('/report');
+  });
+
+  it('offers the vehicle report offline too (it builds from stored data)', () => {
+    renderWithProviders(<VehicleInfoScreen />);
+    fireEvent.press(screen.getByText('Full vehicle report'));
+    expect(mockPush).toHaveBeenCalledWith('/report');
   });
 });
