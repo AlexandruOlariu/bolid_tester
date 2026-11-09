@@ -2586,7 +2586,17 @@
   ],
   [
     "feature:adapter-health",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
     "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "store:activeProfile",
     "imports"
   ],
   [
@@ -2596,7 +2606,17 @@
   ],
   [
     "feature:adapter-health",
+    "store:linkStore",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -3082,6 +3102,11 @@
   [
     "feature:connection",
     "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "store:linkStore",
     "imports"
   ],
   [

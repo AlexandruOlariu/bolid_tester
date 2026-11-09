@@ -24,6 +24,11 @@ jobs:
       - run: npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund
       - name: Lint (core)
         run: npm run lint
+      # docs/adapters/matrix.md, the per-adapter pages and src/shared/adapters/knownAdapters.json are
+      # generated from docs/adapters/reports/*.json (plan 29); fail when they were not rebuilt, were
+      # edited by hand, or a report is malformed / from the simulator.
+      - name: Adapter compatibility matrix is up to date
+        run: npm run adapters:check
       - name: Typecheck (core)
         run: npm run typecheck
       - name: Test (core + component)

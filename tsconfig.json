@@ -32,6 +32,7 @@
     "src/shared/lib/**/*.ts",
     "src/shared/obd-core/**/*.ts",
     "src/shared/vehicles/**/*.ts",
+    "src/shared/adapters/**/*.ts",
     "scripts/**/*.ts"
   ]
 }

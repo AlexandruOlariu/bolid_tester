@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { AdapterHealthResult } from '../api/gradeAdapter';
+import type { AdapterReportJsonContext } from '../api/adapterReportJson';
 
 /** One completed adapter health run. Ephemeral (a check is a one-off; not persisted). */
 export interface AdapterHealthReport {
@@ -17,6 +18,10 @@ export interface AdapterHealthReport {
   result: AdapterHealthResult;
   /** Epoch ms the run finished. */
   ranAt: number;
+  /** The adapter / link / profile the run was made on, captured when it started — never read
+   *  again at share time, so a report kept across a reconnect cannot pair one adapter's
+   *  measurements with another adapter's name or link (plan 29). */
+  context: AdapterReportJsonContext;
 }
 
 interface AdapterHealthState {

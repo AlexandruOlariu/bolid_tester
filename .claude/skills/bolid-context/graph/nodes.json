@@ -1943,6 +1943,29 @@
     ],
     "type": "doc"
   },
+  "doc:adapters/README": {
+    "path": "docs/adapters/README.md",
+    "summary": "Adapter compatibility matrix",
+    "tokens": [
+      "adapter",
+      "adapters",
+      "compatibility",
+      "matrix",
+      "readme"
+    ],
+    "type": "doc"
+  },
+  "doc:adapters/matrix": {
+    "path": "docs/adapters/matrix.md",
+    "summary": "Adapter compatibility matrix",
+    "tokens": [
+      "adapter",
+      "adapters",
+      "compatibility",
+      "matrix"
+    ],
+    "type": "doc"
+  },
   "doc:architecture": {
     "path": "docs/architecture.md",
     "summary": "Architecture",
@@ -3046,7 +3069,9 @@
     "path": "src/features/adapter-health",
     "summary": "A one-tap **adapter health check** that grades your ELM327 so \"is my clone junk?\" support questions",
     "tests": [
-      "src/features/adapter-health/api/gradeAdapter.test.ts"
+      "src/features/adapter-health/api/adapterReportJson.test.ts",
+      "src/features/adapter-health/api/gradeAdapter.test.ts",
+      "src/features/adapter-health/ui/AdapterHealthScreen.test.tsx"
     ],
     "tokens": [
       "adapter",
@@ -3142,7 +3167,8 @@
       "src/features/connection/api/flapGuard.test.ts",
       "src/features/connection/api/reconnect.test.ts",
       "src/features/connection/hooks/usePairedAdapters.test.tsx",
-      "src/features/connection/ui/ConnectionScreen.test.tsx"
+      "src/features/connection/ui/ConnectionScreen.test.tsx",
+      "src/features/connection/ui/DeviceRow.test.tsx"
     ],
     "tokens": [
       "connection"
@@ -4049,6 +4075,14 @@
     "tokens": [
       "label",
       "pack"
+    ],
+    "type": "store"
+  },
+  "store:linkStore": {
+    "path": "src/shared/state/linkStore.ts",
+    "summary": "Live facts about the current / latest connect attempt, for the Connect screen's diagnostics panel: the kind of link (Bluetooth LE, Wi-Fi \u2014 plan 26 \u2014\u2026",
+    "tokens": [
+      "link"
     ],
     "type": "store"
   },

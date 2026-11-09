@@ -45,7 +45,13 @@ Initializing… / Connected / Error` with an icon and colour per `ConnState`;
   paired device), a ⭐ when the name matches an adapter hint (`ADAPTER_NAME_HINTS` in the pure
   `shared/transports/adapterNames.ts`, re-exported by `ble/manager.ts`: `vlink`, `ios-vlink`,
   `v-link`, `veepeak`, `obdii`, `obd`, `icar`, `elm327`), and a **Connect** button labelled
-  "Connect to _name_" for screen readers.
+  "Connect to _name_" for screen readers. When the advertised name is in the bundled community
+  **Known adapters** list (plan 29, `matchKnownAdapter` in `@/shared/adapters`: an exact,
+  case-insensitive name match — "OBDII" never borrows another adapter's grade) a small chip
+  (`testID="known-adapter-chip"`) shows its typical grade — green **known good**, amber **known ok**,
+  red **known poor** — read by screen readers as "Known adapter: 3 community reports · typically
+  GOOD · ~28 ms". The list comes from the [adapter compatibility matrix](../adapters/README.md) and
+  is empty until real reports are committed, so no chip shows today.
 - **SimulatorBanner** — the amber strip on every route (below).
 - The shared `StatusBadge` (`shared/ui`) renders the same states as a compact badge; the Connect
   screen uses its own larger `StatusHero` instead.
@@ -144,7 +150,8 @@ no-op.
   but keeps the device so reconnect can be offered) and `reset`.
 - `model/scanStore.ts` (`useScanStore`, in-memory): `scanning`, `devices: ScannedDevice[]`
   (`id`, `name`, `rssi`, `isLikelyAdapter`); `setScanning`, `upsert`, `clear`.
-- `model/linkStore.ts` (`useLinkStore`, in-memory): `kind: 'ble' | 'wifi' | 'spp' | null` (the latest
+- `shared/state/linkStore.ts` (`useLinkStore`, in-memory; moved from `model/` in plan 29 so the
+  adapter-health JSON report reads the link kind and MTU without a feature → feature import): `kind: 'ble' | 'wifi' | 'spp' | null` (the latest
   attempt's link kind; null for the simulator), `link: BleLinkInfo | null` (set the moment the
   transport reports `connected`, so a failed init still shows it, and again after a successful
   connect; null for the simulator), `stage: ConnectStage | null` (the furthest stage the latest
@@ -155,7 +162,9 @@ no-op.
   for Classic Bluetooth the paired MAC and its name, or "Classic Bluetooth adapter").
   Actions: `beginAttempt(stage, device, kind?, now?)` (clears `link`, records the first stage, the
   device, the link kind and the start time), `setStage` and `setLink`. Written by
-  `connectionService.connectInternal`; read by the diagnostics panel.
+  `connectionService.connectInternal`; read by the diagnostics panel and by the adapter-health
+  JSON report (`link`, `service`, `writeWithoutResponse`, `mtu`). `ConnectStage` is defined here
+  and re-exported by `api/diagnoseFailure.ts`.
 
 ## Behavior
 

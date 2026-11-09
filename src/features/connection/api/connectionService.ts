@@ -51,7 +51,13 @@ import { logError } from '@/shared/state/errorLogStore';
 import { showToast } from '@/shared/state/toastStore';
 import { runReconnect, RECONNECT_DELAYS_MS } from './reconnect';
 import { pruneDrops, shouldAutoReconnect } from './flapGuard';
-import { useLinkStore, type AttemptDevice } from '../model/linkStore';
+import { useLinkStore, type AttemptDevice } from '@/shared/state/linkStore';
+// From the pure module, not the index: the index loads the bundled knownAdapters.json.
+import {
+  SPP_DEVICE_NAME,
+  WEB_BLE_DEVICE_NAME,
+  WIFI_DEVICE_NAME,
+} from '@/shared/adapters/adapterMatrix';
 
 /** Tap the transport to mirror every command/response into the adapter I/O log (a throttled ring
  *  buffer — see adapterLog.ts).
@@ -139,8 +145,9 @@ export function setTcpSocketFactory(factory: TcpSocketFactory | undefined): void
   tcpSocketFactory = factory;
 }
 
-/** The device a Wi-Fi attempt targets: the endpoint from settings (there is nothing to pick). */
-export const WIFI_DEVICE_NAME = 'Wi-Fi ELM327';
+/** The device a Wi-Fi attempt targets: the endpoint from settings (there is nothing to pick).
+ *  Defined with the other stand-in names in `@/shared/adapters` (plan 29: a report sends null). */
+export { WIFI_DEVICE_NAME };
 
 /** The Classic Bluetooth module loader; undefined = `react-native-bluetooth-classic` (the app). */
 let sppModuleLoader: SppModuleLoader | undefined;
@@ -171,7 +178,7 @@ export function isWebBluetoothSupported(): boolean {
 }
 
 /** The name a Web Bluetooth attempt shows when the chooser reported none. */
-export const WEB_BLE_DEVICE_NAME = 'Bluetooth LE adapter';
+export { WEB_BLE_DEVICE_NAME };
 
 /** Open the browser's Bluetooth device chooser and turn the pick into a connect target. Must run
  *  from the button's press handler (Chrome needs a user gesture). Rejects with the browser's error
@@ -215,7 +222,7 @@ export async function chooseWebAdapterAndConnect(): Promise<boolean> {
 }
 
 /** The name an SPP attempt shows when the paired device has none. */
-export const SPP_DEVICE_NAME = 'Classic Bluetooth adapter';
+export { SPP_DEVICE_NAME };
 
 /** The phone's paired (bonded) Bluetooth devices for the Classic Bluetooth picker, likely OBD2
  *  adapters first. Throws a plain-English error when Bluetooth is off or the module is absent. */

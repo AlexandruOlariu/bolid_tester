@@ -5,10 +5,9 @@
 
 import type { BleLinkInfo } from '@/shared/transports/common/gatt';
 import type { AdapterSource } from '@/shared/state/settingsStore';
+import type { ConnectStage } from '@/shared/state/linkStore';
 
-/** Where a connect attempt failed: the phone's radio, the link (BLE or Wi-Fi), the adapter's own
- *  init, the first request to the car (`0100`), or reading the car's details afterwards. */
-export type ConnectStage = 'bluetooth' | 'transport' | 'init' | 'probe' | 'identify';
+export type { ConnectStage };
 
 export type BtRadioState = 'ready' | 'poweredOff' | 'unauthorized' | 'unsupported' | 'checking';
 

@@ -24,7 +24,7 @@ import { useLiveDataStore } from '@/shared/state/liveDataStore';
 import { useDashboardLayoutStore } from '@/features/live-data/model/dashboardLayoutStore';
 import { useOnboardingStore } from '@/shared/state/onboardingStore';
 import { useCoachStore } from '@/features/fault-codes/model/coachStore';
-import { useLinkStore } from '@/features/connection/model/linkStore';
+import { useLinkStore } from '@/shared/state/linkStore';
 import { useScanStore } from '@/features/connection/model/scanStore';
 import { useMaintenanceStore } from '@/features/maintenance/model/maintenanceStore';
 import { useTripStore } from '@/features/trip-recording/model/tripStore';
@@ -42,6 +42,7 @@ import { useBatteryStore } from '@/features/battery-health/model/batteryStore';
 import { useAlertsStore } from '@/features/alerts/model/alertsStore';
 import { useNotificationsStore } from '@/features/notifications/model/notificationsStore';
 import { useBackupStore } from '@/features/backup/model/backupStore';
+import { useAdapterHealthStore } from '@/features/adapter-health/model/adapterHealthStore';
 import { memoryFiles } from './mocks/fileSystem';
 import { setMockFocused, setMockSearchParams } from './mocks/router';
 import { resetMockWindow } from './mocks/window';
@@ -83,6 +84,7 @@ const STORES: AnyStore[] = [
   useAlertsStore,
   useNotificationsStore,
   useBackupStore,
+  useAdapterHealthStore,
 ];
 
 /** Each store's state (actions included) captured at module load, before any test touched it. */

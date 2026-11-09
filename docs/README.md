@@ -27,6 +27,7 @@ and the code is written to match. When something changes, the docs change first 
 | [`web.md`](./web.md)                                           | The browser build: Web Bluetooth, browser support, what works on the web, build and Pages deploy.     |
 | [`obd2-reference.md`](./obd2-reference.md)                     | ELM327 AT commands, OBD2 modes/PIDs, DTC format, protocols.                                           |
 | [`adapter-vgate-icar-pro.md`](./adapter-vgate-icar-pro.md)     | The Vgate iCar Pro BLE adapter: facts, BLE behavior, limits.                                          |
+| [`adapters/README.md`](./adapters/README.md)                   | Adapter compatibility matrix: contribute a report; the generated `matrix.md`.                         |
 | [`simulator.md`](./simulator.md)                               | The virtual ELM327 used for hardware-free development & tests.                                        |
 | [`testing.md`](./testing.md)                                   | Automated tests + per-car on-vehicle manual checklists.                                               |
 | [`exchange-formats.md`](./exchange-formats.md)                 | Profile and label-pack JSON files: schemas, validation, import conflicts, versioning, licensing.      |

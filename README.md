@@ -8,6 +8,9 @@ service-interval reset — for any OBD2-compliant car.
 
 > **This project is documentation-driven.** The [`docs/`](./docs) folder is the source of truth.
 > Start with [`docs/README.md`](./docs/README.md) and [`docs/PLAN.md`](./docs/PLAN.md).
+>
+> **Will my adapter work?** See the community [adapter compatibility matrix](./docs/adapters/matrix.md)
+> ([how to add a report](./docs/adapters/README.md)).
 
 ## Status
 

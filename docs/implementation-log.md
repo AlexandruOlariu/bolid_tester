@@ -5,6 +5,120 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 29 — Adapter compatibility matrix (2026-11-09)
+
+[Plan 29](./plans/29-adapter-compatibility-matrix.md) landed: every adapter-health run can be shared
+as a structured **schema-v1 JSON report**, a script turns the reports committed under
+`docs/adapters/reports/` into [`docs/adapters/matrix.md`](./adapters/matrix.md), one page per adapter
+and the in-app **Known adapters** list, and CI enforces that the generated files are current. The
+pipeline is complete and tested with zero reports. What waits (the plan's "Deferred" section, roadmap
+"on-car pending"): the owner runs the check on the Vgate iCar Pro (Android, later iOS / web) and on
+any Wi-Fi / SPP adapter, commits the JSON files and runs `npm run adapters:build`.
+
+- **Shared pure module.** `src/shared/adapters/adapterMatrix.ts` — no imports, erasable types only,
+  so both the app and the build script use it (the script through Node type stripping, like the
+  capture analyzer): `AdapterReportJson` (schema 1), `validateAdapterReport(value, { allowMock })`
+  (schema, types, ISO `ranAt`, link / grade / platform enums; **rejects any unexpected top-level
+  field and anything in `vehicle` besides `profileId` / `protocol`**, so a VIN or location cannot be
+  added by hand; refuses `link: "mock"` unless allowed), `adapterSlug` (`"IOS-Vlink"` +
+  `"ELM327 v2.2"` → `ios-vlink__elm327-v2-2`; null / empty → `unknown`), `reportFileName`
+  (`<slug>__<yyyy-mm-dd>.json`), `groupAdapterReports` (count, grade distribution, typical grade =
+  mode with ties to the worse grade, median of medians, links / protocols / platforms, clone ratio,
+  last date) and `buildAdapterMatrix` (matrix + pages + `knownAdapters.json`, deterministic).
+- **App report.** `features/adapter-health/api/adapterReportJson.ts` — `buildAdapterReportJson(report,
+ctx)` and `reportLinkFor(linkKind, platform)` (no link kind → `mock`; BLE in a browser →
+  `web-ble`). The run sequence moved out of the hook into `api/runHealthCheck.ts` (injectable clock,
+  phase callback, stop check) so the simulator test drives the exact production path.
+  `useAdapterHealth.share(format: 'txt' | 'json')`; `adapterReportContext()` reads `APP_VERSION`,
+  `Platform.OS` / `Platform.Version`, `sessionStore.deviceName`, `curatedProfileId(getActiveProfile())`
+  (a garage car reports its registry base, never its random local `user:` id) and the link store.
+  The screen gains **Share JSON (for the compatibility matrix)** and the community line
+  ("Community: 3 community reports · typically GOOD · ~28 ms" / "No community reports for this
+  adapter yet — share the JSON to add one.").
+- **Link store moved.** `features/connection/model/linkStore.ts` → `shared/state/linkStore.ts`
+  (`ConnectStage` now defined there, re-exported by `diagnoseFailure.ts`) so adapter-health reads the
+  link kind and MTU without a feature → feature import; four import sites updated.
+- **Build script.** `scripts/build-adapter-matrix.mjs [--check] [--reports <dir>] [--out <dir>]`,
+  no dependencies: validates every report (one line per problem, exit 1, nothing written), writes
+  `matrix.md` (Adapter · Firmware · Link · Reports · Typical grade · Median ms · Protocols · Platforms
+  · Page · Guide), `<slug>.md` pages (every report row and every note) and
+  `src/shared/adapters/knownAdapters.json`; removes the page of an adapter with no reports left
+  (generated files carry a marker line); `--check` exits 1 on any missing / out-of-date / stale
+  output (CRLF-tolerant). `EXTRA_DOCS` links `ios-vlink` to `adapter-vgate-icar-pro.md`.
+  `npm run adapters:build` / `adapters:check`; the check runs in the CI `verify` job after lint and
+  in `npm run ci`. `.prettierignore` (new) skips the generated files so `npm run format` cannot
+  break the byte-for-byte check.
+- **Known adapters.** `src/shared/adapters/index.ts` — `KNOWN_ADAPTERS` (the generated JSON, `[]`
+  today), `matchKnownAdapter(name, firmware?, list?)` (exact case-insensitive name-hint match,
+  firmware tie-break, then most reports — generic names like "OBDII" never borrow a grade),
+  `communitySummary`, `knownAdapterChip`. `DeviceRow` shows a green / amber / red **known good / ok /
+  poor** chip (`known-adapter-chip`) with a screen-reader summary.
+- **Tests (+5 suites).** `adapterMatrix.test.ts` (slug, validator incl. VIN / location rejection,
+  grouping, rendering), `buildAdapterMatrix.test.ts` (spawns the script on temp dirs: zero reports,
+  2 + 1 reports → two rows / median of medians / pages / two known entries, mock → exit 1, malformed
+  → exit 1, hand edit / new report → `--check` exit 1, stale page removal, committed outputs
+  current), `knownAdapters.test.ts`, `adapterReportJson.test.ts` (shape, ISO date, privacy, link
+  mapping, **simulator end to end**: `ELM327 v2.2`, 12.3 V, CAN, 10/10 answers → valid `mock` report
+  the matrix refuses), and UI `DeviceRow.test.tsx` (seeded list → chip) +
+  `AdapterHealthScreen.test.tsx` (simulator → run → Share JSON → valid report saved as
+  `application/json`). `gradeAdapter.test.ts` unchanged.
+- **Docs.** `docs/adapters/README.md` (contribute, schema, privacy, grades, columns, how it is
+  built), generated `docs/adapters/matrix.md`, features adapter-health (JSON share, community line,
+  matrix) and connection (chip, link store location), root `README.md` and `docs/README.md` links,
+  roadmap ✅ (on-car pending).
+
+Deviations from the plan:
+
+- **No `expo-constants`.** The app version comes from the existing `APP_VERSION`
+  (`shared/lib/appInfo.ts`, read from `app.json`, kept in sync by `check-version-sync.mjs`) — the
+  same source every other export uses — so no new dependency was added.
+- **Schema type lives in `@/shared/adapters`**, not in `adapterReportJson.ts` (which re-exports it):
+  the build script imports the validator / slug / renderers from that pure module, so there is one
+  implementation. The script therefore needs Node ≥ 22.18 (type stripping, as `analyze-capture.mjs`
+  already does; CI uses 24) instead of "Node ≥ 20".
+- **The matrix header names the latest report's date**, not the build date, so `--check` does not
+  fail the day after a build ("from N reports (latest yyyy-mm-dd)").
+- **Pure-module tests live in `src/shared/adapters/`**; the core `tsconfig.json` include list was
+  extended with `src/shared/adapters/**/*.ts` (the plan's second option).
+- **`linkStore` moved to `shared/state`** (the plan assumed adapter-health could read it; the repo's
+  layering rule forbids a feature → feature import).
+- **`profileId` is the registry profile** (`curatedProfileId`), so garage cars do not leak a random
+  local id into a public report.
+- Added a stale-page cleanup, `.prettierignore` and `runHealthCheck` (not in the plan) — needed for a
+  stable check and a real simulator test.
+
+Review fixes:
+
+- **Report context captured at run time (major).** `adapterReportContext()` used to run when Share
+  was tapped, while the report stays in the module-level `adapterHealthStore` across reconnects —
+  so a simulator run shared after connecting a real BLE adapter carried the simulator's firmware and
+  latencies under the real adapter's name, `link: "ble"` and MTU, and passed the validator. The hook
+  now captures the context when the run starts and stores it on the report
+  (`AdapterHealthReport.context`); Share JSON and the screen's community line read
+  `report.context`, never the live stores. `adapterHealthStore` joined `test/resetStores.ts`.
+- **Allowlist on every object.** `validateAdapterReport` now rejects unknown keys in `app`,
+  `adapter`, `measurements`, `measurements.latency` and `grade` too (not only the top level and
+  `vehicle`), so `adapter.mac` / `app.location` / `measurements.gps` cannot be added by hand.
+- **Stand-in connection names are not identities.** `WIFI_DEVICE_NAME`, `WEB_BLE_DEVICE_NAME` and
+  `SPP_DEVICE_NAME` moved into `shared/adapters/adapterMatrix.ts` (`PLACEHOLDER_DEVICE_NAMES`;
+  `connectionService` imports and re-exports them from the pure module, not the index, so the
+  bundled JSON is not loaded by the test setup before a test's `jest.mock`). `buildAdapterReportJson`
+  writes them as `deviceName: null` (`reportDeviceName`), the validator refuses a report carrying
+  one, and `matchKnownAdapter` never matches one — two Wi-Fi adapters no longer share a slug by name
+  or borrow each other's grade. Unnamed adapters group by firmware only (`unknown__<firmware>`).
+- **No stuck run after leaving the screen (minor, predates plan 29).** `useAdapterHealth.run()`
+  cleared `running` / `phase` only while the screen was mounted, but `adapterHealthStore` is
+  module-level: leaving mid-run left `running: true` until an app restart, and the remounted
+  screen's button stayed disabled on the last phase label. The `finally` now always resets them;
+  the cut-short report is still dropped.
+- +7 tests: nested-extras rejection, stand-in refusal, `reportDeviceName`, stand-in never matched,
+  stand-in → null in the built report, the screen test "shares the adapter the run was made on"
+  (run on the simulator, switch the stores to a real BLE adapter, Share JSON → still `mock`), and
+  "leaving the screen mid-run does not leave the check stuck as running" (unmount mid-run → store
+  idle, no partial report, a fresh mount runs again).
+
+---
+
 ## Plan 28 — Web Bluetooth PWA (2026-11-09)
 
 [Plan 28](./plans/28-web-bluetooth-pwa.md) landed: the app builds as a static Expo web site, connects

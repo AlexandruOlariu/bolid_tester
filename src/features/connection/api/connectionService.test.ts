@@ -63,7 +63,7 @@ import {
 import { getBleManager } from '@/shared/transports/ble/manager';
 import { hideToast, useToastStore } from '@/shared/state/toastStore';
 import { diagnoseFailure } from './diagnoseFailure';
-import { useLinkStore } from '../model/linkStore';
+import { useLinkStore } from '@/shared/state/linkStore';
 
 beforeEach(async () => {
   await disconnect();

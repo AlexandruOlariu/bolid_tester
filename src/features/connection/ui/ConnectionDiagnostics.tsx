@@ -15,7 +15,7 @@ import {
   stageLabel,
   type BtRadioState,
 } from '../api/diagnoseFailure';
-import { useLinkStore } from '../model/linkStore';
+import { useLinkStore } from '@/shared/state/linkStore';
 import { Panel } from '../styles/connection.styles';
 
 const ACCENT = '#F85149'; // matches the error status color

@@ -3,10 +3,15 @@
  *  the BLE link negotiated (MTU, characteristics, write mode), the furthest stage the attempt
  *  reached, the device it targeted (sessionStore only learns the device on success), and when it
  *  started (so the panel only shows this attempt's adapter-log lines).
- *  Written by connectionService; in-memory only. See docs/features/connection.md. */
+ *  Written by connectionService; in-memory only. Lives in shared/state (moved from
+ *  features/connection in plan 29) so the adapter-health report can read the link kind and the
+ *  negotiated MTU without a feature → feature import. See docs/features/connection.md. */
 import { create } from 'zustand';
 import type { BleLinkInfo } from '@/shared/transports/common/gatt';
-import type { ConnectStage } from '../api/diagnoseFailure';
+
+/** Where a connect attempt failed: the phone's radio, the link (BLE or Wi-Fi), the adapter's own
+ *  init, the first request to the car (`0100`), or reading the car's details afterwards. */
+export type ConnectStage = 'bluetooth' | 'transport' | 'init' | 'probe' | 'identify';
 
 /** The kind of real-adapter link an attempt uses; null for the simulator. */
 export type LinkKind = 'ble' | 'wifi' | 'spp';
