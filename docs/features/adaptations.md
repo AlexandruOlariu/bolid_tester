@@ -11,6 +11,7 @@ unlock gate, mandatory backup, bounds checking, verify-after-write, restore.
 > KWP1281, unreachable over a generic ELM327).
 
 ## Model
+
 - Profiles gain `adaptations?: AdaptationChannel[]` — module + headers, DID, `byteCount`,
   display scaling (`scale`/`offset`), display bounds (`min`/`max`), optional `defaultRaw`,
   optional `security` (⇒ read-only), simulator `sampleValue`.
@@ -19,13 +20,30 @@ unlock gate, mandatory backup, bounds checking, verify-after-write, restore.
 - `adaptationsStore` (Zustand): `unlocked`, `values`, `backups` (last 50), `lastResult`, `running`.
 
 ## Label packs (`src/shared/labels/`)
+
 The open equivalent of VCDS label files: a `LabelPack` names measurements, coding bits and
 adaptation channels for a module FAMILY, keyed by **part-number prefix** (matched against the live
 `F187` ident from [module-scan](./module-scan.md); longest prefix wins). Packs are data,
 community-extensible; `vag-edc17-03L906022` ships as the illustrative example. The adaptations
 screen shows the pack's channel descriptions when the scanned part number matches.
 
+Fields: `measurements` (DID → name / unit), `codingBits` (coding DID → byte / bit names),
+`adaptations` (DID → name / unit / description) and, since plan 14, **`measuringGroups`**:
+
+```ts
+interface MeasuringGroup { name: string; dids: string[]; description?: string } // ≤ 4 DIDs
+measuringGroups?: Record<string, MeasuringGroup>; // key = group number as VCDS shows it: '001', '075'
+```
+
+VCDS-style numbered groups of up to four measuring values. `measuringGroups(pack)` (registry) lists
+them sorted by group number with each group capped at four upper-cased DIDs; a DID the pack has no
+`measurements` label for is still listed (the UI falls back to the profile's DID name). The
+[Extended PIDs](./extended-pids.md#measuring-groups) screen shows them live, resolving the pack from
+the engine part number read at connect. The Golf pack's three groups (`075` DPF, `099`
+temperatures, `120` EGR / injection) are illustrative until a capture confirms them (plan 25).
+
 ## api / hooks / UI
+
 - `adaptationService.readChannel/writeChannel` — header addressing + `codeModule` (backup →
   write → verify) reuse; security-locked channels never attempt a write.
 - `useAdaptations()` — CAN + profile gating, bounds validation, backup/restore, label enrichment.
@@ -33,6 +51,7 @@ screen shows the pack's channel descriptions when the scanned part number matche
   numeric editor with explicit before→after confirm, restore-from-backup and restore-known-default.
 
 ## Acceptance
+
 - Golf simulator: both channels read (850 rpm / 50 %), a bounded write round-trips and verifies,
   out-of-bounds values are rejected before any bus traffic, restore returns the original.
 - Locked (default): no write control is reachable. Passat/Punto: honest unavailability note.

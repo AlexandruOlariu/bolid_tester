@@ -1,23 +1,10 @@
-import { create } from 'zustand';
-
-export interface ChartPanel {
-  id: string;
-  pids: string[];
-  windowMs: number;
-}
-
-interface ChartsState {
-  panels: ChartPanel[];
-  setPanels: (p: ChartPanel[]) => void;
-  setPanelPids: (id: string, pids: string[]) => void;
-}
-
-export const useChartsStore = create<ChartsState>((set) => ({
-  panels: [
-    { id: 'p1', pids: ['010C'], windowMs: 60_000 },
-    { id: 'p2', pids: ['0105'], windowMs: 120_000 },
-  ],
-  setPanels: (panels) => set({ panels }),
-  setPanelPids: (id, pids) =>
-    set((s) => ({ panels: s.panels.map((p) => (p.id === id ? { ...p, pids } : p)) })),
-}));
+/** Re-export: the panel store lives in `src/shared/state/chartsStore.ts` (plan 14) so the Extended
+ *  PIDs screen can add a panel without a feature → feature import. */
+export {
+  useChartsStore,
+  nextPanelId,
+  MAX_PANEL_SERIES,
+  DEFAULT_PANEL_WINDOW_MS,
+  INITIAL_PANELS,
+} from '@/shared/state/chartsStore';
+export type { ChartPanel } from '@/shared/state/chartsStore';

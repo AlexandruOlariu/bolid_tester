@@ -8,6 +8,15 @@ describe('ChartBuffer', () => {
     expect(b.all()[0].t).toBe(2);
   });
 
+  it('pushIfNewer skips a re-published point with the same (or an older) timestamp', () => {
+    const b = new ChartBuffer();
+    expect(b.pushIfNewer({ t: 1000, v: 1 })).toBe(true);
+    expect(b.pushIfNewer({ t: 1000, v: 1 })).toBe(false);
+    expect(b.pushIfNewer({ t: 500, v: 9 })).toBe(false);
+    expect(b.pushIfNewer({ t: 2000, v: 2 })).toBe(true);
+    expect(b.all().map((p) => p.t)).toEqual([1000, 2000]);
+  });
+
   it('filters to a time window', () => {
     const b = new ChartBuffer();
     for (let i = 0; i < 10; i++) b.push({ t: i * 1000, v: i });

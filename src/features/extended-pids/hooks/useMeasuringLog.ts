@@ -18,8 +18,9 @@ export interface MeasuringLog {
   /** Completed sample sweeps (one per interval). */
   sampleCount: number;
   startedAt: number | null;
-  /** Latest decoded value per DID this session — a tiny map (one entry per selected DID) kept in
-   *  state for a live readout, while the full row history stays in the module-level buffer. */
+  /** Latest decoded value per DID of the RUNNING log — a tiny map (one entry per selected DID) kept
+   *  in state for a live readout, while the full row history stays in the module-level buffer.
+   *  Cleared when the log stops, so it never outlives the recording. */
   latest: Record<string, number | null>;
   /** Writing/sharing the CSV on stop. */
   busy: boolean;
@@ -90,6 +91,7 @@ export function useMeasuringLog(): MeasuringLog {
   const stop = useCallback(async (): Promise<string | null> => {
     stopLoop();
     setRecording(false);
+    setLatest({});
     const rows = getMeasuringLog();
     if (rows.length === 0) return null;
     setBusy(true);
@@ -103,7 +105,10 @@ export function useMeasuringLog(): MeasuringLog {
       const uri = `${dir}measuring-log-${stamp}.csv`;
       await FileSystem.writeAsStringAsync(uri, csv);
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'text/csv', dialogTitle: 'Export measuring log' });
+        await Sharing.shareAsync(uri, {
+          mimeType: 'text/csv',
+          dialogTitle: 'Export measuring log',
+        });
       }
       return uri;
     } catch (e) {
@@ -119,6 +124,7 @@ export function useMeasuringLog(): MeasuringLog {
     if (!session && recording) {
       stopLoop();
       setRecording(false);
+      setLatest({});
     }
   }, [session, recording, stopLoop]);
 

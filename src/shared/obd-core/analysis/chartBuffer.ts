@@ -17,6 +17,16 @@ export class ChartBuffer {
     if (this.buf.length > this.capacity) this.buf.shift();
   }
 
+  /** Push only when `p` is newer than the latest buffered point, so re-publishing the same reading
+   *  (an unchanged value with its old timestamp) never adds a duplicate sample. Returns whether it
+   *  was added. */
+  pushIfNewer(p: Point): boolean {
+    const last = this.buf[this.buf.length - 1];
+    if (last && p.t <= last.t) return false;
+    this.push(p);
+    return true;
+  }
+
   clear(): void {
     this.buf = [];
   }

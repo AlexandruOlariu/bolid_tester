@@ -113,6 +113,9 @@
     { "id": "garage-learned-profiles",
       "summary": "Garage (plan 06): user cars (UserVehicle, user: ids) in shared garageStore, learned from SessionInfo (VIN, protocol, PID set, cal id) or added by hand, each inheriting a registry baseProfileId. resolveProfile/buildUserProfile make a runtime VehicleProfile (experimental arrays only from a non-generic base); every feature reads getActiveProfile/useActiveProfile. VIN auto-select in EngineHost; maintenance logbook per car (bolid.maintenance v2); trips carry vehicleId; simulatorSourceFor simulates a garage car.",
       "tokens": ["garage","learn","learned","user","vehicle","profile","active","resolve","vin","auto-select","base","maintenance","per-car","mycar"] },
+    { "id": "live-value-keys",
+      "summary": "Live-value keys (plan 14): a key in liveDataStore registrations/values is a Mode 01 PID ('010C') or an extended Mode 22 key '22:<DID>' ('22:1701'). EngineHost splits the union (planSweep: DIDs only on CAN and when the active profile declares them), reads pollOnce + pollExtendedOnce on the default header, decodes via decodeExtendedSnapshot and merges. Charts, the Extended PIDs screen and alert rules use the same keys; labelForLiveKey gives human labels. Label packs add VCDS-style measuringGroups resolved from the engine F187 part number.",
+      "tokens": ["live","key","keys","mode22","extended","did","chart","charts","poll","sweep","measuring","group","groups","label","f187","partnumber"] },
     { "id": "trip-recording",
       "summary": "Record a drive as a typed time-series of live PIDs (+ DTC snapshots), persist/replay/export it. Decoded data for analysis, unlike the raw adapter I/O log.",
       "tokens": ["trip","recording","drive","timeseries","replay","export","csv","journey"] },
@@ -148,6 +151,11 @@
       "tokens": ["fuel","economy","consumption","l100km","mpg","maf","units","imperial","metric","conversion"] }
   ],
   "links": [
+    ["concept:live-value-keys", "core:obd/liveKeys", "relates"],
+    ["concept:live-value-keys", "feature:engine-host", "relates"],
+    ["concept:live-value-keys", "feature:live-charts", "relates"],
+    ["concept:live-value-keys", "feature:extended-pids", "relates"],
+    ["concept:live-value-keys", "concept:extended-pids-mode22", "relates"],
     ["concept:replay-fixtures", "core:transport/logReplay", "relates"],
     ["concept:replay-fixtures", "core:transport/recordingTransport", "relates"],
     ["concept:replay-fixtures", "core:transport/simFixtures", "relates"],

@@ -465,6 +465,31 @@
     "relates"
   ],
   [
+    "concept:live-value-keys",
+    "concept:extended-pids-mode22",
+    "relates"
+  ],
+  [
+    "concept:live-value-keys",
+    "core:obd/liveKeys",
+    "relates"
+  ],
+  [
+    "concept:live-value-keys",
+    "feature:engine-host",
+    "relates"
+  ],
+  [
+    "concept:live-value-keys",
+    "feature:extended-pids",
+    "relates"
+  ],
+  [
+    "concept:live-value-keys",
+    "feature:live-charts",
+    "relates"
+  ],
+  [
     "concept:maintenance-log",
     "concept:notifications-layer",
     "relates"
@@ -1230,6 +1255,11 @@
     "imports"
   ],
   [
+    "core:obd/liveKeys",
+    "core:obd/pids",
+    "imports"
+  ],
+  [
     "core:obd/mode05",
     "doc:plans/05-dtc-database",
     "named"
@@ -1382,6 +1412,11 @@
   [
     "core:public-api",
     "core:obd/iupr",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:obd/liveKeys",
     "imports"
   ],
   [
@@ -1722,6 +1757,11 @@
   [
     "core:transport/scenarios",
     "core:transport/MockTransport",
+    "imports"
+  ],
+  [
+    "core:transport/scenarios",
+    "lib:bytes",
     "imports"
   ],
   [
@@ -2316,6 +2356,11 @@
   ],
   [
     "feature:connection",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:connection",
     "core:session/DiagnosticSession",
     "imports"
   ],
@@ -2347,6 +2392,11 @@
   [
     "feature:connection",
     "feature:onboarding",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "store:activeProfile",
     "imports"
   ],
   [
@@ -2436,6 +2486,16 @@
   ],
   [
     "feature:engine-host",
+    "core:obd/liveKeys",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
     "core:obd/readiness",
     "imports"
   ],
@@ -2461,11 +2521,6 @@
   ],
   [
     "feature:engine-host",
-    "feature:live-data",
-    "imports"
-  ],
-  [
-    "feature:engine-host",
     "feature:notifications",
     "imports"
   ],
@@ -2486,6 +2541,11 @@
   ],
   [
     "feature:engine-host",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
     "store:dtcStore",
     "imports"
   ],
@@ -2496,12 +2556,22 @@
   ],
   [
     "feature:engine-host",
+    "store:liveDataStore",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
     "store:sessionStore",
     "imports"
   ],
   [
     "feature:engine-host",
     "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "vehicle:types",
     "imports"
   ],
   [
@@ -2521,6 +2591,11 @@
   ],
   [
     "feature:extended-pids",
+    "core:obd/liveKeys",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
     "core:obd/pids",
     "named"
   ],
@@ -2536,17 +2611,27 @@
   ],
   [
     "feature:extended-pids",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
     "doc:features/extended-pids",
     "named"
   ],
   [
     "feature:extended-pids",
-    "feature:vehicle-select",
+    "lib:hex",
     "imports"
   ],
   [
     "feature:extended-pids",
-    "lib:hex",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
+    "store:chartsStore",
     "imports"
   ],
   [
@@ -2556,7 +2641,17 @@
   ],
   [
     "feature:extended-pids",
+    "store:liveDataStore",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
+    "store:settingsStore",
     "imports"
   ],
   [
@@ -2696,17 +2791,12 @@
   ],
   [
     "feature:live-charts",
-    "doc:features/live-charts",
-    "named"
+    "core:obd/liveKeys",
+    "imports"
   ],
   [
     "feature:live-charts",
-    "doc:plans/14-mode22-charts-measuring-groups",
-    "named"
-  ],
-  [
-    "feature:live-charts",
-    "feature:live-data",
+    "core:obd/protocols",
     "imports"
   ],
   [
@@ -2716,17 +2806,37 @@
   ],
   [
     "feature:live-charts",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "store:chartsStore",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "store:liveDataStore",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
     "feature:live-data",
     "core:analysis/fuelEconomy",
-    "imports"
-  ],
-  [
-    "feature:live-data",
-    "core:session/DiagnosticSession",
     "imports"
   ],
   [
@@ -2742,6 +2852,11 @@
   [
     "feature:live-data",
     "lib:units",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "store:liveDataStore",
     "imports"
   ],
   [
@@ -3017,6 +3132,11 @@
   [
     "feature:routines",
     "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:sensor-readings",
+    "core:obd/liveKeys",
     "imports"
   ],
   [
@@ -3466,16 +3586,6 @@
   ],
   [
     "screen:charts",
-    "doc:features/live-charts",
-    "named"
-  ],
-  [
-    "screen:charts",
-    "doc:plans/14-mode22-charts-measuring-groups",
-    "named"
-  ],
-  [
-    "screen:charts",
     "feature:live-charts",
     "serves"
   ],
@@ -3838,6 +3948,16 @@
     "store:historyStore",
     "store:persistStorage",
     "imports"
+  ],
+  [
+    "store:liveDataStore",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "store:liveDataStore",
+    "doc:features/live-data",
+    "named"
   ],
   [
     "store:persistStorage",

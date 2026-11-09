@@ -1,11 +1,15 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { PanResponder, View } from 'react-native';
 import { YStack, XStack, Paragraph, H4, Button, Text } from 'tamagui';
 import Svg, { Polyline, Line, Circle } from 'react-native-svg';
 import { Screen } from '@/shared/ui';
 import { HintCard } from '@/features/onboarding';
-import { Point } from '@/shared/obd-core';
-import { useChartsStore, ChartPanel } from '../model/chartsStore';
+import { Point, isCan } from '@/shared/obd-core';
+import { livePidFilter } from '@/shared/vehicles';
+import { useSessionStore } from '@/shared/state/sessionStore';
+import { useActiveProfile } from '@/shared/state/activeProfile';
+import { useChartsStore, ChartPanel, MAX_PANEL_SERIES } from '../model/chartsStore';
+import { chartKeyOptions, panelLabels, type ChartKeyOption } from '../model/chartKeys';
 import { useChartSeries } from '../hooks/useChartSeries';
 import { useChartExport } from '../hooks/useChartExport';
 
@@ -52,6 +56,10 @@ interface Inspect {
 }
 
 function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
+  const profile = useActiveProfile();
+  const removePanel = useChartsStore((s) => s.removePanel);
+  // Human labels for every key (Mode 01 name + unit, or `name (unit) · DID` for an extended key).
+  const labels = useMemo(() => panelLabels(pids, profile.extendedPids ?? []), [pids, profile]);
   const [windowMs, setWindowMs] = useState(initialWindowMs);
   const [panOffsetMs, setPanOffsetMs] = useState(0);
   const [inspect, setInspect] = useState<Inspect | null>(null);
@@ -118,7 +126,11 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
             startWindow.current = windowRef.current;
             return;
           }
-          const next = clamp((startWindow.current * startDist.current) / (dist || 1), MIN_WINDOW, MAX_WINDOW);
+          const next = clamp(
+            (startWindow.current * startDist.current) / (dist || 1),
+            MIN_WINDOW,
+            MAX_WINDOW,
+          );
           emit(() => setWindowMs(next));
         } else {
           // One-finger drag → pan the window's end back/forward in time.
@@ -150,7 +162,7 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
   return (
     <YStack gap="$1" backgroundColor="$color2" padding="$3" borderRadius="$4">
       <XStack justifyContent="space-between" alignItems="center">
-        <H4>{pids.join(', ')}</H4>
+        <H4 flexShrink={1}>{pids.map((k) => labels[k]).join(' / ')}</H4>
         <Text theme="alt2" fontSize="$2">
           {Math.round(windowMs / 1000)}s{panned ? ' · panned' : ''}
         </Text>
@@ -158,12 +170,18 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
 
       <View
         {...responder.panHandlers}
-        accessibilityLabel={`Chart for ${pids.join(', ')}. Pinch to zoom, drag to pan, tap to inspect a sample.`}
+        accessibilityLabel={`Chart for ${pids.map((k) => labels[k]).join(', ')}. Pinch to zoom, drag to pan, tap to inspect a sample.`}
       >
         <Svg width={W} height={H}>
           <Line x1={0} y1={H} x2={W} y2={H} stroke="#30363D" strokeWidth={1} />
           {plotted.map((p) => (
-            <Polyline key={p.pid} points={p.polyline} fill="none" stroke={p.color} strokeWidth={2} />
+            <Polyline
+              key={p.pid}
+              points={p.polyline}
+              fill="none"
+              stroke={p.color}
+              strokeWidth={2}
+            />
           ))}
           {inspect ? (
             <>
@@ -176,7 +194,7 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
 
       {inspect ? (
         <Paragraph theme="alt2" size="$2">
-          {inspect.pid} @ {new Date(inspect.t).toLocaleTimeString()}:{' '}
+          {labels[inspect.pid] ?? inspect.pid} @ {new Date(inspect.t).toLocaleTimeString()}:{' '}
           <Text fontWeight="700">{inspect.v.toFixed(1)}</Text>
         </Paragraph>
       ) : null}
@@ -185,7 +203,10 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
         const s = stats[pid];
         return (
           <Paragraph key={pid} theme="alt2" size="$2">
-            {pid}: {s ? `now ${s.current.toFixed(1)} · min ${s.min.toFixed(1)} · max ${s.max.toFixed(1)}` : 'no data'}
+            {labels[pid]}:{' '}
+            {s
+              ? `now ${s.current.toFixed(1)} · min ${s.min.toFixed(1)} · max ${s.max.toFixed(1)}`
+              : 'no data'}
           </Paragraph>
         );
       })}
@@ -205,9 +226,71 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
           size="$2"
           theme="blue"
           disabled={busy}
-          onPress={() => shareCsv(`chart-${id}`, series)}
+          onPress={() => shareCsv(`chart-${id}`, series, labels)}
         >
           Share window (CSV)
+        </Button>
+        <Button size="$2" theme="red" onPress={() => removePanel(id)}>
+          Remove
+        </Button>
+      </XStack>
+    </YStack>
+  );
+}
+
+/** Pick up to MAX_PANEL_SERIES keys for a new panel. */
+function PanelPicker({
+  options,
+  onAdd,
+  onCancel,
+}: {
+  options: ChartKeyOption[];
+  onAdd: (keys: string[]) => void;
+  onCancel: () => void;
+}) {
+  const [picked, setPicked] = useState<string[]>([]);
+  const toggle = (key: string) =>
+    setPicked((prev) =>
+      prev.includes(key)
+        ? prev.filter((k) => k !== key)
+        : prev.length >= MAX_PANEL_SERIES
+          ? prev
+          : [...prev, key],
+    );
+  return (
+    <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$4">
+      <H4>New panel</H4>
+      <Paragraph theme="alt2" size="$2">
+        Pick up to {MAX_PANEL_SERIES} values to plot together ({picked.length} picked).
+        {options.some((o) => o.extended)
+          ? ' Manufacturer values (with a DID number) are experimental.'
+          : ''}
+      </Paragraph>
+      {options.length === 0 ? (
+        <Paragraph theme="alt2">Connect to a car to see the values it reports.</Paragraph>
+      ) : null}
+      <XStack flexWrap="wrap" gap="$2">
+        {options.map((o) => {
+          const on = picked.includes(o.key);
+          return (
+            <Button
+              key={o.key}
+              size="$2"
+              theme={on ? 'blue' : o.extended ? 'yellow' : 'alt2'}
+              onPress={() => toggle(o.key)}
+              accessibilityState={{ selected: on }}
+            >
+              {o.label}
+            </Button>
+          );
+        })}
+      </XStack>
+      <XStack gap="$2">
+        <Button flex={1} theme="green" disabled={picked.length === 0} onPress={() => onAdd(picked)}>
+          Add panel
+        </Button>
+        <Button flex={1} theme="alt2" onPress={onCancel}>
+          Cancel
         </Button>
       </XStack>
     </YStack>
@@ -216,15 +299,49 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
 
 export function ChartsScreen() {
   const panels = useChartsStore((s) => s.panels);
+  const addPanel = useChartsStore((s) => s.addPanel);
+  const session = useSessionStore((s) => s.session);
+  const info = useSessionStore((s) => s.info);
+  const profile = useActiveProfile();
+  const [picking, setPicking] = useState(false);
+
+  // Mode 01 PIDs the car reports (∩ the profile's list), plus — on CAN with a profile that
+  // declares DIDs — its extended `22:<DID>` keys.
+  const options = useMemo(
+    () =>
+      session
+        ? chartKeyOptions(
+            session.effectivePids(livePidFilter(profile)),
+            profile.extendedPids ?? [],
+            !!info && isCan(info.protocol),
+          )
+        : [],
+    [session, info, profile],
+  );
+
   return (
     <Screen title="Charts" subtitle="Live parameters over time">
       <HintCard id="charts-gestures" title="Explore the chart">
-        Pinch to zoom the time window (10 s–10 min), drag left/right to pan through history, and tap a
-        line to read the exact value and time. Use “Share window (CSV)” to send the data out.
+        Pinch to zoom the time window (10 s–10 min), drag left/right to pan through history, and tap
+        a line to read the exact value and time. Use “Share window (CSV)” to send the data out.
       </HintCard>
       {panels.map((p) => (
         <Panel key={p.id} id={p.id} pids={p.pids} windowMs={p.windowMs} />
       ))}
+      {picking ? (
+        <PanelPicker
+          options={options}
+          onAdd={(keys) => {
+            addPanel(keys);
+            setPicking(false);
+          }}
+          onCancel={() => setPicking(false)}
+        />
+      ) : (
+        <Button theme="blue" onPress={() => setPicking(true)}>
+          Add panel
+        </Button>
+      )}
     </Screen>
   );
 }

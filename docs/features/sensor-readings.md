@@ -25,7 +25,7 @@ Every live Mode 01 sensor the car reports, **grouped by system**, plus the profi
   | Fuel & injection | `010A` fuel pressure, `0122` / `0123` fuel rail pressure, `015E` fuel rate, `0106` / `0107` short / long fuel trim B1, `0144` λ, `012F` fuel level |
   | Electrical       | `0142` module voltage                                                                                                                              |
   | Distance         | `0121` distance with MIL, `0131` distance since codes cleared                                                                                      |
-  | Other            | every polled value whose PID is in no group above                                                                                                  |
+  | Other            | every polled Mode 01 value whose PID is in no group above (extended `22:<DID>` keys are never listed — they belong to Extended PIDs)               |
 
   The subtitle reads "Live — every supported sensor, grouped" while the poll loop is reading.
 

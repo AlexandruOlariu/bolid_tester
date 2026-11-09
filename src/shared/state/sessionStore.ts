@@ -19,6 +19,9 @@ interface SessionState {
     info: SessionInfo,
     device: { id: string | null; name: string | null },
   ) => void;
+  /** Cache the engine part number (F187) on the CURRENT session's info — a no-op when `session` is
+   *  no longer current (a read that outlived its connection) or one is already cached (plan 14). */
+  setPartNumber: (session: DiagnosticSession, partNumber: string) => void;
   /** Drop the live session after an *unexpected* link loss: clear the session/info so nothing keeps
    *  issuing commands down a dead link, but keep deviceId/deviceName so the UI (and auto-reconnect)
    *  can offer to reconnect. */
@@ -44,8 +47,13 @@ export const useSessionStore = create<SessionState>((set) => ({
       deviceName: device.name,
       error: null,
     }),
-  markDisconnected: (error) =>
-    set({ status: 'disconnected', session: null, info: null, error }),
+  setPartNumber: (session, partNumber) =>
+    set((s) =>
+      s.session === session && s.info && !s.info.partNumber
+        ? { info: { ...s.info, partNumber } }
+        : {},
+    ),
+  markDisconnected: (error) => set({ status: 'disconnected', session: null, info: null, error }),
   reset: () =>
     set({
       status: 'disconnected',

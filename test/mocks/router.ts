@@ -16,6 +16,12 @@ const router = {
   setParams: mockSetParams,
 };
 
+/** What `useIsFocused()` returns (default focused; reset by `resetStores`). */
+export let mockFocused = true;
+export function setMockFocused(focused: boolean): void {
+  mockFocused = focused;
+}
+
 /** Search params a test wants a screen to see (set before render, reset by `resetStores`). */
 export let mockSearchParams: Record<string, string | undefined> = {};
 export function setMockSearchParams(params: Record<string, string | undefined>): void {
@@ -64,6 +70,7 @@ export const expoRouterMock = {
   router,
   useLocalSearchParams: () => mockSearchParams,
   useGlobalSearchParams: () => mockSearchParams,
+  useIsFocused: () => mockFocused,
   useSegments: () => [],
   usePathname: () => '/',
   useFocusEffect: (effect: () => void | (() => void)) => {

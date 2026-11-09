@@ -22,7 +22,9 @@ Stream and display live engine parameters (Mode 01 PIDs).
 
 ## model
 
-- `liveDataStore` (`model/liveDataStore.ts`, Zustand, not persisted):
+- `liveDataStore` (`src/shared/state/liveDataStore.ts` since the plan 14 review — so the Extended
+  PIDs screen can register DID keys without a feature → feature import; `model/liveDataStore.ts`
+  re-exports it. Zustand, not persisted):
   - `values: Record<string, LiveValue>`, where `LiveValue` is `{ pid, name, unit, value, ts }`
     from `DiagnosticSession`;
   - `polling: boolean`;

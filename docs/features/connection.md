@@ -71,8 +71,11 @@ no-op.
   `connect(target?: ConnectTarget)` builds the `Transport` (`BleTransport` for `{ deviceId }`, or a
   `MockTransport` over the simulated car per Settings), wraps it so all I/O is mirrored to the
   adapter log, constructs the `DiagnosticSession` (which owns the `Elm327Client`), runs
-  `session.connect()` (init → probe → identify) and publishes the session with
-  `sessionStore.setConnected`. Also `disconnect()`, `switchAdapterSource(source)`,
+  `session.connect()` (init → probe → identify), then — on CAN, when the active profile declares
+  extended PIDs — reads the engine part number once (`session.readPartNumber()`, `22 F187`) into
+  `info.partNumber` (failure is logged as `connection/part-number` and never fails the connect; it
+  picks the label pack for the Extended PIDs measuring groups, plan 14), and publishes the session
+  with `sessionStore.setConnected`. Also `disconnect()`, `switchAdapterSource(source)`,
   `switchToRealAdapter()`, `FLAP_PAUSED_MESSAGE`, and the simulator dev hooks under `__sim`
   (Settings → Developer). Link-loss, auto-reconnect and the flap guard live here too (below).
 - Pure helpers, unit-tested: `reconnect.ts` (`runReconnect`), `flapGuard.ts`
@@ -84,7 +87,7 @@ no-op.
 - `shared/state/sessionStore.ts` (`useSessionStore`, shared because every feature reads it):
   `status: ConnState` (`disconnected | connecting | initializing | connected | error`),
   `deviceId`, `deviceName`, `info: SessionInfo | null` (protocol, ELM `version`, `voltage`,
-  supported PIDs, VIN, calibration id …), `error`, `session: DiagnosticSession | null`; actions
+  supported PIDs, VIN, calibration id, engine `partNumber?` …), `error`, `session: DiagnosticSession | null`; actions
   `setStatus`, `setError`, `setConnected`, `markDisconnected` (an unexpected drop: clears the session
   but keeps the device so reconnect can be offered) and `reset`.
 - `model/scanStore.ts` (`useScanStore`, in-memory): `scanning`, `devices: ScannedDevice[]`

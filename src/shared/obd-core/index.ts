@@ -24,6 +24,7 @@ export * from './obd/mode06';
 export * from './obd/mode05';
 export * from './obd/iupr';
 export * from './obd/multiPid';
+export * from './obd/liveKeys';
 export * from './obd/canMonitor';
 export * from './obd/captureBuffer';
 export * from './session/DiagnosticSession';

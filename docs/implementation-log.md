@@ -5,6 +5,126 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 14 — Mode 22 charts and measuring groups (2026-11-09)
+
+[Plan 14](./plans/14-mode22-charts-measuring-groups.md) landed: extended (Mode 22) DIDs flow
+through the one demand-driven poll loop, so they plot in Charts, update live on the Extended PIDs
+screen, and can be viewed as VCDS-style measuring groups from label packs. All in the simulator;
+the deferred on-car part (which Golf DIDs answer, module-scoped groups, KWP `21` over TP2.0, a
+DIDs-per-sweep cap) is untouched.
+
+- **Keys (core).** `shared/obd-core/obd/liveKeys.ts`: a live key is a Mode 01 PID or
+  `'22:<DID>'` — `extendedKey`, `isExtendedKey`, `didOfKey`, `splitPollKeys` (order kept,
+  de-duplicated) and `labelForLiveKey(key, extendedDefs)` (`Engine RPM (rpm)`, `DPF soot mass
+(calc.) (g) · 1701`, `DID 1701` when undeclared). Exported from `obd-core/index.ts`.
+- **Session.** `DiagnosticSession.pollExtendedOnce(dids)`: sequential `22 <did>` on the current
+  header, bytes after `62 <did>` (DID echo checked) or null; off CAN it sends nothing.
+  `readPartNumber()` reads `22 F187` as printable ASCII and memoises the outcome per session
+  (`null` included; a thrown read is forgotten), so `22 F187` goes on the bus at most once per
+  connection. `SessionInfo.partNumber?` (additive).
+- **EngineHost.** The sweep is `computePollPids` → `planSweep(keys, declaredDids, isCan)` (keeps a
+  DID only on CAN when the active profile declares it) → `pollOnce(pids)` + `pollExtendedOnce(dids)`
+  → `decodeExtendedSnapshot` (`engine-host/extendedSnapshot.ts`, pure) → one merged `setValues`.
+  Alerts see the merged snapshot; trip samples stay Mode 01. Never re-addresses. The two reads have
+  separate `try`s: a throwing extended read logs `live-data/extended` (deduped) and drops only that
+  sweep's DIDs, so the Mode 01 snapshot is still published, alerted on and trip-sampled.
+- **Extended PIDs screen.** `useExtendedPids` registers every declared DID key on the shared
+  `liveDataStore` while the screen is **focused** (`useIsFocused`; released on blur, since hidden
+  Tabs routes stay mounted and 15 sequential DIDs per sweep would slow Mode 01 app-wide) — `live`
+  values; `refresh()` stays the raw one-shot read. A DID card prefers the measuring log's value
+  only while a log runs (`useMeasuringLog` clears `latest` on stop), so a finished log never
+  freezes a card. **Chart this** per row.
+  **Measuring groups** section: `useEnginePartNumber()` (the connect-time `info.partNumber`,
+  simulator fallback to the engine module `sampleIdent.F187`) → `findLabelPack` →
+  `resolveMeasuringGroups` (`model/measuringGroups.ts`); one card per group with up to four
+  `ValueCard`s, **Log group** (measuring log with only that group) and **Chart group**; undeclared
+  DIDs read "No definition for … in this profile".
+- **Connect.** `connectionService` reads the part number once after `session.connect()`, only on CAN
+  and only when the active profile declares extended PIDs; a failure is logged
+  (`connection/part-number`) and never fails the connect. When the profile gains DIDs later in the
+  session (VIN auto-select runs after connect; or a manual switch to the Golf) and none is cached,
+  EngineHost reads it then and stores it with the new `sessionStore.setPartNumber(session, pn)`.
+  The VIN auto-select effect is now keyed on session + VIN, so that `info` patch never re-runs it.
+- **Live store.** `liveDataStore` moved to `src/shared/state/liveDataStore.ts` (the
+  `features/live-data/model` path re-exports it), so extended-pids registers its DID keys without
+  a feature → feature import; live-charts' `useChartSeries` and EngineHost import the shared path.
+- **Sensor readings.** The "Other" group skips extended `22:<DID>` keys, which now share the live
+  store — experimental manufacturer values never appear among the standard sensors.
+- **Charts.** The panel store moved to `src/shared/state/chartsStore.ts` (feature path re-exports
+  it) with `addPanel` (`p<n>` ids, ≤ 4 series) and `removePanel`. `ChartsScreen` gained **Add
+  panel** (picker from `chartKeyOptions`: effective Mode 01 PIDs, plus extended keys on CAN with
+  DIDs) and **Remove**; header, stats and inspect lines use labels. `seriesToCsv(series, labels?)`
+  adds a trailing `label` column (RFC 4180 quoting); without labels the old format is unchanged.
+- **Label packs.** `MeasuringGroup` + `LabelPack.measuringGroups` (≤ 4 DIDs, key = VCDS group
+  number); `measuringGroups(pack)` sorted numerically, DIDs upper-cased and capped. The Golf EDC17
+  pack ships three illustrative groups: `075` DPF, `099` temperatures, `120` EGR / injection.
+- **Simulator.** `buildScenario` seeds the engine module's `sampleIdent.F187` (ASCII) into
+  `extendedDids` for profiles that declare DIDs, so the Golf answers `22 F187` = `03L906022LM` on the
+  default header. Connect-flow sim fixtures are unchanged (the part number is read by the service,
+  not by `DiagnosticSession.connect`).
+- **Tests (7 new suites; 890 tests / 120 suites after the review fixes).** `liveKeys.test.ts`, `extendedSnapshot.test.ts`
+  (decode, omission rules, one EngineHost-equivalent sweep on the Golf simulator),
+  `sessionExtras.integration.test.ts` (`pollExtendedOnce` bytes / null, F187, no traffic on the
+  Passat), `pollPids.test.ts` (mixed keys, `planSweep`), `registry.test.ts` (groups sorted, label
+  fallback, cap), `measuringGroups.test.ts`, `chartKeys.test.ts`, `chartCsv.test.ts` (label column,
+  quoting), and UI tests `EngineHost.extended.test.tsx` (Golf `22:1701` live; Punto / Passat send no
+  `22` with a stale panel), `ExtendedPidsScreen.test.tsx` (part number at connect, live values,
+  three groups, Chart group → 4-series panel + `/charts`, Chart this, Log group records only its
+  DIDs, no pack ⇒ no groups, cards follow live values after a log stops, no DID registration
+  while unfocused), `ChartsScreen.test.tsx` (picker → DID panel updates live with labels;
+  Punto offers no DIDs; remove). Review fixes added `EngineHost.extended.test.tsx` cases (a
+  throwing extended read keeps `010C`; Generic → Golf after connect reads F187) and a
+  `SensorReadingsScreen.test.tsx` case (no `22:` value under "Other"); second review fixes added
+  a `sessionExtras.integration.test.ts` case (an unanswered F187 is sent once across repeated
+  `readPartNumber()` calls) and a `chartBuffer.test.ts` case (`pushIfNewer`). `test/mocks/router.ts`
+  gained `useIsFocused` (`setMockFocused`, reset by `resetStores`).
+- **Docs.** [extended-pids](./features/extended-pids.md) ("Live plot (deferred)" removed; Live
+  values, Chart this, Measuring groups; stale `extendedPidService` / `extendedStore` lines
+  corrected), [live-charts](./features/live-charts.md) (keys, picker, labels, CSV label column,
+  shared store), [adaptations → label packs](./features/adaptations.md#label-packs-srcsharedlabels)
+  (`measuringGroups`), [engine-host](./features/engine-host.md) (split sweep, default-header-only
+  rule, composition list), [connection](./features/connection.md) (part-number read),
+  [simulator](./simulator.md) (F187 seed); roadmap v0.3 "Mode 22 in charts" and v0.6
+  "Measuring-block groups" ✅ (on-car pending).
+
+**Deviations from the plan.**
+
+- **No alert rule editor exists** (the Alerts screen only lists, toggles and deletes rules), so
+  nothing lists extended keys there. A rule whose `pid` is an extended key already works: the alert
+  engine evaluates the merged snapshot, and `planSweep` polls its DID.
+- **CSV labels are a trailing `label` column, not a second header row:** the chart CSV is long
+  format (one row per sample, keys in the `pid` column, not as column names), so a label row has
+  nothing to line up with. Each row carries key + label instead.
+- **The charts picker did not exist**; it was built (Add panel / Remove), and the panel store moved
+  to `src/shared/state/chartsStore.ts` so "Chart this" adds no feature → feature import. Panels stay
+  in memory (no persistence yet, as before).
+- **Part-number read is gated on the profile declaring DIDs**, not only on CAN, so a DID-less CAN
+  car (the Punto) sends no Mode 22 at all. It runs before `setConnected` so `info` carries it from
+  the first publish. `DiagnosticSession.readPartNumber()` was added for it. Because that gate
+  depends on the profile at connect time, EngineHost re-tries the read once the active profile
+  declares DIDs (review fix); the resulting `info` patch is why the VIN auto-select effect now
+  keys on session + VIN instead of the `info` object. Second review fix: an unanswered connect-time
+  read used to be repeated by that retry (and again on each profile switch), costing a NO DATA
+  timeout each; `readPartNumber()` now memoises its result per session, so it really is once.
+- **Charts skip re-published values** (second review fix, not in the plan): a sweep whose Mode 01
+  phase fails but whose DIDs answer merges the fresh `22:` values into the old Mode 01 entries,
+  which keep their `ts`. `useChartSeries` pushed `values[pid]` on every `values` change, so that
+  (and, already before plan 14, every pan / zoom re-render) appended duplicate points and CSV rows.
+  It now uses `ChartBuffer.pushIfNewer` (points must be newer than the last one).
+- `labelForLiveKey(key, extendedDefs)` takes the profile's DID definitions (a structural
+  `LiveKeyDef[]`) instead of the profile, so obd-core imports nothing from `vehicles`.
+- The full-sweep integration test lives in `engine-host/extendedSnapshot.test.ts` (obd-core tests
+  cannot import the feature's decoder); `sessionExtras.integration.test.ts` covers the session side.
+- The Golf `120` group includes `170A` / `170B` (no pack `measurements` label) to exercise the
+  profile-name fallback.
+- **`liveDataStore` moved to `shared/state`** (review fix; not in the plan) instead of
+  extended-pids importing `live-data`'s `useLiveData`: the screen registers its DID keys on the
+  shared store itself, focus-gated, so plan 14 adds no feature → feature import.
+- **Extended-key filter in Sensor readings** (review fix): the plan assumed every consumer treats
+  keys as opaque, but its "Other" group renders the whole live map.
+
+---
+
 ## Plan 06 — Garage and learned profiles (2026-11-09)
 
 [Plan 06](./plans/06-garage-learned-profiles.md) landed: users keep several cars, learn one from a

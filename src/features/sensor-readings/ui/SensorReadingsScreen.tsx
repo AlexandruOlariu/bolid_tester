@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { YStack, XStack, Text, Paragraph, Card, Button, Spinner, H4 } from 'tamagui';
 import { Screen, ValueCard } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { isCan } from '@/shared/obd-core';
+import { isCan, isExtendedKey } from '@/shared/obd-core';
 import { logError } from '@/shared/state/errorLogStore';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { useLiveData } from '@/features/live-data';
@@ -94,7 +94,11 @@ export function SensorReadingsScreen() {
     );
   }
 
-  const ungrouped = Object.values(values).filter((v) => !GROUPED_PIDS.has(v.pid));
+  // Mode 01 only: extended `22:<DID>` values share the live store (plan 14) but are experimental
+  // manufacturer reads with their own screen — never list them among the standard sensors.
+  const ungrouped = Object.entries(values)
+    .filter(([key, v]) => !isExtendedKey(key) && !GROUPED_PIDS.has(v.pid))
+    .map(([, v]) => v);
 
   return (
     <Screen

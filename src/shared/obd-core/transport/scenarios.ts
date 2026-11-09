@@ -4,6 +4,7 @@
 import { SimScenario } from './MockTransport';
 import { getVehicleProfile } from '../../vehicles';
 import { isKLine, ProtocolId } from '../obd/protocols';
+import { asciiToBytes } from '../../lib/bytes';
 
 const SAMPLE_VINS: Record<string, string> = {
   generic: '1HGBH41JXMN109186',
@@ -83,8 +84,17 @@ export function buildScenario(
   const protocol: ProtocolId =
     profile.expectedProtocol === 'AUTO' ? 'ISO_15765_4_CAN_11_500' : profile.expectedProtocol;
   const kline = isKLine(protocol);
+  // Every profile DID from its sampleResponse, plus the engine ECU's part number (`22 F187`, ASCII,
+  // from the engine module's sampleIdent) on the default header, so the label pack — and its
+  // measuring groups — resolve in the simulator (plan 14). Only for profiles that declare DIDs.
+  const engineIdent = (profile.modules ?? []).find(
+    (m) => m.transport === 'uds' && (m.address === '01' || m.reqHeader === '7E0'),
+  )?.sampleIdent;
   const extendedDids = profile.extendedPids?.length
-    ? Object.fromEntries(profile.extendedPids.map((e) => [e.did, e.sampleResponse]))
+    ? {
+        ...(engineIdent?.F187 ? { F187: asciiToBytes(engineIdent.F187) } : {}),
+        ...Object.fromEntries(profile.extendedPids.map((e) => [e.did, e.sampleResponse])),
+      }
     : undefined;
   const mode06 = profile.mode06Tests?.length
     ? Object.fromEntries(profile.mode06Tests.map((m) => [m.mid, m.sampleResponse]))

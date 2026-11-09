@@ -14,10 +14,11 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { useDtcStore } from '@/shared/state/dtcStore';
 import { useHistoryStore } from '@/shared/state/historyStore';
 import { useGarageStore } from '@/shared/state/garageStore';
+import { useChartsStore } from '@/shared/state/chartsStore';
 import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import { clearAdapterLog } from '@/shared/state/adapterLog';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
-import { useLiveDataStore } from '@/features/live-data/model/liveDataStore';
+import { useLiveDataStore } from '@/shared/state/liveDataStore';
 import { useDashboardLayoutStore } from '@/features/live-data/model/dashboardLayoutStore';
 import { useOnboardingStore } from '@/features/onboarding/model/onboardingStore';
 import { useCoachStore } from '@/features/fault-codes/model/coachStore';
@@ -26,7 +27,7 @@ import { useScanStore } from '@/features/connection/model/scanStore';
 import { useMaintenanceStore } from '@/features/maintenance/model/maintenanceStore';
 import { useTripStore } from '@/features/trip-recording/model/tripStore';
 import { memoryFiles } from './mocks/fileSystem';
-import { setMockSearchParams } from './mocks/router';
+import { setMockFocused, setMockSearchParams } from './mocks/router';
 
 type AnyStore = UseBoundStore<StoreApi<any>> & {
   persist?: { clearStorage: () => void };
@@ -48,6 +49,7 @@ const STORES: AnyStore[] = [
   useCoachStore,
   useLinkStore,
   useScanStore,
+  useChartsStore,
 ];
 
 /** Each store's state (actions included) captured at module load, before any test touched it. */
@@ -64,4 +66,5 @@ export function resetStores(): void {
   clearAdapterLog();
   cancelPendingWrites();
   setMockSearchParams({});
+  setMockFocused(true);
 }

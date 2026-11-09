@@ -9,27 +9,33 @@ import { seriesToCsv } from '../api/chartCsv';
 export function useChartExport() {
   const [busy, setBusy] = useState(false);
 
-  const shareCsv = useCallback(async (baseName: string, series: Record<string, Point[]>) => {
-    setBusy(true);
-    try {
-      const FileSystem = await import('expo-file-system' as string);
-      const Sharing = await import('expo-sharing' as string);
-      const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
-      if (!dir) return null;
-      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const uri = `${dir}${baseName}-${stamp}.csv`;
-      await FileSystem.writeAsStringAsync(uri, seriesToCsv(series));
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'text/csv', dialogTitle: 'Share chart window (CSV)' });
+  const shareCsv = useCallback(
+    async (baseName: string, series: Record<string, Point[]>, labels?: Record<string, string>) => {
+      setBusy(true);
+      try {
+        const FileSystem = await import('expo-file-system' as string);
+        const Sharing = await import('expo-sharing' as string);
+        const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
+        if (!dir) return null;
+        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const uri = `${dir}${baseName}-${stamp}.csv`;
+        await FileSystem.writeAsStringAsync(uri, seriesToCsv(series, labels));
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'text/csv',
+            dialogTitle: 'Share chart window (CSV)',
+          });
+        }
+        return uri;
+      } catch (e) {
+        logError({ source: 'live-charts/export', error: e });
+        return null;
+      } finally {
+        setBusy(false);
       }
-      return uri;
-    } catch (e) {
-      logError({ source: 'live-charts/export', error: e });
-      return null;
-    } finally {
-      setBusy(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   return { shareCsv, busy };
 }

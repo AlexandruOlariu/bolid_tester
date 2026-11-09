@@ -29,6 +29,10 @@ export interface SessionInfo {
   supportedPids: string[];
   vin: string | null;
   calibrationId: string | null;
+  /** Engine ECU part number (UDS `22 F187`, ASCII), read once after connect on CAN when the active
+   *  profile declares extended PIDs — resolves the label pack for measuring groups (plan 14). Set
+   *  by the connection service, never by `connect()`. */
+  partNumber?: string;
 }
 
 export type DtcKind = '03' | '07' | '0A';
@@ -50,6 +54,8 @@ export class DiagnosticSession {
   readonly client: Elm327Client;
   private supported: string[] = [];
   private protocol: ProtocolId = 'UNKNOWN';
+  /** Memoised `readPartNumber` result (including a `null` "no answer") for this connection. */
+  private partNumberRead: Promise<string | null> | null = null;
 
   constructor(
     private transport: Transport,
@@ -270,6 +276,58 @@ export class DiagnosticSession {
     const r = await this.client.command('22' + did);
     if (r.notice || r.bytes.length < 1) return null;
     return r.bytes.slice(1 + did.length / 2);
+  }
+
+  /** The engine ECU's part number (UDS `22 F187`, printable ASCII, trimmed) on the default header,
+   *  or null when it does not answer. CAN only. Resolves the label pack (measuring groups).
+   *
+   *  Sent at most ONCE per session: the outcome — a part number or a `null` "no answer" — is
+   *  memoised (as is an in-flight read), so the connect-time read and any later retry (EngineHost,
+   *  on a profile switch) share one `22 F187` instead of paying another NO DATA timeout each. Only a
+   *  read that throws (a link error) is forgotten, so a later call may try again. */
+  readPartNumber(): Promise<string | null> {
+    if (!isCan(this.protocol)) return Promise.resolve(null);
+    if (!this.partNumberRead) {
+      const read = this.fetchPartNumber();
+      this.partNumberRead = read;
+      void read.catch(() => {
+        if (this.partNumberRead === read) this.partNumberRead = null;
+      });
+    }
+    return this.partNumberRead;
+  }
+
+  private async fetchPartNumber(): Promise<string | null> {
+    const raw = (await this.pollExtendedOnce(['F187']))['F187'];
+    if (!raw) return null;
+    const text = raw
+      .filter((b) => b >= 0x20 && b <= 0x7e)
+      .map((b) => String.fromCharCode(b))
+      .join('')
+      .trim();
+    return text.length > 0 ? text : null;
+  }
+
+  /** One sweep of extended (Mode 22) reads for the live poll loop: sequential `22 <did>` requests
+   *  on the CURRENT header (engine / default addressing — it never changes addressing). Returns the
+   *  data bytes after `62 <did>` per DID, or null for NO DATA / a negative response / a reply for
+   *  another DID. Sequential on purpose: multi-DID `22` requests are ECU-dependent and the ISO-TP
+   *  reply outgrows one frame (batching is a later optimisation). Off CAN it sends nothing and
+   *  returns null for every DID — Mode 22 does not apply to K-line. */
+  async pollExtendedOnce(dids: string[]): Promise<Record<string, number[] | null>> {
+    const out: Record<string, number[] | null> = {};
+    if (!isCan(this.protocol)) {
+      for (const did of dids) out[did] = null;
+      return out;
+    }
+    for (const did of dids) {
+      const r = await this.client.command('22' + did);
+      const b = r.bytes;
+      const echo = parseInt(did, 16);
+      const ok = !r.notice && b.length >= 3 && b[0] === 0x62 && ((b[1] << 8) | b[2]) === echo;
+      out[did] = ok ? b.slice(3) : null;
+    }
+    return out;
   }
 
   /** Low-level UDS/raw send: resolves with response bytes (service byte first) or null on a notice.

@@ -5,7 +5,7 @@ import { connectSimulator } from '@test/simulator';
 import type { LiveValue } from '@/shared/obd-core/session/DiagnosticSession';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
-import { useLiveDataStore } from '@/features/live-data/model/liveDataStore';
+import { useLiveDataStore } from '@/shared/state/liveDataStore';
 import { SensorReadingsScreen } from './SensorReadingsScreen';
 
 async function golfSession() {
@@ -69,6 +69,24 @@ describe('SensorReadingsScreen', () => {
     await act(async () => release(null));
     expect(readExtended).toHaveBeenCalledTimes(6);
     expect(screen.getByText('Injection quantity')).toBeTruthy();
+  });
+
+  it('never lists extended 22:<DID> live values among the standard sensors', async () => {
+    await golfSession();
+    renderWithProviders(<SensorReadingsScreen />);
+    expect(await screen.findByText('Injection quantity')).toBeTruthy();
+    await act(async () => {
+      useLiveDataStore.setState({
+        values: {
+          '0142': live('0142', 'Control module voltage', 'V', 14.1),
+          '01A6': live('01A6', 'Odometer', 'km', 1000),
+          '22:1701': live('22:1701', 'DPF soot mass (calc.)', 'g', 12),
+        },
+      });
+    });
+    expect(screen.getByText('Other')).toBeTruthy();
+    expect(screen.getByText('Odometer')).toBeTruthy();
+    expect(screen.queryByText('DPF soot mass (calc.)')).toBeNull();
   });
 
   it('stops reading DIDs once the screen unmounts', async () => {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChartBuffer, Point, SeriesStats, decimate, seriesStats } from '@/shared/obd-core';
-import { useLiveDataStore } from '@/features/live-data/model/liveDataStore';
+import { useLiveDataStore } from '@/shared/state/liveDataStore';
 
 // Unique subscriber id per chart panel so panels don't clobber each other's PID registration.
 let nextChartRegId = 0;
@@ -32,7 +32,11 @@ export function useChartSeries(pids: string[], windowMs: number, maxPoints = 120
     for (const pid of pids) {
       const buf = (buffers.current[pid] ??= new ChartBuffer(4000));
       const v = values[pid];
-      if (v) buf.push({ t: v.ts ?? now, v: v.value });
+      // Only a NEW reading becomes a point: `values` also changes when other keys update (e.g. a
+      // sweep whose Mode 01 phase failed republishes the old Mode 01 entries next to fresh `22:`
+      // values) and this effect re-runs on pan / window changes — re-pushing the same `ts` would
+      // add duplicate points (and duplicate CSV rows).
+      if (v) buf.pushIfNewer({ t: v.ts ?? now, v: v.value });
       const bounds = buf.bounds();
       if (bounds) earliest = Math.min(earliest, bounds.first);
       const windowed = buf.window(windowMs, end);

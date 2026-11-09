@@ -396,6 +396,30 @@
     ],
     "type": "concept"
   },
+  "concept:live-value-keys": {
+    "path": null,
+    "summary": "Live-value keys (plan 14): a key in liveDataStore registrations/values is a Mode 01 PID ('010C') or an extended Mode 22 key '22:<DID>' ('22:1701'). E\u2026",
+    "tokens": [
+      "chart",
+      "charts",
+      "did",
+      "extended",
+      "f187",
+      "group",
+      "groups",
+      "key",
+      "keys",
+      "label",
+      "live",
+      "measuring",
+      "mode22",
+      "partnumber",
+      "poll",
+      "sweep",
+      "value"
+    ],
+    "type": "concept"
+  },
   "concept:maintenance-log": {
     "path": null,
     "summary": "Service logbook: record work + odometer/date, then compute what is due (oil, filters, timing belt, brake fluid, coolant, DPF) by distance and time; f\u2026",
@@ -1184,6 +1208,18 @@
     ],
     "tokens": [
       "iupr"
+    ],
+    "type": "core"
+  },
+  "core:obd/liveKeys": {
+    "path": "src/shared/obd-core/obd/liveKeys.ts",
+    "summary": "Live-value keys.",
+    "tests": [
+      "src/shared/obd-core/obd/liveKeys.test.ts"
+    ],
+    "tokens": [
+      "keys",
+      "live"
     ],
     "type": "core"
   },
@@ -2684,7 +2720,9 @@
     "path": "src/features/engine-host",
     "summary": "The headless **engine host**: one component, mounted once at the app root, that owns every",
     "tests": [
+      "src/features/engine-host/EngineHost.extended.test.tsx",
       "src/features/engine-host/EngineHost.test.tsx",
+      "src/features/engine-host/extendedSnapshot.test.ts",
       "src/features/engine-host/pollPids.test.ts"
     ],
     "tokens": [
@@ -2706,7 +2744,9 @@
     "path": "src/features/extended-pids",
     "summary": "Profile-driven **manufacturer-specific** reads via **Mode 22** (UDS `readDataByIdentifier`). **VAG is",
     "tests": [
-      "src/features/extended-pids/api/measuringLog.test.ts"
+      "src/features/extended-pids/api/measuringLog.test.ts",
+      "src/features/extended-pids/model/measuringGroups.test.ts",
+      "src/features/extended-pids/ui/ExtendedPidsScreen.test.tsx"
     ],
     "tokens": [
       "extended",
@@ -2748,7 +2788,9 @@
     "path": "src/features/live-charts",
     "summary": "Plot live PIDs over **time** (line charts) alongside the gauges in [`live-data`](./live-data.md), and",
     "tests": [
-      "src/features/live-charts/api/chartCsv.test.ts"
+      "src/features/live-charts/api/chartCsv.test.ts",
+      "src/features/live-charts/model/chartKeys.test.ts",
+      "src/features/live-charts/ui/ChartsScreen.test.tsx"
     ],
     "tokens": [
       "charts",
@@ -3316,6 +3358,14 @@
     ],
     "type": "store"
   },
+  "store:chartsStore": {
+    "path": "src/shared/state/chartsStore.ts",
+    "summary": "Chart panel definitions (in-memory).",
+    "tokens": [
+      "charts"
+    ],
+    "type": "store"
+  },
   "store:dtcStore": {
     "path": "src/shared/state/dtcStore.ts",
     "summary": "One freeze frame per stored code (frame n belongs to stored[n] on most ECUs).",
@@ -3364,6 +3414,15 @@
     ],
     "tokens": [
       "history"
+    ],
+    "type": "store"
+  },
+  "store:liveDataStore": {
+    "path": "src/shared/state/liveDataStore.ts",
+    "summary": "PID interest per subscriber id \u2014 the union drives what the app-wide poll loop reads.",
+    "tokens": [
+      "data",
+      "live"
     ],
     "type": "store"
   },

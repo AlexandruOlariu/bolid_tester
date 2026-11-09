@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { livePidFilter } from '@/shared/vehicles';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
-import { useLiveDataStore } from '../model/liveDataStore';
+import { useLiveDataStore } from '@/shared/state/liveDataStore';
 
 // Unique subscriber id per hook instance so two mounted screens don't clobber each other's
 // registration (and releasing one never releases the other).

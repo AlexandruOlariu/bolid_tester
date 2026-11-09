@@ -1,19 +1,119 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocalSearchParams } from 'expo-router';
-import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Stack, Switch } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Stack, Switch, H4 } from 'tamagui';
+import { Screen, ValueCard } from '@/shared/ui';
 import { toHex } from '@/shared/lib/hex';
+import { extendedKey } from '@/shared/obd-core/obd/liveKeys';
+import type { LiveValue } from '@/shared/obd-core/session/DiagnosticSession';
+import { findLabelPack } from '@/shared/labels';
+import type { ExtendedPid } from '@/shared/vehicles';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { useChartsStore } from '@/shared/state/chartsStore';
 import { useExtendedPids } from '../hooks/useExtendedPids';
-import { useMeasuringLog } from '../hooks/useMeasuringLog';
+import { useMeasuringLog, type MeasuringLog } from '../hooks/useMeasuringLog';
+import { useEnginePartNumber } from '../hooks/useEnginePartNumber';
+import { resolveMeasuringGroups, type ResolvedGroup } from '../model/measuringGroups';
+
+/** One VCDS-style measuring group: number, name, up to four live tiles, Log / Chart actions. */
+function GroupCard({
+  group,
+  live,
+  log,
+  onLog,
+  onChart,
+}: {
+  group: ResolvedGroup;
+  live: Record<string, LiveValue>;
+  log: MeasuringLog;
+  onLog: (defs: ExtendedPid[]) => void;
+  onChart: (defs: ExtendedPid[]) => void;
+}) {
+  const readable = group.defs.length > 0;
+  return (
+    <Card bordered padding="$3" gap="$2" testID={`group-${group.no}`}>
+      <XStack justifyContent="space-between" alignItems="center" gap="$2">
+        <Text fontWeight="800" flexShrink={1}>
+          Group {group.no} · {group.name}
+        </Text>
+        <Stack backgroundColor="$yellow8" borderRadius="$10" paddingHorizontal="$2">
+          <Text fontSize="$1" color="black" fontWeight="700">
+            ILLUSTRATIVE
+          </Text>
+        </Stack>
+      </XStack>
+      {group.description ? (
+        <Paragraph theme="alt2" fontSize="$2">
+          {group.description}
+        </Paragraph>
+      ) : null}
+      <XStack flexWrap="wrap" gap="$2">
+        {group.entries.map((e) =>
+          e.def ? (
+            <ValueCard
+              key={e.did}
+              name={e.label}
+              value={live[e.did]?.value ?? null}
+              unit={e.unit}
+            />
+          ) : (
+            <Paragraph key={e.did} theme="alt2" fontSize="$2" flexBasis="100%">
+              No definition for {e.did} in this profile.
+            </Paragraph>
+          ),
+        )}
+      </XStack>
+      <XStack gap="$2">
+        <Button
+          size="$3"
+          flex={1}
+          theme="green"
+          disabled={!readable || log.recording}
+          onPress={() => onLog(group.defs)}
+        >
+          Log group
+        </Button>
+        <Button
+          size="$3"
+          flex={1}
+          theme="blue"
+          disabled={!readable}
+          onPress={() => onChart(group.defs)}
+        >
+          Chart group
+        </Button>
+      </XStack>
+    </Card>
+  );
+}
 
 export function ExtendedPidsScreen() {
-  const { supported, pids, readings, loading, refresh } = useExtendedPids();
+  const { supported, pids, readings, live, loading, refresh } = useExtendedPids();
   const session = useSessionStore((s) => s.session);
   const log = useMeasuringLog();
-
+  const router = useRouter();
   // Which DIDs are selected for logging.
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const addPanel = useChartsStore((s) => s.addPanel);
+  const partNumber = useEnginePartNumber();
+  const groups = useMemo(
+    () => resolveMeasuringGroups(findLabelPack(partNumber), pids),
+    [partNumber, pids],
+  );
+
+  // "Chart this" / "Chart group": a new panel over the DIDs' live keys, then open Charts.
+  const chart = (defs: ExtendedPid[]) => {
+    if (defs.length === 0) return;
+    addPanel(defs.map((d) => extendedKey(d.did)));
+    router.push('/charts');
+  };
+
+  // "Log group": record exactly that group's DIDs (the per-DID toggles follow, for clarity).
+  const logGroup = (defs: ExtendedPid[]) => {
+    if (log.recording || defs.length === 0) return;
+    setSelected(new Set(defs.map((d) => d.did)));
+    log.start(defs);
+  };
+
   // DIDs arrived-with from a fault guide deep-link (`/extended?dids=1708,1701`) — highlighted.
   const [guideDids, setGuideDids] = useState<Set<string>>(new Set());
   const params = useLocalSearchParams<{ dids?: string | string[] }>();
@@ -61,8 +161,8 @@ export function ExtendedPidsScreen() {
         subtitle="Experimental manufacturer (Mode 22) reads — values must be confirmed on the real car"
       >
         <Paragraph theme="alt2">
-          Not available for this vehicle/connection. Manufacturer Mode 22 reads require a CAN car with
-          a profile that declares extended PIDs (e.g. the Golf Plus).
+          Not available for this vehicle/connection. Manufacturer Mode 22 reads require a CAN car
+          with a profile that declares extended PIDs (e.g. the Golf Plus).
         </Paragraph>
       </Screen>
     );
@@ -74,6 +174,30 @@ export function ExtendedPidsScreen() {
       subtitle="Experimental manufacturer (Mode 22) reads — values must be confirmed on the real car"
     >
       <YStack gap="$3">
+        {groups.length > 0 ? (
+          <YStack gap="$2">
+            <H4>Measuring groups</H4>
+            <Paragraph theme="alt2" fontSize="$2">
+              VCDS-style groups from the label pack for engine part number {partNumber}. The
+              groupings are illustrative until confirmed on the real car.
+            </Paragraph>
+            {groups.map((g) => (
+              <GroupCard
+                key={g.no}
+                group={g}
+                live={live}
+                log={log}
+                onLog={logGroup}
+                onChart={chart}
+              />
+            ))}
+          </YStack>
+        ) : null}
+
+        <Paragraph theme="alt2" fontSize="$2">
+          Values update live while this screen is open. "Read extended PIDs" also shows the raw
+          reply of every DID.
+        </Paragraph>
         <Button onPress={refresh} icon={loading ? () => <Spinner /> : undefined} theme="blue">
           Read extended PIDs
         </Button>
@@ -108,7 +232,10 @@ export function ExtendedPidsScreen() {
 
         {pids.map((p) => {
           const r = byDid[p.did];
-          const value = p.did in log.latest ? log.latest[p.did] : r?.value ?? null;
+          // Freshest first: the measuring log's sweep (only WHILE recording — a finished log never
+          // freezes a card), then the live poll loop, then the one-shot read.
+          const logged = log.recording ? log.latest[p.did] : undefined;
+          const value = logged ?? live[p.did]?.value ?? r?.value ?? null;
           const highlighted = guideDids.has(p.did);
           return (
             <Card
@@ -144,10 +271,15 @@ export function ExtendedPidsScreen() {
               <Text fontSize="$7" fontWeight="900">
                 {value != null ? `${value} ${p.unit}` : 'no data'}
               </Text>
-              <Paragraph theme="alt2" fontSize="$2">
-                DID 22{p.did} · raw {r?.raw ? toHex(r.raw, ' ') : '—'}
-                {highlighted ? ' · from guide' : ''}
-              </Paragraph>
+              <XStack justifyContent="space-between" alignItems="center" gap="$2">
+                <Paragraph theme="alt2" fontSize="$2" flexShrink={1}>
+                  DID 22{p.did} · raw {r?.raw ? toHex(r.raw, ' ') : '—'}
+                  {highlighted ? ' · from guide' : ''}
+                </Paragraph>
+                <Button size="$2" theme="alt2" onPress={() => chart([p])}>
+                  Chart this
+                </Button>
+              </XStack>
             </Card>
           );
         })}

@@ -20,6 +20,8 @@ import { useSettingsStore, type AdapterSource } from '@/shared/state/settingsSto
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useGarageStore } from '@/shared/state/garageStore';
 import { simulatorSourceFor } from '@/shared/vehicles/resolve';
+import { isCan } from '@/shared/obd-core/obd/protocols';
+import { getActiveProfile } from '@/shared/state/activeProfile';
 import { appendAdapterLog, clearAdapterLog } from '@/shared/state/adapterLog';
 import { logError } from '@/shared/state/errorLogStore';
 import { runReconnect, RECONNECT_DELAYS_MS } from './reconnect';
@@ -309,6 +311,21 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
     // The source was switched mid-connect (e.g. the banner's "Use real adapter" while the simulator
     // was still initializing): drop this session instead of publishing it under the new source.
     if (stale()) throw new StaleConnectError();
+    // Engine part number (22 F187) once per session, cached in SessionInfo: it resolves the label
+    // pack whose measuring groups the Extended PIDs screen shows (plan 14). Only on CAN and only
+    // when the active profile declares extended DIDs — other cars send no Mode 22 at all. If the
+    // profile only gains DIDs after connect (VIN auto-select or a manual switch to the Golf),
+    // EngineHost reads it then (`sessionStore.setPartNumber`). The session memoises the outcome,
+    // a null "no answer" included, so that retry never sends a second `22 F187`.
+    if (isCan(info.protocol) && getActiveProfile().extendedPids?.length) {
+      try {
+        const partNumber = await session.readPartNumber();
+        if (partNumber) info.partNumber = partNumber;
+      } catch (e) {
+        logError({ source: 'connection/part-number', error: e, severity: 'warning' });
+      }
+      if (stale()) throw new StaleConnectError();
+    }
     linkUnsub();
     linkUnsub = null;
     useLinkStore.getState().setLink(linkInfoOf(rawTransport));
