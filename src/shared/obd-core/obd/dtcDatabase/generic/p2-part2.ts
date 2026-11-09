@@ -11,6 +11,8 @@
  * No third-party code list was copied (in particular not python-OBD's GPL-2 codes.py). Codes the
  * author could not place with confidence are deliberately omitted; unlisted codes fall back to the
  * range-table description in ../index.ts.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 export const P2_PART2: Record<string, string> = {
   P2500: 'Generator Lamp/L-Terminal Circuit Low',

@@ -33,6 +33,11 @@ jobs:
         run: npm run typecheck
       - name: Test (core + component)
         run: npm test
+      # Community contribution checks (plan 33, CONTRIBUTING.md): vehicle-doc front-matter, replay
+      # fixtures, label packs (ids, identical prefixes, DID keys, registration), DTC tables (keys,
+      # duplicates across files, License: header), sniffer capture headers, licence hygiene.
+      - name: Contribution checks
+        run: npm run validate:contrib
       - name: Typecheck (full app)
         run: npm run typecheck:app
       # plugins/withReleaseSigning.js against the generated-gradle fixture + one version everywhere.

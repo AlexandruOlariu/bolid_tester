@@ -14,6 +14,9 @@ Plan 25 built the tooling; the captures themselves come from the owner's on-car 
   channel setup on `0x200` and its `D0` answer in the window, even when it came earlier (see
   **TP2.0** below). Keep the `# note:` line — it says what
   was done ("VCDS Group 121 basic settings ON then OFF, engine idle").
+- The header's `# vehicle: <id>` line names the registry vehicle (the sniffer writes it from the
+  selected profile; fix `unknown` by hand). `npm run validate:contrib` fails a committed CSV without
+  it ([CONTRIBUTING.md](../../CONTRIBUTING.md), plan 33).
 - No VIN, no login codes: VCDS `2B` login requests carry the module's login code — cut those rows
   (the analyzer's report, Markdown or `--json`, cuts a `2B` request to its service byte, but the
   CSV itself would still carry the code).

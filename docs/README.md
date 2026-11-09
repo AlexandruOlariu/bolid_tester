@@ -32,6 +32,7 @@ and the code is written to match. When something changes, the docs change first 
 | [`testing.md`](./testing.md)                                   | Automated tests + per-car on-vehicle manual checklists.                                               |
 | [`exchange-formats.md`](./exchange-formats.md)                 | Profile and label-pack JSON files: schemas, validation, import conflicts, versioning, licensing.      |
 | [`vehicles/`](./vehicles/)                                     | The vehicle registry. The three example cars + how to add more.                                       |
+| [`contributing/`](./contributing/README.md)                    | Community data guides: vehicle profile, label pack, DTC texts, coding tweak (with `CONTRIBUTING.md`). |
 | [`features/`](./features/)                                     | One spec per feature slice.                                                                           |
 | [`implementation-log.md`](./implementation-log.md)             | Running record of what we implemented.                                                                |
 | [`release.md`](./release.md)                                   | Versioning, release signing, CI artifacts and GitHub Releases, OTA updates, rollback.                 |

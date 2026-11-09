@@ -11,5 +11,7 @@
  *   synthesised range description ("Powertrain — <subsystem> fault (P1xxx)").
  * - Illustrative until confirmed per car: fill this in from the Punto's own module texts
  *   (Multiecuscan / dealer tool session), one entry per confirmed code.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 export const FIAT_P1: Record<string, string> = {};

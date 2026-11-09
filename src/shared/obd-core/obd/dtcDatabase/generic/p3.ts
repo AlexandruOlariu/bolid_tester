@@ -11,6 +11,8 @@
  * intake valve control circuit/open, performance, circuit low, circuit high, then exhaust valve
  * control in the same order; P3400 / P3497 are the bank 1 / bank 2 system codes. The rest of
  * P3xxx is manufacturer controlled and lives under ../manufacturer/.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 export const P3: Record<string, string> = {
   P3400: 'Cylinder Deactivation System Bank 1',

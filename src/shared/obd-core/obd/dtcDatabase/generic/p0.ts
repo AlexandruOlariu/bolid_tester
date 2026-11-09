@@ -9,6 +9,8 @@
  *   fall back to the range text)
  *
  * The parts cover disjoint ranges; `dtcDatabase.test.ts` enforces that no key appears twice.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 import { P0_PART1 } from './p0-part1';
 import { P0_PART2 } from './p0-part2';

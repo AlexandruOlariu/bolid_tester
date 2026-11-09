@@ -1,0 +1,54 @@
+name: Data correction
+description: A fault-code text, label, profile value or tweak is wrong or missing.
+title: 'Data: '
+labels: ['community-data']
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is wrong
+      options:
+        - Fault-code (DTC) text
+        - Label pack (measurement, coding bit, adaptation, measuring group)
+        - Vehicle profile value (protocol, live data, extended value, module)
+        - Coding tweak
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where it is
+      description: The code, DID or item, and the file if you know it.
+      placeholder: P1555 in src/shared/obd-core/obd/dtcDatabase/manufacturer/vag-p1.ts
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: What the app shows now
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: What it should be
+      description: In your own words. Do not paste text from VCDS label files or GPL code lists.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: |
+        How you know: the car and ECU part number, a replay fixture, a sniffer capture, or an
+        MIT / BSD / public-domain source with its URL and licence.
+    validations:
+      required: true
+  - type: checkboxes
+    id: licence
+    attributes:
+      label: Licence
+      options:
+        - label: The proposed text is my own wording or comes from an MIT / BSD / public-domain source I cited above.
+          required: true

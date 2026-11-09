@@ -47,7 +47,10 @@ The open equivalent of VCDS label files: a `LabelPack` names measurements, codin
 adaptation channels for a module FAMILY, keyed by **part-number prefix** (matched against the live
 `F187` ident from [module-scan](./module-scan.md); longest prefix wins). Packs are data,
 community-extensible; `vag-edc17-03L906022` ships as the illustrative example. The adaptations
-screen shows the pack's channel descriptions when the scanned part number matches.
+screen shows the pack's channel descriptions when the scanned part number matches. To contribute a
+bundled pack, follow [contributing/label-pack.md](../contributing/label-pack.md); CI's
+`validate:contrib` checks ids, identical prefixes across packs, DID keys and registration in
+`LABEL_PACKS` (plan 33).
 
 Fields: `measurements` (DID → name / unit), `codingBits` (coding DID → byte / bit names),
 `adaptations` (DID → name / unit / description) and, since plan 14, **`measuringGroups`**:

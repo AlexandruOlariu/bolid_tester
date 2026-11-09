@@ -48,7 +48,11 @@ app.json`), so app.json lands in the same commit as the bump. Never edit the thr
 
 - `verify`: lint, both typechecks, all Jest tests, `npm run check:release`
   (`scripts/check-signing-plugin.mjs` + `scripts/check-version-sync.mjs`) and `npm run check:capture`
-  (the capture analyzer CLI on the synthetic capture, plan 25).
+  (the capture analyzer CLI on the synthetic capture, plan 25), `npm run adapters:check` (plan 29)
+  and **`npm run validate:contrib`** — the community contribution checks (plan 33,
+  `scripts/validate-contrib.mjs`: vehicle-doc front-matter, replay fixtures, label packs, DTC tables
+  and their `License:` headers, sniffer capture headers, licence hygiene; see
+  [CONTRIBUTING.md](../CONTRIBUTING.md)).
 - `build-android`, in order: tag = `v<package.json version>` (tags only) → restore the keystore from
   `ANDROID_KEYSTORE_B64` into `$RUNNER_TEMP` and export `BOLID_KEYSTORE_PATH` (a tag build **fails
   here** when the secret is missing, instead of publishing a debug-signed release) → `expo prebuild`

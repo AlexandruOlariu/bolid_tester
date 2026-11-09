@@ -16,6 +16,8 @@
  * - Illustrative until confirmed per car: always cross-check against the module's own text (VCDS /
  *   ODIS label) before acting on a repair. Component names in brackets are the usual VAG part
  *   designations.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 export const VAG_P1: Record<string, string> = {
   // Oxygen sensors / mixture control (ME7)

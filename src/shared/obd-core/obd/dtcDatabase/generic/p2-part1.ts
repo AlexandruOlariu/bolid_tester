@@ -14,6 +14,8 @@
  * - Only codes whose generic assignment is well established are listed. Uncertain codes (e.g.
  *   P2348-P23FF and most of P2448-P24FF) are omitted; anything missing falls back to the range
  *   description in `dtcDatabase/index.ts`.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 export const P2_PART1: Record<string, string> = {
   // NOx trap / particulate filter efficiency

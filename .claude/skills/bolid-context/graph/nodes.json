@@ -1995,6 +1995,63 @@
     ],
     "type": "doc"
   },
+  "doc:contributing/README": {
+    "path": "docs/contributing/README.md",
+    "summary": "Contributing data \u2014 guides",
+    "tokens": [
+      "contributing",
+      "data",
+      "guides",
+      "readme"
+    ],
+    "type": "doc"
+  },
+  "doc:contributing/coding-tweak": {
+    "path": "docs/contributing/coding-tweak.md",
+    "summary": "Contribute a coding tweak",
+    "tokens": [
+      "coding",
+      "contribute",
+      "contributing",
+      "tweak"
+    ],
+    "type": "doc"
+  },
+  "doc:contributing/dtc-texts": {
+    "path": "docs/contributing/dtc-texts.md",
+    "summary": "Contribute fault-code (DTC) texts",
+    "tokens": [
+      "code",
+      "contribute",
+      "contributing",
+      "dtc",
+      "fault",
+      "texts"
+    ],
+    "type": "doc"
+  },
+  "doc:contributing/label-pack": {
+    "path": "docs/contributing/label-pack.md",
+    "summary": "Contribute a label pack",
+    "tokens": [
+      "contribute",
+      "contributing",
+      "label",
+      "pack"
+    ],
+    "type": "doc"
+  },
+  "doc:contributing/vehicle-profile": {
+    "path": "docs/contributing/vehicle-profile.md",
+    "summary": "Contribute a vehicle profile",
+    "tokens": [
+      "contribute",
+      "contributing",
+      "profile",
+      "vehicle"
+    ],
+    "type": "doc"
+  },
   "doc:exchange-formats": {
     "path": "docs/exchange-formats.md",
     "summary": "Exchange formats \u2014 profile, label-pack and security-access plugin files",
@@ -3547,6 +3604,18 @@
     "summary": "ASCII <-> byte helpers used to move text over the (byte-oriented) transport.",
     "tokens": [
       "bytes"
+    ],
+    "type": "lib"
+  },
+  "lib:contribChecks": {
+    "path": "src/shared/lib/contribChecks.ts",
+    "summary": "Community contribution checks (plan 33): the pure rules behind `scripts/validate-contrib.mjs`, which CI runs in `verify` (`npm run validate:contrib`).",
+    "tests": [
+      "src/shared/lib/contribChecks.test.ts"
+    ],
+    "tokens": [
+      "checks",
+      "contrib"
     ],
     "type": "lib"
   },

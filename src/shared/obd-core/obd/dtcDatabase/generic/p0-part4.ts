@@ -16,6 +16,8 @@
  * Codes whose exact J2012 assignment was uncertain were deliberately omitted; unlisted codes fall
  * back to the range-table text (hybrid propulsion subsystem) built by ../index.ts.
  * Keys: uppercase 5-char, unique across all generic data files (enforced by dtcDatabase.test.ts).
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 
 export const P0_PART4: Record<string, string> = {

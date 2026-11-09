@@ -10,6 +10,8 @@
  * reference must be MIT/BSD/public-domain and cited here with URL and license.
  *
  * See docs/plans/05-dtc-database.md ("Data sourcing rules").
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 export const P0_PART1: Record<string, string> = {
   P0001: 'Fuel Volume Regulator Control Circuit/Open',

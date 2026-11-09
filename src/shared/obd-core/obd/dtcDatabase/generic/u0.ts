@@ -10,6 +10,8 @@
  * Covers: U0001-U0077 bus circuit faults (high/medium/low speed CAN, vehicle buses A-E, bus off),
  * U0100-U02FF lost communication with <module>, U0300-U03FF software incompatibility with
  * <module>, and U0400-U04FF invalid data received from <module>.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 export const U0: Record<string, string> = {
   U0001: 'High Speed CAN Communication Bus',

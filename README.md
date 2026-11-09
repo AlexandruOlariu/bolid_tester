@@ -196,6 +196,15 @@ debug-signed. Full procedure, rollback and the owner's one-time setup:
 [`docs/release.md`](./docs/release.md). What the app sends where:
 [`docs/privacy-policy.md`](./docs/privacy-policy.md).
 
+## Contributing
+
+Vehicle profiles, label packs, fault-code texts and coding tweaks are data, and contributions are
+welcome as pull requests. Read [`CONTRIBUTING.md`](./CONTRIBUTING.md) first: what goes where,
+evidence levels (illustrative → observed → confirmed), licensing (MIT; nothing from GPL lists or
+VCDS label files) and the checks CI runs (`npm run ci`, which includes
+`npm run validate:contrib`). Step-by-step guides live in
+[`docs/contributing/`](./docs/contributing/README.md). Licence: [MIT](./LICENSE).
+
 ## Example cars
 
 The three cars in [`docs/vehicles/`](./docs/vehicles) are the owner's own, used as reference

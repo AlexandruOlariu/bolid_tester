@@ -10,6 +10,8 @@
  *   (restraint deployment controls, seatbelt sensors, occupant detection, frontal crash sensor).
  *   Uncertain codes are omitted; anything missing falls back to the range description in
  *   `dtcDatabase/index.ts`.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 export const B0: Record<string, string> = {
   // Restraints — frontal airbag deployment

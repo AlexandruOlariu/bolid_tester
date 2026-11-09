@@ -12,6 +12,8 @@
  *
  * Codes whose exact standard wording was uncertain are deliberately omitted; lookups for them
  * fall back to the range-table description in ../index.ts.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 
 export const P0_PART2: Record<string, string> = {

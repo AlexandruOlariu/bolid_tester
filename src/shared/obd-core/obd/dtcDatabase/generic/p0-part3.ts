@@ -11,6 +11,8 @@
  * used for cross-checking must be MIT/BSD/public-domain and cited here with URL + license.
  *
  * Keys are uppercase 5-character codes; no duplicates (enforced by dtcDatabase.test.ts).
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 export const P0_PART3: Record<string, string> = {
   P0600: 'Serial Communication Link',

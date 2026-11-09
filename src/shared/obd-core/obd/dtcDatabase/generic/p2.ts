@@ -8,6 +8,8 @@
  *   heaters, transmission (P27xx–P28xx), O2 range/performance (P2A0x)
  *
  * The parts cover disjoint ranges; `dtcDatabase.test.ts` enforces that no key appears twice.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 import { P2_PART1 } from './p2-part1';
 import { P2_PART2 } from './p2-part2';

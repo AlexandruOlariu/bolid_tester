@@ -21,6 +21,8 @@
  * Sourcing: widely published VCDS labels / VAG P1 definitions, authored in our own short wording;
  * nothing copied from GPL sources (python-OBD `codes.py` is GPL-2). Confirm against the real
  * module's own text before acting on a repair.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 import { VAG_P1 } from './vag-p1';
 

@@ -10,6 +10,8 @@
  *   (ABS pump, wheel speed sensors, steering angle, stability-control inertial sensors).
  *   Uncertain codes (e.g. per-wheel ABS solenoid/valve controls) are omitted; anything missing
  *   falls back to the range description in `dtcDatabase/index.ts`.
+ *
+ * License: MIT, authored for bolid-tester (see LICENSE at the repository root).
  */
 export const C0: Record<string, string> = {
   // ABS hydraulic unit

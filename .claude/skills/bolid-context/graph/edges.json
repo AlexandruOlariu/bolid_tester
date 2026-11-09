@@ -3426,6 +3426,11 @@
   ],
   [
     "feature:fault-codes",
+    "doc:contributing/dtc-texts",
+    "named"
+  ],
+  [
+    "feature:fault-codes",
     "doc:features/fault-codes",
     "named"
   ],
@@ -3743,6 +3748,11 @@
     "feature:live-data",
     "core:obd/protocols",
     "imports"
+  ],
+  [
+    "feature:live-data",
+    "doc:contributing/README",
+    "named"
   ],
   [
     "feature:live-data",
@@ -4650,6 +4660,11 @@
     "named"
   ],
   [
+    "lib:contribChecks",
+    "vehicle:validatedOn",
+    "imports"
+  ],
+  [
     "lib:dtcReport",
     "core:obd/dtc",
     "imports"
@@ -5476,6 +5491,11 @@
   ],
   [
     "store:labelPackStore",
+    "doc:contributing/label-pack",
+    "named"
+  ],
+  [
+    "store:labelPackStore",
     "doc:exchange-formats",
     "named"
   ],
@@ -5493,6 +5513,11 @@
     "store:liveDataStore",
     "core:session/DiagnosticSession",
     "imports"
+  ],
+  [
+    "store:liveDataStore",
+    "doc:contributing/README",
+    "named"
   ],
   [
     "store:liveDataStore",
@@ -5903,6 +5928,16 @@
     "vehicle:confirmation",
     "vehicle:types",
     "imports"
+  ],
+  [
+    "vehicle:faultGuides",
+    "doc:contributing/README",
+    "named"
+  ],
+  [
+    "vehicle:faultGuides",
+    "doc:contributing/dtc-texts",
+    "named"
   ],
   [
     "vehicle:faultGuides",

@@ -5,6 +5,93 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 33 — Community contribution flow (2026-11-09)
+
+[Plan 33](./plans/33-community-contribution.md) landed: anyone can contribute a vehicle profile, a
+label pack, DTC texts or a coding tweak through a pull request that CI validates mechanically and a
+maintainer reviews against a short checklist. Roadmap ✅ (the plan has no deferred / owner part).
+
+- **Repository files.** `LICENSE` (MIT, 2026, Alex Olariu). `CONTRIBUTING.md`: what goes where
+  (data type → folder → guide → test), ground rules (docs first, simulator first, honesty badges,
+  no safety-module writes, no seed/key, metric only), **evidence levels** illustrative → observed
+  (a committed replay fixture or sniffer capture named by `confirmed`) → confirmed (fixture
+  asserted in CI + the "Validated on the car" table), licensing (MIT; texts authored or from a
+  cited MIT / BSD / public-domain source; python-OBD / pyOBD / any GPL list and VCDS label files
+  off-limits), local checks, and the maintainer review checklist. `.github/PULL_REQUEST_TEMPLATE.md`
+  (kind, car + ECU part number, evidence or "illustrative", checks, licence attestation) and three
+  issue forms in `.github/ISSUE_TEMPLATE/` (`vehicle-request.yml`, `bug-report.yml` asking for the
+  plan 32 problem report from More → Tools → Report a problem, `data-correction.yml`).
+- **Guides (`docs/contributing/`).** `vehicle-profile.md`, `label-pack.md`, `dtc-texts.md`,
+  `coding-tweak.md` plus a `README.md` index.
+- **Checks (`src/shared/lib/contribChecks.ts`, core scope).** Pure functions returning
+  `ContribProblem { area, level, file, message }`: `checkVehicleDoc` (required front-matter keys,
+  `id` = file name and kebab-case, known `ProtocolId`s, numeric count, boolean `extended`, and the
+  existing `vehicleDocValidationProblems` rules, reused from `vehicles/validatedOn.ts`),
+  `checkFixtureFile` (JSON, `pairs`, `meta.vehicleId` names a doc or `generic` and its folder,
+  `meta.flow`, `meta.source`, ≤ 200 KB), `checkLabelPacks` (fields, DID keys `/^[0-9A-F]{4}$/`,
+  names, groups ≤ 4 DIDs with no repeat, ids unique, an identical prefix in two packs = error, a
+  nested prefix = warning, registration in `LABEL_PACKS`), `checkDtcTables` (SAE keys / 5-digit keys
+  for `*_TEXTS` tables, non-empty text, no code in two tables), `checkDtcFileHeader` (`License:`
+  line), `duplicateKeysInSource`, `checkCapture` (`# vehicle: <registry id>` in the header block),
+  `checkLicenceHygiene`, `stripComments` / `leadingComment`, `formatContribReport` (grouped by area).
+- **Validator (`scripts/validate-contrib.mjs`).** `npm run validate:contrib`, `--root <dir>` for
+  another checkout. Transpiles the TS data files with `ts.transpileModule` and evaluates them;
+  DTC files and packs are evaluated one at a time with relative imports stubbed, so a composed
+  family (P0 = four parts) is never counted twice. Exits 1 with the grouped report on an error.
+  Added to `npm run ci` (after `npm test`) and to CI `verify` as **Contribution checks** after the
+  tests.
+- **Findings on the repo.** None in vehicle docs, fixtures, packs or captures. The 15 DTC data
+  files had no `License:` line: each header now ends with `License: MIT, authored for bolid-tester
+(see LICENSE at the repository root).` (comment-only change).
+- **Tests (+2 suites, 2018 tests / 221 suites).** `contribChecks.test.ts` (every real doc / fixture / capture / DTC header /
+  data file passes; front-matter problems; validation rules; fixture without a doc, wrong folder,
+  missing keys, bad JSON, 200 KB boundary; new pack registered vs not; identical-prefix error vs
+  nested-prefix warning; malformed packs; DTC duplicates across files, bad keys, empty texts,
+  in-file duplicates; `License:` header; captures; GPL in data / Source / License vs a prose
+  warning; comment stripping; report format; `SAE_DTC_KEY_PATTERN` equals `DTC_CODE_PATTERN`).
+  `validateContrib.test.ts` spawns the script: passes on the repo; on a temp copy fails a DTC code
+  added to a second file, a header without `License:`, a second pack with an identical prefix, a
+  fixture for a vehicle without a doc, a capture without a vehicle line, a doc whose id is not its
+  file name and a pack naming python-OBD; the **dry-run contribution** (a Passat EDC15 pack,
+  `038906019`, two measurement labels, badged illustrative) fails unregistered and passes once in
+  `LABEL_PACKS`. `vehicle-docs-sync.test.ts` and `registry.test.ts` unchanged.
+- **Docs.** `CONTRIBUTING.md`, `docs/contributing/*`, `docs/README.md` (index row),
+  root `README.md` (Contributing section, LICENSE link), `docs/vehicles/README.md` (guide link,
+  step 6 `validate:contrib`, evidence levels), `docs/features/adaptations.md` (label packs → guide),
+  `docs/release.md` (`verify` runs `adapters:check` and `validate:contrib`),
+  `docs/captures/README.md` (the `# vehicle:` line is checked), roadmap ✅.
+- **Deviations.**
+  - Captures: the plan asks for a CSV whose **first** line starts with `# vehicle:`; the sniffer's
+    CSV starts with `# bolid-tester bus capture (csv)` and puts `# vehicle:` second, so the check
+    looks for the line anywhere in the leading `#` block and also requires a registry id.
+  - Licence hygiene: a plain grep for `GPL` / `python-obd` would fail every DTC file, whose headers
+    warn **against** python-OBD. The check fails those names in the data (comments stripped) or as
+    the value of a `Source:` / `License:` line; prose warnings in comments stay allowed.
+  - Label packs: `LabelPack` has `module`, not `name`, so `module` (and every label's `name`) must
+    be non-empty. The bundled ids keep the part prefix's case (`vag-edc17-03L906022`) and the pack
+    files are camelCase (`vagEdc17Golf.ts`), so the guide documents that convention instead of the
+    plan's all-lower-case `<make>-<module>-<partPrefix>.ts` file name; ids must be letters / digits
+    joined by `-`.
+  - Fixtures: `meta.vehicleId` may also be `generic` (the built-in profile has simulator fixtures
+    but no doc); the check additionally requires the folder to equal `meta.vehicleId` and
+    `meta.source` to be `car` / `simulator`.
+  - DTC "no duplicates": checked across tables (the plan) and also within one source file
+    (`duplicateKeysInSource`), since an evaluated object keeps only the last duplicate key.
+  - The plan's dry-run Passat EDC15 pack was run as a test on a temp copy, not committed: it would
+    be unconfirmed data with invented DIDs. Its registry half (`findLabelPack('038906019…')` is the
+    new pack) is asserted in `validateContrib.test.ts` with `findLabelPackIn([...LABEL_PACKS, pack])`
+    instead of a case in `registry.test.ts`, which stays unchanged because the pack is not bundled.
+- **Review fixes.** `checkVehicleDoc`'s `carFixtures` argument is now required (it defaulted to
+  `[]`), and the "every real doc passes" test passes each doc's committed car fixtures
+  (`carFixturesFor` over `readFixtureFiles()`), so the first on-car fixture listed in a doc's
+  "Validated on the car" table does not break the unit test. The `vehicle-profile.md` front-matter
+  example no longer carries inline `# ...` comments (`parseFrontMatter` keeps them as part of the
+  value, so a copied block failed every check); the key explanations moved to a list below it, and
+  a test runs the guide's block through `checkVehicleDoc`.
+  - No `ISSUE_TEMPLATE/config.yml` (contact links need an absolute URL and branch; not required).
+
+---
+
 ## Plan 31 — Opt-in crash reporting (2026-11-09)
 
 [Plan 31](./plans/31-opt-in-crash-reporting.md) landed: a user can switch on anonymous, scrubbed

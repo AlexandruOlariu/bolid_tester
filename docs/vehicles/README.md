@@ -160,12 +160,25 @@ next section.
 
 ## How to add a vehicle
 
+The full contributor guide, with the evidence levels and the review checklist, is
+[contributing/vehicle-profile.md](../contributing/vehicle-profile.md) (and
+[CONTRIBUTING.md](../../CONTRIBUTING.md)). In short:
+
 1. Copy an existing `vehicles/<car>.md`, set the front-matter and write the sections.
 2. Add a matching typed profile in `src/shared/vehicles/<car>.ts` and register it in
    `src/shared/vehicles/index.ts`.
 3. Make `supportedPidCount` in the front-matter equal `supportedPids.length` in the TS profile.
 4. Run `npm test` — the `vehicle-docs-sync` test confirms the doc and code agree.
 5. (Optional) Add the car to the simulator scenarios so it can be exercised without hardware.
+6. Run `npm run validate:contrib` (also part of `npm run ci` and CI `verify`): it checks every doc's
+   front-matter (required keys, `id` = file name, a known protocol), the replay fixtures and the
+   sniffer captures that serve as evidence.
+
+**Evidence levels.** New per-car data starts **illustrative** (`experimental: true`, amber badge),
+becomes **observed** when a replay fixture or a sniffer capture is committed and named by the item's
+`confirmed`, and **confirmed** when the fixture is asserted in CI and listed in the doc's "Validated
+on the car" table. Promotion happens in the same pull request that adds the evidence
+([CONTRIBUTING.md → Evidence levels](../../CONTRIBUTING.md#3-evidence-levels)).
 
 ## Example cars
 
