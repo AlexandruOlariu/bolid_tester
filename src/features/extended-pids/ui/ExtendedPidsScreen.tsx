@@ -5,7 +5,7 @@ import { Screen, ValueCard, VerificationBadge } from '@/shared/ui';
 import { toHex } from '@/shared/lib/hex';
 import { extendedKey } from '@/shared/obd-core/obd/liveKeys';
 import type { LiveValue } from '@/shared/obd-core/session/DiagnosticSession';
-import { findLabelPack } from '@/shared/labels';
+import { useLabelPackFinder } from '@/shared/state/labelPackStore';
 import type { ExtendedPid } from '@/shared/vehicles';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useChartsStore } from '@/shared/state/chartsStore';
@@ -95,9 +95,11 @@ export function ExtendedPidsScreen() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const addPanel = useChartsStore((s) => s.addPanel);
   const partNumber = useEnginePartNumber();
+  // The label-pack lookup re-resolves when the imported packs change (plan 13).
+  const findLabelPack = useLabelPackFinder();
   const groups = useMemo(
     () => resolveMeasuringGroups(findLabelPack(partNumber), pids),
-    [partNumber, pids],
+    [partNumber, pids, findLabelPack],
   );
 
   // "Chart this" / "Chart group": a new panel over the DIDs' live keys, then open Charts.

@@ -26,6 +26,7 @@ import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
 import { connectionService } from '@/features/connection';
 import { APP_NAME, APP_VERSION } from '@/shared/lib/appInfo';
 import { PRIVACY_POLICY, PRIVACY_POLICY_UPDATED } from '../model/privacyPolicy';
+import { LabelPacksSection } from './LabelPacksSection';
 
 const ACCENT = '#2bb673';
 
@@ -447,7 +448,8 @@ function AboutSection() {
 }
 
 /** **Data** (plan 18): the way to the Backup & restore screen — one file with every store and the
- *  trip recordings, restore from such a file, and per-store JSON / CSV export. */
+ *  trip recordings, restore from such a file, and per-store JSON / CSV export; then the label packs
+ *  (plan 13: import, imported packs, bundled packs as templates). */
 function DataSection() {
   const router = useRouter();
   return (
@@ -467,6 +469,7 @@ function DataSection() {
               Export data…
             </Button>
           </XStack>
+          <LabelPacksSection />
         </YStack>
       </SegGroup>
     </YStack>

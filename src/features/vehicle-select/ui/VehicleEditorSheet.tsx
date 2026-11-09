@@ -4,6 +4,8 @@ import { useGarageStore } from '@/shared/state/garageStore';
 import { formatLoginCode } from '@/shared/obd-core';
 import {
   MASKED_LOGIN_CODE,
+  VEHICLE_NAME_MAX,
+  VEHICLE_NOTES_MAX,
   VEHICLE_PROFILES,
   removeLoginCode,
   type LoginCodeEntry,
@@ -121,6 +123,7 @@ export function EditorBody({
           value={draft.name}
           onChangeText={(name) => set({ name })}
           placeholder="e.g. Dacia Logan 2015"
+          maxLength={VEHICLE_NAME_MAX}
           accessibilityLabel="Car name"
         />
         {err('name')}
@@ -183,8 +186,10 @@ export function EditorBody({
           value={draft.notes}
           onChangeText={(notes) => set({ notes })}
           placeholder="Engine code, quirks, anything you want to remember"
+          maxLength={VEHICLE_NOTES_MAX}
           accessibilityLabel="Notes"
         />
+        {err('notes')}
       </YStack>
 
       {vehicle ? (

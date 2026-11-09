@@ -15,7 +15,8 @@ import {
   type CodingPresetState,
 } from '@/shared/obd-core';
 import type { CodingModule } from '@/shared/vehicles';
-import { findLabelPack, codingBitLabels } from '@/shared/labels';
+import { codingBitLabels } from '@/shared/labels';
+import { useLabelPackFinder } from '@/shared/state/labelPackStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
 import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
@@ -45,10 +46,15 @@ export function useCoding() {
 
   /** Long-coding fields = the module's own schema merged additively with any label-pack coding-bit
    *  names resolved from its part number (the profile schema always wins on a conflict). */
-  const fieldsFor = useCallback((mod: CodingModule): CodingField[] => {
-    const pack = findLabelPack(mod.partNumber);
-    return mergeCodingLabels(mod.schema, codingBitLabels(pack, mod.codingDid));
-  }, []);
+  // The label-pack lookup re-resolves when the imported packs change (plan 13).
+  const findLabelPack = useLabelPackFinder();
+  const fieldsFor = useCallback(
+    (mod: CodingModule): CodingField[] => {
+      const pack = findLabelPack(mod.partNumber);
+      return mergeCodingLabels(mod.schema, codingBitLabels(pack, mod.codingDid));
+    },
+    [findLabelPack],
+  );
 
   const read = useCallback(
     async (mod: CodingModule) => {

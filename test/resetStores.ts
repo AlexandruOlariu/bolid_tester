@@ -14,6 +14,7 @@ import { useSessionStore } from '@/shared/state/sessionStore';
 import { useDtcStore } from '@/shared/state/dtcStore';
 import { useHistoryStore } from '@/shared/state/historyStore';
 import { useGarageStore } from '@/shared/state/garageStore';
+import { useLabelPackStore } from '@/shared/state/labelPackStore';
 import { useChartsStore } from '@/shared/state/chartsStore';
 import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import { clearAdapterLog } from '@/shared/state/adapterLog';
@@ -55,6 +56,7 @@ const STORES: AnyStore[] = [
   useErrorLogStore,
   useVehicleStore,
   useGarageStore,
+  useLabelPackStore,
   useMaintenanceStore,
   useTripStore,
   useLiveDataStore,

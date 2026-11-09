@@ -23,6 +23,10 @@ interface GarageState {
   vehicles: UserVehicle[];
   add: (v: NewUserVehicle) => UserVehicle;
   update: (id: string, patch: UserVehiclePatch) => void;
+  /** Replace every field of car `id` with `v` (an imported profile, plan 13), keeping its id and
+   *  `createdAt`; a field `v` lacks (e.g. `learned`) is gone afterwards. The code book is kept:
+   *  login codes never travel in a profile file. */
+  replace: (id: string, v: NewUserVehicle) => void;
   remove: (id: string) => void;
   setLearned: (id: string, learned: LearnedIdentity) => void;
 }
@@ -135,6 +139,22 @@ export const useGarageStore = create<GarageState>()(
               : v,
           ),
         })),
+      replace: (id, next) =>
+        set((s) => ({
+          vehicles: s.vehicles.map((v) =>
+            v.id === id
+              ? {
+                  ...next,
+                  ...(v.loginCodes && next.loginCodes === undefined
+                    ? { loginCodes: v.loginCodes }
+                    : {}),
+                  id: v.id,
+                  createdAt: v.createdAt,
+                  updatedAt: bump(v.updatedAt),
+                }
+              : v,
+          ),
+        })),
       remove: (id) => set((s) => ({ vehicles: s.vehicles.filter((v) => v.id !== id) })),
       setLearned: (id, learned) =>
         set((s) => ({
@@ -167,7 +187,8 @@ useGarageStore.persist.onFinishHydration((state) => {
   useGarageStore.setState({ vehicles: [...state.vehicles] });
 });
 
-/** Serialise the garage for **Share garage as JSON** (import lands with plan 13). */
+/** Serialise the garage for **Share garage as JSON** (a whole-garage file; single cars travel as
+ *  `bolid.profile.v1` files, plan 13). */
 export function garageExportJson(vehicles: UserVehicle[], now: number = Date.now()): string {
   return JSON.stringify(
     {

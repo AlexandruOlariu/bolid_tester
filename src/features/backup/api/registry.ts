@@ -11,6 +11,7 @@ import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useGarageStore } from '@/shared/state/garageStore';
 import { useVehicleStore } from '@/shared/state/vehicleStore';
 import { useHistoryStore } from '@/shared/state/historyStore';
+import { useLabelPackStore } from '@/shared/state/labelPackStore';
 import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import { useMaintenanceStore } from '@/features/maintenance/model/maintenanceStore';
 import { useTripStore } from '@/features/trip-recording/model/tripStore';
@@ -137,6 +138,7 @@ export const PERSISTED_STORES: PersistedStoreRef[] = [
         : 0;
     },
   }),
+  ref('bolid.labelPacks', 'Imported label packs', useLabelPackStore),
   ref('bolid.history', 'History (diagnoses, fault-code checks, reports)', useHistoryStore, {
     csv: historyCsv,
   }),

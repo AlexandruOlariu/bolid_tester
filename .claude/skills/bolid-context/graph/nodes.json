@@ -354,6 +354,29 @@
     ],
     "type": "concept"
   },
+  "concept:exchange-files": {
+    "path": null,
+    "summary": "Plan 13: a garage car (bolid.profile.v1; a built-in profile exports as a seed) or a label pack (bolid.labelpack.v1) as a versioned JSON envelope {sch\u2026",
+    "tokens": [
+      "community",
+      "exchange",
+      "export",
+      "files",
+      "import",
+      "json",
+      "label",
+      "labelpack",
+      "pack",
+      "picker",
+      "profile",
+      "schema",
+      "seed",
+      "share",
+      "validate",
+      "validator"
+    ],
+    "type": "concept"
+  },
   "concept:extended-pids-mode22": {
     "path": null,
     "summary": "Profile-driven manufacturer-specific reads over Mode 22 (UDS readDataByIdentifier); VAG is the first example. Opt-in, experimental, flagged.",
@@ -1804,6 +1827,19 @@
     ],
     "type": "doc"
   },
+  "doc:exchange-formats": {
+    "path": "docs/exchange-formats.md",
+    "summary": "Exchange formats \u2014 profile and label-pack files",
+    "tokens": [
+      "exchange",
+      "files",
+      "formats",
+      "label",
+      "pack",
+      "profile"
+    ],
+    "type": "doc"
+  },
   "doc:features/adaptations": {
     "path": "docs/features/adaptations.md",
     "summary": "Feature: adaptations \u2014 channel browser (experimental, write-capable, gated)",
@@ -3204,6 +3240,7 @@
       "src/features/settings/api/replayFixtureFile.test.ts",
       "src/features/settings/model/privacyPolicy.test.ts",
       "src/features/settings/model/replayExport.test.ts",
+      "src/features/settings/ui/LabelPacksSection.test.tsx",
       "src/features/settings/ui/SettingsScreen.test.tsx"
     ],
     "tokens": [
@@ -3330,6 +3367,14 @@
     ],
     "type": "lib"
   },
+  "lib:export": {
+    "path": "src/shared/lib/exchange/export.ts",
+    "summary": "Export side of the exchange files (plan 13), pure: a garage car, a built-in profile (as a **seed**) or a label pack as a versioned envelope, plus the\u2026",
+    "tokens": [
+      "export"
+    ],
+    "type": "lib"
+  },
   "lib:hex": {
     "path": "src/shared/lib/hex.ts",
     "summary": "Hex <-> byte helpers.",
@@ -3338,6 +3383,17 @@
     ],
     "tokens": [
       "hex"
+    ],
+    "type": "lib"
+  },
+  "lib:import": {
+    "path": "src/shared/lib/exchange/import.ts",
+    "summary": "Import side of the exchange files (plan 13), pure: parse + validate an untrusted file, then plan how it lands next to what is already on the phone (c\u2026",
+    "tests": [
+      "src/shared/lib/exchange/import.test.ts"
+    ],
+    "tokens": [
+      "import"
     ],
     "type": "lib"
   },
@@ -3350,6 +3406,25 @@
     ],
     "type": "lib"
   },
+  "lib:schemas": {
+    "path": "src/shared/lib/exchange/schemas.ts",
+    "summary": "Validators for the exchange files (plan 13), built from the `validate.ts` combinators.",
+    "tests": [
+      "src/shared/lib/exchange/schemas.test.ts"
+    ],
+    "tokens": [
+      "schemas"
+    ],
+    "type": "lib"
+  },
+  "lib:types": {
+    "path": "src/shared/lib/exchange/types.ts",
+    "summary": "Exchange file formats (plan 13): a garage car (\"profile\") or a label pack as a versioned JSON envelope that travels between phones or comes from a co\u2026",
+    "tokens": [
+      "types"
+    ],
+    "type": "lib"
+  },
   "lib:units": {
     "path": "src/shared/lib/units.ts",
     "summary": "Display-time unit conversion.",
@@ -3358,6 +3433,17 @@
     ],
     "tokens": [
       "units"
+    ],
+    "type": "lib"
+  },
+  "lib:validate": {
+    "path": "src/shared/lib/validate.ts",
+    "summary": "A small, typed validator combinator set (plan 13) for **untrusted JSON**: imported profile and label-pack files today, seed/key plugin files (plan 23\u2026",
+    "tests": [
+      "src/shared/lib/validate.test.ts"
+    ],
+    "tokens": [
+      "validate"
     ],
     "type": "lib"
   },
@@ -3733,6 +3819,18 @@
     ],
     "type": "store"
   },
+  "store:exchangeService": {
+    "path": "src/shared/state/exchangeService.ts",
+    "summary": "Profile and label-pack import / export (plan 13): the I/O and store side of the pure exchange library (`shared/lib/exchange`).",
+    "tests": [
+      "src/shared/state/exchangeService.test.ts"
+    ],
+    "tokens": [
+      "exchange",
+      "service"
+    ],
+    "type": "store"
+  },
   "store:garageStore": {
     "path": "src/shared/state/garageStore.ts",
     "summary": "\"My garage\" (plan 06): the cars the user added on this phone \u2014 learned from a live connection or entered by hand.",
@@ -3752,6 +3850,18 @@
     ],
     "tokens": [
       "history"
+    ],
+    "type": "store"
+  },
+  "store:labelPackStore": {
+    "path": "src/shared/state/labelPackStore.ts",
+    "summary": "Imported label packs (plan 13): packs the user brought in as `bolid.labelpack.v1` files (or embedded in a profile file), newest first, at most `MAX_U\u2026",
+    "tests": [
+      "src/shared/state/labelPackStore.test.ts"
+    ],
+    "tokens": [
+      "label",
+      "pack"
     ],
     "type": "store"
   },
@@ -3869,6 +3979,19 @@
     ],
     "type": "ui"
   },
+  "ui:ImportPreviewSheet": {
+    "path": "src/shared/ui/ImportPreviewSheet.tsx",
+    "summary": "How many validator errors the sheet lists for a refused file.",
+    "tests": [
+      "src/shared/ui/ImportPreviewSheet.test.tsx"
+    ],
+    "tokens": [
+      "import",
+      "preview",
+      "sheet"
+    ],
+    "type": "ui"
+  },
   "ui:RootErrorBoundary": {
     "path": "src/shared/ui/RootErrorBoundary.tsx",
     "summary": "App-wide React render error boundary (finding F9).",
@@ -3912,6 +4035,15 @@
     "tokens": [
       "badge",
       "verification"
+    ],
+    "type": "ui"
+  },
+  "ui:useExchangeImport": {
+    "path": "src/shared/ui/useExchangeImport.ts",
+    "summary": "What the import sheet shows: a preview to confirm, or why the file was refused.",
+    "tokens": [
+      "exchange",
+      "import"
     ],
     "type": "ui"
   },

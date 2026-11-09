@@ -420,6 +420,31 @@
     "relates"
   ],
   [
+    "concept:exchange-files",
+    "concept:adaptation-channels",
+    "relates"
+  ],
+  [
+    "concept:exchange-files",
+    "concept:garage-learned-profiles",
+    "relates"
+  ],
+  [
+    "concept:exchange-files",
+    "feature:settings",
+    "relates"
+  ],
+  [
+    "concept:exchange-files",
+    "feature:vehicle-select",
+    "relates"
+  ],
+  [
+    "concept:exchange-files",
+    "store:garageStore",
+    "relates"
+  ],
+  [
     "concept:extended-pids-mode22",
     "concept:ecu-coding",
     "relates"
@@ -1861,6 +1886,11 @@
   ],
   [
     "core:transport/fixtureFiles",
+    "doc:exchange-formats",
+    "named"
+  ],
+  [
+    "core:transport/fixtureFiles",
     "doc:plans/02-on-car-validation",
     "named"
   ],
@@ -2326,6 +2356,11 @@
   ],
   [
     "feature:adaptations",
+    "store:labelPackStore",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
     "store:persistStorage",
     "imports"
   ],
@@ -2551,6 +2586,11 @@
   ],
   [
     "feature:backup",
+    "store:labelPackStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
     "store:persistStorage",
     "imports"
   ],
@@ -2682,6 +2722,11 @@
   [
     "feature:coding",
     "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "store:labelPackStore",
     "imports"
   ],
   [
@@ -2997,6 +3042,11 @@
   [
     "feature:extended-pids",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
+    "store:labelPackStore",
     "imports"
   ],
   [
@@ -3751,6 +3801,11 @@
   ],
   [
     "feature:service-reset",
+    "store:exchangeService",
+    "named"
+  ],
+  [
+    "feature:service-reset",
     "store:sessionStore",
     "imports"
   ],
@@ -3801,7 +3856,17 @@
   ],
   [
     "feature:settings",
+    "store:exchangeService",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "store:labelPackStore",
     "imports"
   ],
   [
@@ -3812,6 +3877,16 @@
   [
     "feature:settings",
     "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "ui:ImportPreviewSheet",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "ui:useExchangeImport",
     "imports"
   ],
   [
@@ -3956,6 +4031,11 @@
   ],
   [
     "feature:vehicle-select",
+    "store:exchangeService",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
     "store:garageStore",
     "imports"
   ],
@@ -3972,6 +4052,16 @@
   [
     "feature:vehicle-select",
     "store:vehicleStore",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "ui:ImportPreviewSheet",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "ui:useExchangeImport",
     "imports"
   ],
   [
@@ -4050,9 +4140,134 @@
     "imports"
   ],
   [
+    "lib:export",
+    "doc:plans/13-profile-labelpack-import-export",
+    "named"
+  ],
+  [
+    "lib:export",
+    "doc:plans/18-backup-restore",
+    "named"
+  ],
+  [
+    "lib:export",
+    "lib:schemas",
+    "imports"
+  ],
+  [
+    "lib:export",
+    "lib:types",
+    "imports"
+  ],
+  [
+    "lib:export",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "lib:export",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "lib:import",
+    "doc:plans/13-profile-labelpack-import-export",
+    "named"
+  ],
+  [
+    "lib:import",
+    "lib:backup",
+    "imports"
+  ],
+  [
+    "lib:import",
+    "lib:export",
+    "imports"
+  ],
+  [
+    "lib:import",
+    "lib:schemas",
+    "imports"
+  ],
+  [
+    "lib:import",
+    "lib:types",
+    "imports"
+  ],
+  [
+    "lib:import",
+    "lib:validate",
+    "imports"
+  ],
+  [
+    "lib:import",
+    "ui:ImportPreviewSheet",
+    "named"
+  ],
+  [
+    "lib:import",
+    "ui:useExchangeImport",
+    "named"
+  ],
+  [
+    "lib:import",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
     "lib:reportHtml",
     "doc:plans/15-unified-vehicle-report",
     "named"
+  ],
+  [
+    "lib:schemas",
+    "core:confirmation",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "core:obd/dtcDatabase/index",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "lib:types",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "lib:validate",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "lib:types",
+    "core:confirmation",
+    "imports"
+  ],
+  [
+    "lib:types",
+    "vehicle:types",
+    "named"
+  ],
+  [
+    "lib:types",
+    "vehicle:userVehicle",
+    "imports"
   ],
   [
     "lib:vehicleReport",
@@ -4370,6 +4585,11 @@
     "serves"
   ],
   [
+    "screen:service-reset",
+    "store:exchangeService",
+    "named"
+  ],
+  [
     "screen:settings",
     "feature:settings",
     "serves"
@@ -4443,11 +4663,6 @@
     "service:notify",
     "store:errorLogStore",
     "imports"
-  ],
-  [
-    "store:activeProfile",
-    "doc:plans/13-profile-labelpack-import-export",
-    "named"
   ],
   [
     "store:activeProfile",
@@ -4530,6 +4745,56 @@
     "imports"
   ],
   [
+    "store:exchangeService",
+    "doc:exchange-formats",
+    "named"
+  ],
+  [
+    "store:exchangeService",
+    "doc:features/service-reset",
+    "named"
+  ],
+  [
+    "store:exchangeService",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "lib:validate",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "store:labelPackStore",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
     "store:garageStore",
     "doc:plans/06-garage-learned-profiles",
     "named"
@@ -4571,6 +4836,21 @@
   ],
   [
     "store:historyStore",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "store:labelPackStore",
+    "doc:exchange-formats",
+    "named"
+  ],
+  [
+    "store:labelPackStore",
+    "lib:validate",
+    "imports"
+  ],
+  [
+    "store:labelPackStore",
     "store:persistStorage",
     "imports"
   ],
@@ -4695,6 +4975,36 @@
     "imports"
   ],
   [
+    "ui:ImportPreviewSheet",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "ui:ImportPreviewSheet",
+    "doc:plans/05-dtc-database",
+    "named"
+  ],
+  [
+    "ui:ImportPreviewSheet",
+    "doc:plans/13-profile-labelpack-import-export",
+    "named"
+  ],
+  [
+    "ui:ImportPreviewSheet",
+    "store:exchangeService",
+    "imports"
+  ],
+  [
+    "ui:ImportPreviewSheet",
+    "ui:useExchangeImport",
+    "imports"
+  ],
+  [
+    "ui:ImportPreviewSheet",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
     "ui:RootErrorBoundary",
     "store:errorLogStore",
     "imports"
@@ -4712,6 +5022,21 @@
   [
     "ui:VerificationBadge",
     "vehicle:confirmation",
+    "imports"
+  ],
+  [
+    "ui:useExchangeImport",
+    "doc:exchange-formats",
+    "named"
+  ],
+  [
+    "ui:useExchangeImport",
+    "doc:plans/13-profile-labelpack-import-export",
+    "named"
+  ],
+  [
+    "ui:useExchangeImport",
+    "store:exchangeService",
     "imports"
   ],
   [
@@ -4803,11 +5128,6 @@
     "vehicle:passat-b55-19tdi",
     "vehicle:types",
     "imports"
-  ],
-  [
-    "vehicle:registry",
-    "doc:plans/13-profile-labelpack-import-export",
-    "named"
   ],
   [
     "vehicle:registry",

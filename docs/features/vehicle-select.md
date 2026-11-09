@@ -22,24 +22,32 @@ Garage cars and learned profiles landed with [plan 06](../plans/06-garage-learne
       car in place (`learnFromConnectedCar({ existingId })`, name / fuel / notes kept) instead of
       adding a duplicate with the same VIN.
     - **Add manually** — opens the editor sheet empty.
+    - **Import profile** (plan 13) — opens the OS file picker for a `bolid.profile.v1` file (a
+      label-pack file is accepted too) and shows the **import preview** — see
+      [Profile import / export](#profile-import--export).
 
     Then one card per garage car: name plus VIN suffix (`Volkswagen 2009 ·03398`), chips for year,
     fuel, the learned protocol (or "added by hand") and the learned PID count, "Based on _base
-    profile_ · VIN …", notes, and **Edit** / **Delete** buttons (long-press also opens Edit).
+    profile_ · VIN …", notes, and **Edit** / **Export** / **Delete** buttons (long-press also opens
+    Edit). **Export** shares the car as a profile file (plan 13).
     **Delete** asks first (`Alert.alert`): "_name_ is removed from your garage. Its history, scans
     and trips stay on this phone." Tapping a card selects it and opens Live.
 
   - **Built-in profiles** — the registry cards (name, expected protocol, "experimental" when the
-    profile has Mode 22 reads, notes), unchanged.
+    profile has Mode 22 reads, notes). Every card but Auto / Generic has **Share as starting
+    profile** (plan 13): the profile as a **seed** file a friend imports and then learns their own
+    car from.
 
-- **VehicleEditorSheet** — name (required), year (numeric, 1980 to next year, or blank), fuel
-  (Petrol / Diesel / LPG / Hybrid / Other), **base profile** (registry list, with the warning that a
-  specific profile brings its experimental, car-specific tools), notes. **Save** →
+- **VehicleEditorSheet** — name (required, at most 80 characters), year (numeric, 1980 to next
+  year, or blank), fuel (Petrol / Diesel / LPG / Hybrid / Other), **base profile** (registry list,
+  with the warning that a specific profile brings its experimental, car-specific tools), notes (at
+  most 4000 characters — the `bolid.profile.v1` limits, so every car exports to a file that
+  imports). **Save** →
   `garageStore.add` / `update`. Footer: **Share garage as JSON** (`bolid-garage-<stamp>.json` through
   the OS share sheet; `useGarageExport` wraps `api/garageExportFile.ts`, which writes through
   `expo-file-system/legacy` — the root module of this SDK has no `documentDirectory` — and logs a
-  `vehicle-select/export` warning whenever nothing was written). Import is out of scope here (roadmap "Profile import /
-  export", [plan 13](../plans/13-profile-labelpack-import-export.md)).
+  `vehicle-select/export` warning whenever nothing was written). A whole-garage file is not
+  importable; single cars travel as profile files (next section).
 
 ## Garage cars and learned profiles
 
@@ -83,6 +91,29 @@ year, as on many European VINs; "My car" for an unknown maker), `year` from the 
 `fuel` from the base (default base `generic`), and `make` from the VIN's maker (VW / Audi / SEAT /
 Škoda → `vag`, Fiat / Alfa Romeo / Lancia → `fiat`, else none). It is added and selected. With
 `existingId` the identity is re-learned in place and the name / fuel / notes are kept.
+
+## Profile import / export
+
+[Plan 13](../plans/13-profile-labelpack-import-export.md); formats, validation and conflict rules
+in [exchange-formats.md](../exchange-formats.md).
+
+- **Export** (garage card) → `api/exchange.ts` `shareVehicleFile(car)` →
+  `bolid-profile-<slug(name)>-<stamp>.json` through the share sheet: the car's name, year, fuel,
+  make, base profile, learned identity, notes and discovered modules, plus the imported label packs
+  for its modules. The **code book is never exported**. A failure logs a `vehicle-select/exchange`
+  warning and the screen says "Could not export the profile. See More → Error log for details.";
+  success says "Saved _file_."
+- **Share as starting profile** (built-in card) → `shareProfileSeedFile(profile)`: a seed with no
+  learned identity on that profile as base.
+- **Import profile** → `useExchangeImport` (`shared/ui`) → file picker → strict validation →
+  `ImportPreviewSheet` (`shared/ui`; shared with Settings → Data): name, year, fuel, "Based on",
+  VIN ending, learned readings and protocol (or "Not learned yet — connect to the car to learn
+  it"), discovered modules, embedded label packs. A car with the same learned VIN, else the same
+  name, is a conflict: **Replace** (keeps the car's id, `createdAt` and code book;
+  `garageStore.replace`) / **Keep both** (" (2)") / **Cancel**; otherwise **Import** / **Cancel**.
+  An unknown base profile falls back to Auto / Generic, with a warning. A refused file shows the
+  reason and the validator's first three errors; nothing changes. Without the picker in the build,
+  the screen says "Importing needs the file picker, which this build of the app does not include."
 
 ## Resolution — the active profile
 
@@ -137,7 +168,9 @@ See [simulator.md](../simulator.md).
   `selectedProfileId` (defaults to `generic`), `select(id)` — registry or `user:` ids.
   `model/vehicleStore.ts` re-exports it for the older call sites; new code imports the shared path.
 - `garageStore` (`src/shared/state/garageStore.ts`, persisted `bolid.garage` v1): `vehicles`,
-  `add` (returns the car with a `user:` id), `update` (bumps `updatedAt`), `remove`, `setLearned`.
+  `add` (returns the car with a `user:` id), `update` (bumps `updatedAt`), `replace` (an imported
+  profile over an existing car: every field replaced, id / `createdAt` / code book kept, plan 13),
+  `remove`, `setLearned`.
   It lives in shared state because EngineHost and services resolve profiles. Rehydration drops
   records without a usable `user:` id, name or base, strips a malformed `learned` block (the car
   stays, unlearned), and keeps a car added during hydration, writing the merged list back.

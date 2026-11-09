@@ -3,7 +3,7 @@
 // This is the durable payoff: domain concepts and relationships that the code
 // structure cannot express. Auto-derived edges (imports / serves / documents)
 // are table-stakes; THIS file is what makes the graph smarter than grep.
-// (31 concepts. Coverage goal: every non-trivial node has a concept neighbour.)
+// (32 concepts. Coverage goal: every non-trivial node has a concept neighbour.)
 //
 // Format:
 //   concepts[]      { id, summary, tokens[] }      -> becomes a concept:<id> node
@@ -29,6 +29,9 @@
     { "id": "confirmation-evidence",
       "summary": "Plan 25 provenance: every per-car profile item (extendedPids, modules, routines, adaptations, coding modules/presets, module sensors, login codes, service reset) may carry confirmed { on YYYY-MM-DD, source sniffer-capture|on-car|vcds-log, fixture?, note? }. verificationState: experimental false -> standard (green), confirmed -> blue, else unverified (amber); VerificationBadge renders it on every feature screen. Evidence rule (vehicle-docs-sync via confirmationProblems): fixture must exist under transport/fixtures/ or docs/captures/. Confirmation is always a hand-made, reviewed profile edit.",
       "tokens": ["confirmed","confirmation","evidence","verification","badge","verified","unverified","illustrative","provenance","fixture","captures"] },
+    { "id": "exchange-files",
+      "summary": "Plan 13: a garage car (bolid.profile.v1; a built-in profile exports as a seed) or a label pack (bolid.labelpack.v1) as a versioned JSON envelope {schema, exportedAt, app, payload}. Untrusted input: shared/lib/validate.ts combinators (no ajv: Hermes has no new Function) rebuild the value, strip unknown keys, cap lists, reject __proto__; never evaluated. Login codes never exported. Imported packs live in labelPackStore (bolid.labelPacks) and are pushed into labels/registry via setUserLabelPacks; findLabelPack = longest prefix, equal-length tie -> user pack (newest first) wins. Conflicts: same VIN/name -> Replace/Keep both. docs/exchange-formats.md.",
+      "tokens": ["exchange","import","export","profile","labelpack","label","pack","validate","validator","schema","seed","share","picker","json","community"] },
     { "id": "capture-analyzer",
       "summary": "Plan 25 tooling to read real bytes off a sniffer CSV: obd-core/analysis/captureAnalyzer.ts (self-contained, no imports, run by scripts/analyze-capture.mjs through Node type stripping) parses the plan-03 CSV, reassembles raw ISO-TP (SF/FF/CF/FC), decodes UDS + KWP services and NRC names, pairs requests/responses (skips 7F xx 78), fingerprints requests ('31 01 0301'), summarizes TP2.0 setups/keep-alives. Module discovery (uds/discoverModules + vagHeaders) probes VAG UDS id pairs with 22 F187; compareCodingSnapshots explains a before/after coding read by preset.",
       "tokens": ["capture","analyzer","analyze","sniffer","csv","isotp","fingerprint","discover","discovery","headers","candidates","snapshot","tp20"] },
@@ -198,6 +201,11 @@
     ["concept:module-scan", "concept:ecu-coding", "relates"],
     ["concept:adaptation-channels", "concept:ecu-coding", "relates"],
     ["concept:confirmation-evidence", "concept:vehicle-profiles", "relates"],
+    ["concept:exchange-files", "concept:garage-learned-profiles", "relates"],
+    ["concept:exchange-files", "concept:adaptation-channels", "relates"],
+    ["concept:exchange-files", "store:garageStore", "relates"],
+    ["concept:exchange-files", "feature:vehicle-select", "relates"],
+    ["concept:exchange-files", "feature:settings", "relates"],
     ["concept:confirmation-evidence", "concept:capture-analyzer", "relates"],
     ["concept:capture-analyzer", "concept:module-scan", "relates"],
     ["concept:capture-analyzer", "concept:guided-routines", "relates"],

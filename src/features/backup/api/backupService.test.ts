@@ -39,6 +39,7 @@ import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useHistoryStore } from '@/shared/state/historyStore';
 import { useVehicleStore } from '@/shared/state/vehicleStore';
 import { useGarageStore } from '@/shared/state/garageStore';
+import { useLabelPackStore } from '@/shared/state/labelPackStore';
 import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import { useMaintenanceStore } from '@/features/maintenance/model/maintenanceStore';
 import { useTripStore, type TripSummary } from '@/features/trip-recording/model/tripStore';
@@ -102,6 +103,7 @@ const STORES: AnyStore[] = [
   useAlertsStore,
   useNotificationsStore,
   useLoginBookStore,
+  useLabelPackStore,
   useBackupStore,
 ];
 const INITIAL = STORES.map((s) => ({ s, state: s.getState() }));
@@ -204,6 +206,11 @@ function populate(): void {
     code: 4242,
     purpose: 'Idle speed adaptation',
     source: 'user-entered',
+  });
+  useLabelPackStore.getState().add({
+    id: 'imported-edc17',
+    module: 'EDC17 (imported)',
+    partNumberPrefixes: ['03L906022'],
   });
 }
 
@@ -432,6 +439,7 @@ describe('restoreBackup', () => {
     expect(useLoginBookStore.getState().byVehicle['id:passat-b55-19tdi']).toEqual([
       { address: '01', code: 4242, purpose: 'Idle speed adaptation', source: 'user-entered' },
     ]);
+    expect(useLabelPackStore.getState().packs.map((p) => p.id)).toEqual(['imported-edc17']);
 
     // the snapshot of the (empty) data before the restore
     expect(res.snapshot.kind).toBe('pre-restore');

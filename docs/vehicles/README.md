@@ -134,6 +134,26 @@ checked by the `vehicle-docs-sync` test. Users do not need one to diagnose their
   into the registry by the steps below; sharing a learned profile as a starting point is
   [plan 13](../plans/13-profile-labelpack-import-export.md).
 
+## Share a profile
+
+A garage car and a built-in profile can travel to another phone as a `bolid.profile.v1` file
+([plan 13](../plans/13-profile-labelpack-import-export.md), formats in
+[exchange-formats.md](../exchange-formats.md)):
+
+- **Garage card → Export** shares the car: name, year, fuel, make, base profile id, the learned
+  identity (protocol, supported PIDs, VIN, calibration id), notes and discovered modules, plus the
+  imported label packs for its modules. Login codes stay on the phone.
+- **Built-in card → Share as starting profile** shares a **seed**: the profile's name, year, fuel
+  and make with the profile as base and nothing learned — the receiver connects and learns their
+  own car.
+- **Vehicle → Import profile** validates the file, previews it and adds the car (Replace / Keep both
+  when a car with the same VIN or name is already there).
+
+A profile file never contains TypeScript or `decode` functions: the receiving app supplies extended
+PIDs, modules, routines and coding from its own registry profile named by `baseProfileId` (an id it
+does not ship falls back to `generic`). Adding a car **to the registry** is still a code change —
+next section.
+
 ## How to add a vehicle
 
 1. Copy an existing `vehicles/<car>.md`, set the front-matter and write the sections.

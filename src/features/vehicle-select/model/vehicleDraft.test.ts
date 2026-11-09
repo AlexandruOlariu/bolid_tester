@@ -24,6 +24,13 @@ describe('validateDraft', () => {
     expect(validateDraft(draft({ name: '   ' }), NOW).name).toMatch(/Give the car a name/);
   });
 
+  it('caps the name and notes at the exchange-file limits (80 / 4000 characters)', () => {
+    expect(validateDraft(draft({ name: 'x'.repeat(80) }), NOW).name).toBeUndefined();
+    expect(validateDraft(draft({ name: 'x'.repeat(81) }), NOW).name).toMatch(/80 characters/);
+    expect(validateDraft(draft({ notes: 'n'.repeat(4000) }), NOW).notes).toBeUndefined();
+    expect(validateDraft(draft({ notes: 'n'.repeat(4001) }), NOW).notes).toMatch(/4000 characters/);
+  });
+
   it('accepts four-digit years from 1980 to next year', () => {
     expect(validateDraft(draft({ year: String(MIN_YEAR) }), NOW).year).toBeUndefined();
     expect(validateDraft(draft({ year: ' 2015 ' }), NOW).year).toBeUndefined();

@@ -9,14 +9,41 @@ import {
 import { vagEdc17Golf } from './packs/vagEdc17Golf';
 import { vagBcmPq35 } from './packs/vagBcmPq35';
 
+/** The packs bundled with the app (TypeScript, reviewed in a PR). */
 export const LABEL_PACKS: LabelPack[] = [vagEdc17Golf, vagBcmPq35];
 
-/** Find the pack whose part-number prefix matches best (longest prefix wins). */
+/** Packs the user imported (plan 13), newest first. Plain module state so `shared/labels` stays
+ *  free of zustand: `shared/state/labelPackStore` pushes its list here on hydrate and on every
+ *  change. */
+let userPacks: LabelPack[] = [];
+
+/** Replace the imported packs every lookup sees (called by the label-pack store). */
+export function setUserLabelPacks(packs: LabelPack[]): void {
+  userPacks = [...packs];
+}
+
+/** Every pack a lookup considers: the user's imported packs first, then the bundled ones. */
+export function allLabelPacks(): LabelPack[] {
+  return [...userPacks, ...LABEL_PACKS];
+}
+
+/** Find the pack whose part-number prefix matches best: the longest prefix wins; on an equal
+ *  length the pack listed first in `allLabelPacks()` wins, so an imported pack beats a bundled one
+ *  (and the newest import beats an older one). */
 export function findLabelPack(partNumber: string | undefined | null): LabelPack | null {
+  return findLabelPackIn(allLabelPacks(), partNumber);
+}
+
+/** `findLabelPack` over an explicit list, in precedence order (for a React hook that re-resolves
+ *  when the imported packs change). */
+export function findLabelPackIn(
+  packs: LabelPack[],
+  partNumber: string | undefined | null,
+): LabelPack | null {
   if (!partNumber) return null;
   const pn = partNumber.replace(/\s+/g, '').toUpperCase();
   let best: { pack: LabelPack; len: number } | null = null;
-  for (const pack of LABEL_PACKS) {
+  for (const pack of packs) {
     for (const prefix of pack.partNumberPrefixes) {
       const p = prefix.replace(/\s+/g, '').toUpperCase();
       if (pn.startsWith(p) && (!best || p.length > best.len)) best = { pack, len: p.length };

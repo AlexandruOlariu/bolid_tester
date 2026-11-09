@@ -4,6 +4,8 @@ import { useRouter } from 'expo-router';
 import { Card, YStack, XStack, Text, Paragraph, Button, H4 } from 'tamagui';
 import { CheckCircle2 } from 'lucide-react-native';
 import { Screen } from '@/shared/ui';
+import { ImportPreviewSheet } from '@/shared/ui/ImportPreviewSheet';
+import { useExchangeImport } from '@/shared/ui/useExchangeImport';
 import {
   VEHICLE_PROFILES,
   getVehicleProfile,
@@ -11,6 +13,7 @@ import {
   suggestProfilesForVin,
   vinSuffix,
   type UserVehicle,
+  type VehicleProfile,
 } from '@/shared/vehicles';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useGarageStore } from '@/shared/state/garageStore';
@@ -18,6 +21,7 @@ import { PROTOCOL_LABELS } from '@/shared/obd-core/obd/protocols';
 import { useVehicleStore } from '../model/vehicleStore';
 import { FUELS } from '../model/vehicleDraft';
 import { deleteGarageVehicle, learnFromConnectedCar } from '../api/learnVehicle';
+import { EXCHANGE_SOURCE, shareProfileSeedFile, shareVehicleFile } from '../api/exchange';
 import { VehicleEditorSheet } from './VehicleEditorSheet';
 
 const GREEN = '#2bb673';
@@ -45,11 +49,13 @@ function GarageCard({
   active,
   onSelect,
   onEdit,
+  onExport,
 }: {
   v: UserVehicle;
   active: boolean;
   onSelect: () => void;
   onEdit: () => void;
+  onExport: () => void;
 }) {
   const suffix = vinSuffix(v.learned?.vin);
   const fuel = FUELS.find((f) => f.value === v.fuel)?.label ?? v.fuel;
@@ -107,6 +113,9 @@ function GarageCard({
           <Button size="$2" onPress={onEdit} accessibilityLabel={`Edit ${v.name}`}>
             Edit
           </Button>
+          <Button size="$2" onPress={onExport} accessibilityLabel={`Export ${v.name}`}>
+            Export
+          </Button>
           <Button
             size="$2"
             theme="red"
@@ -130,6 +139,8 @@ export function VehicleSelectScreen() {
   const connected = useSessionStore((s) => s.status === 'connected' && !!s.info);
   const vin = info?.vin ?? null;
   const [editor, setEditor] = useState<{ vehicle: UserVehicle | null } | null>(null);
+  const importer = useExchangeImport(EXCHANGE_SOURCE);
+  const [exportNote, setExportNote] = useState<string | null>(null);
 
   // A garage car learned with this VIN wins over a registry suggestion.
   const garageMatch = pickVehicleForVin(vin, garage);
@@ -150,6 +161,14 @@ export function VehicleSelectScreen() {
       : learnFromConnectedCar();
     if (learned) router.push('/dashboard');
   };
+  const exported = (uri: string | null) =>
+    setExportNote(
+      uri
+        ? `Saved ${uri.slice(uri.lastIndexOf('/') + 1)}.`
+        : 'Could not export the profile. See More → Error log for details.',
+    );
+  const exportCar = async (v: UserVehicle) => exported(await shareVehicleFile(v));
+  const exportSeed = async (p: VehicleProfile) => exported(await shareProfileSeedFile(p));
 
   return (
     <Screen title="Vehicle" subtitle="Pick a car, or use Auto / Generic for any OBD2 car">
@@ -203,6 +222,23 @@ export function VehicleSelectScreen() {
               Add manually
             </Button>
           </XStack>
+          <Button
+            disabled={importer.busy}
+            onPress={() => void importer.startImport()}
+            accessibilityLabel="Import a car profile from a file"
+          >
+            Import profile
+          </Button>
+          {importer.note ? (
+            <Paragraph theme="alt2" fontSize="$1">
+              {importer.note}
+            </Paragraph>
+          ) : null}
+          {exportNote ? (
+            <Paragraph theme="alt2" fontSize="$1" testID="profile-export-note">
+              {exportNote}
+            </Paragraph>
+          ) : null}
           {relearn ? (
             <Paragraph theme="alt2" fontSize="$1">
               The connected car is already in your garage as {relearn.name} — re-learning refreshes
@@ -227,6 +263,7 @@ export function VehicleSelectScreen() {
               active={v.id === selectedProfileId}
               onSelect={() => pick(v.id)}
               onEdit={() => setEditor({ vehicle: v })}
+              onExport={() => void exportCar(v)}
             />
           ))}
         </YStack>
@@ -263,6 +300,17 @@ export function VehicleSelectScreen() {
                     {p.notes}
                   </Paragraph>
                 ) : null}
+                {p.id !== 'generic' ? (
+                  <XStack>
+                    <Button
+                      size="$2"
+                      onPress={() => void exportSeed(p)}
+                      accessibilityLabel={`Share ${p.name} as a starting profile`}
+                    >
+                      Share as starting profile
+                    </Button>
+                  </XStack>
+                ) : null}
               </YStack>
             </Card>
           );
@@ -273,6 +321,7 @@ export function VehicleSelectScreen() {
         vehicle={editor?.vehicle ?? null}
         onClose={() => setEditor(null)}
       />
+      <ImportPreviewSheet pending={importer.pending} onClose={importer.close} />
     </Screen>
   );
 }

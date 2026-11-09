@@ -5,6 +5,128 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Plan 13 — Profile and label-pack import / export (2026-11-09)
+
+[Plan 13](./plans/13-profile-labelpack-import-export.md) landed: a garage car, a built-in profile
+(as a **seed**) and a label pack leave the phone as versioned JSON files and come back through the
+OS file picker with strict validation, a preview and explicit conflict handling. Imported label
+packs persist and are merged over the bundled registry, so the coding helper, the adaptations
+screen and the measuring groups see them without knowing where they came from. The plan has no
+on-car part. Formats: [exchange-formats.md](./exchange-formats.md).
+
+- **Validator (`shared/lib/validate.ts`).** Hand-written combinators — `str`, `num`, `bool`,
+  `lit`, `opt`, `nullable`, `arr`, `rec`, `obj` (`extra: 'strip' | 'reject'`), `hex(len)` — with
+  JSON-pointer errors (`/payload/vehicle/fuel: expected one of diesel|petrol|lpg|hybrid|other, got
+"coal"`), a missing key reported as "is required", at most 50 errors. Untrusted-input rules: own
+  properties only, plain objects only, a freshly built output (nothing the schema does not name
+  survives), `__proto__` / `constructor` / `prototype` keys rejected, every list / record / string
+  capped. No `ajv` (Hermes has no `new Function`), no `zod`.
+- **Exchange library (`shared/lib/exchange/`, pure).** `types.ts` (`ExchangeEnvelope`,
+  `ProfileFileV1`, `LabelPackFileV1`, `LabelPackV1` with `author` / `source` / `license` /
+  `confirmed`), `schemas.ts` (`profileFileV1`, `labelPackFileV1`, `labelPackV1`: DIDs and record
+  keys 4-digit uppercase hex, prefixes `^[0-9A-Z]{3,12}$`, `fuel` / `make` / `ProtocolId` literal
+  sets, Mode 01 PIDs `01xx`, discovered modules checked with `sanitizeUserModules`, collections
+  capped at 512), `import.ts` (`parseExchangeFile` — 1 MB limit, BOM stripped, `JSON.parse` only,
+  readable refusals for non-JSON / non-exchange / whole-garage / newer-version / unknown files;
+  `planProfileImport` same VIN → same name → create; `planLabelPackImport` replace on a user-pack
+  id collision, every overlapping prefix listed with who wins, `full` at 100; `keepBothName` " (2)",
+  `keepBothPackId` `-2`; `planEmbeddedPacks`; `vehicleFromProfile`, an unknown base → `generic`),
+  `export.ts` (`exportVehicle`, `exportProfileSeed`, `exportLabelPack`, `cleanLabelPack`,
+  `profilePartNumbers` + `packsForPartNumbers` for the embedded packs, `exchangeFileName`,
+  `labelPackCounts`).
+- **Imported packs (`shared/state/labelPackStore.ts`).** `bolid.labelPacks` v1, newest first, at
+  most 100, `add` / `replace` (moves to the front) / `remove`; `merge` re-validates every stored
+  pack with `labelPackV1` and keeps packs imported during hydration (the garage store's rewrite
+  trick). Every change and the hydrated list are pushed into the registry; `useLabelPackFinder()`
+  gives screens a lookup that changes identity with the packs. Registered in `PERSISTED_STORES`
+  (backup / restore) and the UI-test store reset.
+- **Registry (`shared/labels/registry.ts`).** `setUserLabelPacks`, `allLabelPacks()` (user packs
+  first, then `LABEL_PACKS`), `findLabelPackIn(packs, pn)`; `findLabelPack` = longest prefix, an
+  equal-length tie goes to the pack listed first (imported over bundled, newest import over older).
+  Every existing assertion unchanged.
+- **Service (`shared/state/exchangeService.ts`).** `loadExchangeModules` (variable-specifier
+  imports of expo-file-system legacy, expo-sharing, expo-document-picker), `pickExchangeFile`
+  (refuses a file over 1 MB before reading it), `previewImport`, `applyImport(preview, 'create' |
+'replace' | 'keep-both')` (re-plans against the stores at apply time), `vehicleExportFile` /
+  `profileSeedFile` / `labelPackExportFile`, `shareExchangeFile`. New `garageStore.replace(id, car)`
+  (keeps id, `createdAt` and the local code book).
+- **UI.** `shared/ui/ImportPreviewSheet.tsx` (+ `useExchangeImport`): profile rows (name, year,
+  fuel, based on, VIN ending, learned readings, modules, embedded packs, warnings) or pack rows
+  (module, id, prefixes, counts, author / licence / source, checked-on-a-car, overlap warnings);
+  **Import** / **Cancel**, or **Replace** / **Keep both** / **Cancel**; a refused file shows the
+  reason, the first three validator errors and "Nothing was changed." Vehicle screen: **Import
+  profile** in My garage, **Export** on each garage card, **Share as starting profile** on every
+  built-in card but Auto / Generic (`vehicle-select/api/exchange.ts`). Settings → Data →
+  **Label packs** (`settings/ui/LabelPacksSection.tsx`, `settings/api/labelPackFile.ts`): Import
+  label pack, the imported packs (Export / Delete after a confirm), the bundled packs (Export as
+  template). The adaptations, coding and extended-PID screens use `useLabelPackFinder`, so an open
+  screen picks up an import or a delete.
+- **Examples (`docs/examples/`).** `profile.example.json` (a Golf seed) and
+  `label-pack.example.json` (the EDC17 names for `03L906022`, plus `170A` and its own `3001`
+  description) — both are test inputs.
+- **Docs.** New [exchange-formats.md](./exchange-formats.md) (both schemas with examples, import
+  steps, validation, versioning, licensing); [vehicle-select](./features/vehicle-select.md)
+  (Profile import / export, `garageStore.replace`); [settings](./features/settings.md) (Data →
+  Label packs); [adaptations](./features/adaptations.md) (imported packs and precedence);
+  [backup](./features/backup.md) (`bolid.labelPacks` row); [vehicles/README](./vehicles/README.md)
+  ("Share a profile"); [docs index](./README.md); roadmap v0.3 "Profile import / export" and v0.6
+  "Label-pack expansion" ✅. Context graph: concept `exchange-files`, rebuilt.
+- **Tests (+72 tests, +7 suites: 1404 tests / 165 suites).** `validate.test.ts` (every
+  combinator, nested paths, strip / reject, prototype keys, `hex(4)` case and length, error cap);
+  `schemas.test.ts` (both examples validate, `bolid.profile.v9` refused readably, DID `17G1`
+  rejected at `/payload/measurements`, prefixes, group size, unknown fields and `loginCodes`
+  stripped, learned identity and module rules, every bundled pack and built-in seed exports valid);
+  `import.test.ts` (refusals, the four-error corrupted file, round trip without the code book,
+  unknown base, both planners, keep-both names / ids, overlaps and who wins, embedded packs, file
+  names); `registry.test.ts` (+6: longer user prefix wins, a longer bundled prefix still wins, equal
+  prefix → user pack, newest user pack, clearing restores bundled, copy of the list);
+  `labelPackStore.test.ts` (add / replace / remove, cap 100, registry push, v1 file, rehydrate
+  re-validation); `exchangeService.test.ts` (pick / cancel / unavailable / oversize / read failure,
+  export → cleared-app import → identical car → Replace / Keep both, Replace keeps the code book,
+  example seed, embedded packs, example pack import + delete, corrupted file changes nothing,
+  share); `ImportPreviewSheet.test.tsx`; `LabelPacksSection.test.tsx`;
+  `VehicleSelectScreen.test.tsx` (+4: Export, seed share, Import profile end to end, no picker);
+  `AdaptationsScreen.test.tsx` (+1: the imported `3001` description on the simulated Golf, the
+  bundled one back after Delete); `backupService.test.ts` now round-trips an imported pack.
+- **Deviations.** (1) `expo-document-picker` was already installed (plan 18), so no install and no
+  dev-client rebuild. (2) The preview sheet and `useExchangeImport` live in `shared/ui`, not
+  `vehicle-select/ui` — Settings reuses them and features never import each other. (3) The pure
+  export builders sit in `shared/lib/exchange/export.ts` and the I/O / apply in
+  `shared/state/exchangeService.ts`; `vehicle-select/api/exchange.ts` (`shareVehicleFile`,
+  `shareProfileSeedFile`) and `settings/api/labelPackFile.ts` are thin share wrappers. (4) A profile
+  file never carries `loginCodes` (the plan's payload type would have exported the code book); a
+  Replace keeps the local codes. Discovered `modules` (plan 25) are included. (5)
+  `parseExchangeFile` returns `{ error, details }` (the validator errors) rather than `{ error }`.
+  (6) Validator extras: `nullable`, `arr` `min`, `rec` `max` / `keyDesc`, `str` `desc`. (7)
+  `LabelPackV1.confirmed` is plan 25's `Confirmation` (with the optional `fixture`). (8) Garage
+  cards have buttons, not a ⋯ menu: **Export** joins Edit / Delete; **Import profile** sits under
+  the add actions; the built-in seed export is **Share as starting profile** (not offered for Auto /
+  Generic, whose placeholder year 0 is also left out of a seed). (9) Settings → Data already existed
+  (plan 18); Label packs is a block inside it. (10) Imported packs are newest first, so the newest
+  import wins an equal-prefix tie among user packs. (11) Both import entry points accept both file
+  kinds. (12) Embedded packs are added only when no imported pack has their id (the local one is
+  kept). (13) Three screens switch from `findLabelPack` to `useLabelPackFinder` so an open screen
+  re-resolves — the lookup itself is unchanged. (14) Packs do not merge, so the example pack carries
+  the bundled EDC17 names plus its additions; a one-measurement pack would hide the bundled names
+  for that prefix.
+- **Review fixes.** (a) Export now always produces a file that imports: `exportVehicle` clamps the
+  name (trimmed, at most 80, a blank one → the VIN default name), the notes (4000) and the learned
+  calibration id / adapter version (printable ASCII, at most 64 — an ECU reporting several CALIDs
+  joins them past that); `keepBothName` shortens the name so "name (n)" stays within 80; and
+  `shareExchangeFile` validates every file against `profileFileV1` / `labelPackFileV1` before
+  writing it (a failure is logged and nothing is written, so the screen says "Could not export…"
+  instead of "Saved …"). The garage editor caps name and notes at the same limits
+  (`VEHICLE_NAME_MAX` / `VEHICLE_NOTES_MAX` in `shared/vehicles/userVehicle.ts`, which the schema
+  now uses): `maxLength` on both inputs and a `validateDraft` error for a longer value. (b) Embedded
+  packs are added in reverse file order (`labelPackStore.add` prepends), so the receiving phone
+  keeps the exporter's precedence order and an equal-prefix tie resolves the same way on both.
+  Tests: `vehicleDraft.test.ts` (+1 limits), `import.test.ts` (+3: long keep-both name, long name /
+  notes / joined CALIDs export valid, blank name), `exchangeService.test.ts` (+3: two embedded packs
+  keep their order and winner, a schema-invalid file is not written, an over-long garage name still
+  exports) — 1411 tests / 165 suites.
+
+---
+
 ## Plan 25 — Confirmation metadata, module discovery and the capture analyzer (2026-11-09)
 
 [Plan 25](./plans/25-post-capture-confirmation.md) landed in the simulator: every per-car profile

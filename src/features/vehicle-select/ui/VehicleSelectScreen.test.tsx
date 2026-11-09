@@ -10,6 +10,9 @@ import { useVehicleStore } from '../model/vehicleStore';
 import { VehicleSelectScreen, GARAGE_COPY } from './VehicleSelectScreen';
 import { EditorBody } from './VehicleEditorSheet';
 import * as garageExportFile from '../api/garageExportFile';
+import * as exchangeApi from '../api/exchange';
+import * as exchangeService from '@/shared/state/exchangeService';
+import { serializeExchange } from '@/shared/lib/exchange';
 
 const GOLF = 'VW Golf Plus 2009 2.0 TDI 81 kW';
 const SUGGESTION = /tap to switch to that profile/;
@@ -224,5 +227,99 @@ describe('VehicleEditorSheet', () => {
   it('a new car has no login-codes section', () => {
     renderWithProviders(<EditorBody vehicle={null} onClose={jest.fn()} />);
     expect(screen.queryByText('Login codes')).toBeNull();
+  });
+});
+
+describe('VehicleSelectScreen — profile import / export (plan 13)', () => {
+  // The UI project cannot run the variable-specifier native imports; the file write and the picker
+  // are covered in shared/state/exchangeService.test.ts. Here: what the screen asks for.
+  it('Export on a garage card shares that car', async () => {
+    const share = jest
+      .spyOn(exchangeApi, 'shareVehicleFile')
+      .mockResolvedValue('file:///test/x.json');
+    const car = useGarageStore
+      .getState()
+      .add({ name: 'Dacia Logan', fuel: 'petrol', baseProfileId: 'generic' });
+    renderWithProviders(<VehicleSelectScreen />);
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Export Dacia Logan'));
+    });
+    expect(share).toHaveBeenCalledWith(car);
+    expect(screen.getByTestId('profile-export-note')).toHaveTextContent('Saved x.json.');
+    share.mockRestore();
+  });
+
+  it('a built-in profile (not Auto / Generic) shares as a starting profile', async () => {
+    const share = jest.spyOn(exchangeApi, 'shareProfileSeedFile').mockResolvedValue(null);
+    renderWithProviders(<VehicleSelectScreen />);
+    expect(screen.getAllByText('Share as starting profile')).toHaveLength(
+      VEHICLE_PROFILES.length - 1,
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText(`Share ${GOLF} as a starting profile`));
+    });
+    expect(share).toHaveBeenCalledWith(expect.objectContaining({ id: 'golf-plus-2009-20tdi' }));
+    expect(screen.getByTestId('profile-export-note')).toHaveTextContent(/Could not export/);
+    // Choosing the profile is not triggered by the nested button.
+    expect(useVehicleStore.getState().selectedProfileId).not.toBe('golf-plus-2009-20tdi');
+    share.mockRestore();
+  });
+
+  it('Import profile: an exported car appears as an identical card on a cleared app', async () => {
+    const source = useGarageStore.getState().add({
+      name: 'Volkswagen 2009',
+      year: 2009,
+      fuel: 'diesel',
+      baseProfileId: 'golf-plus-2009-20tdi',
+      learned: {
+        protocol: 'ISO_15765_4_CAN_11_500',
+        supportedPids: ['010C', '010D', '0105'],
+        vin: 'WVWZZZ1KZ9W903398',
+        calibrationId: null,
+        learnedAt: 1,
+      },
+    });
+    const text = serializeExchange(exchangeService.vehicleExportFile(source));
+    useGarageStore.setState({ vehicles: [] }); // "another phone"
+    const load = jest.spyOn(exchangeService, 'loadExchangeModules').mockResolvedValue({
+      FileSystem: {
+        documentDirectory: 'file:///test/',
+        getInfoAsync: async () => ({ exists: true, size: text.length }),
+        readAsStringAsync: async () => text,
+        writeAsStringAsync: async () => undefined,
+      },
+      Sharing: null,
+      Picker: {
+        getDocumentAsync: async () => ({
+          canceled: false,
+          assets: [{ uri: 'file:///cache/car.json', name: 'car.json' }],
+        }),
+      },
+    });
+    renderWithProviders(<VehicleSelectScreen />);
+    await act(async () => {
+      fireEvent.press(screen.getByText('Import profile'));
+    });
+    expect(await screen.findByText('Import car profile')).toBeTruthy();
+    expect(screen.getByText('03398')).toBeTruthy(); // VIN ending
+    await act(async () => {
+      fireEvent.press(screen.getByText('Import'));
+    });
+    expect(screen.getByText('Imported Volkswagen 2009.')).toBeTruthy();
+    const [car] = useGarageStore.getState().vehicles;
+    expect(car.learned).toEqual(source.learned);
+    expect(screen.getByText('Volkswagen 2009 ·03398')).toBeTruthy();
+    expect(screen.getByText('3 PIDs')).toBeTruthy();
+    load.mockRestore();
+  });
+
+  it('Import profile without the file picker in the build explains why', async () => {
+    const load = jest.spyOn(exchangeService, 'loadExchangeModules').mockResolvedValue(null);
+    renderWithProviders(<VehicleSelectScreen />);
+    await act(async () => {
+      fireEvent.press(screen.getByText('Import profile'));
+    });
+    expect(screen.getByText(/needs the file picker/)).toBeTruthy();
+    load.mockRestore();
   });
 });

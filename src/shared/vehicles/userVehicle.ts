@@ -44,6 +44,11 @@ export interface UserVehicle {
   updatedAt: number;
 }
 
+/** Longest garage-car name and notes (the editor's input caps; also the `bolid.profile.v1` schema
+ *  limits, so every car the garage holds exports to a file that imports again — plan 13). */
+export const VEHICLE_NAME_MAX = 80;
+export const VEHICLE_NOTES_MAX = 4000;
+
 /** Prefix of every user-vehicle id. */
 export const USER_VEHICLE_PREFIX = 'user:';
 

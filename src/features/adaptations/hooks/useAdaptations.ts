@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef } from 'react';
 import { isCan, isKLine, decodeAdaptationRaw, encodeAdaptationValue } from '@/shared/obd-core';
-import { findLabelPack, adaptationLabel } from '@/shared/labels';
+import { adaptationLabel } from '@/shared/labels';
+import { useLabelPackFinder } from '@/shared/state/labelPackStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useGarageStore } from '@/shared/state/garageStore';
 import { logError } from '@/shared/state/errorLogStore';
@@ -92,12 +93,14 @@ export function useAdaptations() {
   );
   const available = !!session && channels.length > 0;
 
+  // The label-pack lookup re-resolves when the imported packs change (plan 13).
+  const findLabelPack = useLabelPackFinder();
   const packFor = useCallback(
     (ch: AdaptationChannel) => {
       const scanned = scanResults.find((r) => r.module.reqHeader === ch.reqHeader);
       return findLabelPack(scanned?.ident?.partNumber);
     },
-    [scanResults],
+    [scanResults, findLabelPack],
   );
 
   const describe = useCallback(

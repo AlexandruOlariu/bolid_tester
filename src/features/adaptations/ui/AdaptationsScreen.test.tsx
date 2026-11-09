@@ -12,6 +12,12 @@ import { useVehicleStore } from '@/shared/state/vehicleStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useAdaptationsStore } from '../model/adaptationsStore';
 import { useLoginBookStore } from '../model/loginBookStore';
+import { useModuleScanStore } from '@/features/module-scan/model/moduleScanStore';
+import { useLabelPackStore } from '@/shared/state/labelPackStore';
+import { applyImport, previewImport } from '@/shared/state/exchangeService';
+import { isParseError, parseExchangeFile } from '@/shared/lib/exchange';
+import * as fs from 'fs';
+import * as path from 'path';
 import { AdaptationsScreen, KWP1281_LIMIT } from './AdaptationsScreen';
 
 const SIM_CODE = '12345';
@@ -204,5 +210,44 @@ describe('AdaptationsScreen — UDS channels (simulated Golf)', () => {
     } finally {
       undo();
     }
+  });
+});
+
+describe('AdaptationsScreen — imported label pack (plan 13, simulated Golf)', () => {
+  it('shows the imported description for DID 3001; deleting the pack brings the bundled one back', async () => {
+    const golf = getVehicleProfile('golf-plus-2009-20tdi');
+    const engine = golf.modules!.find((m) => m.reqHeader === '7E0')!;
+    useVehicleStore.setState({ selectedProfileId: 'golf-plus-2009-20tdi' });
+    await connectSimulator({ vehicleId: 'golf-plus-2009-20tdi' });
+    // What a module scan of the simulated Golf leaves behind: the engine's F187 part number.
+    useModuleScanStore.setState({
+      results: [
+        {
+          module: engine,
+          state: 'ok',
+          ident: { partNumber: '03L906022LM', raw: { F187: '03L906022LM' } },
+          dtcs: [],
+        },
+      ],
+    });
+    renderWithProviders(<AdaptationsScreen />);
+    expect(screen.getByText(/^Base idle target adjustment/)).toBeTruthy();
+
+    const text = fs.readFileSync(
+      path.resolve(__dirname, '../../../../docs/examples/label-pack.example.json'),
+      'utf8',
+    );
+    const parsed = parseExchangeFile(text);
+    if (isParseError(parsed)) throw new Error(parsed.error);
+    await act(async () => {
+      applyImport(previewImport(parsed), 'create');
+    });
+    expect(await screen.findByText(/^Example pack: idle target offset/)).toBeTruthy();
+    expect(screen.queryByText(/^Base idle target adjustment/)).toBeNull();
+
+    await act(async () => {
+      useLabelPackStore.getState().remove('example-edc17-03L906022');
+    });
+    expect(await screen.findByText(/^Base idle target adjustment/)).toBeTruthy();
   });
 });

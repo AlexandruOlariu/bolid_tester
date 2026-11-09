@@ -28,6 +28,7 @@ and the code is written to match. When something changes, the docs change first 
 | [`adapter-vgate-icar-pro.md`](./adapter-vgate-icar-pro.md)     | The Vgate iCar Pro BLE adapter: facts, BLE behavior, limits.                                          |
 | [`simulator.md`](./simulator.md)                               | The virtual ELM327 used for hardware-free development & tests.                                        |
 | [`testing.md`](./testing.md)                                   | Automated tests + per-car on-vehicle manual checklists.                                               |
+| [`exchange-formats.md`](./exchange-formats.md)                 | Profile and label-pack JSON files: schemas, validation, import conflicts, versioning, licensing.      |
 | [`vehicles/`](./vehicles/)                                     | The vehicle registry. The three example cars + how to add more.                                       |
 | [`features/`](./features/)                                     | One spec per feature slice.                                                                           |
 | [`implementation-log.md`](./implementation-log.md)             | Running record of what we implemented.                                                                |

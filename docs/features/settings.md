@@ -74,7 +74,16 @@ Developer and runtime settings.
   - **Data** (plan 18) — one line on keeping a copy or moving to a new phone ("Nothing goes to the
     cloud"), with **Backup & restore** and **Export data…**, both opening `/backup`
     ([backup](./backup.md): one file with every store and the trip recordings, restore with a
-    pre-restore snapshot, per-store JSON / CSV). The AI keys are never in a backup.
+    pre-restore snapshot, per-store JSON / CSV). The AI keys are never in a backup. Below them:
+    - **Label packs** (plan 13, `ui/LabelPacksSection.tsx`): the copy "Label packs name a
+      module's measurements, coding bits and adaptation channels by part number. Import one from a file;
+      imported names take precedence over the bundled ones.", then **Import label pack** (file picker →
+      the shared import preview, see [exchange-formats.md](../exchange-formats.md)), **Imported (_n_)**
+      — one card per imported pack (module, prefixes, counts, **Export**, **Delete** after "Delete this
+      label pack? … Bundled names for the same part numbers come back.") or "No imported label packs
+      yet." — and **Bundled with the app** with **Export as template** (a starting point to edit and
+      re-import). Exports go through `api/labelPackFile.ts` (`bolid-labelpack-<id>-<stamp>.json`, a
+      `settings/label-packs` warning when nothing was written).
   - **About** (plan 08) — "Bolid Tester <version>" (`APP_NAME` / `APP_VERSION` from
     `shared/lib/appInfo.ts`, read from `app.json`; the version is also the OTA runtime version), a
     note that OTA updates only reach the same version and are checked only from **More → Check for
@@ -174,6 +183,9 @@ Developer and runtime settings.
   `P0135`.
 - App is fully usable end-to-end in simulator mode.
 - **Data** → **Backup & restore** / **Export data…** open the backup screen.
+- **Data** → **Label packs**: importing the example pack (`docs/examples/label-pack.example.json`)
+  lists it under Imported; Delete brings the bundled names back; a corrupted file shows its first
+  three errors and stores nothing.
 - **About** shows the app version from `app.json`; **Privacy policy** expands every section of
   `docs/privacy-policy.md` and collapses again.
 - Log shows every command/response pair.

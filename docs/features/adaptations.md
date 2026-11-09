@@ -62,6 +62,24 @@ them sorted by group number with each group capped at four upper-cased DIDs; a D
 the engine part number read at connect. The Golf pack's three groups (`075` DPF, `099`
 temperatures, `120` EGR / injection) are illustrative until a capture confirms them (plan 25).
 
+### Imported packs and precedence (plan 13)
+
+Packs also travel as data: a `bolid.labelpack.v1` file ([exchange-formats.md](../exchange-formats.md))
+imported from Settings → Data → **Label packs** (or embedded in a profile file) lands in
+`labelPackStore` (`shared/state`, persisted `bolid.labelPacks` v1, newest first, at most 100,
+re-validated entry by entry on load). The store pushes its list into the registry
+(`setUserLabelPacks`, on hydrate and on every change) so `shared/labels` stays free of zustand;
+`allLabelPacks()` is the user's packs first, then the bundled `LABEL_PACKS`.
+
+`findLabelPack(partNumber)` iterates `allLabelPacks()`: the **longest** matching prefix still wins;
+on an **equal-length** tie the pack listed first wins — an imported pack beats a bundled one, and the
+newest import beats an older one. A bundled pack with a longer prefix keeps winning for the part
+numbers it covers. The pack replaces another pack's names as a whole (packs do not merge), so an
+imported pack for a bundled prefix should carry the bundled names it wants to keep — exporting a
+bundled pack **as a template** gives exactly that starting point. Adaptations, the coding helper and
+the measuring groups re-resolve when the imported packs change; deleting an imported pack brings the
+bundled names back.
+
 ## KWP login (plan 22)
 
 Pre-UDS VAG modules (KWP2000) accept adaptation writes only after a **login** — the five-digit

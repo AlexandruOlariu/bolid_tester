@@ -1,6 +1,12 @@
 /** The garage editor's form model (plan 06): a text-only draft, its validation and the conversion
  *  to a garage record. Pure, so the rules are unit-tested without rendering the sheet. */
-import { VEHICLE_REGISTRY, type Fuel, type UserVehicle } from '@/shared/vehicles';
+import {
+  VEHICLE_NAME_MAX,
+  VEHICLE_NOTES_MAX,
+  VEHICLE_REGISTRY,
+  type Fuel,
+  type UserVehicle,
+} from '@/shared/vehicles';
 import type { NewUserVehicle } from '@/shared/state/garageStore';
 
 export const FUELS: { value: Fuel; label: string }[] = [
@@ -43,6 +49,10 @@ export function validateDraft(
 ): Partial<Record<keyof VehicleDraft, string>> {
   const errors: Partial<Record<keyof VehicleDraft, string>> = {};
   if (!d.name.trim()) errors.name = 'Give the car a name, e.g. "Dacia Logan 2015".';
+  else if (d.name.trim().length > VEHICLE_NAME_MAX)
+    errors.name = `Keep the name to ${VEHICLE_NAME_MAX} characters or fewer.`;
+  if (d.notes.trim().length > VEHICLE_NOTES_MAX)
+    errors.notes = `Keep the notes to ${VEHICLE_NOTES_MAX} characters or fewer.`;
   const y = d.year.trim();
   if (y) {
     const n = Number(y);
