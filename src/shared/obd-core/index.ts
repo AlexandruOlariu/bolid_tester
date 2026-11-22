@@ -43,6 +43,7 @@ export * from './analysis/dpf';
 export * from './analysis/maintenance';
 export * from './analysis/inspection';
 export * from './analysis/fuelTrims';
+export * from './analysis/boost';
 export * from './coding/coding';
 export * from './coding/codingHelper';
 export * from './coding/presets';

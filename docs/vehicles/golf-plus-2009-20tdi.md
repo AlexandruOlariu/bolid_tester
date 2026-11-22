@@ -99,6 +99,21 @@ regen, EGT, oil temp, EGR, injection quantity and per-cylinder corrections). Eve
 See [`../features/extended-pids.md`](../features/extended-pids.md) and the `extendedPids` array in
 [`golf-plus-2009-20tdi.ts`](../../src/shared/vehicles/golf-plus-2009-20tdi.ts).
 
+## Expected boost (agent)
+
+`boost` in the profile: the expected MAP-minus-baro range the AI agent's MAP-only boost check
+(`assessBoost`) judges against. Initial values, **not yet confirmed on the car** — the first on-car
+session with the stationary rev hold confirms them and sets `boost.confirmed`.
+
+| Reading                                     | Expected     |
+| ------------------------------------------- | ------------ |
+| Idle (~820 rpm), MAP − baro                 | −5 to 15 kPa |
+| Stationary rev hold at 2500 rpm, MAP − baro | 8 to 60 kPa  |
+| Lowest rpm that counts as the hold          | 2200 rpm     |
+
+More than 30 kPa over baro at idle points to a stuck VNT; a hold whose max rpm stays under
+2200 rpm is not judged. Baro comes from PID `0133`.
+
 ## On-car checklist (mirrored into `testChecklist`)
 
 1. Plug adapter, ignition on (engine off), connect over BLE.

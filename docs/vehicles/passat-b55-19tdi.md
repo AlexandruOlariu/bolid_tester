@@ -70,6 +70,22 @@ The **KWP1281 limit** stands: the instrument cluster, comfort and climate module
 (ISO 9141 byte-ACK), which a generic ELM327 cannot address, so no channels are declared for them
 and the service reminder is reset with the dash-stalk procedure on the Service reset screen.
 
+## Expected boost (agent)
+
+`boost` in the profile: the expected MAP-minus-baro range the AI agent's MAP-only boost check
+(`assessBoost`) judges against. Initial values, **not yet confirmed on the car** — the first on-car
+session with the stationary rev hold confirms them and sets `boost.confirmed`.
+
+| Reading                                     | Expected     |
+| ------------------------------------------- | ------------ |
+| Idle (~850 rpm), MAP − baro                 | −5 to 15 kPa |
+| Stationary rev hold at 2500 rpm, MAP − baro | 5 to 60 kPa  |
+| Lowest rpm that counts as the hold          | 2200 rpm     |
+
+This ECU has no barometric PID (`0133`), so the check assumes 101.3 kPa and says so. More than
+30 kPa over baro at idle points to a stuck VNT; a hold whose max rpm stays under 2200 rpm is not
+judged. A pending `P0234` (overboost) is known on this car.
+
 ## On-car checklist (mirrored into `testChecklist`)
 
 1. Connect over BLE, ignition on. Expect a brief `BUS INIT` / `SEARCHING...`.

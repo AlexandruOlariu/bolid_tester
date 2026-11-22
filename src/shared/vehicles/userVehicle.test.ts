@@ -161,6 +161,12 @@ describe('buildUserProfile', () => {
     expect(p.vinPatterns).toEqual(['WVWZZZ1K']);
   });
 
+  it('a garage car on the Golf base keeps the boost range; a generic-base car has none', () => {
+    expect(golf.boost).toBeDefined();
+    expect(buildUserProfile(user({ baseProfileId: golf.id }), golf).boost).toEqual(golf.boost);
+    expect(buildUserProfile(user(), generic).boost).toBeUndefined();
+  });
+
   it('fault guides follow the base profile', () => {
     expect(curatedProfileId(buildUserProfile(user({ baseProfileId: golf.id }), golf))).toBe(
       golf.id,

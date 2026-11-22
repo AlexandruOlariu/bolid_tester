@@ -88,6 +88,7 @@ export function buildUserProfile(user: UserVehicle, base: VehicleProfile): Vehic
     if (base.serviceReset) profile.serviceReset = base.serviceReset;
     if (base.moduleSensors) profile.moduleSensors = base.moduleSensors;
     if (base.mode06Tests) profile.mode06Tests = base.mode06Tests;
+    if (base.boost) profile.boost = base.boost;
     if (base.gatewayInstallList) profile.gatewayInstallList = base.gatewayInstallList;
   }
   // Discovered modules apply on ANY base — discovery is how a generic-base car gets a module map.

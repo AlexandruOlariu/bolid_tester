@@ -14,6 +14,9 @@ export const passatB55: VehicleProfile = {
   vinPatterns: ['WVWZZZ3B'],
   supportedPids: ['0104', '0105', '010B', '010C', '010D', '010F', '0111', '011F', '0142'],
   dtcModes: ['03', '07'],
+  // Expected boost for the agent's MAP-only boost check. Initial values, not yet confirmed on the
+  // car (docs/vehicles/passat-b55-19tdi.md → Expected boost). No 0133 here: baro is assumed.
+  boost: { idleDeltaKpa: [-5, 15], holdDeltaKpa: [5, 60], holdRpm: 2500, minHoldRpm: 2200 },
   serviceReset: {
     // EXPERIMENTAL / illustrative KWP2000 (K-line) path. On a real B5.5 the reliable method is often
     // the dash stalk buttons; a generic ELM327 KWP reset is slower and car-specific. Confirm first.

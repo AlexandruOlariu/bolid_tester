@@ -266,6 +266,18 @@ export interface KnownFault {
   note?: string;
 }
 
+/** Expected boost for the agent's MAP-only boost check (`assessBoost`, plan 34c). Deltas are MAP
+ *  minus barometric pressure (kPa): at idle, and during a stationary rev hold at `holdRpm` (a hold
+ *  whose max rpm stays under `minHoldRpm` is not judged). Per car; a turbo-less car has none, which
+ *  hides the boost skill. Unconfirmed until `confirmed` is set from an on-car session. */
+export interface BoostRange {
+  idleDeltaKpa: [number, number];
+  holdDeltaKpa: [number, number];
+  holdRpm: number;
+  minHoldRpm: number;
+  confirmed?: Confirmation;
+}
+
 export interface VehicleProfile {
   id: string;
   /** Set only on a garage car's runtime profile (plan 06): the registry profile it inherits from.
@@ -292,6 +304,8 @@ export interface VehicleProfile {
   extendedPids?: ExtendedPid[];
   /** Standardized Mode 06 monitors (any OBD2 car may support these). */
   mode06Tests?: Mode06Test[];
+  /** Expected boost (MAP minus baro) for the agent's boost check; turbo cars only. */
+  boost?: BoostRange;
   /** Experimental, CAN-only module sensor reads (e.g. ABS wheel speed). */
   moduleSensors?: ModuleSensor[];
   /** Experimental, CAN-only codeable modules. Disabled by default in the UI. */

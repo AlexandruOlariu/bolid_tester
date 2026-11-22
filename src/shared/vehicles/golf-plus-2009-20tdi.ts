@@ -216,6 +216,9 @@ export const golfPlus2009: VehicleProfile = {
       sampleResponse: [0x46, 0x01, 0x8e, 0x0a, 0x01, 0x90, 0x00, 0x64, 0x03, 0x20],
     },
   ],
+  // Expected boost for the agent's MAP-only boost check. Initial values, not yet confirmed on the
+  // car (docs/vehicles/golf-plus-2009-20tdi.md → Expected boost).
+  boost: { idleDeltaKpa: [-5, 15], holdDeltaKpa: [8, 60], holdRpm: 2500, minHoldRpm: 2200 },
   moduleSensors: [
     // EXPERIMENTAL, UNVERIFIED, CAN-only. ABS addressing + DIDs illustrative. See docs/features/sensor-tests.md.
     {
