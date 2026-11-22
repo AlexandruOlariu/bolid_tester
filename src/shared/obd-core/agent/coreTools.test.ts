@@ -183,6 +183,19 @@ describe('digest helpers', () => {
     expect(clampDigest('y'.repeat(50), 20)).toBe('y'.repeat(6) + '\n… (truncated)');
   });
 
+  it('clampDigest with countMore ends a cut digest with how many lines were left out', () => {
+    const text = ['head', 'aaaa', 'bbbb', 'cccc', 'dddd'].join('\n');
+    expect(clampDigest(text, 100, { countMore: true })).toBe(text);
+    expect(clampDigest(text, 23, { countMore: true })).toBe('head\naaaa\n… (3 more)');
+    const long = clampDigest('x\n'.repeat(2000), MAX_DIGEST_CHARS, { countMore: true });
+    expect(long.length).toBeLessThanOrEqual(MAX_DIGEST_CHARS);
+    expect(long).toMatch(/\n… \(\d+ more\)$/);
+    // A first line longer than the room falls back to the mid-line cut.
+    expect(clampDigest('y'.repeat(50), 20, { countMore: true })).toBe(
+      'y'.repeat(6) + '\n… (truncated)',
+    );
+  });
+
   it('statsLine prints min / avg / max with one decimal, the unit and the window', () => {
     expect(statsLine('010B Intake MAP', 'kPa', [98, 100, 102], 10)).toBe(
       '010B Intake MAP: min 98 / avg 100 / max 102 kPa (n=3, 10 s)',

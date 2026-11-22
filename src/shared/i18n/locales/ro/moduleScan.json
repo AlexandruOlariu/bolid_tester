@@ -98,5 +98,20 @@
     "pickTwo": "Alege două scanări diferite pentru comparație.",
     "totals": "{{appeared}} apărute · {{cleared}} șterse · {{changed}} modificate · {{added}} adăugate · {{removed}} eliminate",
     "none": "Nicio diferență între aceste două scanări."
+  },
+  "agent": {
+    "tool": {
+      "scan_modules": "Scanare module de control"
+    },
+    "finding": {
+      "moduleDtcs": {
+        "title_one": "{{module}}: {{count}} cod de eroare",
+        "title_few": "{{module}}: {{count}} coduri de eroare",
+        "title_other": "{{module}}: {{count}} de coduri de eroare",
+        "detail_one": "Modulul {{module}} raportează {{count}} cod de eroare. Deschide Scanare module ca să-l vezi cu starea lui înainte să ștergi ceva.",
+        "detail_few": "Modulul {{module}} raportează {{count}} coduri de eroare. Deschide Scanare module ca să le vezi cu starea lor înainte să ștergi ceva.",
+        "detail_other": "Modulul {{module}} raportează {{count}} de coduri de eroare. Deschide Scanare module ca să le vezi cu starea lor înainte să ștergi ceva."
+      }
+    }
   }
 }

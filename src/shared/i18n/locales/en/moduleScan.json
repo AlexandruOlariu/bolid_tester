@@ -94,5 +94,18 @@
     "pickTwo": "Pick two different scans to compare.",
     "totals": "{{appeared}} appeared · {{cleared}} cleared · {{changed}} changed · {{added}} added · {{removed}} removed",
     "none": "No differences between these two scans."
+  },
+  "agent": {
+    "tool": {
+      "scan_modules": "Control module scan"
+    },
+    "finding": {
+      "moduleDtcs": {
+        "title_one": "{{module}}: {{count}} fault code",
+        "title_other": "{{module}}: {{count}} fault codes",
+        "detail_one": "The {{module}} module reports {{count}} fault code. Open Module scan to see it with its status before clearing anything.",
+        "detail_other": "The {{module}} module reports {{count}} fault codes. Open Module scan to see them with their status before clearing anything."
+      }
+    }
   }
 }

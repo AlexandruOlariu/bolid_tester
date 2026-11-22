@@ -1,0 +1,24 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "module_scan",
+  "kind": "capability",
+  "description": "Use when you need the fault codes or part / software numbers of the car's other control modules (ABS, cluster, gearbox, ...), not just the engine.",
+  "tools": ["scan_modules"],
+  "requires": { "protocol": "can", "profile": ["modules"] },
+  "procedure": "module_scan",
+  "instructions": [
+    "Read the scan_modules section of the triage step first: triage already scanned every UDS module once. Do not repeat a full scan in the same run.",
+    "When the symptom points to one system, call scan_modules with only those addresses to re-check them, e.g. {\"addresses\":[\"03\"]} for ABS / ESP or {\"addresses\":[\"01\"]} for the engine.",
+    "Look up a module code that matters with read_dtcs_detail when it is a P code; C, B and U codes are described by their system (chassis, body, network).",
+    "TP2.0 modules (older VAG bus) are never read by the agent. Use the saved-scan line as it is, quote its date, and tell the user to run Module scan for a fresh read."
+  ],
+  "interpret": [
+    "Each code carries the ISO 14229 status byte: bit 0 (0x01) test failed now, bit 2 (0x04) pending, bit 3 (0x08) confirmed, bit 7 (0x80) the module asks for a warning lamp. 0x09 = failing now and confirmed; 0x08 = confirmed but not failing now (history); 0x04 alone = pending.",
+    "Pending: seen on the current or last drive cycle but not confirmed yet; intermittent or just starting. Confirmed: stored on enough cycles to count as a real fault.",
+    "The VAG 5-digit number (VCDS) of a P code is its two bytes in decimal; use it to match VCDS logs.",
+    "A module with no answer is not proof of a fault: it may be absent, asleep, behind TP2.0 or on an address the profile has not confirmed. Do not name it faulty on that alone.",
+    "Lines marked unconfirmed come from module addressing not yet checked on this car: treat their codes as a lead to confirm, not as evidence.",
+    "Network (U) codes in several modules at once usually share one cause: low battery voltage during cranking, a gateway or a bus wiring fault. Check the battery first.",
+    "Airbag (15) and immobilizer (25) are outside the agent's scope; tell the user to read them with a dedicated tool if the symptom involves them."
+  ]
+}

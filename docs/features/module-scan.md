@@ -109,6 +109,10 @@ adds any UDS pair the profile declares that is not among them):
   `760`, `714`) — the engine's extended DIDs no longer answer on other modules' headers — so the
   Golf discovery finds exactly engine, ABS and cluster.
 
+## AI agent
+
+- AI agent: `scan_modules`, part of triage — `agent/agentTools.ts` contributes the tool (each UDS module's part / software number and codes with status bytes, through the read-only facade's `withModule`; never airbag `15` or immobilizer `25`; TP2.0 rows only from this car's latest saved scan, with its date), the `module_scan` procedure and the `module_scan` skill to the [AI agent](./ai-diagnose.md#agent).
+
 ## hooks / api / model
 
 - `useModuleScan()` — availability gate (CAN + profile modules), a best-effort **bus-wake** pre-step,

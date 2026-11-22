@@ -3,19 +3,13 @@
  *  note, as the Faults detail sheet shows it) and the `fault_codes` capability skill. Composed by
  *  the app layer (`src/app/ai-diagnose.tsx`). See docs/features/ai-diagnose.md. */
 
-import { clampDigest, oneDecimal, parseSkillFile, readProfileDtcs } from '@/shared/obd-core';
+import { clampDigest, oneDecimal, parseSkillFileOrThrow, readProfileDtcs } from '@/shared/obd-core';
 import type { AgentContribution, AgentTool, ToolContext, ToolResult } from '@/shared/obd-core';
 import type { Dtc } from '@/shared/obd-core/obd/dtc';
 import type { FreezeFrame } from '@/shared/obd-core/session/DiagnosticSession';
 import { GENERIC_GUIDE, matchFaultGuide } from '@/shared/vehicles/faultGuides';
 import { buildDtcDetail } from '../model/dtcDetail';
 import faultCodesSkill from './fault_codes.skill.json';
-
-function skillOrThrow(raw: unknown) {
-  const parsed = parseSkillFile(raw);
-  if (!parsed.ok) throw new Error(`Invalid skill file fault_codes: ${parsed.error}`);
-  return parsed.skill;
-}
 
 const yesNo = (read: boolean, has: boolean): string =>
   read ? (has ? 'yes' : 'no') : 'not read on this car';
@@ -94,5 +88,5 @@ const readDtcsDetailTool: AgentTool = {
 
 export const agentTools: AgentContribution = {
   tools: [readDtcsDetailTool],
-  skills: [skillOrThrow(faultCodesSkill)],
+  skills: [parseSkillFileOrThrow(faultCodesSkill, 'fault_codes')],
 };

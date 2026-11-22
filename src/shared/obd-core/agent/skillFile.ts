@@ -227,6 +227,15 @@ export function parseSkillFile(
   }
 }
 
+/** `parseSkillFile` for a bundled skill file (`name` is the file's skill name, for the message): the
+ *  parsed skill, or a throw — a broken bundled skill is a programming error the contribution tests
+ *  catch. */
+export function parseSkillFileOrThrow(raw: unknown, name: string): SkillFile {
+  const parsed = parseSkillFile(raw);
+  if (!parsed.ok) throw new Error(`Invalid skill file ${name}: ${parsed.error}`);
+  return parsed.skill;
+}
+
 /** The skill as the model reads it after `open_skill`: steps, how to interpret, this car's notes
  *  (keyed by the fault-guide profile id) and, when it has one, how to run its procedure. */
 export function renderSkillForModel(skill: SkillFile, guideProfileId: string): string {

@@ -7,10 +7,39 @@ export const MAX_DIGEST_CHARS = 1600;
 
 const TRUNCATED = '\n… (truncated)';
 
+export interface ClampOptions {
+  /** End a cut digest with `… (N more)`, N being the lines left out, instead of `… (truncated)`:
+   *  for line-per-item digests (modules, codes, errors), so the model knows how much it missed. */
+  countMore?: boolean;
+}
+
+/** The first lines of `text` that fit in `max` together with a `… (N more)` line counting the
+ *  rest, or null when not even the first line fits. */
+function clampCountingMore(text: string, max: number): string | null {
+  const lines = text.split('\n');
+  // headLength + trailer never shrinks as `keep` grows (each kept line adds ≥ 1 character, the
+  // count loses at most one digit), so the first `keep` that does not fit ends the search.
+  let keep = 0;
+  let headLength = -1;
+  while (keep + 1 < lines.length) {
+    const nextHead = headLength + lines[keep].length + 1;
+    if (nextHead + `\n… (${lines.length - keep - 1} more)`.length > max) break;
+    headLength = nextHead;
+    keep++;
+  }
+  if (keep === 0) return null;
+  return `${lines.slice(0, keep).join('\n')}\n… (${lines.length - keep} more)`;
+}
+
 /** `text` cut to at most `max` characters: at the last line break that fits, followed by a
- *  `… (truncated)` line. A single line longer than the room is cut mid-line. */
-export function clampDigest(text: string, max = MAX_DIGEST_CHARS): string {
+ *  `… (truncated)` line, or with `countMore` a `… (N more)` line. A single line longer than the
+ *  room is cut mid-line. */
+export function clampDigest(text: string, max = MAX_DIGEST_CHARS, opts: ClampOptions = {}): string {
   if (text.length <= max) return text;
+  if (opts.countMore) {
+    const counted = clampCountingMore(text, max);
+    if (counted !== null) return counted;
+  }
   const room = Math.max(0, max - TRUNCATED.length);
   const nl = text.lastIndexOf('\n', room);
   const cut = nl > 0 ? text.slice(0, nl) : text.slice(0, room);

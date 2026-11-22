@@ -1,4 +1,4 @@
-import { parseSkillFile, renderSkillForModel } from './skillFile';
+import { parseSkillFile, parseSkillFileOrThrow, renderSkillForModel } from './skillFile';
 import type { SkillFile } from './skillFile';
 
 const ok: SkillFile = {
@@ -113,4 +113,11 @@ it('leaves out notes for other cars and the procedure line without a procedure',
   expect(s).toContain('Steps:\n1. Read 0142.\n2. Compare with the resting voltage.');
   expect(s).not.toContain('Notes for this car');
   expect(s).not.toContain('Procedure:');
+});
+
+it('parseSkillFileOrThrow returns the parsed skill, or throws naming the file and the problem', () => {
+  expect(parseSkillFileOrThrow(ok, 'battery')).toEqual(ok);
+  expect(() => parseSkillFileOrThrow({ ...ok, kind: 'other' }, 'battery')).toThrow(
+    'Invalid skill file battery: kind must be capability or playbook',
+  );
 });
