@@ -11,6 +11,7 @@
  *  docs/features/history.md. */
 
 import {
+  MAX_DIGEST_CHARS,
   PID_REGISTRY,
   clampDigest,
   oneDecimal,
@@ -105,6 +106,25 @@ function checkPatterns(checks: DtcHistoryEntry[]): string[] {
   return lines;
 }
 
+/** `sections` joined by line breaks within `max` characters. When they do not fit, each section
+ *  gets a fair share of the room (a short section keeps all of its text and leaves the rest to the
+ *  longer ones) and is cut to it with a `… (N more)` line, so one long section (ten AI runs) never
+ *  crowds out the others (the checks, their patterns, the scans line). */
+function fitSections(sections: string[], max = MAX_DIGEST_CHARS): string {
+  const joined = sections.join('\n');
+  if (joined.length <= max) return joined;
+  let room = max - (sections.length - 1);
+  const budget: number[] = [];
+  const shortestFirst = sections
+    .map((_, i) => i)
+    .sort((a, b) => sections[a].length - sections[b].length);
+  shortestFirst.forEach((i, k) => {
+    budget[i] = Math.min(sections[i].length, Math.floor(room / (sections.length - k)));
+    room -= budget[i];
+  });
+  return sections.map((s, i) => clampDigest(s, budget[i], { countMore: true })).join('\n');
+}
+
 function limitOf(raw: unknown): number {
   const n =
     typeof raw === 'number' && Number.isFinite(raw) ? Math.floor(raw) : DEFAULT_HISTORY_LIMIT;
@@ -127,26 +147,32 @@ async function readHistory(args: Record<string, unknown>): Promise<ToolResult> {
   if (ai.length === 0 && checks.length === 0 && scans.length === 0)
     return { digest: NO_HISTORY, summary: 'History: none' };
 
-  const lines: string[] = [];
+  // Sections in digest order; each is clamped to its own share, so all of them reach the model.
+  const sections: string[] = [];
   if (ai.length) {
     const shown = ai.slice(0, limit);
-    lines.push(`AI runs (${shown.length} of ${ai.length}, newest first):`, ...shown.map(aiLine));
-  } else lines.push('AI runs: none');
+    sections.push(
+      [`AI runs (${shown.length} of ${ai.length}, newest first):`, ...shown.map(aiLine)].join('\n'),
+    );
+  } else sections.push('AI runs: none');
   if (checks.length) {
     const shown = checks.slice(0, limit);
-    lines.push(
-      `Fault-code checks (${shown.length} of ${checks.length}, newest first):`,
-      ...shown.map((e) => `${localDateTime(e.ts)}: ${checkText(e)}`),
-      ...checkPatterns([...shown].reverse()),
+    sections.push(
+      [
+        `Fault-code checks (${shown.length} of ${checks.length}, newest first):`,
+        ...shown.map((e) => `${localDateTime(e.ts)}: ${checkText(e)}`),
+      ].join('\n'),
     );
-  } else lines.push('Fault-code checks: none');
-  lines.push(
+    const patterns = checkPatterns([...shown].reverse());
+    if (patterns.length) sections.push(patterns.join('\n'));
+  } else sections.push('Fault-code checks: none');
+  sections.push(
     scans.length
       ? `Saved module scans: ${scans.length} (newest ${localDateTime(scans[0].ts)})`
       : 'Saved module scans: none',
   );
   return {
-    digest: clampDigest(lines.join('\n')),
+    digest: fitSections(sections),
     summary: `History: ${ai.length} AI runs, ${checks.length} checks, ${scans.length} scans`,
   };
 }

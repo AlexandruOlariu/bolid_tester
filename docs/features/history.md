@@ -132,7 +132,10 @@ add, coding on backup); the timeline only reads them.
     newest `limit` fault-code checks with their codes (`P0401, P2002 pending (MIL on)` or `no
 codes`), then over those checks (oldest first) `Codes went away between <d1> and <d2> (cleared or
 fixed)` for each check with codes followed by one without and `Recurring: P0401 (3 checks)` for
-    each code in ≥ 2 checks, and last `Saved module scans: N (newest <date>)`.
+    each code in ≥ 2 checks, and last `Saved module scans: N (newest <date>)`. When that passes the
+    1600-character digest cap, each of the four parts (AI runs, checks, patterns, scans line) gets
+    a fair share of the room and is cut with `… (N more)`, so ten long AI runs never push the
+    checks, patterns or scans line out.
   - `history_compare {pid}` — `costMs` 1000. Per trip of the car's newest 10 (`tripCarKey`), oldest
     → newest: `<date>: max <stats.max[pid]> / avg <mean of the trip CSV's samples> <unit>`
     (`not logged` when the trip did not record the PID, `avg n/a` when its CSV cannot be read), then

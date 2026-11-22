@@ -17,7 +17,13 @@ jest.mock('expo-file-system/legacy', () => ({
   }),
 }));
 
-import { buildAgentRegistry, parseSkillFile, toCsv, tripStats } from '@/shared/obd-core';
+import {
+  MAX_DIGEST_CHARS,
+  buildAgentRegistry,
+  parseSkillFile,
+  toCsv,
+  tripStats,
+} from '@/shared/obd-core';
 import type {
   AgentContribution,
   AgentTool,
@@ -217,6 +223,21 @@ describe('read_history', () => {
     expect(lines).toContain('Recurring: P0401 (2 checks)');
     expect(lines[lines.length - 1]).toBe('Saved module scans: 2 (newest 2026-11-15 09:00)');
     expect(r.summary).toBe('History: 1 AI runs, 3 checks, 2 scans');
+  });
+
+  it('keeps the checks, patterns and scans line when 10 long AI runs fill the budget', async () => {
+    for (let i = 0; i < 10; i++) seedAiRun(GOLF, 'attention', `Run ${i}: ${'y'.repeat(200)}`);
+    seedDtcChecks(GOLF, [['P0401'], ['P0401'], []]);
+    seedScan(GOLF);
+    const d = (await toolOf(historyTools, 'read_history').run({ limit: 10 }, golfCtx)).digest;
+    expect(d.length).toBeLessThanOrEqual(MAX_DIGEST_CHARS);
+    expect(d).toContain('Fault-code checks (3 of 3, newest first):');
+    expect(d).toContain('Recurring: P0401 (2 checks)');
+    expect(d).toMatch(/Codes went away between/);
+    expect(d.split('\n').pop()).toMatch(/^Saved module scans: 1 \(newest /);
+    // The AI section is the one cut, and it says how many runs it left out.
+    expect(d).toMatch(/\n… \(\d+ more\)\n/);
+    expect(d).toContain('AI runs (10 of 10, newest first):');
   });
 
   it('shows only the newest `limit` checks', async () => {
