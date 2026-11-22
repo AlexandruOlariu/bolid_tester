@@ -119,4 +119,48 @@ describe('compliance sheets (store/compliance)', () => {
       expect(play).toContain(`\`${perm.replace('android.permission.', '')}\``);
     }
   });
+
+  it('blocks the permissions that libraries merge in but the app never uses', () => {
+    // SYSTEM_ALERT_WINDOW + external storage: Expo template / expo-file-system. USE_BIOMETRIC /
+    // USE_FINGERPRINT: androidx.biometric via expo-secure-store (no `requireAuthentication`).
+    // c2dm RECEIVE: firebase-messaging via expo-notifications (local notifications only, no push
+    // token). Play flags these on review, so a dependency bump must not bring them back.
+    const blocked = expo.android.blockedPermissions as string[];
+    expect([...blocked].sort()).toEqual(
+      [
+        'android.permission.SYSTEM_ALERT_WINDOW',
+        'android.permission.READ_EXTERNAL_STORAGE',
+        'android.permission.WRITE_EXTERNAL_STORAGE',
+        'android.permission.USE_BIOMETRIC',
+        'android.permission.USE_FINGERPRINT',
+        'com.google.android.c2dm.permission.RECEIVE',
+      ].sort(),
+    );
+    // A permission cannot be both requested and blocked.
+    for (const perm of expo.android.permissions as string[]) expect(blocked).not.toContain(perm);
+    // The Play sheet lists what is blocked, so the reviewer answers match the built APK.
+    const play = read('store/compliance/play-data-safety.md');
+    for (const perm of blocked) {
+      expect(play).toContain(`\`${perm.replace('android.permission.', '')}\``);
+    }
+  });
+
+  it('never asks for biometrics or a push token, which the blocked permissions would break', () => {
+    const offenders = [
+      'requireAuthentication',
+      'getExpoPushTokenAsync',
+      'getDevicePushTokenAsync',
+      'addPushTokenListener',
+    ];
+    const sources = ['src/shared/state/secureApiKey.ts', 'src/shared/notify/index.ts'];
+    for (const file of sources) {
+      const code = read(file);
+      for (const name of offenders)
+        expect({ file, name, used: code.includes(name) }).toEqual({
+          file,
+          name,
+          used: false,
+        });
+    }
+  });
 });

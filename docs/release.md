@@ -178,7 +178,7 @@ source-map debug ids, without Web Replay). The organisation slug comes from `SEN
 | Thing                    | Value / where                                                                                                                                                                                                                                                                                    |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Application id           | `com.bolidtester.app` (`app.json`), Android package and iOS bundle id                                                                                                                                                                                                                            |
-| Android SDK levels       | `targetSdk 36`, `compileSdk 36`, `minSdk 24`, from React Native 0.85's version catalog (`node_modules/react-native/gradle/libs.versions.toml`). Google Play requires target API 35 or higher for new apps and updates in 2026, so SDK 56 builds comply. **Re-verify at every Expo SDK upgrade.** |
+| Android SDK levels       | `targetSdk 36`, `compileSdk 36`, `minSdk 24`, from React Native 0.86's version catalog (`node_modules/react-native/gradle/libs.versions.toml`). Google Play requires target API 35 or higher for new apps and updates in 2026, so SDK 57 builds comply. **Re-verify at every Expo SDK upgrade.** |
 | Upload format            | Play: the **AAB** from CI (`build-android`, tag builds) or `eas build -p android --profile production`; iOS: `eas build -p ios --profile production`                                                                                                                                             |
 | iOS build number         | EAS remote version source, auto-incremented by the `production` profile (`eas.json`)                                                                                                                                                                                                             |
 | `eas submit` (Android)   | `eas.json` `submit.production.android`: `serviceAccountKeyPath: ./secrets/play-service-account.json` (gitignored), `track: internal`, `releaseStatus: draft`                                                                                                                                     |
@@ -251,7 +251,10 @@ Before promoting a build out of internal testing:
       then the answers in both consoles.
 - [ ] `npm run licenses` rerun if any dependency changed (the licences test fails otherwise).
 - [ ] Target SDK still at or above Play's current minimum ([Store submission](#store-submission-plan-30)).
-- [ ] The permissions in the built APK match `app.json` (`aapt2 dump permissions`).
+- [ ] The permissions in the built APK match `app.json` (`aapt2 dump permissions`): none of the
+      `android.blockedPermissions` (overlay, external storage, biometrics, Firebase push receive) may
+      appear. A new or upgraded library that merges in another unused permission gets blocked there
+      and listed in [play-data-safety.md](../store/compliance/play-data-safety.md#permissions-removed-from-the-apk).
 - [ ] The review notes (simulator path) still match the app's labels
       ([store/README.md](../store/README.md#review-notes-both-stores)).
 - [ ] The rollout step and its numbers recorded in the [Stability](#stability) table.

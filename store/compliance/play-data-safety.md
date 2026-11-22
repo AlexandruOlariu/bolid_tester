@@ -66,6 +66,23 @@ it in "When the app uses the internet".
 
 No background location, no foreground service, no `QUERY_ALL_PACKAGES`, no SMS / call log.
 
+### Permissions removed from the APK
+
+Libraries merge in permissions the app never uses. `app.json` lists them under
+`android.blockedPermissions`, so the release APK does not request them (check with
+`aapt2 dump permissions`, [docs/release.md](../../docs/release.md)):
+
+| Permission                                   | Merged in by                    | Why it is not needed                                                                                     |
+| -------------------------------------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `SYSTEM_ALERT_WINDOW`                        | Expo / React Native template    | Only the development overlay draws over other apps; release builds have none.                            |
+| `READ_EXTERNAL_STORAGE`                      | `expo-file-system`              | Files are written to the app's own folders and shared through the system share sheet or document picker. |
+| `WRITE_EXTERNAL_STORAGE`                     | `expo-file-system`              | Same as above.                                                                                           |
+| `USE_BIOMETRIC`                              | `expo-secure-store` (androidx)  | The API key is stored without `requireAuthentication` (`src/shared/state/secureApiKey.ts`).              |
+| `USE_FINGERPRINT`                            | `expo-secure-store` (androidx)  | Same as above.                                                                                           |
+| `com.google.android.c2dm.permission.RECEIVE` | `expo-notifications` (Firebase) | Notifications are local only; the app never requests a push token (`src/shared/notify/index.ts`).        |
+
+`src/shared/lib/storeConfig.test.ts` fails if this list and `app.json` drift apart.
+
 ## Security practices section
 
 - Encrypted in transit: **Yes** (above).
