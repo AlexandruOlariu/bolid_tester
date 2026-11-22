@@ -12,3 +12,4 @@ export * from './procedures/batteryCapture';
 export * from './triage';
 export * from './prompt';
 export * from './report';
+export * from './loop';
