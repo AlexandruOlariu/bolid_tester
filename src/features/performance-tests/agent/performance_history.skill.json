@@ -1,0 +1,17 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "performance_history",
+  "kind": "capability",
+  "description": "Use when the user reports a loss of power or slow acceleration and you need the 0-100 km/h, drag or braking runs measured in this app session.",
+  "tools": ["read_performance_history"],
+  "instructions": [
+    "Call read_performance_history {} once: it lists this app session's 0-100 km/h, drag (60 ft, 1/8 and 1/4 mile) and braking runs for this car, newest first, with their dates.",
+    "Runs are kept only until the app closes. When there are none, do not ask the user to drive one now: the car is stationary during a diagnosis. Mention that the Performance screen can measure one on a safe, closed road later."
+  ],
+  "interpret": [
+    "Speed comes from the ECU speed PID (010D), polled about 10 times a second at best: a run under 5 Hz is coarse, so times can be off by a few tenths of a second.",
+    "Compare runs with each other and with the car's published 0-100 km/h time: a run more than about 20 % slower on a dry, flat road points to a real loss of power (boost, fuel delivery, a limp mode), worth checking with live data and fault codes.",
+    "A 0-100 km/h run marked not reached never got to the target; its max km/h tells how far it got.",
+    "Braking from 100 km/h to 0: about 35-45 m on a dry road for a car in good order; clearly longer points to worn brakes or tyres, or a wet road."
+  ]
+}

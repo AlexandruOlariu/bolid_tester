@@ -1,0 +1,18 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "fuel_economy",
+  "kind": "capability",
+  "description": "Use when the user reports high fuel consumption, or you need the car's consumption now and over its recent recorded trips.",
+  "tools": ["read_fuel_economy", "list_trips"],
+  "instructions": [
+    "Call read_fuel_economy {} once: it gives the instant consumption from live values (L/100 km while moving, L/h at standstill) and the average L/100 km and distance of this car's last 5 trips.",
+    "The stationary car only gives L/h at idle; judge consumption mainly on the trip averages.",
+    "Call list_trips {} when you need the trips' durations, max coolant or max rpm to explain a high average."
+  ],
+  "interpret": [
+    "The instant figure comes from the engine fuel rate (015E) when the car reports it, else it is estimated from MAF (0110): the MAF estimate can be off by 10-20 %.",
+    "Warm idle fuel flow: roughly 0.5-1.0 L/h for a small petrol or diesel engine. Clearly more at a warm idle points to extra load or a running fault.",
+    "Short trips (under 5 km) and a cold engine raise the average a lot: compare trips of similar length before calling consumption high.",
+    "A trip average far above the others of similar length, with a low max coolant, points to a thermostat stuck open; with high rpm it is the driving style."
+  ]
+}

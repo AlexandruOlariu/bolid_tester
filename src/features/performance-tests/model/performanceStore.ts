@@ -12,6 +12,9 @@ export interface PerfRun {
   accel?: AccelResult;
   drag?: DragResult;
   brake?: BrakeResult;
+  /** The active car (registry or garage id) when the run was made, so the AI agent reports only
+   *  the selected car's runs (plan 34b). */
+  vehicleId?: string;
 }
 
 interface PerformanceState {

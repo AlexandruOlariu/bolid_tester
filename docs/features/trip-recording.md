@@ -175,6 +175,29 @@ vehicleId?, syntheticTrack? }`
 - Recording survives PID poll failures: a missing PID logs as `null` for that tick rather than
   aborting the trip.
 
+## AI agent
+
+- AI agent: `list_trips`, `read_trip`, `read_fuel_economy` — `agent/agentTools.ts` contributes the
+  three tools and the `trips` and `fuel_economy` skills to the [AI agent](./ai-diagnose.md#agent).
+  All are always offered and read only the **active car's** trips (`tripCarKey(t) ===
+getActiveProfile().id`, garage-aware); an empty list says `No trips recorded for this car.`
+  - `list_trips` — the newest 10 trips (`LIST_TRIPS_MAX`), one line each:
+    `<id> <yyyy-mm-dd hh:mm> <min> min, <km> km, max coolant <°C>, max rpm <rpm>, <L/100 km>`, then
+    `… (N older trips)`. The average L/100 km is the stored `stats.fuel` when present, else
+    `tripFuelAverage` over the trip's CSV samples with the car's fuel type (`no fuel data` when the
+    trip logged neither `015E` nor `0110`). No adapter time (`costMs` 0).
+  - `read_trip {id, pids?}` — per PID min / avg / max (default `0105`, `010C`, `010B`, `010D`, those
+    the trip logged; a requested PID it did not log reads `not logged`), and on the coolant line
+    the minutes from the first sample ≤ 40 °C to the first ≥ 80 °C (`warm-up 9 min`, `did not
+reach 80 °C in N min`, or `started warm`). `id: "latest_cold"` picks the newest of this car's
+    last 20 trips whose first `0105` sample is ≤ 40 °C. `data: { header, samples }` (for the
+    cooling playbook). A foreign or missing id: `Trip <id> not found for this car.`; a
+    `loadTripSamples` throw becomes an error digest; a trip whose CSV is gone says its samples
+    were not saved.
+  - `read_fuel_economy` — one live poll of `015E` / `0110` / `010D` through the read-only facade:
+    instant L/100 km while moving, L/h at standstill (`fuelEconomyFromValues`, fuel rate preferred
+    over the MAF estimate), then the last 5 trips' averages with their distance.
+
 ## Acceptance
 
 - A simulator drive can be recorded, persisted, and its summary reopened after app restart; opening a

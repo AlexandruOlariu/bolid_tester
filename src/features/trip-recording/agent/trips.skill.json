@@ -1,0 +1,20 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "trips",
+  "kind": "capability",
+  "description": "Use when the symptom shows up while driving, or you need how the engine behaved over a recorded drive (warm-up, max coolant, rpm, boost).",
+  "tools": ["list_trips", "read_trip"],
+  "instructions": [
+    "Call list_trips {} first: it lists this car's recorded trips, newest first, with id, start time, minutes, km, max coolant, max rpm and average L/100 km.",
+    "Call read_trip with an id from that list, e.g. {\"id\":\"1732350000000\"}, for per-PID min / avg / max; add pids to look at other logged values, e.g. {\"id\":\"…\",\"pids\":[\"0110\",\"015E\"]}.",
+    "To judge the cooling system, call read_trip {\"id\":\"latest_cold\"}: it picks the newest trip that started with coolant at or under 40 °C and reports the warm-up minutes.",
+    "Trips are what the user recorded on this phone for this car only. When list_trips says none are recorded, ask the user to record a drive in Trip recording rather than guessing."
+  ],
+  "interpret": [
+    "Warm-up from a cold start (≤ 40 °C) to 80 °C: about 5-15 min of normal driving on most engines, longer on a diesel at idle or in winter. Over 20 min of driving, or a trip that never reaches 80 °C, points to a thermostat stuck open.",
+    "\"started warm\" means the engine was already warm at the start: that trip says nothing about the warm-up.",
+    "Max coolant over 110 °C on a trip points to overheating under load (coolant level, fan, water pump, radiator).",
+    "Distance comes from the speed PID (010D); \"distance n/a\" means speed was not logged. \"no fuel data\" means the trip logged neither fuel rate (015E) nor MAF (0110).",
+    "A trip's max rpm and MAP (010B) show how hard it was driven: compare like with like before calling one trip worse than another."
+  ]
+}

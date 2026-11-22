@@ -21,5 +21,10 @@
     "accel": "0–{{target}}: {{time}} ({{rate}} Hz)",
     "drag": "¼ de milă: {{result}}",
     "brake": "Frânare: {{result}}"
+  },
+  "agent": {
+    "tool": {
+      "read_performance_history": "Teste de performanță"
+    }
   }
 }

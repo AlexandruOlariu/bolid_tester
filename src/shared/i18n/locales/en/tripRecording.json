@@ -71,5 +71,12 @@
     "notEnough": "Not enough speed readings to draw the speed over time.",
     "a11y_one": "Speed over time, {{count}} point, up to {{top}} km/h",
     "a11y_other": "Speed over time, {{count}} points, up to {{top}} km/h"
+  },
+  "agent": {
+    "tool": {
+      "list_trips": "Recorded trips",
+      "read_trip": "Trip details",
+      "read_fuel_economy": "Fuel economy"
+    }
   }
 }

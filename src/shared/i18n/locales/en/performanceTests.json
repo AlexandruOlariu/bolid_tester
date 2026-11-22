@@ -21,5 +21,10 @@
     "accel": "0–{{target}}: {{time}} ({{rate}} Hz)",
     "drag": "¼ mile: {{result}}",
     "brake": "Brake: {{result}}"
+  },
+  "agent": {
+    "tool": {
+      "read_performance_history": "Performance runs"
+    }
   }
 }

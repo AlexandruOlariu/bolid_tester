@@ -13,6 +13,8 @@ import { codingAgentTools } from '@/features/coding';
 import { inspectionAgentTools } from '@/features/inspection';
 import { vehicleInfoAgentTools } from '@/features/vehicle-info';
 import { adapterHealthAgentTools } from '@/features/adapter-health';
+import { tripRecordingAgentTools } from '@/features/trip-recording';
+import { performanceTestsAgentTools } from '@/features/performance-tests';
 import type { AgentContribution } from '@/shared/obd-core';
 
 /** What each feature contributes to the AI diagnostic agent (plan 34a). Features never import each
@@ -31,6 +33,8 @@ export const AGENT_CONTRIBUTIONS: AgentContribution[] = [
   inspectionAgentTools,
   vehicleInfoAgentTools,
   adapterHealthAgentTools,
+  tripRecordingAgentTools,
+  performanceTestsAgentTools,
 ];
 
 export default function AiDiagnoseRoute() {

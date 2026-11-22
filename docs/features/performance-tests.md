@@ -45,7 +45,8 @@ loop. Metric only: speeds in km/h, distances in metres, times in seconds.
 
 ## model
 
-- `performanceStore` (Zustand, persisted history): `{ type, config, samples, metrics }`.
+- `performanceStore` (Zustand, history in memory only — **not** persisted; the last 50 runs of
+  this app session): `{ type, config, samples, metrics }`.
 - Config: start/target thresholds in km/h, GPS on/off. No unit setting — the app is metric only.
 
 ## Behavior
@@ -60,3 +61,13 @@ loop. Metric only: speeds in km/h, distances in metres, times in seconds.
 - A simulated 0→100 km/h ramp produces a plausible time with 0–50 / 50–100 splits.
 - A run is saved, reopened, and its speed/RPM trace renders on the charts.
 - With GPS disabled, the feature still produces a result from ECU speed alone.
+
+## AI agent
+
+- AI agent: `read_performance_history` — `agent/agentTools.ts` contributes the tool and the
+  `performance_history` skill to the [AI agent](./ai-diagnose.md#agent). Always offered, no adapter
+  time. It reads `performanceStore.history`, which lives in memory only, so the digest's first line is `Runs from this app session only
+(they are not saved).`; then one line per run of the active car (each run stamps
+  `PerfRun.vehicleId = getActiveProfile().id`), newest first, with its date: 0–target km/h time and
+  splits, max km/h and sample rate (or `not reached`), drag 60 ft / 1/8 / 1/4 mile times with trap
+  speeds, braking time and distance (or `not measured`). It never starts a run.

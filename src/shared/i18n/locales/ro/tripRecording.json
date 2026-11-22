@@ -77,5 +77,12 @@
     "a11y_one": "Viteza în timp, {{count}} punct, până la {{top}} km/h",
     "a11y_few": "Viteza în timp, {{count}} puncte, până la {{top}} km/h",
     "a11y_other": "Viteza în timp, {{count}} de puncte, până la {{top}} km/h"
+  },
+  "agent": {
+    "tool": {
+      "list_trips": "Curse înregistrate",
+      "read_trip": "Detaliile cursei",
+      "read_fuel_economy": "Consum de combustibil"
+    }
   }
 }

@@ -11,3 +11,4 @@ export {
 export type { LoadedTrip } from './hooks/useTripRecorder';
 export { useTripStore } from './model/tripStore';
 export type { TripSummary } from './model/tripStore';
+export { agentTools as tripRecordingAgentTools } from './agent/agentTools';

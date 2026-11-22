@@ -1,11 +1,7 @@
 import { useEffect, useRef } from 'react';
-import {
-  computeAccelRun,
-  computeDragRun,
-  computeBrakeRun,
-  SpeedSample,
-} from '@/shared/obd-core';
+import { computeAccelRun, computeDragRun, computeBrakeRun, SpeedSample } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
+import { getActiveProfile } from '@/shared/state/activeProfile';
 import { logError } from '@/shared/state/errorLogStore';
 import { usePerformanceStore } from '../model/performanceStore';
 
@@ -64,6 +60,7 @@ export function usePerformanceTest() {
       accel: type === 'accel' ? computeAccelRun(samples, targetKmh) : undefined,
       drag: type === 'drag' ? computeDragRun(samples) : undefined,
       brake: type === 'brake' ? computeBrakeRun(samples, targetKmh, 0) : undefined,
+      vehicleId: getActiveProfile().id,
     };
     addRun(run);
     setState('done');
