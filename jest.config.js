@@ -15,7 +15,8 @@ module.exports = {
       displayName: 'core',
       preset: 'ts-jest',
       testEnvironment: 'node',
-      roots: ['<rootDir>/src'],
+      // plugins/ holds the Expo config plugins (e.g. ios-scene-lifecycle) and their unit tests.
+      roots: ['<rootDir>/src', '<rootDir>/plugins'],
       testMatch: ['**/*.test.ts'],
       moduleFileExtensions: ['ts', 'js', 'json'],
       moduleNameMapper: alias,

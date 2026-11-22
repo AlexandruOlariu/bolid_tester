@@ -41,6 +41,29 @@ npx expo export --platform web --output-dir web-build     # static site (never i
 `.github/workflows/web.yml` deploys it to GitHub Pages on every push to `main`. Browser support, the
 native-only capability matrix and the Pages setup are in [web.md](./web.md).
 
+### iOS 27 and a real iPhone
+
+Tried on 2026-10-15 with Xcode 27 and an iPhone on iOS 27. `npx expo prebuild` generates `ios/`
+(not committed). Most of what that output needs is handled for you; the rest is local to your machine:
+
+- **UIScene lifecycle (required by iOS 27): automated.** Without it the app is stopped at launch
+  (`NoSceneLifecycleAdoption`). The config plugin [`plugins/ios-scene-lifecycle.js`](../plugins/ios-scene-lifecycle.js)
+  (registered in `app.json`, unit-tested in `plugins/ios-scene-lifecycle.test.ts`) makes the generated
+  `AppDelegate` conform to `ExpoReactNativeFactoryProvider`, removes its own window creation, adds
+  `class SceneDelegate: ExpoAppSceneDelegate {}` and writes the `UIApplicationSceneManifest` into
+  `Info.plist`. It is idempotent, does nothing once the Expo template adopts scenes itself, and throws
+  if the template changes shape. A clean `expo prebuild` was checked to produce the same files that
+  ran on the phone.
+- **Personal Apple team:** free teams cannot use Push Notifications. The app only needs local
+  notifications, so empty `ios/<App>/<App>.entitlements` (remove `aps-environment`), pick the team in
+  Signing & Capabilities and use a bundle id of your own, because the one in `app.json` is probably
+  registered to another team.
+- **Xcode 27 rejects pod targets below iOS 15.** Raise them in the `Podfile` `post_install` block.
+- **Node:** `expo prebuild` needs Node 20.19.4 or newer; point the build phase at it with
+  `ios/.xcode.env.local` (`export NODE_BINARY=...`).
+- **Release, not Debug,** for an icon launch: the Debug configuration needs the Metro server.
+- **Signing over SSH fails** (`errSecInternalComponent`, locked keychain); start the build from Xcode.
+
 For cloud builds without a Mac, use EAS (profiles in `eas.json`):
 
 ```bash
