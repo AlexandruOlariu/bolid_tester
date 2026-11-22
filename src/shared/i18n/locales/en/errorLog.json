@@ -26,5 +26,10 @@
   "export": "Export",
   "clear": "Clear",
   "empty": "No errors logged. When something goes wrong it’ll be saved here so you can export and fix it later.",
-  "emptyFilter": "Nothing for this filter."
+  "emptyFilter": "Nothing for this filter.",
+  "agent": {
+    "tool": {
+      "read_app_errors": "App errors"
+    }
+  }
 }

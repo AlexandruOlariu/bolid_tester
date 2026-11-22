@@ -1,0 +1,19 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "history",
+  "kind": "capability",
+  "description": "Use when you need to know whether a fault is new, recurring or came back after a clear, or how a value compares with this car's past drives.",
+  "tools": ["read_history", "history_compare"],
+  "instructions": [
+    "The triage step already ran read_history {\"limit\":5}: read its section first. Call read_history {\"limit\":10} only when you need older AI runs or checks.",
+    "Call history_compare with one Mode 01 PID, e.g. {\"pid\":\"0105\"}, to put a reading now next to its max and average on this car's last 10 trips (oldest first).",
+    "History is what this phone saved for this car only (AI runs, fault-code checks from the Fault codes screen, module scans); it says nothing about work done elsewhere."
+  ],
+  "interpret": [
+    "\"Recurring: P0401 (3 checks)\" means the code was read in 3 of the listed checks: a lasting fault, not a one-off. A code seen once and then gone was probably intermittent or already fixed.",
+    "\"Codes went away between A and B (cleared or fixed)\": someone cleared the codes or the fault healed. A code that is back in a later check after that came back by itself: the repair, if any, did not hold.",
+    "A pending code that turns into a stored code over later checks is a fault getting confirmed.",
+    "In history_compare, a value now well outside the trips' max / average range (e.g. coolant max 90 °C on every trip, 105 °C now) points to a recent change; compare like with like (idle now vs. a drive's max).",
+    "\"not logged\" means that trip did not record the PID; it is not a zero reading."
+  ]
+}

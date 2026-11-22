@@ -68,6 +68,21 @@ current)`, `dueStatus`, `lastEntryFor`, `projectOdometer`, and `DEFAULT_SERVICE_
 - Complements rather than duplicates notifications: completing a service here can advance the
   matching reminder by advancing its due point.
 
+## AI agent
+
+- AI agent: `read_maintenance` — `agent/agentTools.ts` contributes the tool, the `maintenance`
+  procedure (it calls `read_maintenance {}`, so `run_skill` and the no-AI mode can run it) and the
+  `maintenance` skill to the [AI agent](./ai-diagnose.md#agent). Always offered, no adapter time.
+  It reads the **active car's** bucket exactly as `useMaintenance` does (`maintenanceKeysFor(
+  getActiveProfile().id, garage)` → `bucketFor`) and runs `computeDue` with the run's clock. A car
+  with no log entries reads `No maintenance recorded for this car.`; otherwise the first line is the
+  logbook odometer (or `not entered, so the km left are unknown`), then one line per item worst
+  first: `<name> (every <km> km / <months> months): <ok|soon|overdue|unknown>, last <yyyy-mm-dd> at
+<km> km; <n> km left|overdue, <n> days left|overdue` (`never logged` when there is no entry).
+  Findings: `maintenance:agent.finding.overdue` (`warn`) per overdue item and
+  `maintenance:agent.finding.soon` (`info`) per item due soon, both with `values: { item }` (the
+  item's name in the app language).
+
 ## Acceptance
 
 - Logging an oil change at 100 000 km then setting the odometer to 114 000 km shows oil service **soon**

@@ -21,5 +21,10 @@
     "coolant-hot": "Supraîncălzire lichid de răcire",
     "low-voltage": "Tensiune scăzută la baterie",
     "over-rev": "Turație ridicată"
+  },
+  "agent": {
+    "tool": {
+      "read_alerts": "Reguli de alertă"
+    }
   }
 }

@@ -64,5 +64,11 @@
     "modules_one": "{{count}} modul",
     "modules_few": "{{count}} module",
     "modules_other": "{{count}} de module"
+  },
+  "agent": {
+    "tool": {
+      "read_history": "Istoric diagnoză",
+      "history_compare": "Comparație cu cursele anterioare"
+    }
   }
 }

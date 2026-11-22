@@ -1,0 +1,18 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "alerts_history",
+  "kind": "capability",
+  "description": "Use when the user mentions an app alert or warning (overheating, low voltage, high rpm) or you need to know which threshold alerts are set.",
+  "tools": ["read_alerts"],
+  "instructions": [
+    "Call read_alerts {} once: it lists every alert rule as \"<label>: <pid> <op> <value> (on|off)\", then the alerts active right now with their value and how long they have been active.",
+    "Fired alerts are not stored: the app keeps no alert history, only the rules and what is active now. When the user says an alert fired earlier, take their word for when and what, and confirm the value with read_live.",
+    "The rules belong to the app, not to this car; a rule that is off never fires."
+  ],
+  "interpret": [
+    "An active coolant alert (0105 over 110 °C) is overheating now: tell the user to stop and let the engine cool before anything else.",
+    "An active low-voltage alert (0142 under 11.8 V) with the engine running means the battery is not being charged; with the engine running, a module voltage under 13.5 V = not charging.",
+    "An active high-rpm alert is the driver's doing, not a fault.",
+    "\"Active now: none\" says nothing about the past: an alert that fired and cleared leaves no trace."
+  ]
+}

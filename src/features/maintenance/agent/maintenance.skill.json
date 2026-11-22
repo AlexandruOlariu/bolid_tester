@@ -1,0 +1,20 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "maintenance",
+  "kind": "capability",
+  "description": "Use when a symptom could come from skipped servicing (oil, filters, timing belt, coolant, brake fluid, DPF) or the user asks what is due.",
+  "tools": ["read_maintenance"],
+  "procedure": "maintenance",
+  "instructions": [
+    "Call read_maintenance {} once: it lists this car's service items worst first with status, last service date and km, and the km / days left (or overdue).",
+    "The logbook is what the user entered on this phone for this car only; an item that reads 'never logged' may well have been done elsewhere, so ask before calling it overdue.",
+    "When the odometer is not entered, only the days left are known: suggest entering the current km in Maintenance."
+  ],
+  "interpret": [
+    "Status soon: within 10 % of the km interval (at least 500 km) or within 30 days; overdue: past the km or the time interval, whichever comes first.",
+    "Overdue engine oil and filter on a diesel can show as low oil pressure warnings, higher soot load and a DPF that fills faster.",
+    "An overdue fuel filter (diesel) fits hard starting, loss of power under load and rail pressure deviation codes (P0087, P0093).",
+    "An overdue air filter fits low MAF readings and a lazy turbo; an overdue timing belt is a breakdown risk: tell the user plainly, never as a cause of a code.",
+    "Old brake fluid and coolant are time-based items: they do not set engine codes, but overdue coolant fits overheating and heater complaints."
+  ]
+}

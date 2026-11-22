@@ -1,0 +1,19 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "app_errors",
+  "kind": "capability",
+  "description": "Use when the app itself misbehaved (dropped connection, failed read, AI or storage errors) to tell an app or adapter problem from a car fault.",
+  "tools": ["read_app_errors"],
+  "instructions": [
+    "Call read_app_errors {} for the newest 10 errors, or {\"limit\":3} for just the latest: each line is \"<age> ago <source> <severity>: <message>\", followed by the count per source over the last 24 h.",
+    "These are the app's own errors on this phone (Bluetooth / Wi-Fi link, adapter replies, AI server, file storage), never the car's fault codes: do not report them as vehicle faults.",
+    "Messages are scrubbed: <url>, <address>, <device-id> and a VIN shown as ***12345 stand for identifiers that were removed."
+  ],
+  "interpret": [
+    "Many recent connection errors (link lost, GATT, timeout) point to the adapter or the phone's Bluetooth link: readings that dropped out during them are not car faults; suggest check_adapter.",
+    "A screen's errors (source live-data, module-scan, dpf, extended-pids …) quoting NO DATA, CAN ERROR or BUS INIT mean the car did not answer that request: usually unsupported, not broken.",
+    "ai and ai-diagnose errors are the AI server's (unreachable, timeout, bad key); persist errors are the phone's storage. Neither says anything about the car.",
+    "A fatal error (source global) is an app crash: mention it only when it lines up with what the user describes.",
+    "Old errors (days ago) with none in the last 24 h are history, not the cause of a problem now."
+  ]
+}

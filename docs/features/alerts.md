@@ -55,6 +55,17 @@ loop; no new device protocol.
 - Only PIDs in the effective PID set are selectable, so a rule can't target a PID the car can't
   report.
 
+## AI agent
+
+- AI agent: `read_alerts` — `agent/agentTools.ts` contributes the tool and the `alerts_history`
+  skill to the [AI agent](./ai-diagnose.md#agent). Always offered, no adapter time. Digest: `Rules
+(N):` then one line per rule, `"<label>: <pid> <op> <value> (on|off)"` (`>` / `<`, a band as
+  `outside 90..250`, the PID's unit; the label as written — English for the starter rules — or the
+  PID), or `No alert rules set.`; then `Active now (N):` with `<label>: <pid> = <value>, <severity>,
+for <duration>` per active alert, or `Active now: none.`; and always the closing line `Fired alerts
+are not stored; only the ones active right now are known.` The store keeps the rules and the active
+  set only, so there is no alert history to read; none is added.
+
 ## Acceptance
 
 - In the simulator, scripting coolant past a threshold fires a critical alert and a haptic; dropping

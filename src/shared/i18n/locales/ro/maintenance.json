@@ -30,5 +30,20 @@
     "brake-fluid": "Lichid de frână",
     "coolant": "Lichid de răcire",
     "dpf-check": "Verificare filtru de particule (DPF)"
+  },
+  "agent": {
+    "tool": {
+      "read_maintenance": "Jurnal de întreținere"
+    },
+    "finding": {
+      "overdue": {
+        "title": "{{item}} – termen depășit",
+        "detail": "Jurnalul arată că {{item}} a depășit intervalul de service. Programează-l curând; întreținerea amânată poate cauza sau agrava defecte."
+      },
+      "soon": {
+        "title": "{{item}} – scadent în curând",
+        "detail": "Jurnalul arată că {{item}} este scadent în următoarele săptămâni sau kilometri. Planifică-l."
+      }
+    }
   }
 }

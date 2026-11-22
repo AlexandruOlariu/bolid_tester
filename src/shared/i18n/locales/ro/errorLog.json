@@ -26,5 +26,10 @@
   "export": "Exportă",
   "clear": "Golește",
   "empty": "Nicio eroare înregistrată. Când ceva nu merge, va fi salvat aici ca să-l poți exporta și remedia mai târziu.",
-  "emptyFilter": "Nimic pentru acest filtru."
+  "emptyFilter": "Nimic pentru acest filtru.",
+  "agent": {
+    "tool": {
+      "read_app_errors": "Erori ale aplicației"
+    }
+  }
 }

@@ -119,6 +119,26 @@ add, coding on backup); the timeline only reads them.
   hands the screen the history entries by id (AI sheet, report re-share, export).
 - No new store and no persisted shape change in plan 16.
 
+## AI agent
+
+- AI agent: `read_history`, `history_compare` — `agent/agentTools.ts` contributes both tools and the
+  `history` skill to the [AI agent](./ai-diagnose.md#agent). Both are always offered and read only
+  the **active car's** records: a record's `vehicle.id` is `getActiveProfile().id`, or its VIN is the
+  active garage car's learned VIN. Like the timeline they read other slices' stores (module-scan,
+  trip-recording) and write nothing.
+  - `read_history {limit?: 1..10}` — runs at triage with `{ limit: 5 }`, no adapter time. With no AI
+    run, fault-code check or saved scan for the car: `No history for this car yet.` Otherwise: the
+    newest `limit` AI runs (`<yyyy-mm-dd hh:mm> <overall>: <summary's first line ≤ 120 chars>`), the
+    newest `limit` fault-code checks with their codes (`P0401, P2002 pending (MIL on)` or `no
+codes`), then over those checks (oldest first) `Codes went away between <d1> and <d2> (cleared or
+fixed)` for each check with codes followed by one without and `Recurring: P0401 (3 checks)` for
+    each code in ≥ 2 checks, and last `Saved module scans: N (newest <date>)`.
+  - `history_compare {pid}` — `costMs` 1000. Per trip of the car's newest 10 (`tripCarKey`), oldest
+    → newest: `<date>: max <stats.max[pid]> / avg <mean of the trip CSV's samples> <unit>`
+    (`not logged` when the trip did not record the PID, `avg n/a` when its CSV cannot be read), then
+    one live read through the read-only facade: `Now: <value>`, `Now: no answer` or `Now: not
+supported by this car`. No trips: `No trips recorded for this car.` before the live line.
+
 ## Retention
 
 - `historyStore` is **capped at `MAX_HISTORY` (200)** newest entries; scans at 50, coding backups

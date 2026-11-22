@@ -21,5 +21,10 @@
     "coolant-hot": "Coolant overheating",
     "low-voltage": "Low battery voltage",
     "over-rev": "High RPM"
+  },
+  "agent": {
+    "tool": {
+      "read_alerts": "Alert rules"
+    }
   }
 }

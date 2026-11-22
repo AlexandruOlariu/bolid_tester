@@ -30,5 +30,20 @@
     "brake-fluid": "Brake fluid",
     "coolant": "Coolant",
     "dpf-check": "DPF inspection"
+  },
+  "agent": {
+    "tool": {
+      "read_maintenance": "Maintenance logbook"
+    },
+    "finding": {
+      "overdue": {
+        "title": "{{item}} overdue",
+        "detail": "Your logbook shows {{item}} is past its service interval. Have it done soon; overdue servicing can cause or worsen faults."
+      },
+      "soon": {
+        "title": "{{item}} due soon",
+        "detail": "Your logbook shows {{item}} is due within the next weeks or kilometres. Plan it in."
+      }
+    }
   }
 }

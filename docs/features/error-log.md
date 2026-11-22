@@ -93,6 +93,17 @@ deferral of the fatal handler.
 - **Capped at `MAX_ERRORS` (500)** — newest kept, oldest dropped, so the persisted file can't grow
   unbounded. Entries accumulate (newest first) until the cap or **Clear all**.
 
+## AI agent
+
+- AI agent: `read_app_errors` — `agent/agentTools.ts` contributes the tool and the `app_errors`
+  skill to the [AI agent](./ai-diagnose.md#agent). Always offered, no adapter time.
+  `read_app_errors {limit?: 1..10}` (default 10): `N app errors logged, newest first:`, then one
+  line per error, `"<age> ago <source> <severity>: <message>"` — the message's first line through
+  `scrubText` (VIN, device ids, addresses, URLs, keys, coordinates removed) and then cut to 120
+  characters — and `… (N older errors)`, and last the count per source over the last 24 h (`Last 24
+h: connection 2, ai 1 (3 errors)` or `Last 24 h: none`). An empty log reads `No app errors
+logged.`
+
 ## Acceptance
 
 - A connect failure, a fault-code read failure, or an AI-diagnose failure each add one entry with the

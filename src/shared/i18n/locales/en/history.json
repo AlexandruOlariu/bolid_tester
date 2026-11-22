@@ -61,5 +61,11 @@
     "backup": "Coding backup",
     "modules_one": "{{count}} module",
     "modules_other": "{{count}} modules"
+  },
+  "agent": {
+    "tool": {
+      "read_history": "Diagnostic history",
+      "history_compare": "Compare with past trips"
+    }
   }
 }
