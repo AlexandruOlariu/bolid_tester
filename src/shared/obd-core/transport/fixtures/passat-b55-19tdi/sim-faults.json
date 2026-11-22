@@ -36,7 +36,10 @@
     "020202": "NO DATA"
   },
   "sequences": {
-    "0100": ["SEARCHING...\r4100183A8003", "4100183A8003"]
+    "0100": [
+      "SEARCHING...\r4100183A8003",
+      "4100183A8003"
+    ]
   },
   "meta": {
     "source": "simulator",
@@ -50,7 +53,10 @@
     "protocol": "ISO_9141_2",
     "vin": "WVWZZZ3BZ4E342958",
     "supportedPidCount": 9,
-    "storedDtcs": ["P0113", "P0562"],
+    "storedDtcs": [
+      "P0113",
+      "P0562"
+    ],
     "pendingDtcs": [],
     "milOn": true,
     "freezeFrameCount": 2

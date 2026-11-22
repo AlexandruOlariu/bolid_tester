@@ -55,7 +55,11 @@
     "protocol": "ISO_15765_4_CAN_11_500",
     "vin": "WVWZZZ1KZ9W903398",
     "supportedPidCount": 16,
-    "storedDtcs": ["P2183", "P2015", "P0121"],
+    "storedDtcs": [
+      "P2183",
+      "P2015",
+      "P0121"
+    ],
     "pendingDtcs": [],
     "milOn": true,
     "freezeFrameCount": 3
