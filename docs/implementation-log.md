@@ -5,6 +5,39 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## On-device run: Maestro smoke, store screenshots, plan 20 manual check (2026-11-22)
+
+First run of the end-to-end layer on a real Android target: AVD `Sere_API36` (Android 16, x86_64,
+1080 × 2400), a release-signed APK with the embedded bundle, Maestro CLI 2.12.1 on Windows. Closes
+the open acceptance items of [plan 10](./plans/10-component-e2e-tests.md) (local run) and
+[plan 30](./plans/30-store-release-prep.md) (phone screenshots); details in
+[testing.md → End-to-end](./testing.md#end-to-end) and
+[accessibility.md → Manual check](./accessibility.md#manual-check-talkback--large-text).
+
+- **Smoke (`.maestro/simulator-smoke.yaml`):** green, repeatedly, on each APK built today; one
+  stale string fixed (vehicle subtitle). A stale Maestro driver on the device shows up as an
+  instant `DeviceServerDiedException`; force-stopping `dev.mobile.maestro` clears it.
+- **Store screenshots:** 8 per language in `store/screenshots/android/phone/{en,ro}/`, release
+  check passes. `scripts/screenshots.sh` now collects Maestro 2.x's `takeScreenshot` output from a
+  scratch `--test-output-dir`; the flow lost its English `env:` defaults (they overrode `-e`, so
+  the first RO run was English) and `scripts/screenshot-labels.mjs` makes labels ASCII-safe (the
+  Windows JVM decodes `-e` in the ANSI code page: `ș` → `?`). Flow steps added: select the Golf
+  profile, dismiss the Charts hint, one battery capture, odometer + three logged services, scroll
+  to the custom-codes field.
+- **App fixes found on the device:** the simulator answered PID 01 with spark ignition for every
+  profile — diesel profiles now report compression (`SimScenario.ignition`, sim fixtures
+  regenerated); Faults showed the raw ignition enum in Romanian and the readiness header ran off
+  the card — translated (`faultCodes:readiness.ignitionType.*`) and wrapping; at the largest font
+  and display size Info's values ran off the card, Live's fuel-economy title was clipped and every
+  `Input` clipped its text — rows wrap, the title wraps, Inputs are capped at 1.5×.
+- **Plan 20 manual check (by adb):** font scale 2.0 + display size largest on the seven tabs;
+  `uiautomator` hierarchy: 0 unlabelled interactive elements; Settings segments are radio buttons
+  with state; simulator banner on every tab and gone after **Use real adapter**. TalkBack's spoken
+  output and Remove animations still need a person.
+- **Logcat:** no `FATAL` / `AndroidRuntime` crash and no `ReactNativeJS` error across the runs.
+
+---
+
 ## Plan 30 — Store release prep (2026-11-10)
 
 [Plan 30](./plans/30-store-release-prep.md) landed: everything a Google Play / App Store listing

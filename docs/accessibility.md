@@ -143,6 +143,10 @@ Text scales with the OS font size; nothing disables scaling globally.
 - Display numbers are capped so tiles keep their shape: `Gauge` value and unit, `ValueCard` value
   (also `numberOfLines={1}`), the fuel-economy number and the splash title / subtitle use
   `maxFontSizeMultiplier={1.3}`.
+- Every `Input` is capped at 1.5× (`tamagui.config.ts` `defaultProps`): Tamagui inputs have a
+  fixed height, so larger text was clipped top and bottom.
+- Label / value rows wrap instead of overflowing: Info's rows put a long value (VIN, protocol) on
+  its own line, and the Faults readiness header moves the MIL state under the title.
 - Above font scale 1.5 (`LARGE_TEXT_FONT_SCALE`, `src/shared/ui/ValueCard.tsx`) every `ValueCard`
   goes full width, one per row — Live's Dashboard and All sensors views, Faults, Battery, DPF … —
   and so do All sensors' injection tiles; the tablet's Live card column computes one card per row.
@@ -189,3 +193,30 @@ Not automatable; do it before a release on an Android emulator:
    without clipped text; gauges stay circular; the Live cards are one per row.
 3. Settings → Accessibility → Remove animations: the splash shows no pulse; cards don't shrink on
    press.
+
+### Results — 2026-11-22 (emulator `Sere_API36`, Android 16, 1080 × 2400, release APK)
+
+Run over adb (`settings put system font_scale 2.0` + `wm density 560`, i.e. font size and display
+size at their largest, then reset), opening Connect, Vehicle, Live, Faults, Info, Settings and More
+by deep link with the simulator connected (Golf profile, two stored codes):
+
+- **Fixed in this pass:** Info's label / value rows ran the value off the card (VIN, calibration
+  ID, protocol, adapter cut at the right edge) — the row now wraps and the value shrinks
+  (`VehicleInfoScreen` `Row`); Live's fuel-economy title ("Fuel economy (fuel-rate)") wrapped under
+  `numberOfLines={1}` with its second line clipped — it now wraps freely; every `Input` (More's
+  search, maintenance odometer, custom DTCs …) clipped its text at 2× because Tamagui inputs have a
+  fixed height — `tamagui.config.ts` `defaultProps` now caps Input scaling at 1.5×
+  (`src/shared/ui/inputFontScale.test.tsx`).
+- **Accepted:** at both maxima, tab-bar labels and two-up buttons ellipsize ("Co…", "Dashbo…",
+  "Add fro…") and the simulator strip shows only the start of its text next to **Use real
+  adapter**; each keeps its full accessible name. Faults, Settings, Vehicle and More wrap and scroll
+  without clipping; gauges stay circular.
+- **TalkBack (by hierarchy, not by ear):** TalkBack is installed on the image but was not turned on —
+  driving the app by adb with TalkBack's gestures is not reliable. Instead `uiautomator dump` on the
+  same seven screens, top and three scrolls down, at font scale 1.0: every clickable / checkable
+  element and text field has a text or content description (0 unlabelled of 92). Settings segments
+  are `RadioButton`s with the right `checked` state, toggles are `Switch`es, vehicle cards read
+  name, protocol and "Selected / Not selected". Step 1's spoken output and step 3 (Remove
+  animations) still need a person.
+- **Simulator banner (plans 01 / 07):** with the simulator on, the strip is on all seven tabs and
+  on hidden routes (battery, maintenance, …); **Use real adapter** removes it everywhere.

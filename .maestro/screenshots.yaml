@@ -4,28 +4,22 @@
 # and resizes the results to the store size:
 #   scripts/screenshots.sh            # English, then Romanian
 #   scripts/screenshots.sh ro         # one language
-# Running this flow directly uses the English defaults below:
-#   maestro test .maestro/screenshots.yaml
+# The labels are NOT defaulted here: Maestro 2.x lets a flow's `env:` win over `maestro test -e`, so
+# English defaults in this file silently replaced the Romanian labels (and the RO run captured an
+# English UI). Run the flow through the script; `OUT` and every label below come from it.
 # Labels come from the app's strings (tapOn text is a regular expression); when a screen's copy
 # changes, the script picks the new text up from the locale files. Screens are opened by deep link
 # (scheme `bolidtester`, app.json), so only the setup steps depend on labels.
+#   OUT, LANG_BUTTON, TAB_SETTINGS, TAB_CONNECT, DEV_TITLE, SIM_SOURCE, CUSTOM_DTCS,
+#   CUSTOM_PLACEHOLDER, CONNECT_SIM, PROFILES_TITLE, RUN_INSPECTION, SCAN_ALL, CHART_HINT_DISMISS,
+#   BATTERY_CAPTURE, MAINT_ODO_LABEL, MAINT_ODO_PLACEHOLDER, MAINT_SAVE, MAINT_LOG_SERVICE,
+#   MAINT_AIR_FILTER, MAINT_CABIN_FILTER, MAINT_LOG_TODAY  (scripts/screenshot-labels.mjs)
 appId: com.bolidtester.app
 name: Store screenshots — simulator, Golf, two injected faults
 env:
-  OUT: store/screenshots/android/phone/en
-  # The language button in Settings → General → Language (endonyms: English / Română).
-  LANG_BUTTON: English
-  TAB_SETTINGS: Settings
-  TAB_CONNECT: Connect
-  DEV_TITLE: Developer & simulator
-  SIM_SOURCE: Simulator \(no car\)
+  # Not language-dependent: the simulated vehicle id and the built-in profile's display name.
   SIM_VEHICLE: golf-plus-2009-20tdi
-  CUSTOM_DTCS: Custom…
-  CUSTOM_PLACEHOLDER: e\.g\. P0135, P0420
-  CONNECT_SIM: Connect to simulator
-  PROFILES_TITLE: Built-in profiles
-  RUN_INSPECTION: Run inspection
-  SCAN_ALL: Scan all modules
+  SIM_PROFILE_NAME: VW Golf Plus 2009 2\.0 TDI 81 kW
 ---
 - launchApp:
     clearState: true
@@ -73,6 +67,11 @@ env:
       text: ${CUSTOM_DTCS}
     direction: DOWN
 - tapOn: ${CUSTOM_DTCS}
+# The custom-codes field opens below the chips, off screen when the labels are long (Romanian).
+- scrollUntilVisible:
+    element:
+      text: ${CUSTOM_PLACEHOLDER}
+    direction: DOWN
 - tapOn: ${CUSTOM_PLACEHOLDER}
 - inputText: 'P2183, P2015'
 - hideKeyboard
@@ -83,6 +82,14 @@ env:
 - extendedWaitUntil:
     visible: ${PROFILES_TITLE}
     timeout: 30000
+# The app suggests the Golf profile from the VIN but stays on Auto / Generic until the user picks
+# it; select it so Module scan, Battery and Maintenance have the car-specific content.
+- scrollUntilVisible:
+    element:
+      text: ${SIM_PROFILE_NAME}
+    direction: DOWN
+- tapOn: ${SIM_PROFILE_NAME}
+- waitForAnimationToEnd
 
 # 5. The screens, in store order. The simulator keeps the engine running, so Live moves.
 - openLink: bolidtester://dashboard
@@ -104,8 +111,12 @@ env:
 - takeScreenshot: ${OUT}/03-inspection
 
 - openLink: bolidtester://charts
+# The first visit shows a gesture hint over the first chart; dismiss it so the plots fill the shot.
+- tapOn:
+    text: ${CHART_HINT_DISMISS}
+    optional: true
 - waitForAnimationToEnd:
-    timeout: 5000
+    timeout: 8000
 - takeScreenshot: ${OUT}/04-charts
 
 - openLink: bolidtester://module-scan
@@ -115,11 +126,39 @@ env:
     timeout: 90000
 - takeScreenshot: ${OUT}/05-module-scan
 
+# Battery: live voltage is read only while capturing, so run one capture (about 6 s) for a report.
 - openLink: bolidtester://battery
-- waitForAnimationToEnd:
-    timeout: 4000
+- tapOn: ${BATTERY_CAPTURE}
+- extendedWaitUntil:
+    visible: ${BATTERY_CAPTURE}
+    timeout: 30000
 - takeScreenshot: ${OUT}/06-battery
 
+# Maintenance: enter an odometer and log three services today, so the list shows due distances
+# instead of "no history yet". Item buttons repeat the list titles, hence `below` the section title.
 - openLink: bolidtester://maintenance
+- tapOn: ${MAINT_ODO_PLACEHOLDER}
+- inputText: '184500'
+# No hideKeyboard here: on this screen Maestro's Back press can leave the route. The first tap may
+# only close the keyboard, so Save is tapped twice (saving again is harmless).
+- tapOn: ${MAINT_SAVE}
+- tapOn: ${MAINT_SAVE}
+- scrollUntilVisible:
+    element:
+      text: ${MAINT_LOG_TODAY}
+    direction: DOWN
+- tapOn: ${MAINT_LOG_TODAY}
+- tapOn:
+    text: ${MAINT_AIR_FILTER}
+    below: ${MAINT_LOG_SERVICE}
+- tapOn: ${MAINT_LOG_TODAY}
+- tapOn:
+    text: ${MAINT_CABIN_FILTER}
+    below: ${MAINT_LOG_SERVICE}
+- tapOn: ${MAINT_LOG_TODAY}
+- scrollUntilVisible:
+    element:
+      text: ${MAINT_ODO_LABEL}
+    direction: UP
 - waitForAnimationToEnd
 - takeScreenshot: ${OUT}/07-maintenance

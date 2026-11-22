@@ -40,7 +40,7 @@ name: Simulator smoke — connect, read faults, clear
 - tapOn: 'Connect'
 - tapOn: 'Connect to simulator'
 - extendedWaitUntil:
-    visible: 'Pick a profile, or use Auto / Generic for any OBD2 car'
+    visible: 'Pick a car, or use Auto / Generic for any OBD2 car'
     timeout: 30000
 - tapOn: 'Connect'
 - assertVisible: 'Connected'

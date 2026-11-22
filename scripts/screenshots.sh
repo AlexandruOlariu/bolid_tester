@@ -45,7 +45,19 @@ for lang in "${langs[@]}"; do
     if [ -n "$kv" ]; then args+=(-e "$kv"); fi
   done <<< "$labels"
   echo "screenshots: $lang -> $out"
-  maestro test "${args[@]}" .maestro/screenshots.yaml
+  rm -f "$out"/*.png
+  # Maestro 1.x writes a relative `takeScreenshot` path under the working directory; Maestro 2.x
+  # writes it under <test-output-dir>/<flow>/takeScreenshot/. Run with a scratch output dir and
+  # collect from there when nothing landed in $out. `cygpath -m` gives the C:/... form the JVM needs
+  # under Git Bash on Windows.
+  tmp="$(mktemp -d)"
+  jtmp="$(cygpath -m "$tmp" 2>/dev/null || echo "$tmp")"
+  maestro test --test-output-dir "$jtmp" "${args[@]}" .maestro/screenshots.yaml
+  if ! ls "$out"/*.png >/dev/null 2>&1; then
+    find "$tmp" -path '*takeScreenshot*' -name '*.png' -exec cp {} "$out"/ \;
+  fi
+  rm -rf "$tmp"
+  ls "$out"/*.png >/dev/null 2>&1 || { echo "screenshots: no PNGs for $lang" >&2; exit 1; }
 done
 
 # Resize to 1080 × 2400 (and any other set size), regenerate the graphics, check everything.

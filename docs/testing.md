@@ -161,18 +161,18 @@ app's real labels; when a screen's copy changes, update the flow in the same cha
   prebuild's debug signing, x86_64 only), boots an API 34 x86_64 emulator with
   `reactivecircus/android-emulator-runner@v2`, installs the APK and runs the flow; the JUnit report
   is uploaded as an artifact.
-- **Status:** the flow and the workflow are written and YAML-valid, and every label in the flow is
-  checked against the source; neither has run yet. The dev workstation has the Android SDK
-  emulator, an AVD (`Sere_API36`), `adb` and JDK 17. What is missing to finish the acceptance item:
-  (1) the Maestro CLI is not installed (`maestro` is not on `PATH`; see
-  [Maestro's install guide](https://docs.maestro.dev/getting-started/installing-maestro)); (2) no
-  APK has been built for the emulator (`npm run prebuild:android`, then `npm run android` with
-  `npm start`, or a release APK); (3) `e2e.yml` has not been dispatched, which needs the branch on
-  GitHub. Things to watch on the first run: the bare `Connect` taps must hit the tab (the Connect
-  screen's own title is also "Connect", but the flow only taps it from Settings and Vehicle), and
-  the `(?i)clear` alert confirm must match the dialog button, not the **Clear codes** button behind
-  it. The first run is an owner action with a step-by-step procedure in
-  [plan 10 → Owner actions](./plans/10-component-e2e-tests.md#owner-actions).
+- **Status (2026-11-22): green on an emulator.** First local runs on AVD `Sere_API36` (Android 16,
+  x86_64, 1080 × 2400) with a release-signed APK (embedded bundle) and Maestro CLI 2.12.1 on
+  Windows: the flow passed on every run after the first — three in a row on the first APK, once on
+  the second and twice in a row on the final build (23 steps each; the optional permission tap is
+  skipped, that image shows no prompt). The only change
+  it needed was a stale string (the vehicle screen's subtitle is now "Pick a car, or use Auto /
+  Generic for any OBD2 car"). The two things flagged for the first run held: the bare `Connect`
+  taps hit the tab, and `(?i)clear` hits the alert button. If Maestro stops at once with
+  `DeviceServerDiedException … UNAVAILABLE` and no step output, a stale driver from an earlier
+  session is still on the device: `adb shell am force-stop dev.mobile.maestro` (and
+  `dev.mobile.maestro.test`) and run again. `e2e.yml` has still not been dispatched (it needs the
+  branch on GitHub).
 
 ### Store screenshots (plan 30)
 
@@ -183,9 +183,25 @@ the first-run card → simulator, Golf, injected `P2183, P2015` → connect → 
 `maintenance`). Run it through `scripts/screenshots.sh [en|ro]`: it puts the emulator status bar
 in demo mode, passes the labels of the chosen language (`scripts/screenshot-labels.mjs` reads
 them from the locale files) and finishes with `npm run store:assets` (resize to 1080 × 2400) and
-`npm run store:release-check`. Same prerequisites and status as the smoke flow above: written,
-YAML-valid, labels read from the source, not yet run (the Maestro CLI is not installed). Details in
-[store/README.md](../store/README.md).
+`npm run store:release-check`. Labels reach the flow only from the script: Maestro 2.x lets a
+flow's `env:` win over `maestro test -e`, so the flow carries no language defaults, and the script
+turns every non-ASCII character into `.` because on Windows the JVM decodes `-e` arguments in the
+ANSI code page (no `ș` / `ț`). Maestro 2.x saves `takeScreenshot` files under its test-output
+folder; the script runs with a scratch `--test-output-dir` and copies them into
+`store/screenshots/android/phone/<lang>/`. Details in [store/README.md](../store/README.md).
+
+- **Status (2026-11-22): generated.** On the same emulator and APK: 8 PNGs per language (`01-live`
+  … `08-connect`, 1080 × 2400), `npm run store:release-check` passes ("16 screenshots (release
+  minimums met)"). Each one was checked by eye: real content, no errors or spinners, the RO set
+  in Romanian (only the analysis texts, PID / DTC names and module names stay English — the
+  boundary in [i18n.md](./i18n.md#what-stays-english-the-untranslated-identifier-boundary)).
+  Flow fixes on the way: pick the Golf profile after connecting (the app only suggests it from
+  the VIN), dismiss the Charts gesture hint, run one battery capture (live voltage is read only
+  while capturing), and enter an odometer and log three services so Maintenance shows due
+  distances; scroll to the custom-codes field (off screen in Romanian); no `hideKeyboard` on
+  Maintenance (its Back press left the route). App fixes it surfaced: the simulator reported spark
+  ignition for diesel profiles, and Faults showed the raw ignition enum and let the Romanian
+  readiness header run off the card. iOS (6.7") screenshots are still to do (needs a Mac).
 
 ## On-car manual checklists
 

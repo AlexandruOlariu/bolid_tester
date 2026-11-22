@@ -11,6 +11,9 @@ build/
 .expo-shared/
 ios/
 android/
+# …but not the store screenshot sets (store/screenshots/<platform>/…), which are committed.
+!store/screenshots/android/
+!store/screenshots/ios/
 *.orig.*
 web-build/
 
