@@ -4,6 +4,7 @@ import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { connectSimulator } from '@test/simulator';
 import { mockPush } from '@test/mocks/router';
+import { i18n } from '@/shared/i18n';
 import { FaultCodesScreen } from './FaultCodesScreen';
 
 describe('FaultCodesScreen', () => {
@@ -27,6 +28,17 @@ describe('FaultCodesScreen', () => {
     expect(screen.getByText('Stored (2)')).toBeTruthy();
     expect(screen.getByText('Readiness')).toBeTruthy();
     expect(screen.getByText('MIL ON')).toBeTruthy();
+  });
+
+  it('names the ignition type in the readiness summary, translated', async () => {
+    // The Golf is a TDI: the simulator reports compression ignition (Mode 01 PID 01 byte B bit 3).
+    await connectSimulator({ injectedDtcs: ['P0299'] });
+    renderWithProviders(<FaultCodesScreen />);
+    expect(await screen.findByText(/· compression ignition ·/)).toBeTruthy();
+    await act(async () => {
+      await i18n.changeLanguage('ro');
+    });
+    expect(await screen.findByText(/· aprindere prin compresie ·/)).toBeTruthy();
   });
 
   it('expands the inline guide for a code', async () => {

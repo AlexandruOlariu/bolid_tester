@@ -142,9 +142,16 @@ function ReadinessPanel({ readiness }: { readiness: MonitorStatus }) {
       accessibilityLiveRegion="polite"
       testID="readiness-panel"
     >
-      <XStack justifyContent="space-between" alignItems="center">
-        <Text fontWeight="800">{t('readiness.title')}</Text>
-        <Text fontWeight="800" color={readiness.milOn ? '$statusError' : '$statusOk'}>
+      {/* Wraps when the title and the MIL state don't fit one line (longer languages, large text). */}
+      <XStack flexWrap="wrap" columnGap="$3" alignItems="center">
+        <Text flexShrink={1} fontWeight="800">
+          {t('readiness.title')}
+        </Text>
+        <Text
+          marginLeft="auto"
+          fontWeight="800"
+          color={readiness.milOn ? '$statusError' : '$statusOk'}
+        >
           {readiness.milOn ? t('readiness.milOn') : t('readiness.milOff')}
         </Text>
       </XStack>
@@ -152,7 +159,7 @@ function ReadinessPanel({ readiness }: { readiness: MonitorStatus }) {
         {t('readiness.summary', {
           complete,
           total: supported.length,
-          ignition: readiness.ignition,
+          ignition: t(`readiness.ignitionType.${readiness.ignition}`),
           count: readiness.dtcCount,
         })}
       </Paragraph>

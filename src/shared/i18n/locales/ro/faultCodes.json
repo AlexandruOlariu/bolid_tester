@@ -25,7 +25,11 @@
     "summary_one": "{{complete}}/{{total}} monitoare complete · aprindere {{ignition}} · {{count}} DTC",
     "summary_few": "{{complete}}/{{total}} monitoare complete · aprindere {{ignition}} · {{count}} DTC-uri",
     "summary_other": "{{complete}}/{{total}} monitoare complete · aprindere {{ignition}} · {{count}} de DTC-uri",
-    "notReady": "Nepregătite: {{names}}"
+    "notReady": "Nepregătite: {{names}}",
+    "ignitionType": {
+      "spark": "prin scânteie",
+      "compression": "prin compresie"
+    }
   },
   "coach": {
     "title": "Asistent ciclu de rulare",

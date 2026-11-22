@@ -23,7 +23,11 @@
     "notReadyA11y": "Not ready: {{names}}.",
     "summary_one": "{{complete}}/{{total}} monitors complete · {{ignition}} ignition · {{count}} DTC",
     "summary_other": "{{complete}}/{{total}} monitors complete · {{ignition}} ignition · {{count}} DTCs",
-    "notReady": "Not ready: {{names}}"
+    "notReady": "Not ready: {{names}}",
+    "ignitionType": {
+      "spark": "spark",
+      "compression": "compression"
+    }
   },
   "coach": {
     "title": "Drive-cycle coach",
