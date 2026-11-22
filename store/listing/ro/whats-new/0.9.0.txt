@@ -1,0 +1,7 @@
+Versiune beta completă pentru testeri.
+• Fiecare cod de eroare explicat, cu cauze și gravitate
+• Garajul meu: mai multe mașini, profiluri învățate și istoric pe mașină
+• Raport al vehiculului, hărți GPS ale călătoriilor, backup într-un fișier
+• Română și engleză, culori accesibile, aspect pentru tabletă
+• Adaptoare Wi-Fi și Bluetooth clasic, conexiune Bluetooth mai stabilă
+Validarea pe mașini e în curs; scrie-ne din Mai multe → Raportează o problemă.
