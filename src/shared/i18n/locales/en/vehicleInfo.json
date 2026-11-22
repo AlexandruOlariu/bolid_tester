@@ -11,5 +11,10 @@
   "supportedPids": "Supported PIDs",
   "supportedMode01": "Supported Mode 01 PIDs",
   "extended": "Extended PIDs (experimental)",
-  "decodeVin": "Decode VIN"
+  "decodeVin": "Decode VIN",
+  "agent": {
+    "tool": {
+      "read_identity": "Vehicle identity"
+    }
+  }
 }

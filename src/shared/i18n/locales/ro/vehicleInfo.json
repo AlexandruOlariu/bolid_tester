@@ -11,5 +11,10 @@
   "supportedPids": "PID-uri suportate",
   "supportedMode01": "PID-uri Mode 01 suportate",
   "extended": "PID-uri extinse (experimental)",
-  "decodeVin": "Decodează VIN"
+  "decodeVin": "Decodează VIN",
+  "agent": {
+    "tool": {
+      "read_identity": "Identitatea vehiculului"
+    }
+  }
 }

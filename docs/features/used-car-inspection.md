@@ -31,14 +31,27 @@ So **many not-ready monitors + no stored codes + a tiny "distance since codes cl
 
 ## hooks
 
-- `useInspection()` — orchestrates the reads (`readReadiness`, `readDtcs('03'|'07'|'0A')`,
-  `readFreezeFrame`, `readValue('0131')`, VIN from the session), builds an `InspectionInput`, calls
-  `assessInspection`, stores the report, exposes `{ run, report, running }`.
+- `useInspection()` — calls `runInspection(session, info?.vin ?? null)`, stores the report,
+  exposes `{ run, report, running }`.
 
 ## api (core)
 
 - Pure logic in [`obd-core/analysis/inspection`](../architecture.md) — `assessInspection(input)` →
   `{ verdict, score, checks[] }`. No I/O; unit-tested, incl. the recently-cleared heuristic.
+- `api/runInspection.ts` — `runInspection(ro, knownVin)`: the reads (`readReadiness`,
+  `readDtcs('03'|'07'|'0A')`, `readFreezeFrame`, `readValue('0131')`, `readIupr`, and `readVin` only
+  when `knownVin` is null) built into an `InspectionInput` and assessed by `assessInspection`. It
+  needs only those six standard-OBD2 reads, so the screen passes the `DiagnosticSession` and the AI
+  agent passes its read-only facade.
+
+## AI agent
+
+- AI agent: `read_inspection` — `agent/agentTools.ts` contributes the tool (through `runInspection`
+  on the read-only facade with the run's VIN; digest `Verdict: <verdict> (score N/100)` then one
+  `<status>: <label> — <detail>` line per check, clamped with `… (N more)`; one finding
+  `inspection:agent.finding.<verdict>` — pass `ok`, caution `info`, fail `warn` — with the score),
+  the `used_car_check` procedure and the `used_car_check` skill to the
+  [AI agent](./ai-diagnose.md#agent). Always offered (standard OBD2, CAN or K-line).
 
 ## model
 

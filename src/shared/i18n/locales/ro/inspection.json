@@ -8,5 +8,24 @@
     "pass": "TRECUT",
     "caution": "ATENȚIE",
     "fail": "PICAT"
+  },
+  "agent": {
+    "tool": {
+      "read_inspection": "Verificare mașină second-hand"
+    },
+    "finding": {
+      "pass": {
+        "title": "Verificarea second-hand a trecut ({{score}}/100)",
+        "detail": "ECU-ul motorului / emisiilor nu arată nimic suspect: fără coduri memorate și fără semne că au fost șterse recent. Verifică doar ECU-ul, nu mecanica sau caroseria."
+      },
+      "caution": {
+        "title": "Verificare second-hand: atenție ({{score}}/100)",
+        "detail": "S-au găsit coduri în așteptare, o posibilă ștergere recentă a codurilor sau contoare de utilizare resetate. Verifică din nou după un ciclu complet de condus înainte să decizi."
+      },
+      "fail": {
+        "title": "Verificarea second-hand a picat ({{score}}/100)",
+        "detail": "Martorul de motor este aprins sau există coduri de eroare memorate / permanente: un defect actual trebuie diagnosticat înainte de cumpărare sau vânzare."
+      }
+    }
   }
 }

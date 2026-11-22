@@ -27,6 +27,16 @@ None in this slice. Everything is read once, at connect time, by `DiagnosticSess
 supported-PID bitmaps (`discoverSupportedPids`), `readVin()` (`0902`, the multi-frame VIN
 reassembled) and `readCalibrationId()` (`0904`). The result is a `SessionInfo`.
 
+## AI agent
+
+- AI agent: `read_identity` — `agent/agentTools.ts` contributes the tool and the `vehicle_identity`
+  skill to the [AI agent](./ai-diagnose.md#agent). Always offered. Digest: the VIN as read (the
+  run's VIN, else `readVin()`), its offline decode by `decodeVin` (make and country, model year,
+  plant code, `VIN check digit valid: yes|no` — outside North America both the year and the check
+  digit are labelled as not required), `Calibration ID` (`readCalibrationId`), `ECU part number`
+  (`readPartNumber`, CAN only) and `Protocol` (`PROTOCOL_LABELS`); a missing VIN or one that is not
+  17 valid characters is said in one line and not decoded. No finding, no procedure.
+
 ## model
 
 No store of its own. It reads `info: SessionInfo | null` (`protocol`, `voltage`, `version`,

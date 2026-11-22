@@ -10,6 +10,9 @@ import { extendedPidsAgentTools } from '@/features/extended-pids';
 import { dpfAgentTools } from '@/features/dpf';
 import { adaptationsAgentTools } from '@/features/adaptations';
 import { codingAgentTools } from '@/features/coding';
+import { inspectionAgentTools } from '@/features/inspection';
+import { vehicleInfoAgentTools } from '@/features/vehicle-info';
+import { adapterHealthAgentTools } from '@/features/adapter-health';
 import type { AgentContribution } from '@/shared/obd-core';
 
 /** What each feature contributes to the AI diagnostic agent (plan 34a). Features never import each
@@ -25,6 +28,9 @@ export const AGENT_CONTRIBUTIONS: AgentContribution[] = [
   dpfAgentTools,
   adaptationsAgentTools,
   codingAgentTools,
+  inspectionAgentTools,
+  vehicleInfoAgentTools,
+  adapterHealthAgentTools,
 ];
 
 export default function AiDiagnoseRoute() {

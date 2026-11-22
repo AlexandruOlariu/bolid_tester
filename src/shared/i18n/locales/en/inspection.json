@@ -8,5 +8,24 @@
     "pass": "PASS",
     "caution": "CAUTION",
     "fail": "FAIL"
+  },
+  "agent": {
+    "tool": {
+      "read_inspection": "Used-car check"
+    },
+    "finding": {
+      "pass": {
+        "title": "Used-car check passed ({{score}}/100)",
+        "detail": "The engine / emissions ECU shows nothing suspicious: no stored codes and no sign of a recent code clear. It screens the ECU only, not the mechanics or the body."
+      },
+      "caution": {
+        "title": "Used-car check: caution ({{score}}/100)",
+        "detail": "Pending codes, a possible recent code clear or reset in-use counters were found. Re-check after a full drive cycle before you decide."
+      },
+      "fail": {
+        "title": "Used-car check failed ({{score}}/100)",
+        "detail": "The check-engine light is on or stored / permanent fault codes are present: a current fault needs a diagnosis before you buy or sell."
+      }
+    }
   }
 }

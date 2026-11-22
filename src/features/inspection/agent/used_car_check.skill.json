@@ -1,0 +1,22 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "used_car_check",
+  "kind": "capability",
+  "description": "Use when the owner is buying or selling a used car, or asks whether fault codes were cleared recently to hide a problem.",
+  "tools": ["read_inspection"],
+  "procedure": "used_car_check",
+  "instructions": [
+    "Call read_inspection {} once: it reads MIL, stored / pending / permanent codes, readiness, the distance since codes were cleared, the freeze frame, the in-use counters and the VIN, and assesses them.",
+    "The first line is \"Verdict: <pass|caution|fail> (score N/100)\"; each further line is \"<status>: <check> — <detail>\" with status pass, warn, fail or info.",
+    "When stored or permanent codes are listed, look them up with read_dtcs_detail before you explain what they mean for a buyer.",
+    "Say plainly that this screens the engine / emissions ECU only: it is not a mechanical, body or accident-history inspection."
+  ],
+  "interpret": [
+    "Verdict fail: a stored or permanent code or the MIL is on. Permanent codes cannot be cleared by a tool or a battery pull: they mean a current emissions fault.",
+    "Verdict caution: pending codes (intermittent, not yet confirmed), a possible recent code clear or recently reset in-use counters.",
+    "\"Possible recent code clear\" needs three or more monitors not ready, no stored codes and at most 80 km since codes were cleared: advise a re-check after a full drive cycle before buying.",
+    "Monitors not ready on their own are not proof of tampering: a recent battery disconnect does the same.",
+    "Fewer than 50 OBD monitoring cycles in the in-use counters (IUPR) means the OBD memory looks recently cleared even when readiness has been driven back to complete.",
+    "Verdict pass means the emissions ECU shows nothing suspicious right now; it never proves the car is sound."
+  ]
+}

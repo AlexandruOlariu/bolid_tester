@@ -17,3 +17,4 @@ export {
 } from './api/adapterReportJson';
 export type { AdapterReportJson, AdapterReportJsonContext } from './api/adapterReportJson';
 export type { AdapterShareFormat } from './hooks/useAdapterHealth';
+export { agentTools as adapterHealthAgentTools } from './agent/agentTools';

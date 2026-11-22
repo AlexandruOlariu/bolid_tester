@@ -27,5 +27,24 @@
     "voltage": "Se citește tensiunea (ATRV)…",
     "protocol": "Se detectează protocolul (ATDPN)…",
     "timing": "Se cronometrează 0100 ({{n}}/{{total}})…"
+  },
+  "agent": {
+    "tool": {
+      "check_adapter": "Starea adaptorului"
+    },
+    "finding": {
+      "good": {
+        "title": "Adaptorul este în stare bună",
+        "detail": "Adaptorul OBD răspunde rapid și sigur, deci nu el cauzează întreruperile sau citirile ciudate."
+      },
+      "ok": {
+        "title": "Adaptorul este utilizabil, cu rezerve",
+        "detail": "Adaptorul OBD funcționează, dar nu este rapid sau raportează un firmware de clonă. Pot apărea mici ciudățenii; un adaptor mai bun poate ajuta dacă citirile se întrerup."
+      },
+      "poor": {
+        "title": "Adaptorul este lent sau nesigur",
+        "detail": "Adaptorul OBD răspunde încet sau deloc. Reintrodu-l în priză sau încearcă un adaptor mai bun înainte să te bazezi pe datele live sau să dai vina pe mașină."
+      }
+    }
   }
 }

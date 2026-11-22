@@ -74,6 +74,16 @@ latenciesMs, attempts, latency }, grade: { grade, cloneSuspected, notes }, ranAt
   ("IOS-Vlink" + "ELM327 v2.2" → `ios-vlink__elm327-v2-2`; no name → `unknown__…`) and
   `reportFileName` live in `@/shared/adapters` because the matrix build script shares them.
 
+## AI agent
+
+- AI agent: `check_adapter` — `agent/agentTools.ts` contributes the tool, the `adapter_health`
+  procedure and the `adapter_health` skill to the [AI agent](./ai-diagnose.md#agent). Always
+  offered. It runs `runHealthCheck` with a 5-request burst (`AGENT_BURST`) over the read-only
+  facade (`adapterVersion` / `voltage` / `protocolNumber`, each `0100` through `request`, which
+  refuses anything but a read) on the run's clock; digest `Grade`, `Firmware`, `Voltage` (V),
+  `Protocol`, `Latency: median N ms, slowest N ms` and `Timeouts: N/5`; one finding
+  `adapterHealth:agent.finding.<grade>` — good `ok`, ok `info`, poor `warn`.
+
 ## Compatibility matrix (plan 29)
 
 - Reports contributed to `docs/adapters/reports/` are aggregated by `npm run adapters:build`

@@ -1,0 +1,20 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "adapter_health",
+  "kind": "capability",
+  "description": "Use when readings drop out, the app keeps disconnecting or data looks odd, to rule the OBD adapter in or out before blaming the car.",
+  "tools": ["check_adapter"],
+  "procedure": "adapter_health",
+  "instructions": [
+    "Call check_adapter {} once: it reads the adapter firmware, the supply voltage it sees and the protocol, then times 5 requests and grades the adapter good, ok or poor.",
+    "Read the grade first, then the latency and timeouts; mention the firmware only when it is flagged as a clone or missing.",
+    "This checks the adapter, not the car: never turn a poor adapter grade into a vehicle fault."
+  ],
+  "interpret": [
+    "Grade good: the adapter answers quickly; dropouts are then more likely the car, the wiring or the phone's Bluetooth link.",
+    "Grade ok: usable; a clone firmware string (v1.5, v2.1) caps an otherwise fast adapter at ok, and it may show occasional protocol quirks.",
+    "Grade poor: slow (median over 150 ms on CAN, over 400 ms on K-line) or not answering; advise reseating the adapter or trying a better one before trusting live data.",
+    "Timeouts above 0 of 5 mean requests went unanswered: with a good median that points to an intermittent link, not a slow adapter.",
+    "The voltage is the car's supply at the OBD socket as the adapter reads it: under 11.5 V with the engine off is a weak battery or ignition off, and live readings may drop out. With the engine running, a voltage under 13.5 V = not charging."
+  ]
+}

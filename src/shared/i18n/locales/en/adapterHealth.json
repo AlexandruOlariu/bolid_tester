@@ -27,5 +27,24 @@
     "voltage": "Reading voltage (ATRV)…",
     "protocol": "Detecting protocol (ATDPN)…",
     "timing": "Timing 0100 ({{n}}/{{total}})…"
+  },
+  "agent": {
+    "tool": {
+      "check_adapter": "Adapter health"
+    },
+    "finding": {
+      "good": {
+        "title": "Adapter is healthy",
+        "detail": "The OBD adapter answers quickly and reliably, so it is not the cause of dropouts or odd readings."
+      },
+      "ok": {
+        "title": "Adapter is usable, with caveats",
+        "detail": "The OBD adapter works but is not fast, or reports a clone firmware string. Expect occasional quirks; a better adapter may help if readings drop out."
+      },
+      "poor": {
+        "title": "Adapter is slow or unreliable",
+        "detail": "The OBD adapter answers slowly or not at all. Reseat it or try a better adapter before trusting live data or blaming the car."
+      }
+    }
   }
 }

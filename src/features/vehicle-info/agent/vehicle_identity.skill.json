@@ -1,0 +1,18 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "vehicle_identity",
+  "kind": "capability",
+  "description": "Use when the exact car matters: which make, model year or engine software it is, whether the VIN matches the papers, or which protocol it speaks.",
+  "tools": ["read_identity"],
+  "instructions": [
+    "Call read_identity {} once: it gives the VIN as the ECU reported it, the offline decode (make and country, model year, plant code, check digit), the calibration id, the engine ECU part number on CAN and the protocol.",
+    "Quote the VIN exactly as read; when the owner has the registration papers, ask them to compare it character by character.",
+    "Use the calibration id and the ECU part number to say which engine software the car runs; they are identifiers, not faults."
+  ],
+  "interpret": [
+    "The model-year and check-digit rules are North-American: on European cars (VAG, Fiat) the year from char 10 is indicative and a check digit that does not match means nothing.",
+    "On a North-American VIN (first character 1-5) a check digit that does not match points to a mistyped or altered VIN.",
+    "\"not reported\" means the ECU did not answer that request: common on older K-line ECUs, not a fault.",
+    "The ECU part number is read only on CAN; on K-line the calibration id is the software identifier."
+  ]
+}
