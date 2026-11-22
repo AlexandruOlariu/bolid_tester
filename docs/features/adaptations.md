@@ -189,6 +189,22 @@ write and restore controls appear and the write unlocks the module first. See
   verify — behind **this feature's unlock** (`adaptationsStore.unlocked`). The replaced values land
   in `adaptationsStore.backups`, so the Adaptations screen can undo a restore.
 
+## AI agent
+
+- `adaptationService.readChannelReadOnly(ro, ch)` — the agent's read of one channel through the
+  read-only facade: `withModule` (the channel's header, and its receive filter by the same rule as
+  `address()`), then one `21` (KWP) or `22` (UDS) read. **No session change, no login, no write**:
+  the screen's KWP read opens `DEFAULT_KWP_SESSION` (`0x85`, which ISO 14230 defines as ECU
+  programming mode) and the facade refuses `10 85`, so a channel the module answers only inside
+  that session reads as `null`.
+- AI agent: `read_adaptations` — `agent/agentTools.ts` contributes the tool (up to 10 channels
+  reachable on the link, UDS on CAN and KWP on K-line; one line per channel,
+  `<name> (<module>): <decoded> <unit> raw <hex>`, ` (unconfirmed)` for an unverified channel and
+  the step marked unconfirmed; a KWP channel with no answer says "not readable without the
+  adaptation session; open Adaptations"; a channel on the airbag / immobilizer is skipped) and the
+  `adaptations_read` skill to the [AI agent](./ai-diagnose.md#agent). Read only: to change a value
+  the owner uses this screen.
+
 ## Acceptance
 
 - Golf simulator: both channels read (850 rpm / 50 %), a bounded write round-trips and verifies,

@@ -6,7 +6,6 @@ import {
   getBit,
   setByte,
   diffCoding,
-  mergeCodingLabels,
   applyPreset,
   revertPreset,
   detectPresetState,
@@ -15,7 +14,6 @@ import {
   type CodingPresetState,
 } from '@/shared/obd-core';
 import type { CodingModule } from '@/shared/vehicles';
-import { codingBitLabels } from '@/shared/labels';
 import { useLabelPackFinder } from '@/shared/state/labelPackStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
@@ -26,6 +24,7 @@ import {
   useModuleScanStore,
 } from '@/features/module-scan/model/moduleScanStore';
 import { useCodingStore } from '../model/codingStore';
+import { codingFieldsFor } from '../api/codingRead';
 import { translate } from '@/shared/i18n';
 
 /** SAFETY: read→backup→write→verify, gated on unlock + CAN. Never writes without a stored backup. */
@@ -64,10 +63,7 @@ export function useCoding() {
   // The label-pack lookup re-resolves when the imported packs change (plan 13).
   const findLabelPack = useLabelPackFinder();
   const fieldsFor = useCallback(
-    (mod: CodingModule): CodingField[] => {
-      const pack = findLabelPack(mod.partNumber);
-      return mergeCodingLabels(mod.schema, codingBitLabels(pack, mod.codingDid));
-    },
+    (mod: CodingModule): CodingField[] => codingFieldsFor(mod, findLabelPack),
     [findLabelPack],
   );
 

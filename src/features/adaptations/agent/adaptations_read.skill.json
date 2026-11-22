@@ -1,0 +1,20 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "adaptations_read",
+  "kind": "capability",
+  "description": "Use when a learned or adjusted module value may explain the symptom: idle speed offset, EGR base duty and similar adaptation channels.",
+  "tools": ["read_adaptations"],
+  "requires": { "profile": ["adaptations"] },
+  "instructions": [
+    "Call read_adaptations {} once: it reads up to 10 of this car's adaptation channels reachable on this link.",
+    "Each line is \"<name> (<module>): <value> <unit> raw <hex>\"; compare the value with what the symptom suggests (e.g. a raised idle offset with a high idle).",
+    "This phase reads only; to change a value the owner uses the Adaptations / Coding screens. Never tell the owner the agent changed or will change a value.",
+    "Values marked unconfirmed come from channels not yet checked on this car: quote them as indicative and say so."
+  ],
+  "interpret": [
+    "Adaptation channels and their scaling are manufacturer-specific and come from this car's profile; the raw bytes are what the module returned.",
+    "\"not readable without the adaptation session; open Adaptations\" means the K-line module answers that channel only inside its adaptation session, which the agent never opens: it is not a fault. Suggest the Adaptations screen if the value matters.",
+    "\"no answer\" means the module did not return that channel (not supported, or it is asleep): it is not a fault.",
+    "A value outside the range the symptom suggests is a lead, not proof: an unconfirmed value never justifies an urgent verdict, and a change is the owner's decision on the Adaptations screen."
+  ]
+}

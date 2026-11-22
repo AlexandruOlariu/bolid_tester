@@ -7,7 +7,8 @@ import { MockTransport } from '@/shared/obd-core/transport/MockTransport';
 import { buildScenario } from '@/shared/obd-core/transport/scenarios';
 import { bytesToString } from '@/shared/lib/bytes';
 import { getVehicleProfile, type AdaptationChannel } from '@/shared/vehicles';
-import { readChannel, writeChannel } from './adaptationService';
+import { ModuleNotAllowedError, createReadOnlySession } from '@/shared/obd-core';
+import { readChannel, readChannelReadOnly, writeChannel } from './adaptationService';
 
 const HEADER = '8101F1';
 const CODE = 24680;
@@ -195,5 +196,60 @@ describe('writeChannel with SecurityAccess (plan 23, simulated Golf)', () => {
     expect(res.ok).toBe(false);
     expect(res.message).toMatch(/securityAccessDenied/);
     expect(sent.some((c) => c.startsWith('27'))).toBe(false);
+  });
+});
+
+describe('readChannelReadOnly (AI agent, read-only facade)', () => {
+  // Passat KWP scenario: the read path never sends a write or a login.
+  it('readChannelReadOnly reads a KWP channel without any session change, write or login', async () => {
+    const { session, sent, mark } = await passatSession();
+    mark();
+    const raw = await readChannelReadOnly(createReadOnlySession(session), idle);
+    expect(raw).not.toBeNull();
+    expect(sent.filter((c) => /^(2B|3B|27|2E)/i.test(c))).toEqual([]);
+    expect(sent.filter((c) => c.startsWith('10'))).toEqual([]);
+  });
+
+  it('addresses the KWP module with no receive filter, reads 21 and restores addressing', async () => {
+    const { session, sent, mark } = await passatSession();
+    mark();
+    expect(await readChannelReadOnly(createReadOnlySession(session), idle)).toEqual([0x55]);
+    expect(sent).toEqual(expect.arrayContaining(['ATSH' + HEADER, '212A']));
+    expect(sent.some((c) => c.startsWith('ATCRA'))).toBe(false);
+    expect(sent[sent.length - 1]).toBe('ATSH686AF1');
+  });
+
+  it('a channel the module does not answer outside its session reads as null', async () => {
+    const { session, mock } = await passatSession();
+    mock.scenario.kwpLocals = {};
+    expect(await readChannelReadOnly(createReadOnlySession(session), idle)).toBeNull();
+  });
+
+  it('reads a UDS channel on the Golf through 22 on its own header and filter', async () => {
+    const golf = getVehicleProfile('golf-plus-2009-20tdi');
+    const ch = (golf.adaptations ?? []).find((c) => c.did === '3001') as AdaptationChannel;
+    const mock = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+    const sent: string[] = [];
+    const write = mock.write.bind(mock);
+    mock.write = async (bytes: Uint8Array) => {
+      sent.push(bytesToString(bytes).trim());
+      return write(bytes);
+    };
+    const session = new DiagnosticSession(mock);
+    await session.connect();
+    sent.splice(0);
+    expect(await readChannelReadOnly(createReadOnlySession(session), ch)).toEqual([0x03, 0x52]);
+    expect(sent).toEqual(expect.arrayContaining(['ATSH7E0', 'ATCRA7E8', '223001']));
+    expect(sent.filter((c) => /^(10|2E|27)/i.test(c))).toEqual([]);
+  });
+
+  it('refuses a channel on an excluded module (immobilizer 25) before any traffic', async () => {
+    const { session, sent, mark } = await passatSession();
+    mark();
+    const immo: AdaptationChannel = { ...idle, address: '25' };
+    await expect(readChannelReadOnly(createReadOnlySession(session), immo)).rejects.toBeInstanceOf(
+      ModuleNotAllowedError,
+    );
+    expect(sent).toEqual([]);
   });
 });

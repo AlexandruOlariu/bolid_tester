@@ -19,8 +19,10 @@ import {
   kwpLogin,
   kwpReadLocal,
   kwpWriteLocal,
+  readDataByIdentifier,
   securityAccess,
   UdsError,
+  type ReadOnlySession,
   type UdsSend,
 } from '@/shared/obd-core';
 import type { AdaptationChannel } from '@/shared/vehicles';
@@ -62,6 +64,29 @@ export async function readChannel(
     return await session.readExtended(ch.did);
   } finally {
     await session.resetAddressing();
+  }
+}
+
+/** The AI agent's read of one channel (plan 34b), through the read-only facade: the module is
+ *  addressed with `withModule` (same receive-filter rule as `address()`), then one `21` (KWP) or
+ *  `22` (UDS) read. NO session change: the screen's KWP read opens `DEFAULT_KWP_SESSION` (0x85,
+ *  which ISO 14230 defines as ECU programming mode) and the facade refuses `10 85`, so a channel the
+ *  module answers only inside that session — or not at all — reads as `null`. No login, no write.
+ *  An excluded module throws `ModuleNotAllowedError`; a link error throws. */
+export async function readChannelReadOnly(
+  ro: ReadOnlySession,
+  ch: AdaptationChannel,
+): Promise<number[] | null> {
+  const kwp = isKwpChannel(ch);
+  const rxFilter = (!kwp || isCan(ro.currentProtocol)) && ch.rxFilter ? ch.rxFilter : undefined;
+  try {
+    return await ro.withModule(
+      { address: ch.address, reqHeader: ch.reqHeader, rxFilter },
+      (send) => (kwp ? kwpReadLocal(send, ch.did) : readDataByIdentifier(send, ch.did)),
+    );
+  } catch (e) {
+    if (e instanceof UdsError) return null;
+    throw e;
   }
 }
 

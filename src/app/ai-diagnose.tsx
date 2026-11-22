@@ -8,6 +8,8 @@ import { liveChartsAgentTools } from '@/features/live-charts';
 import { sensorTestsAgentTools } from '@/features/sensor-tests';
 import { extendedPidsAgentTools } from '@/features/extended-pids';
 import { dpfAgentTools } from '@/features/dpf';
+import { adaptationsAgentTools } from '@/features/adaptations';
+import { codingAgentTools } from '@/features/coding';
 import type { AgentContribution } from '@/shared/obd-core';
 
 /** What each feature contributes to the AI diagnostic agent (plan 34a). Features never import each
@@ -21,6 +23,8 @@ export const AGENT_CONTRIBUTIONS: AgentContribution[] = [
   sensorTestsAgentTools,
   extendedPidsAgentTools,
   dpfAgentTools,
+  adaptationsAgentTools,
+  codingAgentTools,
 ];
 
 export default function AiDiagnoseRoute() {

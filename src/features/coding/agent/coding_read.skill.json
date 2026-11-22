@@ -1,0 +1,20 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "coding_read",
+  "kind": "capability",
+  "description": "Use when a comfort or lighting function behaves oddly or is missing (daytime lights, coming-home, needle sweep) and module coding may explain it.",
+  "tools": ["read_coding"],
+  "requires": { "protocol": "can", "profile": ["codingModules"] },
+  "instructions": [
+    "Call read_coding {} once: it reads each codeable module's long coding and lists up to 12 decoded fields per module.",
+    "The first line per module is \"<module>: coding <hex>\"; each field line is \"- <name>: <value>\", a single bit reading on or off.",
+    "This phase reads only; to change a value the owner uses the Adaptations / Coding screens. Never tell the owner the agent changed or will change a coding.",
+    "Fields marked unconfirmed come from bit positions not yet checked on this car: quote them as indicative and say so."
+  ],
+  "interpret": [
+    "Coding bit positions are manufacturer- and module-specific and come from this car's profile and label packs; the hex is exactly what the module returned.",
+    "A function the owner misses whose bit reads off is a likely explanation; a bit that reads on while the function does not work points at wiring, a bulb or the module, not at coding.",
+    "\"no answer\" means the module did not return its coding (asleep, not fitted or another address): it is not a fault.",
+    "Coding never explains engine, emission or warning-light faults on its own: use it only for comfort, lighting and convenience functions, and never base an urgent verdict on an unconfirmed field."
+  ]
+}

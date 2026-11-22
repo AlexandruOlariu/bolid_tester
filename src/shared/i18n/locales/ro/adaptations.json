@@ -57,5 +57,10 @@
     "locked": "Blocat — activează mai întâi deblocarea adaptărilor.",
     "min": "În afara limitelor: minimul este {{min}}.",
     "max": "În afara limitelor: maximul este {{max}}."
+  },
+  "agent": {
+    "tool": {
+      "read_adaptations": "Canale de adaptare"
+    }
   }
 }

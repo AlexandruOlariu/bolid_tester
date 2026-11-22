@@ -57,5 +57,10 @@
     "locked": "Locked — enable the adaptations unlock first.",
     "min": "Out of bounds: minimum is {{min}}.",
     "max": "Out of bounds: maximum is {{max}}."
+  },
+  "agent": {
+    "tool": {
+      "read_adaptations": "Adaptation channels"
+    }
   }
 }

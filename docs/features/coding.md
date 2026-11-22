@@ -107,6 +107,20 @@ land, a real CAN write on a coding-capable profile is one switch and two taps aw
   [`sensor-tests`](./sensor-tests.md) / [`extended-pids`](./extended-pids.md). Backups persist via
   the same storage as [`trip-recording`](./trip-recording.md).
 
+## AI agent
+
+- `api/codingRead.ts` — `readCodingReadOnly(ro, module, labels)`: the module addressed through the
+  read-only facade's `withModule`, one `22 <codingDid>` read (no session change, no SecurityAccess,
+  no write), decoded with `codingFieldsFor` — the module schema merged with the label pack's
+  coding-bit names, the same source `useCoding.fieldsFor` uses. Returns `{ hex, fields }` (a bit
+  reads `on` / `off`, a mask or whole byte its decimal value), or `null` when the module does not
+  answer.
+- AI agent: `read_coding` — `agent/agentTools.ts` contributes the tool (up to 4 codeable modules on
+  a CAN link; per module `<module>: coding <hex>` and up to 12 decoded fields, each ` (unconfirmed)`
+  when the module's bit positions are unverified, the step then marked unconfirmed) and the
+  `coding_read` skill to the [AI agent](./ai-diagnose.md#agent). Read only: to change a coding the
+  owner uses this screen.
+
 ## model
 
 - `codingStore` (Zustand): `unlocked`, `modules`, `backups`, `lastWriteResult`.

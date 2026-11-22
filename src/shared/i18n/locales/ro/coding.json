@@ -108,5 +108,10 @@
     "confirmAll_other": "Restaurezi aceste {{count}} de canale pe {{name}}? Fiecare este salvat, scris și reverificat pe rând; prima eroare le oprește pe celelalte.",
     "planLine": "{{name}} ({{did}}): setat la {{value}} (acum {{now}})",
     "confirmAllButton": "Confirmă restaurarea completă"
+  },
+  "agent": {
+    "tool": {
+      "read_coding": "Codarea modulelor"
+    }
   }
 }

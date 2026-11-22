@@ -104,5 +104,10 @@
     "confirmAll_other": "Restore these {{count}} channels on {{name}}? Each one is backed up, written and re-verified in turn; the first failure stops the rest.",
     "planLine": "{{name}} ({{did}}): set to {{value}} (now {{now}})",
     "confirmAllButton": "Confirm restore all"
+  },
+  "agent": {
+    "tool": {
+      "read_coding": "Module coding"
+    }
   }
 }
