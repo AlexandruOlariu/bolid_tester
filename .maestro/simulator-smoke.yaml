@@ -14,7 +14,7 @@ name: Simulator smoke — connect, read faults, clear
     optional: true
 # A fresh install defaults to the real Bluetooth adapter; the splash fades once stores hydrate.
 - extendedWaitUntil:
-    visible: 'Scan for adapters'
+    visible: 'Pair with your OBD2 Bluetooth adapter'
     timeout: 30000
 
 # Settings → Developer & simulator (collapsed by default, plan 07) → simulator with one injected fault.

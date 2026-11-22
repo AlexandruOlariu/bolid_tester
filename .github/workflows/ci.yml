@@ -159,7 +159,8 @@ jobs:
           set -o pipefail
           apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n1)
           "$apksigner" verify --print-certs "${{ steps.out.outputs.apk }}" | tee sig.txt
-          grep -q "Signer #1 certificate" sig.txt || { echo "::error::apksigner printed no signer certificate" >&2; exit 1; }
+          # apksigner prints "Signer #1 certificate DN" (older build-tools) or "V2 Signer: certificate DN" (newer).
+          grep -qE "(Signer #1|V[0-9]+ Signer:) certificate DN" sig.txt || { echo "::error::apksigner printed no signer certificate" >&2; exit 1; }
           if grep -q "Android Debug" sig.txt; then echo "::error::APK is signed with the debug key" >&2; exit 1; fi
       - name: Upload APK + AAB artifact
         uses: actions/upload-artifact@v4

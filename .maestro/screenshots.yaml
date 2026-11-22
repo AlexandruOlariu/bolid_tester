@@ -28,7 +28,7 @@ env:
     text: '(?i)(allow|don.t allow)'
     optional: true
 - extendedWaitUntil:
-    visible: 'Scan for adapters'
+    visible: 'Pair with your OBD2 Bluetooth adapter'
     timeout: 30000
 
 # 1. Language first (the phone stays en-US; the app's own setting switches every label).
