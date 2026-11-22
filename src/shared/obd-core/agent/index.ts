@@ -10,3 +10,5 @@ export * from './digest';
 export * from './coreTools';
 export * from './procedures/batteryCapture';
 export * from './triage';
+export * from './prompt';
+export * from './report';

@@ -77,6 +77,10 @@ export interface AiFinding {
   /** Related DTC codes, if any. */
   codes?: string[];
   likelyCauses?: string[];
+  /** AI agent (plan 34a): the ids of the trail steps this finding rests on. */
+  steps?: number[];
+  /** AI agent: the finding rests only on unconfirmed data, so its severity is capped at `info`. */
+  unconfirmed?: boolean;
 }
 
 export interface AiAction {
@@ -93,6 +97,8 @@ export interface AiReport {
   /** Where this report came from: the model, or the local rule-based fallback. */
   source: 'ai' | 'local';
   disclaimer: string;
+  /** AI agent: how many of the model's findings were dropped for citing no valid step. */
+  uncitedDropped?: number;
 }
 
 export interface AiChatMessage {
@@ -133,7 +139,7 @@ export const KEY_DIAGNOSTIC_PIDS = [
   '0146', // ambient air temp
 ] as const;
 
-const DISCLAIMER_AI =
+export const DISCLAIMER_AI =
   'AI-generated from your car’s live OBD2 data. It can be wrong — verify before acting, and it is ' +
   'not a substitute for inspection by a qualified mechanic.';
 const DISCLAIMER_LOCAL =
@@ -254,6 +260,18 @@ export function overallFromFindings(findings: AiFinding[]): OverallHealth {
   if (findings.some((f) => f.severity === 'critical')) return 'urgent';
   if (findings.some((f) => f.severity === 'warn')) return 'attention';
   return 'ok';
+}
+
+/** The rule-based report's one-line summary for `findings` (worst severity decides). */
+export function localSummary(findings: AiFinding[]): string {
+  if (findings.length === 0)
+    return 'No problems detected in the data read from the engine/emissions ECU. Live values are within normal ranges and no fault codes are stored.';
+  const overall = overallFromFindings(findings);
+  if (overall === 'urgent')
+    return 'At least one urgent issue was found. Review the findings and address the critical items before driving further.';
+  if (overall === 'attention')
+    return 'Some issues need attention. None are immediately critical, but they should be investigated.';
+  return 'Minor, informational notes only — nothing requiring immediate action.';
 }
 
 /** Rule-based assessment: flags the obvious stuff (MIL, DTCs, overheating, over-fuel-trim, low
@@ -377,15 +395,7 @@ export function localHeuristicReport(s: DiagnosticSnapshot, opts: DiagnosisOptio
   const overall = overallFromFindings(findings);
   const hasCodes =
     s.dtcs.stored.length > 0 || s.dtcs.pending.length > 0 || s.dtcs.permanent.length > 0;
-
-  const summary =
-    findings.length === 0
-      ? 'No problems detected in the data read from the engine/emissions ECU. Live values are within normal ranges and no fault codes are stored.'
-      : overall === 'urgent'
-        ? 'At least one urgent issue was found. Review the findings and address the critical items before driving further.'
-        : overall === 'attention'
-          ? 'Some issues need attention. None are immediately critical, but they should be investigated.'
-          : 'Minor, informational notes only — nothing requiring immediate action.';
+  const summary = localSummary(findings);
 
   const actions: AiAction[] = [];
   if (s.dtcs.stored.length > 0 || s.dtcs.pending.length > 0)
