@@ -27,7 +27,8 @@ export function SettingsRow({
     <XStack
       alignItems="center"
       gap="$3"
-      padding="$3"
+      paddingHorizontal="$3"
+      paddingVertical="$2"
       minHeight={48}
       pressStyle={{ backgroundColor: '$color4' }}
       accessible
@@ -36,10 +37,10 @@ export function SettingsRow({
       onPress={onPress}
       testID={testID}
     >
-      <YStack flex={1} gap={2}>
+      <YStack flex={1}>
         <Paragraph fontWeight="700">{title}</Paragraph>
         {status ? (
-          <Paragraph theme="alt2" fontSize="$2">
+          <Paragraph theme="alt2" fontSize="$2" lineHeight="$2">
             {status}
           </Paragraph>
         ) : null}

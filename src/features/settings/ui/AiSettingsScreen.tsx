@@ -248,7 +248,7 @@ export function AiSettingsScreen() {
   const setAi = useSettingsStore((s) => s.setAi);
 
   return (
-    <Screen title={t('ai.title')}>
+    <Screen title={t('hub.ai')}>
       <SegGroup>
         <YStack gap="$3">
           <LabeledSwitch

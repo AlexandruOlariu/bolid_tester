@@ -59,7 +59,6 @@
     "readPolicy": "Read the privacy policy"
   },
   "ai": {
-    "title": "AI assistant (auto-diagnose)",
     "enabled": "Enabled",
     "enabledA11y": "AI assistant enabled",
     "offHelp": "When on, Diagnose (AI) asks an AI model you choose — on your own computer or in the cloud — to explain the car's faults.",

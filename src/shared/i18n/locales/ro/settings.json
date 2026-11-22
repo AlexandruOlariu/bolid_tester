@@ -61,7 +61,6 @@
     "readPolicy": "Citește politica de confidențialitate"
   },
   "ai": {
-    "title": "Asistent AI (diagnoză automată)",
     "enabled": "Activat",
     "enabledA11y": "Asistent AI activat",
     "offHelp": "Când este activat, Diagnoză (AI) cere unui model AI ales de tine — pe calculatorul tău sau în cloud — să explice defectele mașinii.",

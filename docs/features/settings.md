@@ -37,8 +37,7 @@ no tab is highlighted while one is open. Android's back button on a page returns
 (`hooks/useBackToSettings.ts`: a `BackHandler` listener while the page is focused) instead of the
 tab navigator's default, its first route (Connect); on iOS the Settings tab is the way back.
 **Backup & restore** opens the backup screen directly (the old Data section's text and its two
-buttons only opened it too). Each page's title is its row's title (the AI page keeps "AI assistant
-(auto-diagnose)").
+buttons only opened it too). Each page's title is its row's title.
 
 **The pages:**
 
