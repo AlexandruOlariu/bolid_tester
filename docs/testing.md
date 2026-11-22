@@ -171,8 +171,11 @@ app's real labels; when a screen's copy changes, update the flow in the same cha
   taps hit the tab, and `(?i)clear` hits the alert button. If Maestro stops at once with
   `DeviceServerDiedException … UNAVAILABLE` and no step output, a stale driver from an earlier
   session is still on the device: `adb shell am force-stop dev.mobile.maestro` (and
-  `dev.mobile.maestro.test`) and run again. `e2e.yml` has still not been dispatched (it needs the
-  branch on GitHub).
+  `dev.mobile.maestro.test`) and run again. `e2e.yml` first ran green on GitHub on 2026-11-22
+  (run 45029217374, API 34 `pixel_6` emulator) after three CI-only fixes: wait for the Connect
+  subtitle instead of the below-the-fold **Scan for adapters**, 60 s per `scrollUntilVisible`,
+  and resilience to "… isn't responding" system dialogs on a freshly booted emulator (hide error
+  dialogs, settle, tap **Wait**, retry the flow once).
 
 ### Store screenshots (plan 30)
 

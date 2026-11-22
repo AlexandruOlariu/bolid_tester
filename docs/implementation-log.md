@@ -5,6 +5,20 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## First signed release v0.9.1; CI e2e green (2026-11-22)
+
+- **Release:** PR #1 merged into `main`; `v0.9.1` built by CI, signed with the upload key
+  (`CN=Alex Olariu`), GitHub Release with `bolid-tester-v0.9.1-43.apk` and `.aab`. Version 0.9.x =
+  feature-complete beta; 1.0.0 stays the first store release (on-car validation and store accounts
+  pending).
+- **v0.9.0:** its tag build produced a correctly signed APK, but the signature step grepped for
+  `Signer #1 certificate`, which newer build-tools print as `V2 Signer: certificate DN`; nothing was
+  published. Fixed in `ci.yml`; the release notes moved to 0.9.1. The `v0.9.0` tag remains on
+  GitHub pointing at the failed run (deleting a remote tag is left to the owner).
+- **GitHub Pages** enabled (source: GitHub Actions); the web build deploys to
+  https://alexandruolariu.github.io/bolid_tester/.
+- **E2E on CI:** see docs/testing.md (End-to-end) for the three CI-only flow / workflow fixes.
+
 ## Merge of main's Expo SDK 57 upgrade; Play permission cleanup (2026-11-22)
 
 - **Merge:** `origin/main` (Expo SDK 57 / React Native 0.86.3, the iOS 27 UIScene config plugin,
