@@ -87,6 +87,17 @@ Work in waves; plans inside a wave are independent and can run on parallel branc
 | 30  | [Store release prep](./30-store-release-prep.md)              | 08, 09, 10, 11, 31, 32 | Store accounts, listing approval       |
 | 33  | [Community contribution flow](./33-community-contribution.md) | 02, 03, 05, 13         | —                                      |
 
+### Wave 5 — AI diagnostic agent ([spec](../superpowers/specs/2026-11-22-ai-agent-diagnose-design.md))
+
+Run in order; each plan ships working, tested software on its own.
+
+| #   | Plan                                                                                                 | Depends on                   | Deferred / owner part                                                          |
+| --- | ---------------------------------------------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------ |
+| 34a | [Agent core: loop, tools, skills, new AI diagnose screen](./34a-ai-agent-core.md)                    | 19                           | The owner's self-hosted model accepts the action schema; first run on the Golf |
+| 34b | [Every capability skill (read-only)](./34b-ai-agent-capability-skills.md)                            | 34a                          | Module scan vs VCDS; adaptation / coding reads; `bus_listen` on the Vgate      |
+| 34c | [Symptom playbooks, no-AI mode, simulator faults, eval set](./34c-ai-agent-playbooks.md)             | 34a, 34b                     | Boost ranges on the Golf / Passat; trims; cold-start trip; eval on own model   |
+| 34d | [Trail in History, privacy, Send to Claude / ChatGPT, docs](./34d-ai-agent-history-privacy-share.md) | 34a (wording after 34b, 34c) | Romanian review; real hand-off to the Claude / ChatGPT apps; store forms       |
+
 ## Repo rules the plans assume
 
 - **Docs first.** Specs live in `docs/features/<slug>.md` and map 1:1 to `src/features/<slug>`
