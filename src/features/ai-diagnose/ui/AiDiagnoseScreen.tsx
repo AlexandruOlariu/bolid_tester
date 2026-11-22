@@ -258,9 +258,15 @@ function FocusCard({ code, make }: { code: string; make?: DtcMake }) {
   );
 }
 
-/** `contributions`: the agent tools and skills the app layer composes (`src/app/ai-diagnose.tsx`);
- *  the agent run uses them from plan 34a Task 11. */
-export function AiDiagnoseScreen(_props: { contributions?: AgentContribution[] }) {
+/** No feature contributions: the agent runs with the core tools only. */
+const NO_CONTRIBUTIONS: AgentContribution[] = [];
+
+/** `contributions`: the agent tools and skills the app layer composes (`src/app/ai-diagnose.tsx`). */
+export function AiDiagnoseScreen({
+  contributions = NO_CONTRIBUTIONS,
+}: {
+  contributions?: AgentContribution[];
+}) {
   const { t } = useTranslation('aiDiagnose');
   const status = useSessionStore((s) => s.status);
   const {
@@ -281,7 +287,7 @@ export function AiDiagnoseScreen(_props: { contributions?: AgentContribution[] }
     askError,
     ask,
     clearConversation,
-  } = useAiDiagnose();
+  } = useAiDiagnose(contributions);
   const params = useLocalSearchParams<{ focus?: string | string[] }>();
   const rawFocus = Array.isArray(params.focus) ? params.focus[0] : params.focus;
   const focusParam = rawFocus?.trim().toUpperCase() || undefined;

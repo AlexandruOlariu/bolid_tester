@@ -52,5 +52,58 @@
     "gathering": "Reading fault codes, readiness & live data…",
     "analyzing": "Asking the AI model to analyse the data…"
   },
-  "unknownVehicle": "Unknown vehicle"
+  "unknownVehicle": "Unknown vehicle",
+  "agent": {
+    "end": {
+      "no_ai": "{{problem}} Showing an on-device rule-based report instead.",
+      "steps": "The investigation used all 12 steps. This report uses the on-device rules over everything gathered so far.",
+      "time": "The investigation reached its 4-minute limit. This report uses the on-device rules over everything gathered so far.",
+      "adapter": "The investigation used its 2 minutes of adapter time. This report uses the on-device rules over everything gathered so far.",
+      "invalid": "The AI gave three unusable replies in a row. This report uses the on-device rules over what was gathered.",
+      "stopped": "You stopped the investigation. This report uses the on-device rules over what was gathered.",
+      "disconnected": "The adapter disconnected during the investigation. This report uses the on-device rules over what was gathered before it dropped.",
+      "ai_error": "AI server unavailable — showing an on-device rule-based report over what was gathered. ({{error}})"
+    },
+    "clearedNotice": "Codes cleared. This report is from a fresh triage read of the car.",
+    "step": {
+      "triage_one": "Triage — {{count}} code, battery {{volts}} V",
+      "triage_other": "Triage — {{count}} codes, battery {{volts}} V"
+    },
+    "tool": {
+      "read_live": "Live data — {{pids}}",
+      "read_dtcs": "Fault codes and readiness",
+      "open_skill": "Opened the {{name}} skill",
+      "run_skill": "Ran the {{name}} check",
+      "ask_driver": "Asked the driver for a step"
+    },
+    "invalid": "The AI reply could not be used",
+    "driver": {
+      "start_engine_idle": "Start the engine and let it idle.",
+      "engine_off_ignition_on": "Switch the engine off and leave the ignition on.",
+      "restart_engine": "Switch the engine off, then start it again.",
+      "hold_2500_rpm": "In Park or Neutral, hold the engine at 2500 rpm for 10 seconds.",
+      "electrical_load_on": "Switch on the headlights, the A/C and the rear demister.",
+      "electrical_load_off": "Switch the headlights, the A/C and the rear demister off."
+    },
+    "finding": {
+      "battery": {
+        "good": {
+          "title": "Battery and starting look good",
+          "detail": "Resting {{resting}} V, cranking dip {{dip}} V, charging {{charging}} V. The battery holds its voltage well while the engine cranks."
+        },
+        "fair": {
+          "title": "Battery is fair",
+          "detail": "Resting {{resting}} V, cranking dip {{dip}} V, charging {{charging}} V. The voltage dips a little low while cranking, so the battery is ageing; have it tested before winter."
+        },
+        "weak": {
+          "title": "Battery is weak",
+          "detail": "Resting {{resting}} V, cranking dip {{dip}} V, charging {{charging}} V. The voltage drops too far while cranking; have the battery tested and replace it if it fails."
+        },
+        "unknown": {
+          "title": "Battery check incomplete",
+          "detail": "Resting {{resting}} V, cranking dip {{dip}} V, charging {{charging}} V. The engine restart was not captured, so the battery condition could not be judged."
+        }
+      }
+    }
+  }
 }

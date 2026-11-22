@@ -52,5 +52,59 @@
     "gathering": "Se citesc codurile de eroare, monitoarele readiness și datele live…",
     "analyzing": "Se trimit datele modelului AI pentru analiză…"
   },
-  "unknownVehicle": "Vehicul necunoscut"
+  "unknownVehicle": "Vehicul necunoscut",
+  "agent": {
+    "end": {
+      "no_ai": "{{problem}} Se afișează în schimb un raport pe dispozitiv, bazat pe reguli.",
+      "steps": "Investigația a folosit toți cei 12 pași. Acest raport folosește regulile de pe dispozitiv pentru tot ce s-a adunat până acum.",
+      "time": "Investigația a atins limita de 4 minute. Acest raport folosește regulile de pe dispozitiv pentru tot ce s-a adunat până acum.",
+      "adapter": "Investigația a folosit cele 2 minute de timp al adaptorului. Acest raport folosește regulile de pe dispozitiv pentru tot ce s-a adunat până acum.",
+      "invalid": "AI-ul a dat trei răspunsuri inutilizabile la rând. Acest raport folosește regulile de pe dispozitiv pentru ce s-a adunat.",
+      "stopped": "Ai oprit investigația. Acest raport folosește regulile de pe dispozitiv pentru ce s-a adunat.",
+      "disconnected": "Adaptorul s-a deconectat în timpul investigației. Acest raport folosește regulile de pe dispozitiv pentru ce s-a adunat înainte de deconectare.",
+      "ai_error": "Serverul AI nu este disponibil — se afișează un raport pe dispozitiv, bazat pe reguli, pentru ce s-a adunat. ({{error}})"
+    },
+    "clearedNotice": "Coduri șterse. Acest raport provine dintr-o nouă citire de triaj a mașinii.",
+    "step": {
+      "triage_one": "Triaj — {{count}} cod, baterie {{volts}} V",
+      "triage_few": "Triaj — {{count}} coduri, baterie {{volts}} V",
+      "triage_other": "Triaj — {{count}} de coduri, baterie {{volts}} V"
+    },
+    "tool": {
+      "read_live": "Date live — {{pids}}",
+      "read_dtcs": "Coduri de eroare și monitoare readiness",
+      "open_skill": "S-a deschis abilitatea {{name}}",
+      "run_skill": "S-a rulat verificarea {{name}}",
+      "ask_driver": "S-a cerut un pas șoferului"
+    },
+    "invalid": "Răspunsul AI-ului nu a putut fi folosit",
+    "driver": {
+      "start_engine_idle": "Pornește motorul și lasă-l la ralanti.",
+      "engine_off_ignition_on": "Oprește motorul și lasă contactul pus.",
+      "restart_engine": "Oprește motorul, apoi pornește-l din nou.",
+      "hold_2500_rpm": "În Park sau la punctul mort, ține motorul la 2500 rpm timp de 10 secunde.",
+      "electrical_load_on": "Aprinde farurile, aerul condiționat și dezaburirea lunetei.",
+      "electrical_load_off": "Stinge farurile, aerul condiționat și dezaburirea lunetei."
+    },
+    "finding": {
+      "battery": {
+        "good": {
+          "title": "Bateria și pornirea arată bine",
+          "detail": "În repaus {{resting}} V, scădere la pornire {{dip}} V, încărcare {{charging}} V. Bateria își menține bine tensiunea cât timp motorul este pornit la demaror."
+        },
+        "fair": {
+          "title": "Bateria este acceptabilă",
+          "detail": "În repaus {{resting}} V, scădere la pornire {{dip}} V, încărcare {{charging}} V. Tensiunea scade puțin prea mult la pornire, deci bateria îmbătrânește; testeaz-o înainte de iarnă."
+        },
+        "weak": {
+          "title": "Bateria este slabă",
+          "detail": "În repaus {{resting}} V, scădere la pornire {{dip}} V, încărcare {{charging}} V. Tensiunea scade prea mult la pornire; testează bateria și înlocuiește-o dacă nu trece testul."
+        },
+        "unknown": {
+          "title": "Verificarea bateriei este incompletă",
+          "detail": "În repaus {{resting}} V, scădere la pornire {{dip}} V, încărcare {{charging}} V. Repornirea motorului nu a fost surprinsă, așa că starea bateriei nu a putut fi apreciată."
+        }
+      }
+    }
+  }
 }
