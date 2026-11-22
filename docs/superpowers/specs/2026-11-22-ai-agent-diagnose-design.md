@@ -176,6 +176,60 @@ The owner's intent for "skills": **they tell the LLM what it can use**. So every
 - The format is versioned so skills could later be imported like label packs / contributed by the
   community (plan 33); importing is **not** in this phase.
 
+### Skill catalog: every feature of the app (owner, 2026-11-22)
+
+The owner pointed out the app has far more features than the seven procedures above. The catalog
+therefore has **two kinds** of skills:
+
+- **Capability skills**, one per app feature that can tell us something about the car: they teach
+  the model what that feature can read, which tool to call, its limits on this car / adapter, and
+  how to interpret the result.
+- **Symptom playbooks**: procedures across several features for a complaint (the seven above plus
+  more), each pointing at the capability skills it uses.
+
+**Capability skills, phase 1 (read-only):**
+
+| Skill | Feature it wraps | What the model gets |
+|---|---|---|
+| `fault_codes` | fault-codes | stored / pending / permanent DTCs, freeze frame, readiness, MIL |
+| `module_scan` | module-scan, tp20 | every module the profile declares: part number, software, per-module DTCs with VAG numbers and status flags |
+| `live_data` | live-data | one read of any supported Mode 01 PID |
+| `record_live` | live-charts | a short recording (≤ 15 s) of chosen PIDs → min / avg / max / trend |
+| `sensor_tests` | sensor-tests | Mode 06 monitor results (pass / fail, value vs limits); a guided wiggle test (driver flexes a connector while a PID is watched) |
+| `extended_data` | extended-pids | the profile's manufacturer DIDs (labelled unconfirmed where not confirmed) |
+| `adaptations_read` | adaptations | current adaptation channel values (read only in phase 1) |
+| `coding_read` | coding | current module coding, decoded through label packs (read only in phase 1) |
+| `dpf` | dpf | soot / ash load, distance and count since regen, EGT → status (diesel) |
+| `battery` | battery-health | resting voltage, cranking dip, charging voltage → verdict |
+| `used_car_check` | used-car-inspection | pass / caution / fail with the recently-cleared heuristic |
+| `vehicle_identity` | vehicle-info, vin-decode | VIN decode (make, year, plant, check digit), ECU identity, protocol |
+| `adapter_health` | adapter-health | adapter grade, firmware, voltage, protocol; rules out "the adapter is the problem" |
+| `trips` | trip-recording | recorded drives: stats and per-PID curves under real load (warm-up, boost under load, temperatures) |
+| `performance_history` | performance-tests | past 0–100 / braking runs, to spot a car getting slower |
+| `fuel_economy` | fuel economy (live + trips) | instantaneous and trip L/100 km vs the car's own past |
+| `maintenance` | maintenance-log | what was done when, what is due or overdue |
+| `history` | history | per-car timeline: past diagnoses, recurring codes, when codes were cleared, past scans |
+| `alerts_history` | alerts / notifications | thresholds set and alerts that fired recently (builder: check what is stored) |
+| `app_errors` | error-log | recent connection / adapter errors, for "it keeps disconnecting" |
+| `bus_listen` | can-sniffer | passive 10 s CAN capture summary (CAN cars only; advanced, low priority) |
+
+**Phase B (writes, each with explicit confirmation; listed so the design leaves room, not built
+now):** clear codes, adaptation writes, coding writes, routines (output tests such as actuating the
+EGR valve, basic settings, forced DPF regen) and service reset. Output tests are very diagnostic
+("does the EGR valve actually move?"), so they are the first candidates for phase B.
+
+**Not skills** (nothing to learn about the car): settings, connection, vehicle-select (its result is
+the vehicle context every prompt already has), backup, notifications UI, onboarding, more, feedback,
+engine-host. The unified **report** is an output: the agent's report feeds it, as today.
+
+**Symptom playbooks, phase 1:** the seven above (fuel trims, boost, battery / charging, cooling,
+misfire, DPF, used car) plus **check-engine light on**, **won't start / hard start**, **rough or
+unstable idle**, **limp mode / loss of power**, **high fuel consumption**, **smoke** (colour asked
+from the driver), **glow plugs** (diesel), **EGR**, **keeps disconnecting** (adapter / wiring) and
+**before a long trip** (a quick everything-check). Each playbook is a skill file; those with a
+deterministic procedure can be run with `run_skill`. The builder may cut playbooks that turn out to
+have no data on the three built-in cars, but must keep every capability skill.
+
 ### Safety and limits
 
 - Read-only registry; no tool can reach a write path (enforced by the registry type: tools receive a
