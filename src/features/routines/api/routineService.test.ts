@@ -1,6 +1,7 @@
-import { UdsError } from '@/shared/obd-core';
+import { DiagnosticSession, MockTransport, UdsError, buildScenario } from '@/shared/obd-core';
+import { bytesToString } from '@/shared/lib/bytes';
 import type { GuidedRoutine } from '@/shared/vehicles';
-import { describeRoutineFailure } from './routineService';
+import { describeRoutineFailure, startRoutine } from './routineService';
 
 const basicSetting: GuidedRoutine = {
   module: 'Engine',
@@ -15,7 +16,12 @@ const basicSetting: GuidedRoutine = {
   experimental: true,
 };
 
-const outputTest: GuidedRoutine = { ...basicSetting, kind: 'outputTest', service: '2F', id: '0130' };
+const outputTest: GuidedRoutine = {
+  ...basicSetting,
+  kind: 'outputTest',
+  service: '2F',
+  id: '0130',
+};
 
 const nrc = (code: number) => new UdsError('raw', code);
 
@@ -63,14 +69,54 @@ describe('describeRoutineFailure', () => {
   });
 
   it('falls back to the raw message for an unknown NRC', () => {
-    expect(describeRoutineFailure(new UdsError('Negative response (NRC 0xa5)', 0xa5), basicSetting)).toBe(
-      'Negative response (NRC 0xa5)',
-    );
+    expect(
+      describeRoutineFailure(new UdsError('Negative response (NRC 0xa5)', 0xa5), basicSetting),
+    ).toBe('Negative response (NRC 0xa5)');
   });
 
   it('falls back to the raw message for a UdsError with no NRC and for a plain Error', () => {
     expect(describeRoutineFailure(new UdsError('No response'), basicSetting)).toBe('No response');
     expect(describeRoutineFailure(new Error('boom'), basicSetting)).toBe('boom');
     expect(describeRoutineFailure('weird', basicSetting)).toBe('weird');
+  });
+});
+
+describe('startRoutine with SecurityAccess (plan 23, simulated Golf engine)', () => {
+  // A deliberately trivial TEST VECTOR (seed XOR 0xFFFF), defined only in tests — not a routine.
+  const toyKey = (seed: number[]) => [seed[0] ^ 0xff, seed[1] ^ 0xff];
+  const secured: GuidedRoutine = { ...basicSetting, security: { level: 0x03 } };
+
+  async function securedEngine() {
+    const mock = new MockTransport(
+      buildScenario('golf-plus-2009-20tdi', {
+        security: {
+          '7E0': { level: 0x03, seed: [0x12, 0x34], key: [0xed, 0xcb], protects: ['31'] },
+        },
+      }),
+    );
+    const sent: string[] = [];
+    const write = mock.write.bind(mock);
+    mock.write = async (bytes: Uint8Array) => {
+      sent.push(bytesToString(bytes).trim());
+      return write(bytes);
+    };
+    const session = new DiagnosticSession(mock);
+    await session.connect();
+    sent.splice(0);
+    return { session, sent };
+  }
+
+  it('without a plugin the routine is attempted unlocked and the module answers NRC 0x33', async () => {
+    const { session, sent } = await securedEngine();
+    const err = await startRoutine(session, secured).catch((e: unknown) => e);
+    expect((err as UdsError).nrc).toBe(0x33);
+    expect(sent.some((c) => c.startsWith('27'))).toBe(false);
+    expect(describeRoutineFailure(err, secured)).toMatch(/security-access plugin/);
+  });
+
+  it('with a plugin routine the module is unlocked first and the routine starts', async () => {
+    const { session, sent } = await securedEngine();
+    await startRoutine(session, secured, { seedToKey: toyKey });
+    expect(sent).toEqual(expect.arrayContaining(['1003', '2703', '2704edcb', '31010301']));
   });
 });

@@ -1,0 +1,29 @@
+Bolid Tester este o aplicație generică de diagnoză OBD2 / EOBD care comunică cu un adaptor ELM327 compatibil Bluetooth Low Energy. Citește date în timp real de la motor, citește și șterge codurile de eroare, arată monitoarele readiness și freeze frame (instantaneul la eroare) și citește seria VIN, pentru orice mașină compatibilă OBD2: în UE, mașinile pe benzină din 2001 și cele diesel din 2004.
+
+CE FACE
+• Date în timp real: un tablou de bord cu presetări pentru benzină, diesel și hibrid, plus toți senzorii pe care îi are mașina, grupați pe sisteme
+• Coduri de eroare: memorate, în așteptare și permanente, cu semnificația pe înțelesul tuturor, cauze tipice și gravitate; freeze frame; ștergerea codurilor după o confirmare
+• Monitoare readiness (pregătire ITP), cu un ghid care îți spune ce mai trebuie să ruleze înainte de inspecție
+• Informații despre vehicul: VIN, protocol și senzori disponibili, plus un decodor VIN
+• Verificare mașină second-hand: o singură atingere dă verdictul trece / atenție / respins, cu fiecare verificare explicată
+• Grafice, înregistrarea călătoriilor cu traseu GPS și export CSV / JSON, teste de performanță (0–100 km/h, frânare) și alerte cu praguri
+• Verificarea bateriei și a încărcării și o vedere pentru filtrul de particule (DPF) și regenerare la motoarele diesel
+• Garajul meu: mai multe mașini, jurnal de întreținere cu mementouri, istoric pe fiecare mașină și un raport al vehiculului pe care îl poți trimite ca PDF
+• Diagnoză (AI), opțional: conectează propriul server AI local sau un furnizor AI pentru un rezumat pe înțeles al scanării
+• Backup și restaurare pentru toate datele, într-un singur fișier
+• Română și engleză, temă luminoasă și întunecată, unități metrice
+• Un mod simulator încorporat, ca să încerci fiecare ecran fără mașină
+
+UNELTE DE ATELIER (EXPERIMENTALE)
+Pentru mașinile grupului Volkswagen există scanare module, adaptări, teste de actuatori ghidate și resetare interval service. Sunt experimentale, marcate clar în aplicație, fac un backup înainte de orice scriere și nu ating niciodată airbagul, imobilizatorul sau kilometrajul.
+
+CE NU ESTE
+Bolid Tester nu este o unealtă completă de nivel producător și nu înlocuiește VCDS sau testerul reprezentanței. Prin OBD2 standard, un adaptor generic ajunge la calculatorul motorului / emisiilor; nu are diagnoză completă ABS, airbag, cutie de viteze sau bord. La mașinile grupului Volkswagen, scanarea experimentală a modulelor citește și identificarea și codurile de eroare din câteva alte module, cum ar fi ABS și bordul; lista de module este ilustrativă până la confirmarea pe mașină. Ai nevoie de un adaptor compatibil ELM327, care nu este inclus.
+
+DATELE TALE RĂMÂN PE TELEFON
+Fără cont, fără reclame, fără statistici de utilizare, fără urmărire. Tot ce citește aplicația din mașină rămâne doar pe telefon, iar fișierele pleacă doar când le trimiți tu. Rapoartele de erori ale aplicației sunt oprite până le pornești tu. Politica de confidențialitate (în engleză): https://github.com/AlexandruOlariu/bolid_tester/blob/HEAD/docs/privacy-policy.md
+
+ADAPTOARE COMPATIBILE
+Adaptoare ELM327 Bluetooth Low Energy, cum ar fi Vgate iCar Pro Bluetooth 4.0, adaptoare ELM327 Wi-Fi și adaptoare Bluetooth clasic pe Android. O listă de compatibilitate întreținută de comunitate este pe pagina proiectului: https://github.com/AlexandruOlariu/bolid_tester
+
+Bolid Tester este open source (licență MIT).

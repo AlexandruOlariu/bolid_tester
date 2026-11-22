@@ -1,11 +1,13 @@
 import { create } from 'zustand';
-import type { Mode06Result, Mode05Result } from '@/shared/obd-core';
+import type { Mode06Result, Mode05Result, Confirmation } from '@/shared/obd-core';
 
 export interface ModuleReading {
   name: string;
   unit: string;
   value: number | null;
   raw: string;
+  /** The sensor's confirmation evidence (plan 25), for the verification badge. */
+  confirmed?: Confirmation;
 }
 
 interface SensorTestState {

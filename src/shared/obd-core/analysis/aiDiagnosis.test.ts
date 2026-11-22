@@ -7,9 +7,16 @@ import {
   overallFromFindings,
   parseAiReport,
   buildDiagnosisMessages,
+  buildFollowUpMessages,
+  buildFollowUpSystemPrompt,
+  buildSystemPrompt,
+  followUpSuggestions,
+  MAX_FOLLOWUP_TURNS,
+  SUGGESTED_FOLLOWUPS,
   DiagnosticSnapshot,
   AiChatMessage,
   AiFinding,
+  AiReport,
 } from './aiDiagnosis';
 import type { LiveValue } from '../session/DiagnosticSession';
 
@@ -88,7 +95,9 @@ describe('extractMessageContent', () => {
   });
   it('joins an array-of-parts content', () => {
     expect(
-      extractMessageContent({ choices: [{ message: { content: [{ text: 'a' }, { text: 'b' }] } }] }),
+      extractMessageContent({
+        choices: [{ message: { content: [{ text: 'a' }, { text: 'b' }] } }],
+      }),
     ).toBe('ab');
   });
   it('returns null when absent', () => {
@@ -107,7 +116,11 @@ describe('summarizeSnapshot', () => {
           ignition: 'compression',
           monitors: [{ id: 'egr', name: 'EGR/VVT system', supported: true, complete: false }],
         },
-        dtcs: { stored: [{ code: 'P0299', description: 'Turbo underboost' }], pending: [], permanent: [] },
+        dtcs: {
+          stored: [{ code: 'P0299', description: 'Turbo underboost' }],
+          pending: [],
+          permanent: [],
+        },
       }),
     );
     expect(text).toContain('MIL (check-engine light): ON');
@@ -143,7 +156,11 @@ describe('localHeuristicReport', () => {
     const r = localHeuristicReport(
       snapshot({
         readiness: { milOn: true, dtcCount: 1, ignition: 'compression', monitors: [] },
-        dtcs: { stored: [{ code: 'P0299', description: 'Turbo underboost' }], pending: [], permanent: [] },
+        dtcs: {
+          stored: [{ code: 'P0299', description: 'Turbo underboost' }],
+          pending: [],
+          permanent: [],
+        },
         live: [lv('0105', 'Coolant temp', '°C', 121), lv('010C', 'Engine RPM', 'rpm', 900)],
       }),
     );
@@ -154,19 +171,27 @@ describe('localHeuristicReport', () => {
 
   it('treats a moderately high coolant temp as attention', () => {
     const r = localHeuristicReport(
-      snapshot({ live: [lv('0105', 'Coolant temp', '°C', 108), lv('010C', 'Engine RPM', 'rpm', 820)] }),
+      snapshot({
+        live: [lv('0105', 'Coolant temp', '°C', 108), lv('010C', 'Engine RPM', 'rpm', 820)],
+      }),
     );
     expect(r.overall).toBe('attention');
   });
 
   it('flags low charging voltage only while the engine is running', () => {
     const running = localHeuristicReport(
-      snapshot({ voltage: 12.4, live: [lv('010C', 'Engine RPM', 'rpm', 800), lv('0142', 'Module voltage', 'V', 12.4)] }),
+      snapshot({
+        voltage: 12.4,
+        live: [lv('010C', 'Engine RPM', 'rpm', 800), lv('0142', 'Module voltage', 'V', 12.4)],
+      }),
     );
     expect(running.findings.some((f) => f.title.includes('Charging voltage low'))).toBe(true);
 
     const off = localHeuristicReport(
-      snapshot({ voltage: 12.4, live: [lv('010C', 'Engine RPM', 'rpm', 0), lv('0142', 'Module voltage', 'V', 12.4)] }),
+      snapshot({
+        voltage: 12.4,
+        live: [lv('010C', 'Engine RPM', 'rpm', 0), lv('0142', 'Module voltage', 'V', 12.4)],
+      }),
     );
     expect(off.findings.some((f) => f.title.includes('Charging voltage low'))).toBe(false);
   });
@@ -189,7 +214,9 @@ describe('parseAiReport', () => {
     const content = JSON.stringify({
       overall: 'attention',
       summary: 'One issue found.',
-      findings: [{ title: 'EGR low flow', severity: 'warn', detail: 'Check EGR.', codes: ['P0401'] }],
+      findings: [
+        { title: 'EGR low flow', severity: 'warn', detail: 'Check EGR.', codes: ['P0401'] },
+      ],
       actions: [{ type: 'inspect', label: 'Inspect EGR' }],
     });
     const r = parseAiReport(content, snap);
@@ -216,7 +243,10 @@ describe('parseAiReport', () => {
   });
 
   it('handles JSON wrapped in prose', () => {
-    const r = parseAiReport('Sure! Here you go: {"summary":"hi","findings":[]} — hope that helps', snap);
+    const r = parseAiReport(
+      'Sure! Here you go: {"summary":"hi","findings":[]} — hope that helps',
+      snap,
+    );
     expect(r.source).toBe('ai');
     expect(r.summary).toBe('hi');
   });
@@ -225,7 +255,10 @@ describe('parseAiReport', () => {
     const content = JSON.stringify({
       summary: 's',
       findings: [{ title: 'x', severity: 'banana', detail: 'd' }],
-      actions: [{ type: 'launch_rocket', label: 'no' }, { type: 'recheck', label: 'again' }],
+      actions: [
+        { type: 'launch_rocket', label: 'no' },
+        { type: 'recheck', label: 'again' },
+      ],
     });
     const r = parseAiReport(content, snap);
     expect(r.findings[0].severity).toBe('info');
@@ -248,5 +281,152 @@ describe('buildDiagnosisMessages', () => {
     expect(msgs[1].content).toContain('Coolant temp: 88 °C');
     expect(msgs[1].content).toContain('Vehicle: VW Golf Plus 2009 (2009)');
     expect(msgs[0].content).toContain('JSON');
+  });
+});
+
+describe('focused diagnosis (Explain with AI)', () => {
+  it('ends with a user message focusing on the code', () => {
+    const msgs = buildDiagnosisMessages(snapshot(), { focusCode: 'P0135' });
+    expect(msgs.map((m) => m.role)).toEqual(['system', 'user', 'user']);
+    const last = msgs[msgs.length - 1];
+    expect(last.role).toBe('user');
+    expect(last.content).toContain('P0135');
+    expect(last.content).toMatch(/likely causes in order of probability/);
+  });
+
+  it('normalises the code and sends no focus line without one', () => {
+    const msgs = buildDiagnosisMessages(snapshot(), { focusCode: ' p0299 ' });
+    expect(msgs[msgs.length - 1].content).toContain('P0299');
+    expect(buildDiagnosisMessages(snapshot(), { focusCode: '' })).toHaveLength(2);
+  });
+
+  it('puts the focused code first in the local report', () => {
+    const snap = snapshot({
+      dtcs: {
+        stored: [
+          { code: 'P0299', description: 'Turbo underboost' },
+          { code: 'P0135', description: 'O2 heater' },
+        ],
+        pending: [],
+        permanent: [],
+      },
+    });
+    expect(localHeuristicReport(snap).findings[0].codes).toEqual(['P0299']);
+    expect(localHeuristicReport(snap, { focusCode: 'P0135' }).findings[0].codes).toEqual(['P0135']);
+  });
+
+  it('explains a focused code that is not in the read', () => {
+    const r = localHeuristicReport(snapshot(), { focusCode: 'P0135' });
+    expect(r.findings[0].title).toContain('P0135');
+    expect(r.findings[0].detail).toMatch(/O2 Sensor Heater/i);
+    expect(r.overall).toBe('ok');
+  });
+
+  it("describes a focused manufacturer code with the car's make", () => {
+    const vag = snapshot();
+    vag.vehicle = { label: 'VW Golf Plus 2009 (2009)', make: 'vag' };
+    expect(localHeuristicReport(vag, { focusCode: 'P1557' }).findings[0].detail).toMatch(
+      /charge pressure/i,
+    );
+    const generic = localHeuristicReport(snapshot(), { focusCode: 'P1557' });
+    expect(generic.findings[0].detail).not.toMatch(/charge pressure/i);
+  });
+});
+
+describe('guide citations (plan 19)', () => {
+  const guides = [
+    { code: 'P0401', note: 'EGR flow/position fault. Run the EGR valve output test.' },
+    { code: 'P2015', note: 'Intake manifold flap (V157). Run the V157 basic setting.' },
+  ];
+
+  it('summarizeSnapshot appends the known checks for this car', () => {
+    const text = summarizeSnapshot(snapshot(), guides);
+    expect(text).toContain('Known checks for this car:');
+    expect(text).toContain('- P0401: EGR flow/position fault.');
+    expect(text.indexOf('Known checks')).toBeGreaterThan(text.indexOf('Live readings'));
+  });
+
+  it('uses the snapshot guides by default and adds nothing without any', () => {
+    expect(summarizeSnapshot(snapshot({ guides }))).toContain('- P2015: Intake manifold flap');
+    expect(summarizeSnapshot(snapshot())).not.toContain('Known checks');
+    expect(buildDiagnosisMessages(snapshot({ guides }))[1].content).toContain('Known checks');
+  });
+
+  it('the system prompt asks the model to mention a listed check', () => {
+    expect(buildSystemPrompt()).toMatch(/known check.*mention it in `detail`/i);
+  });
+});
+
+describe('follow-up questions (plan 19)', () => {
+  const report: AiReport = {
+    overall: 'attention',
+    summary: 'EGR needs a look.',
+    findings: [{ title: 'EGR', severity: 'warn', detail: 'Flow low', codes: ['P0401'] }],
+    actions: [{ type: 'recheck', label: 'Re-run' }],
+    source: 'ai',
+    disclaimer: 'AI disclaimer',
+  };
+  const turns = (n: number): AiChatMessage[] =>
+    Array.from({ length: n }, (_, i) => ({
+      role: i % 2 === 0 ? 'user' : 'assistant',
+      content: `turn ${i}`,
+    }));
+
+  it('system, snapshot, report, conversation, question — in that order', () => {
+    const msgs = buildFollowUpMessages(snapshot(), report, turns(2), '  Is it safe to drive? ');
+    expect(msgs.map((m) => m.role)).toEqual([
+      'system',
+      'user',
+      'assistant',
+      'user',
+      'assistant',
+      'user',
+    ]);
+    expect(msgs[1].content).toContain('Vehicle: VW Golf Plus 2009');
+    expect(JSON.parse(msgs[2].content)).toEqual({
+      overall: 'attention',
+      summary: 'EGR needs a look.',
+      findings: report.findings,
+      actions: report.actions,
+    });
+    expect(msgs[3].content).toBe('turn 0');
+    expect(msgs[msgs.length - 1]).toEqual({ role: 'user', content: 'Is it safe to drive?' });
+  });
+
+  it('keeps only the last MAX_FOLLOWUP_TURNS conversation messages', () => {
+    expect(MAX_FOLLOWUP_TURNS).toBe(8);
+    const msgs = buildFollowUpMessages(snapshot(), report, turns(10), 'Next?');
+    const kept = msgs.slice(3, -1);
+    expect(kept).toHaveLength(MAX_FOLLOWUP_TURNS);
+    expect(kept[0].content).toBe('turn 2'); // turns 0 and 1 dropped
+    expect(kept[0].role).toBe('user');
+  });
+
+  it('the follow-up system prompt has no JSON schema hint and asks for a short plain answer', () => {
+    const sys = buildFollowUpSystemPrompt();
+    expect(sys).not.toContain('Return ONLY a JSON object');
+    expect(sys).not.toContain('"findings"');
+    expect(sys).toMatch(/120 words/);
+    expect(sys).toMatch(/cite codes by id/);
+    expect(buildSystemPrompt()).toContain('Return ONLY a JSON object');
+  });
+
+  it('suggestions resolve {code} from the report, or drop it', () => {
+    expect(SUGGESTED_FOLLOWUPS).toContain('What does {code} mean for this car?');
+    expect(followUpSuggestions(report)).toEqual([
+      'What should I check first?',
+      'Is it safe to drive?',
+      'Which finding is most urgent?',
+      'What does P0401 mean for this car?',
+    ]);
+    const noCodes = followUpSuggestions({ ...report, findings: [] });
+    expect(noCodes).toHaveLength(3);
+    expect(noCodes.join(' ')).not.toContain('{code}');
+  });
+
+  it('a focus code puts its question first', () => {
+    const s = followUpSuggestions(report, 'p2015');
+    expect(s[0]).toBe('What does P2015 mean for this car?');
+    expect(s.filter((q) => q.startsWith('What does'))).toHaveLength(1);
   });
 });

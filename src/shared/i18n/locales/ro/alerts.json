@@ -1,0 +1,25 @@
+{
+  "title": "Alerte",
+  "subtitle": "Avertizări la praguri pentru parametrii live",
+  "active": "Active",
+  "rules": "Reguli",
+  "noRules": "Nicio regulă încă.",
+  "op": {
+    "outside": "în afara",
+    "inside": "în interiorul"
+  },
+  "severity": {
+    "info": "info",
+    "warn": "avertizare",
+    "critical": "critic"
+  },
+  "ruleA11y": "Alertă {{name}}",
+  "deleteA11y": "Șterge alerta {{name}}",
+  "delete": "Șterge",
+  "notifyTitle": "Alertă: {{name}}",
+  "defaultRule": {
+    "coolant-hot": "Supraîncălzire lichid de răcire",
+    "low-voltage": "Tensiune scăzută la baterie",
+    "over-rev": "Turație ridicată"
+  }
+}

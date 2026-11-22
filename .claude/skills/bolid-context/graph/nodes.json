@@ -1,7 +1,30 @@
 {
+  "concept:accessibility": {
+    "path": null,
+    "summary": "Accessibility rules (plan 20): palette.json is the only colour source (semantic tokens in both themes, WCAG AA enforced by npm run check:contrast); e\u2026",
+    "tokens": [
+      "a11y",
+      "accessibility",
+      "color",
+      "colour",
+      "contrast",
+      "font",
+      "label",
+      "motion",
+      "palette",
+      "scale",
+      "screen-reader",
+      "talkback",
+      "theme",
+      "token",
+      "voiceover",
+      "wcag"
+    ],
+    "type": "concept"
+  },
   "concept:adaptation-channels": {
     "path": null,
-    "summary": "VCDS-style adaptation channels: numeric module values read via 22, written via 2E with backup+verify and display-bounds. Label packs (part-number-key\u2026",
+    "summary": "VCDS-style adaptation channels: numeric module values read via 22, written via 2E with backup+verify; one bounds guard (core adaptationBoundsError: w\u2026",
     "tokens": [
       "adaptation",
       "backup",
@@ -10,6 +33,7 @@
       "channels",
       "label",
       "pack",
+      "restore",
       "vcds",
       "write"
     ],
@@ -33,22 +57,46 @@
   },
   "concept:ai-diagnose-flow": {
     "path": null,
-    "summary": "AI Diagnose: snapshot fault codes + live readings -> aiDiagnosis builds the prompt -> AI client (OpenAI-compatible) -> human-readable diagnosis.",
+    "summary": "AI Diagnose: snapshot fault codes + live readings + per-car guide notes -> aiDiagnosis builds the prompt -> getAiClient dispatcher (provider preset p\u2026",
     "tokens": [
       "advice",
       "ai",
+      "anthropic",
+      "claude",
       "diagnose",
       "diagnosis",
       "flow",
+      "follow-up",
       "llm",
       "openai",
-      "prompt"
+      "preset",
+      "prompt",
+      "provider"
+    ],
+    "type": "concept"
+  },
+  "concept:app-backup-restore": {
+    "path": null,
+    "summary": "App-level backup/restore (plan 18): one plain JSON file (format 1) with every persisted bolid.* store envelope + trip CSVs, API keys redacted; restor\u2026",
+    "tokens": [
+      "app",
+      "backup",
+      "bundle",
+      "csv",
+      "export",
+      "import",
+      "json",
+      "migrate",
+      "persist",
+      "registry",
+      "restore",
+      "snapshot"
     ],
     "type": "concept"
   },
   "concept:app-settings": {
     "path": null,
-    "summary": "Runtime + developer settings: units, behavior toggles, and the raw adapter I/O log (bytes for debugging). Backed by settingsStore.",
+    "summary": "Settings in sections (plan 07): General, Connection, AI, Notifications, Data, a collapsed Developer & simulator section (adapter source, simulator, a\u2026",
     "tokens": [
       "app",
       "config",
@@ -56,9 +104,10 @@
       "io",
       "options",
       "preferences",
+      "reset",
       "settings",
-      "toggle",
-      "units"
+      "simulator",
+      "toggle"
     ],
     "type": "concept"
   },
@@ -98,18 +147,64 @@
   },
   "concept:can-sniffer": {
     "path": null,
-    "summary": "Raw bus monitor (ELM327 ATMA) with per-arbitration-id aggregation; monitor mode owns the command channel until stopped. Multi-PID batching + log->rep\u2026",
+    "summary": "Raw bus monitor (ELM327 ATMA) with per-arbitration-id aggregation; monitor mode owns the command channel until stopped. Every line is kept in a bound\u2026",
     "tokens": [
       "atma",
       "bus",
       "can",
       "canmonitor",
+      "capture",
+      "csv",
       "frame",
       "monitor",
       "multipid",
       "raw",
       "replay",
-      "sniffer"
+      "sniffer",
+      "splitter",
+      "vcds"
+    ],
+    "type": "concept"
+  },
+  "concept:capture-analyzer": {
+    "path": null,
+    "summary": "Plan 25 tooling to read real bytes off a sniffer CSV: obd-core/analysis/captureAnalyzer.ts (self-contained, no imports, run by scripts/analyze-captur\u2026",
+    "tokens": [
+      "analyze",
+      "analyzer",
+      "candidates",
+      "capture",
+      "csv",
+      "discover",
+      "discovery",
+      "fingerprint",
+      "headers",
+      "isotp",
+      "snapshot",
+      "sniffer",
+      "tp20"
+    ],
+    "type": "concept"
+  },
+  "concept:classic-bluetooth-spp": {
+    "path": null,
+    "summary": "Classic Bluetooth SPP ELM327 ('Bluetooth 3.0', plan 27), Android only: iOS opens classic accessories only via MFi, which ELM327 clones lack, so the s\u2026",
+    "tokens": [
+      "3.0",
+      "atma",
+      "bluetooth",
+      "bonded",
+      "capabilities",
+      "classic",
+      "delimiter",
+      "mfi",
+      "monitor",
+      "paired",
+      "pin",
+      "prompt",
+      "rfcomm",
+      "serial",
+      "spp"
     ],
     "type": "concept"
   },
@@ -132,6 +227,24 @@
     ],
     "type": "concept"
   },
+  "concept:confirmation-evidence": {
+    "path": null,
+    "summary": "Plan 25 provenance: every per-car profile item (extendedPids, modules, routines, adaptations, coding modules/presets, module sensors, login codes, se\u2026",
+    "tokens": [
+      "badge",
+      "captures",
+      "confirmation",
+      "confirmed",
+      "evidence",
+      "fixture",
+      "illustrative",
+      "provenance",
+      "unverified",
+      "verification",
+      "verified"
+    ],
+    "type": "concept"
+  },
   "concept:connection-lifecycle": {
     "path": null,
     "summary": "Establishing a live link: BLE permission + scan -> BleTransport -> Elm327Client init (ATZ/ATSPn) -> DiagnosticSession; status flows into sessionStore\u2026",
@@ -140,19 +253,25 @@
       "bluetooth",
       "connect",
       "connection",
+      "diagnostics",
+      "drain",
       "elm327",
+      "flap",
       "lifecycle",
       "linkloss",
+      "mtu",
       "pairing",
       "reconnect",
       "session",
-      "statuschange"
+      "sleep",
+      "statuschange",
+      "wake"
     ],
     "type": "concept"
   },
   "concept:diagnostic-history": {
     "path": null,
-    "summary": "On-device, file-backed history of every AI auto-diagnose run and fault-code check, each linked to a car (VIN or profile). Unlimited retention until c\u2026",
+    "summary": "On-device, file-backed history of every AI auto-diagnose run, fault-code check and generated report (historyStore, capped at 200), each linked to a c\u2026",
     "tokens": [
       "car",
       "diagnostic",
@@ -195,6 +314,25 @@
       "regen",
       "regeneration",
       "soot"
+    ],
+    "type": "concept"
+  },
+  "concept:dtc-database": {
+    "path": null,
+    "summary": "DTC database (plan 05): lookupDtc(code, make) -> description, system, J2012 subsystem, severity hint, manufacturer flag. Generic SAE tables (P0/P2/P3\u2026",
+    "tokens": [
+      "database",
+      "description",
+      "dtc",
+      "fiat",
+      "j2012",
+      "lookup",
+      "make",
+      "manufacturer",
+      "p1",
+      "severity",
+      "subsystem",
+      "vag"
     ],
     "type": "concept"
   },
@@ -262,6 +400,29 @@
     ],
     "type": "concept"
   },
+  "concept:exchange-files": {
+    "path": null,
+    "summary": "Plan 13: a garage car (bolid.profile.v1; a built-in profile exports as a seed) or a label pack (bolid.labelpack.v1) as a versioned JSON envelope {sch\u2026",
+    "tokens": [
+      "community",
+      "exchange",
+      "export",
+      "files",
+      "import",
+      "json",
+      "label",
+      "labelpack",
+      "pack",
+      "picker",
+      "profile",
+      "schema",
+      "seed",
+      "share",
+      "validate",
+      "validator"
+    ],
+    "type": "concept"
+  },
   "concept:extended-pids-mode22": {
     "path": null,
     "summary": "Profile-driven manufacturer-specific reads over Mode 22 (UDS readDataByIdentifier); VAG is the first example. Opt-in, experimental, flagged.",
@@ -285,15 +446,55 @@
     "summary": "Fuel economy derived from live PIDs (fuel-rate 015E preferred, else MAF+speed with per-fuel constants) as instantaneous + windowed L/100km (L/h at st\u2026",
     "tokens": [
       "consumption",
-      "conversion",
       "economy",
       "fuel",
-      "imperial",
       "l100km",
       "maf",
       "metric",
-      "mpg",
       "units"
+    ],
+    "type": "concept"
+  },
+  "concept:garage-learned-profiles": {
+    "path": null,
+    "summary": "Garage (plan 06): user cars (UserVehicle, user: ids) in shared garageStore, learned from SessionInfo (VIN, protocol, PID set, cal id) or added by han\u2026",
+    "tokens": [
+      "active",
+      "auto-select",
+      "base",
+      "garage",
+      "learn",
+      "learned",
+      "maintenance",
+      "mycar",
+      "per-car",
+      "profile",
+      "profiles",
+      "resolve",
+      "user",
+      "vehicle",
+      "vin"
+    ],
+    "type": "concept"
+  },
+  "concept:gps-obd-check": {
+    "path": null,
+    "summary": "Trip detail (plan 17): the GPS track is drawn as an SVG polyline (no map tiles/keys) coloured by speed/RPM/fuel rate; GPS distance (haversine over fi\u2026",
+    "tokens": [
+      "check",
+      "distance",
+      "gps",
+      "loop",
+      "map",
+      "odometer",
+      "overlay",
+      "polyline",
+      "speedo",
+      "speedometer",
+      "synthetic",
+      "track",
+      "trip-detail",
+      "verdict"
     ],
     "type": "concept"
   },
@@ -329,6 +530,26 @@
     ],
     "type": "concept"
   },
+  "concept:kwp-login-code-book": {
+    "path": null,
+    "summary": "VAG KWP2000 login (VCDS 'Login - 11'): 2B + 2-byte code + 3-byte workshop code -> 6B, 7F 2B 35 = code rejected (core kwpLogin). KWP adaptation channe\u2026",
+    "tokens": [
+      "1281",
+      "2b",
+      "adaptation",
+      "book",
+      "code",
+      "kline",
+      "kwp",
+      "kwp2000",
+      "login",
+      "loginbook",
+      "remember",
+      "workshop",
+      "wsc"
+    ],
+    "type": "concept"
+  },
   "concept:live-data-charts": {
     "path": null,
     "summary": "Live telemetry: poll Mode 01 PIDs, ring-buffer samples (chartBuffer) and render gauges/charts. The hot path for live-data and live-charts.",
@@ -342,6 +563,30 @@
       "poll",
       "stream",
       "telemetry"
+    ],
+    "type": "concept"
+  },
+  "concept:live-value-keys": {
+    "path": null,
+    "summary": "Live-value keys (plan 14): a key in liveDataStore registrations/values is a Mode 01 PID ('010C') or an extended Mode 22 key '22:<DID>' ('22:1701'). E\u2026",
+    "tokens": [
+      "chart",
+      "charts",
+      "did",
+      "extended",
+      "f187",
+      "group",
+      "groups",
+      "key",
+      "keys",
+      "label",
+      "live",
+      "measuring",
+      "mode22",
+      "partnumber",
+      "poll",
+      "sweep",
+      "value"
     ],
     "type": "concept"
   },
@@ -359,6 +604,22 @@
       "oil",
       "reminder",
       "service"
+    ],
+    "type": "concept"
+  },
+  "concept:metric-only": {
+    "path": null,
+    "summary": "The app is metric only (decision 2026-11-08, plan 07): values render as decoded (km/h, \u00b0C, km, kPa, L/100km); there is no unit setting or conversion\u2026",
+    "tokens": [
+      "celsius",
+      "conversion",
+      "km",
+      "metric",
+      "miles",
+      "mph",
+      "only",
+      "unit",
+      "units"
     ],
     "type": "concept"
   },
@@ -442,6 +703,24 @@
     ],
     "type": "concept"
   },
+  "concept:per-car-timeline": {
+    "path": null,
+    "summary": "History screen = per-car timeline (plan 16): pure merge/group in shared/lib/timeline.ts over adapters (features/history/api/timelineSources.ts) for A\u2026",
+    "tokens": [
+      "car",
+      "chronological",
+      "compare",
+      "day",
+      "deep",
+      "history",
+      "link",
+      "merge",
+      "per",
+      "per-car",
+      "timeline"
+    ],
+    "type": "concept"
+  },
   "concept:performance-tests": {
     "path": null,
     "summary": "Performance runs from live OBD2 data: 0-100 km/h, custom intervals, standing quarter-mile/60ft, braking distance; built on the poll loop. The 'bolid'\u2026",
@@ -475,6 +754,25 @@
     ],
     "type": "concept"
   },
+  "concept:replay-fixtures": {
+    "path": null,
+    "summary": "Adapter sessions as CI tests: adapter log / RecordingTransport -> ReplayFixture (pairs + per-command sequences + meta + expect) -> ReplayTransport re\u2026",
+    "tokens": [
+      "adapter",
+      "export",
+      "fixture",
+      "fixtures",
+      "freshness",
+      "log",
+      "on-car",
+      "recording",
+      "replay",
+      "sequences",
+      "validated",
+      "validation"
+    ],
+    "type": "concept"
+  },
   "concept:scan-history-diff": {
     "path": null,
     "summary": "Auto-scans persist (vehicle-keyed, capped) in scanHistoryStore; scanReport formats the forum-pasteable VCDS-style text block; scanDiff compares two s\u2026",
@@ -489,6 +787,30 @@
       "saved",
       "scan",
       "search"
+    ],
+    "type": "concept"
+  },
+  "concept:security-access-plugins": {
+    "path": null,
+    "summary": "Plan 23: UDS 27 SecurityAccess unlocks ONLY with an owner-supplied bolid.seedkey.v1 file (never shipped/fetched/derived; no identity fallback). The p\u2026",
+    "tokens": [
+      "27",
+      "access",
+      "badge",
+      "dsl",
+      "key",
+      "locked",
+      "lockout",
+      "nrc",
+      "plugin",
+      "plugins",
+      "sandbox",
+      "security",
+      "securityaccess",
+      "seed",
+      "seedkey",
+      "unlock",
+      "unlockable"
     ],
     "type": "concept"
   },
@@ -669,6 +991,49 @@
     ],
     "type": "concept"
   },
+  "concept:web-bluetooth": {
+    "path": null,
+    "summary": "Browser build (plan 28, docs/web.md): Expo web target (react-native-web, app.json web.output 'single', experiments.baseUrl '/bolid_tester', exported\u2026",
+    "tokens": [
+      "bluetooth",
+      "browser",
+      "chrome",
+      "download",
+      "edge",
+      "export",
+      "gatt",
+      "gesture",
+      "localstorage",
+      "navigator",
+      "pages",
+      "pwa",
+      "react-native-web",
+      "requestdevice",
+      "safari",
+      "web",
+      "web-bluetooth"
+    ],
+    "type": "concept"
+  },
+  "concept:wifi-adapter": {
+    "path": null,
+    "summary": "Wi-Fi ELM327 (WiFi_OBDII class, plan 26): the adapter is its own access point and a raw TCP byte pipe on 192.168.0.10:35000. TcpTransport (shared/tra\u2026",
+    "tokens": [
+      "192.168.0.10",
+      "35000",
+      "adapter",
+      "endpoint",
+      "lan",
+      "local",
+      "network",
+      "socket",
+      "tcp",
+      "wi-fi",
+      "wifi",
+      "wifi_obdii"
+    ],
+    "type": "concept"
+  },
   "core:analysis/aiDiagnosis": {
     "path": "src/shared/obd-core/analysis/aiDiagnosis.ts",
     "summary": "Pure logic for the AI auto-diagnosis feature.",
@@ -679,6 +1044,19 @@
       "ai",
       "analysis",
       "diagnosis"
+    ],
+    "type": "core"
+  },
+  "core:analysis/aiProviders": {
+    "path": "src/shared/obd-core/analysis/aiProviders.ts",
+    "summary": "AI provider presets and the Anthropic Messages wire shaping (plan 19).",
+    "tests": [
+      "src/shared/obd-core/analysis/aiProviders.test.ts"
+    ],
+    "tokens": [
+      "ai",
+      "analysis",
+      "providers"
     ],
     "type": "core"
   },
@@ -703,6 +1081,19 @@
     "tokens": [
       "analysis",
       "battery"
+    ],
+    "type": "core"
+  },
+  "core:analysis/captureAnalyzer": {
+    "path": "src/shared/obd-core/analysis/captureAnalyzer.ts",
+    "summary": "Capture analyzer (plan 25): turns a sniffer CSV (plan 03 format) into ISO-TP messages, request/response pairs with UDS / KWP2000 decoding, request \"f\u2026",
+    "tests": [
+      "src/shared/obd-core/analysis/captureAnalyzer.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "analyzer",
+      "capture"
     ],
     "type": "core"
   },
@@ -792,6 +1183,18 @@
     ],
     "type": "core"
   },
+  "core:analysis/track": {
+    "path": "src/shared/obd-core/analysis/track.ts",
+    "summary": "Pure GPS-track helpers for the trip detail screen (plan 17): a fitted equirectangular projection for drawing the track with react-native-svg (no map\u2026",
+    "tests": [
+      "src/shared/obd-core/analysis/track.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "track"
+    ],
+    "type": "core"
+  },
   "core:analysis/trip": {
     "path": "src/shared/obd-core/analysis/trip.ts",
     "summary": "Pure trip recording helpers: downsampling, stats, and CSV/JSON export.",
@@ -840,6 +1243,19 @@
     ],
     "type": "core"
   },
+  "core:coding/kwpLogin": {
+    "path": "src/shared/obd-core/coding/kwpLogin.ts",
+    "summary": "VAG KWP2000 login (plan 22) \u2014 the \"Login \u2013 11\" step VCDS performs before a pre-UDS module accepts an adaptation write.",
+    "tests": [
+      "src/shared/obd-core/coding/kwpLogin.test.ts"
+    ],
+    "tokens": [
+      "coding",
+      "kwp",
+      "login"
+    ],
+    "type": "core"
+  },
   "core:coding/presets": {
     "path": "src/shared/obd-core/coding/presets.ts",
     "summary": "One-tap coding presets (\"tweaks\", OBDeleven-style): a curated per-profile toggle compiled down to the existing gated coding write (backup \u2192 write \u2192 v\u2026",
@@ -852,6 +1268,20 @@
     ],
     "type": "core"
   },
+  "core:coding/seedKeyDsl": {
+    "path": "src/shared/obd-core/coding/seedKeyDsl.ts",
+    "summary": "Seed\u2192key plugins (plan 23): a tiny, bounded, data-only program over one 32-bit accumulator that turns a SecurityAccess (`27`) seed into a key.",
+    "tests": [
+      "src/shared/obd-core/coding/seedKeyDsl.test.ts"
+    ],
+    "tokens": [
+      "coding",
+      "dsl",
+      "key",
+      "seed"
+    ],
+    "type": "core"
+  },
   "core:coding/udsCoding": {
     "path": "src/shared/obd-core/coding/udsCoding.ts",
     "summary": "UDS coding sequence over an injectable byte sender.",
@@ -861,6 +1291,14 @@
     "tokens": [
       "coding",
       "uds"
+    ],
+    "type": "core"
+  },
+  "core:confirmation": {
+    "path": "src/shared/obd-core/confirmation.ts",
+    "summary": "Confirmation provenance (plan 25): the evidence that a per-car profile item (an extended DID, a module address, a routine id, a coding bit\u2026) was chec\u2026",
+    "tokens": [
+      "confirmation"
     ],
     "type": "core"
   },
@@ -893,13 +1331,25 @@
   },
   "core:obd/canMonitor": {
     "path": "src/shared/obd-core/obd/canMonitor.ts",
-    "summary": "CAN bus monitor (ELM327 `ATMA` with headers on): line parsing + per-id aggregation for the sniffer screen.",
+    "summary": "CAN bus monitor (ELM327 `ATMA` with headers on): line parsing + per-id aggregation for the sniffer screen, and the capture file formats (CSV / raw du\u2026",
     "tests": [
       "src/shared/obd-core/obd/canMonitor.test.ts"
     ],
     "tokens": [
       "can",
       "monitor"
+    ],
+    "type": "core"
+  },
+  "core:obd/captureBuffer": {
+    "path": "src/shared/obd-core/obd/captureBuffer.ts",
+    "summary": "Bounded capture of a sniffer (`ATMA`) run: every adapter line, timestamped and parsed, kept in a ring so a long session can be saved and shared (see\u2026",
+    "tests": [
+      "src/shared/obd-core/obd/captureBuffer.test.ts"
+    ],
+    "tokens": [
+      "buffer",
+      "capture"
     ],
     "type": "core"
   },
@@ -926,6 +1376,174 @@
     ],
     "type": "core"
   },
+  "core:obd/dtcDatabase/generic/b0": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/b0.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 body codes, B0000\u2013B0FFF.",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/c0": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/c0.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 chassis codes, C0000\u2013C0FFF.",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p0": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p0.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes, P0000\u2013P0FFF \u2014 the whole P0 family, composed from the per-range part files (each \u2264 1 800 lines, see\u2026",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p0-part1": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p0-part1.ts",
+    "summary": "Generic SAE powertrain DTC descriptions, P0000-P02FF: fuel and air metering, injector circuits, turbocharger/supercharger.",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p0-part2": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p0-part2.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes, part 2: P0300\u2013P05FF.",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p0-part3": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p0-part3.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain DTC descriptions, P0600-P09FF (computer & output circuits, transmission).",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p0-part4": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p0-part4.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain DTC descriptions, part 4: P0A00-P0AFF only (hybrid / electric propulsion: motor electronics, drive motors\u2026",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p2": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p2.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes, P2000\u2013P2FFF \u2014 the whole P2 family, composed from the per-range part files (see the plan-05 sourcing\u2026",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p2-part1": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p2-part1.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes, P2 family part 1: P2000-P24FF.",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p2-part2": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p2-part2.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes, P2500-P2FFF (part 2 of the P2 family).",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic",
+      "part"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/p3": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/p3.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 powertrain codes in the SAE-controlled P3 block (P3400-P34FF).",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/generic/u0": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/generic/u0.ts",
+    "summary": "Generic SAE J2012 / ISO 15031-6 network communication codes (U0xxx).",
+    "tokens": [
+      "database",
+      "dtc",
+      "generic"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/index": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/index.ts",
+    "summary": "DTC database (plan 05): description, system, subsystem and a severity hint for every fault code the app can show.",
+    "tokens": [
+      "database",
+      "dtc"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/manufacturer/fiat": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/manufacturer/fiat.ts",
+    "summary": "Fiat / FGA (Fiat, Alfa Romeo, Lancia) manufacturer-specific powertrain DTC definitions, keyed by the SAE-format code (`P1xxx`).",
+    "tokens": [
+      "database",
+      "dtc",
+      "fiat",
+      "manufacturer"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/manufacturer/vag": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/manufacturer/vag.ts",
+    "summary": "VAG (VW / Audi / \u0160koda / SEAT) manufacturer DTC texts \u2014 the single home for both VAG tables.",
+    "tokens": [
+      "database",
+      "dtc",
+      "manufacturer",
+      "vag"
+    ],
+    "type": "core"
+  },
+  "core:obd/dtcDatabase/manufacturer/vag-p1": {
+    "path": "src/shared/obd-core/obd/dtcDatabase/manufacturer/vag-p1.ts",
+    "summary": "VAG (VW / Audi / Seat / Skoda) manufacturer-specific powertrain DTC definitions, keyed by the SAE-format code (`P1xxx`; VAG `P3xxx` outside the gener\u2026",
+    "tokens": [
+      "database",
+      "dtc",
+      "manufacturer",
+      "vag"
+    ],
+    "type": "core"
+  },
   "core:obd/iupr": {
     "path": "src/shared/obd-core/obd/iupr.ts",
     "summary": "IUPR \u2014 In-Use Performance Ratios (Mode 09 PID 08 spark / PID 0B compression).",
@@ -934,6 +1552,18 @@
     ],
     "tokens": [
       "iupr"
+    ],
+    "type": "core"
+  },
+  "core:obd/liveKeys": {
+    "path": "src/shared/obd-core/obd/liveKeys.ts",
+    "summary": "Live-value keys.",
+    "tests": [
+      "src/shared/obd-core/obd/liveKeys.test.ts"
+    ],
+    "tokens": [
+      "keys",
+      "live"
     ],
     "type": "core"
   },
@@ -1088,7 +1718,7 @@
   },
   "core:tp20/tp20": {
     "path": "src/shared/obd-core/tp20/tp20.ts",
-    "summary": "exports RawFrame",
+    "summary": "VW/VAG Transport Protocol 2.0 (TP2.0) \u2014 the channel layer that carries KWP2000 to PRE-UDS modules (cluster, comfort, gateway\u2026) on PQ-platform CAN car\u2026",
     "tests": [
       "src/shared/obd-core/tp20/tp20.test.ts"
     ],
@@ -1142,9 +1772,32 @@
     ],
     "type": "core"
   },
+  "core:transport/fixtureCheck": {
+    "path": "src/shared/obd-core/transport/fixtureCheck.ts",
+    "summary": "Replay a fixture through a real `DiagnosticSession` and compare the result with its `expect` block.",
+    "tests": [
+      "src/shared/obd-core/transport/fixtureCheck.test.ts"
+    ],
+    "tokens": [
+      "check",
+      "fixture",
+      "transport"
+    ],
+    "type": "core"
+  },
+  "core:transport/fixtureFiles": {
+    "path": "src/shared/obd-core/transport/fixtureFiles.ts",
+    "summary": "Node-only helper for the tests that read the committed replay fixtures (`transport/fixtures/<vehicleId>/<flow>.json`).",
+    "tokens": [
+      "files",
+      "fixture",
+      "transport"
+    ],
+    "type": "core"
+  },
   "core:transport/logReplay": {
     "path": "src/shared/obd-core/transport/logReplay.ts",
-    "summary": "Turn a captured adapter I/O log (Settings \u2192 adapter log) into a replayable simulator fixture: every tx command maps to the rx text that followed it o\u2026",
+    "summary": "Turn a captured adapter I/O log (Settings \u2192 adapter log, or a `RecordingTransport`) into a replayable simulator fixture: every tx command maps to the\u2026",
     "tests": [
       "src/shared/obd-core/transport/logReplay.test.ts"
     ],
@@ -1155,12 +1808,66 @@
     ],
     "type": "core"
   },
+  "core:transport/recordingTransport": {
+    "path": "src/shared/obd-core/transport/recordingTransport.ts",
+    "summary": "Record any Transport's traffic as `LoggedIo[]` \u2014 the same shape and normalisation as the app's adapter log (connectionService `withLog` uses `logTxTe\u2026",
+    "tests": [
+      "src/shared/obd-core/transport/recordingTransport.test.ts"
+    ],
+    "tokens": [
+      "recording",
+      "transport"
+    ],
+    "type": "core"
+  },
+  "core:transport/redact": {
+    "path": "src/shared/obd-core/transport/redact.ts",
+    "summary": "Redaction for command text that leaves the bus: the adapter I/O log, replay fixtures and error messages.",
+    "tokens": [
+      "redact",
+      "transport"
+    ],
+    "type": "core"
+  },
   "core:transport/scenarios": {
     "path": "src/shared/obd-core/transport/scenarios.ts",
     "summary": "Build a simulator scenario from a vehicle profile.",
     "tokens": [
       "scenarios",
       "transport"
+    ],
+    "type": "core"
+  },
+  "core:transport/simFixtures": {
+    "path": "src/shared/obd-core/transport/simFixtures.ts",
+    "summary": "Record the simulator into replay fixtures: for every registry profile, `MockTransport( buildScenario(id))` is driven through the `connect`, `faults`\u2026",
+    "tokens": [
+      "fixtures",
+      "sim",
+      "transport"
+    ],
+    "type": "core"
+  },
+  "core:transport/testing/bridge": {
+    "path": "src/shared/obd-core/transport/testing/bridge.ts",
+    "summary": "Test bridge (plan 26, reused by plans 27 and 28): drive any fake socket / device from a `MockTransport`, so a new `Transport` can be integration-test\u2026",
+    "tokens": [
+      "bridge",
+      "testing",
+      "transport"
+    ],
+    "type": "core"
+  },
+  "core:uds/discoverModules": {
+    "path": "src/shared/obd-core/uds/discoverModules.ts",
+    "summary": "Module address discovery (plan 25): probe each candidate CAN id pair with `22 F187` (part number) and read the standard ident of every module that an\u2026",
+    "tests": [
+      "src/shared/obd-core/uds/discoverModules.test.ts"
+    ],
+    "tokens": [
+      "discover",
+      "modules",
+      "uds"
     ],
     "type": "core"
   },
@@ -1204,9 +1911,19 @@
   },
   "core:uds/vagDtcs": {
     "path": "src/shared/obd-core/uds/vagDtcs.ts",
-    "summary": "Seed dictionary of common VAG 5-digit fault-code texts (the numbers VCDS shows for component/module faults).",
+    "summary": "Compatibility re-export: the VAG native KWP 5-digit fault texts moved into the DTC database (`obd/dtcDatabase/manufacturer/vag.ts`, plan 05).",
     "tokens": [
       "dtcs",
+      "uds",
+      "vag"
+    ],
+    "type": "core"
+  },
+  "core:uds/vagHeaders": {
+    "path": "src/shared/obd-core/uds/vagHeaders.ts",
+    "summary": "Candidate 11-bit CAN tester \u2192 module / module \u2192 tester id pairs for VAG UDS modules, by VCDS diagnostic address (plan 25).",
+    "tokens": [
+      "headers",
       "uds",
       "vag"
     ],
@@ -1235,6 +1952,14 @@
     ],
     "type": "doc"
   },
+  "doc:accessibility": {
+    "path": "docs/accessibility.md",
+    "summary": "Accessibility",
+    "tokens": [
+      "accessibility"
+    ],
+    "type": "doc"
+  },
   "doc:adapter-vgate-icar-pro": {
     "path": "docs/adapter-vgate-icar-pro.md",
     "summary": "Adapter \u2014 Vgate iCar Pro Bluetooth 4.0 (BLE)",
@@ -1249,11 +1974,128 @@
     ],
     "type": "doc"
   },
+  "doc:adapters/README": {
+    "path": "docs/adapters/README.md",
+    "summary": "Adapter compatibility matrix",
+    "tokens": [
+      "adapter",
+      "adapters",
+      "compatibility",
+      "matrix",
+      "readme"
+    ],
+    "type": "doc"
+  },
+  "doc:adapters/matrix": {
+    "path": "docs/adapters/matrix.md",
+    "summary": "Adapter compatibility matrix",
+    "tokens": [
+      "adapter",
+      "adapters",
+      "compatibility",
+      "matrix"
+    ],
+    "type": "doc"
+  },
   "doc:architecture": {
     "path": "docs/architecture.md",
     "summary": "Architecture",
     "tokens": [
       "architecture"
+    ],
+    "type": "doc"
+  },
+  "doc:audit-2026-11": {
+    "path": "docs/audit-2026-11.md",
+    "summary": "Feature audit \u2014 2026-11-08",
+    "tokens": [
+      "08",
+      "11",
+      "2026",
+      "audit"
+    ],
+    "type": "doc"
+  },
+  "doc:captures/README": {
+    "path": "docs/captures/README.md",
+    "summary": "Sniffer captures",
+    "tokens": [
+      "captures",
+      "readme",
+      "sniffer"
+    ],
+    "type": "doc"
+  },
+  "doc:contributing/README": {
+    "path": "docs/contributing/README.md",
+    "summary": "Contributing data \u2014 guides",
+    "tokens": [
+      "contributing",
+      "data",
+      "guides",
+      "readme"
+    ],
+    "type": "doc"
+  },
+  "doc:contributing/coding-tweak": {
+    "path": "docs/contributing/coding-tweak.md",
+    "summary": "Contribute a coding tweak",
+    "tokens": [
+      "coding",
+      "contribute",
+      "contributing",
+      "tweak"
+    ],
+    "type": "doc"
+  },
+  "doc:contributing/dtc-texts": {
+    "path": "docs/contributing/dtc-texts.md",
+    "summary": "Contribute fault-code (DTC) texts",
+    "tokens": [
+      "code",
+      "contribute",
+      "contributing",
+      "dtc",
+      "fault",
+      "texts"
+    ],
+    "type": "doc"
+  },
+  "doc:contributing/label-pack": {
+    "path": "docs/contributing/label-pack.md",
+    "summary": "Contribute a label pack",
+    "tokens": [
+      "contribute",
+      "contributing",
+      "label",
+      "pack"
+    ],
+    "type": "doc"
+  },
+  "doc:contributing/vehicle-profile": {
+    "path": "docs/contributing/vehicle-profile.md",
+    "summary": "Contribute a vehicle profile",
+    "tokens": [
+      "contribute",
+      "contributing",
+      "profile",
+      "vehicle"
+    ],
+    "type": "doc"
+  },
+  "doc:exchange-formats": {
+    "path": "docs/exchange-formats.md",
+    "summary": "Exchange formats \u2014 profile, label-pack and security-access plugin files",
+    "tokens": [
+      "access",
+      "exchange",
+      "files",
+      "formats",
+      "label",
+      "pack",
+      "plugin",
+      "profile",
+      "security"
     ],
     "type": "doc"
   },
@@ -1297,12 +2139,30 @@
     ],
     "type": "doc"
   },
+  "doc:features/backup": {
+    "path": "docs/features/backup.md",
+    "summary": "Feature: backup",
+    "tokens": [
+      "backup"
+    ],
+    "type": "doc"
+  },
   "doc:features/battery-health": {
     "path": "docs/features/battery-health.md",
     "summary": "Feature: battery-health",
     "tokens": [
       "battery",
       "health"
+    ],
+    "type": "doc"
+  },
+  "doc:features/can-sniffer": {
+    "path": "docs/features/can-sniffer.md",
+    "summary": "Feature: bus sniffer (can-sniffer)",
+    "tokens": [
+      "bus",
+      "can",
+      "sniffer"
     ],
     "type": "doc"
   },
@@ -1341,6 +2201,15 @@
     ],
     "type": "doc"
   },
+  "doc:features/engine-host": {
+    "path": "docs/features/engine-host.md",
+    "summary": "Feature: engine-host",
+    "tokens": [
+      "engine",
+      "host"
+    ],
+    "type": "doc"
+  },
   "doc:features/error-log": {
     "path": "docs/features/error-log.md",
     "summary": "Feature: error log",
@@ -1367,6 +2236,16 @@
     "tokens": [
       "codes",
       "fault"
+    ],
+    "type": "doc"
+  },
+  "doc:features/feedback": {
+    "path": "docs/features/feedback.md",
+    "summary": "Feature: feedback (Report a problem)",
+    "tokens": [
+      "feedback",
+      "problem",
+      "report"
     ],
     "type": "doc"
   },
@@ -1420,11 +2299,27 @@
     ],
     "type": "doc"
   },
+  "doc:features/more": {
+    "path": "docs/features/more.md",
+    "summary": "Feature: more",
+    "tokens": [
+      "more"
+    ],
+    "type": "doc"
+  },
   "doc:features/notifications": {
     "path": "docs/features/notifications.md",
     "summary": "Feature: notifications",
     "tokens": [
       "notifications"
+    ],
+    "type": "doc"
+  },
+  "doc:features/onboarding": {
+    "path": "docs/features/onboarding.md",
+    "summary": "Feature: onboarding",
+    "tokens": [
+      "onboarding"
     ],
     "type": "doc"
   },
@@ -1434,6 +2329,14 @@
     "tokens": [
       "performance",
       "tests"
+    ],
+    "type": "doc"
+  },
+  "doc:features/report": {
+    "path": "docs/features/report.md",
+    "summary": "Feature: report",
+    "tokens": [
+      "report"
     ],
     "type": "doc"
   },
@@ -1545,6 +2448,15 @@
     ],
     "type": "doc"
   },
+  "doc:i18n": {
+    "path": "docs/i18n.md",
+    "summary": "Localization (i18n)",
+    "tokens": [
+      "18",
+      "localization"
+    ],
+    "type": "doc"
+  },
   "doc:implementation-log": {
     "path": "docs/implementation-log.md",
     "summary": "Implementation Log",
@@ -1591,6 +2503,558 @@
     ],
     "type": "doc"
   },
+  "doc:plans/01-production-first-run": {
+    "path": "docs/plans/01-production-first-run.md",
+    "summary": "Plan 01 \u2014 Production defaults and first-run",
+    "tokens": [
+      "01",
+      "defaults",
+      "first",
+      "plan",
+      "plans",
+      "production",
+      "run"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/02-on-car-validation": {
+    "path": "docs/plans/02-on-car-validation.md",
+    "summary": "Plan 02 \u2014 Log \u2192 fixture pipeline now, on-car validation later",
+    "tokens": [
+      "02",
+      "car",
+      "fixture",
+      "later",
+      "log",
+      "now",
+      "on",
+      "pipeline",
+      "plan",
+      "plans",
+      "validation"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/03-sniffer-capture": {
+    "path": "docs/plans/03-sniffer-capture.md",
+    "summary": "Plan 03 \u2014 Bus sniffer: save and share captures",
+    "tokens": [
+      "03",
+      "bus",
+      "capture",
+      "captures",
+      "plan",
+      "plans",
+      "save",
+      "share",
+      "sniffer"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/04-doc-debt": {
+    "path": "docs/plans/04-doc-debt.md",
+    "summary": "Plan 04 \u2014 Doc debt zero",
+    "tokens": [
+      "04",
+      "debt",
+      "doc",
+      "plan",
+      "plans",
+      "zero"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/05-dtc-database": {
+    "path": "docs/plans/05-dtc-database.md",
+    "summary": "Plan 05 \u2014 Full DTC database and the DTC detail sheet",
+    "tokens": [
+      "05",
+      "database",
+      "detail",
+      "dtc",
+      "full",
+      "plan",
+      "plans",
+      "sheet"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/06-garage-learned-profiles": {
+    "path": "docs/plans/06-garage-learned-profiles.md",
+    "summary": "Plan 06 \u2014 Garage (multiple cars) and learned profiles",
+    "tokens": [
+      "06",
+      "cars",
+      "garage",
+      "learned",
+      "multiple",
+      "plan",
+      "plans",
+      "profiles"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/07-information-architecture": {
+    "path": "docs/plans/07-information-architecture.md",
+    "summary": "Plan 07 \u2014 Information architecture: More, Settings, Live",
+    "tokens": [
+      "07",
+      "architecture",
+      "information",
+      "live",
+      "more",
+      "plan",
+      "plans",
+      "settings"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/08-signed-release-ota": {
+    "path": "docs/plans/08-signed-release-ota.md",
+    "summary": "Plan 08 \u2014 Signed release build, versioning, OTA updates",
+    "tokens": [
+      "08",
+      "build",
+      "ota",
+      "plan",
+      "plans",
+      "release",
+      "signed",
+      "updates",
+      "versioning"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/09-ios-eas": {
+    "path": "docs/plans/09-ios-eas.md",
+    "summary": "Plan 09 \u2014 iOS build via EAS",
+    "tokens": [
+      "09",
+      "build",
+      "eas",
+      "ios",
+      "os",
+      "plan",
+      "plans",
+      "via"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/10-component-e2e-tests": {
+    "path": "docs/plans/10-component-e2e-tests.md",
+    "summary": "Plan 10 \u2014 Component tests and an end-to-end smoke flow",
+    "tokens": [
+      "10",
+      "an",
+      "component",
+      "end",
+      "flow",
+      "plan",
+      "plans",
+      "smoke",
+      "tests",
+      "to"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/11-i18n": {
+    "path": "docs/plans/11-i18n.md",
+    "summary": "Plan 11 \u2014 Localization: English and Romanian",
+    "tokens": [
+      "11",
+      "18",
+      "english",
+      "localization",
+      "plan",
+      "plans",
+      "romanian"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/12-ble-robustness": {
+    "path": "docs/plans/12-ble-robustness.md",
+    "summary": "Plan 12 \u2014 BLE robustness",
+    "tokens": [
+      "12",
+      "ble",
+      "plan",
+      "plans",
+      "robustness"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/13-profile-labelpack-import-export": {
+    "path": "docs/plans/13-profile-labelpack-import-export.md",
+    "summary": "Plan 13 \u2014 Profile and label-pack import / export",
+    "tokens": [
+      "13",
+      "export",
+      "import",
+      "label",
+      "labelpack",
+      "pack",
+      "plan",
+      "plans",
+      "profile"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/14-mode22-charts-measuring-groups": {
+    "path": "docs/plans/14-mode22-charts-measuring-groups.md",
+    "summary": "Plan 14 \u2014 Mode 22 values in the poll loop and charts; VCDS-style measuring groups",
+    "tokens": [
+      "14",
+      "22",
+      "charts",
+      "groups",
+      "in",
+      "loop",
+      "measuring",
+      "mode",
+      "plan",
+      "plans",
+      "poll",
+      "style",
+      "values",
+      "vcds"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/15-unified-vehicle-report": {
+    "path": "docs/plans/15-unified-vehicle-report.md",
+    "summary": "Plan 15 \u2014 Unified vehicle report (PDF / HTML)",
+    "tokens": [
+      "15",
+      "html",
+      "pdf",
+      "plan",
+      "plans",
+      "report",
+      "unified",
+      "vehicle"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/16-per-car-timeline": {
+    "path": "docs/plans/16-per-car-timeline.md",
+    "summary": "Plan 16 \u2014 Per-car timeline",
+    "tokens": [
+      "16",
+      "car",
+      "per",
+      "plan",
+      "plans",
+      "timeline"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/17-trip-detail-map": {
+    "path": "docs/plans/17-trip-detail-map.md",
+    "summary": "Plan 17 \u2014 Trip detail: GPS polyline, overlays, GPS-vs-OBD check",
+    "tokens": [
+      "17",
+      "check",
+      "detail",
+      "gps",
+      "map",
+      "overlays",
+      "plan",
+      "plans",
+      "polyline",
+      "trip",
+      "vs"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/18-backup-restore": {
+    "path": "docs/plans/18-backup-restore.md",
+    "summary": "Plan 18 \u2014 Export everything, one-tap backup and restore",
+    "tokens": [
+      "18",
+      "backup",
+      "everything",
+      "export",
+      "one",
+      "plan",
+      "plans",
+      "restore",
+      "tap"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/19-ai-provider-presets": {
+    "path": "docs/plans/19-ai-provider-presets.md",
+    "summary": "Plan 19 \u2014 AI provider presets, follow-up questions, guide citations",
+    "tokens": [
+      "19",
+      "ai",
+      "citations",
+      "follow",
+      "guide",
+      "plan",
+      "plans",
+      "presets",
+      "provider",
+      "questions",
+      "up"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/20-accessibility-pass": {
+    "path": "docs/plans/20-accessibility-pass.md",
+    "summary": "Plan 20 \u2014 Accessibility pass",
+    "tokens": [
+      "20",
+      "accessibility",
+      "pass",
+      "plan",
+      "plans"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/21-tablet-layout": {
+    "path": "docs/plans/21-tablet-layout.md",
+    "summary": "Plan 21 \u2014 Tablet and landscape layout",
+    "tokens": [
+      "21",
+      "landscape",
+      "layout",
+      "plan",
+      "plans",
+      "tablet"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/22-kwp-login-code-book": {
+    "path": "docs/plans/22-kwp-login-code-book.md",
+    "summary": "Plan 22 \u2014 KWP login entry and the per-car code book",
+    "tokens": [
+      "22",
+      "book",
+      "car",
+      "code",
+      "entry",
+      "kwp",
+      "login",
+      "per",
+      "plan",
+      "plans"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/23-security-access-plugins": {
+    "path": "docs/plans/23-security-access-plugins.md",
+    "summary": "Plan 23 \u2014 Security-access plugins (user-supplied seed\u2192key, never shipped)",
+    "tokens": [
+      "23",
+      "access",
+      "key",
+      "never",
+      "plan",
+      "plans",
+      "plugins",
+      "security",
+      "seed",
+      "shipped",
+      "supplied",
+      "user"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/24-adaptation-restore": {
+    "path": "docs/plans/24-adaptation-restore.md",
+    "summary": "Plan 24 \u2014 Adaptation restore from a full-car backup",
+    "tokens": [
+      "24",
+      "adaptation",
+      "backup",
+      "car",
+      "full",
+      "plan",
+      "plans",
+      "restore"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/25-post-capture-confirmation": {
+    "path": "docs/plans/25-post-capture-confirmation.md",
+    "summary": "Plan 25 \u2014 Confirmation metadata, module discovery and the capture analyzer",
+    "tokens": [
+      "25",
+      "analyzer",
+      "capture",
+      "confirmation",
+      "discovery",
+      "metadata",
+      "module",
+      "plan",
+      "plans",
+      "post"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/26-wifi-tcp-transport": {
+    "path": "docs/plans/26-wifi-tcp-transport.md",
+    "summary": "Plan 26 \u2014 Wi-Fi ELM327 transport (TCP)",
+    "tokens": [
+      "26",
+      "327",
+      "elm",
+      "fi",
+      "plan",
+      "plans",
+      "tcp",
+      "transport",
+      "wi",
+      "wifi"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/27-bluetooth-spp-transport": {
+    "path": "docs/plans/27-bluetooth-spp-transport.md",
+    "summary": "Plan 27 \u2014 Classic Bluetooth (SPP) transport, Android",
+    "tokens": [
+      "27",
+      "android",
+      "bluetooth",
+      "classic",
+      "plan",
+      "plans",
+      "spp",
+      "transport"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/28-web-bluetooth-pwa": {
+    "path": "docs/plans/28-web-bluetooth-pwa.md",
+    "summary": "Plan 28 \u2014 Web Bluetooth PWA",
+    "tokens": [
+      "28",
+      "bluetooth",
+      "plan",
+      "plans",
+      "pwa",
+      "web"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/29-adapter-compatibility-matrix": {
+    "path": "docs/plans/29-adapter-compatibility-matrix.md",
+    "summary": "Plan 29 \u2014 Adapter compatibility matrix",
+    "tokens": [
+      "29",
+      "adapter",
+      "compatibility",
+      "matrix",
+      "plan",
+      "plans"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/30-store-release-prep": {
+    "path": "docs/plans/30-store-release-prep.md",
+    "summary": "Plan 30 \u2014 Store release preparation (Play Store + App Store) and stability targets",
+    "tokens": [
+      "30",
+      "app",
+      "plan",
+      "plans",
+      "play",
+      "prep",
+      "preparation",
+      "release",
+      "stability",
+      "targets"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/31-opt-in-crash-reporting": {
+    "path": "docs/plans/31-opt-in-crash-reporting.md",
+    "summary": "Plan 31 \u2014 Opt-in crash reporting",
+    "tokens": [
+      "31",
+      "crash",
+      "in",
+      "opt",
+      "plan",
+      "plans",
+      "reporting"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/32-feedback-log-bundle": {
+    "path": "docs/plans/32-feedback-log-bundle.md",
+    "summary": "Plan 32 \u2014 In-app feedback and the redacted log bundle",
+    "tokens": [
+      "32",
+      "app",
+      "bundle",
+      "feedback",
+      "in",
+      "log",
+      "plan",
+      "plans",
+      "redacted"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/33-community-contribution": {
+    "path": "docs/plans/33-community-contribution.md",
+    "summary": "Plan 33 \u2014 Community contribution flow",
+    "tokens": [
+      "33",
+      "community",
+      "contribution",
+      "flow",
+      "plan",
+      "plans"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/README": {
+    "path": "docs/plans/README.md",
+    "summary": "Implementation plans \u2014 handoff guide",
+    "tokens": [
+      "guide",
+      "handoff",
+      "implementation",
+      "plans",
+      "readme"
+    ],
+    "type": "doc"
+  },
+  "doc:privacy-policy": {
+    "path": "docs/privacy-policy.md",
+    "summary": "Bolid Tester \u2014 Privacy policy",
+    "tokens": [
+      "bolid",
+      "policy",
+      "privacy",
+      "tester"
+    ],
+    "type": "doc"
+  },
+  "doc:release": {
+    "path": "docs/release.md",
+    "summary": "Releases: versioning, signing, OTA updates",
+    "tokens": [
+      "ota",
+      "release",
+      "releases",
+      "signing",
+      "updates",
+      "versioning"
+    ],
+    "type": "doc"
+  },
+  "doc:roadmap": {
+    "path": "docs/roadmap.md",
+    "summary": "Roadmap",
+    "tokens": [
+      "roadmap"
+    ],
+    "type": "doc"
+  },
   "doc:simulator": {
     "path": "docs/simulator.md",
     "summary": "OBD2 Simulator (virtual ELM327)",
@@ -1607,6 +3071,17 @@
     "summary": "Testing",
     "tokens": [
       "testing"
+    ],
+    "type": "doc"
+  },
+  "doc:third-party-licenses": {
+    "path": "docs/third-party-licenses.md",
+    "summary": "Third-party licences",
+    "tokens": [
+      "licences",
+      "licenses",
+      "party",
+      "third"
     ],
     "type": "doc"
   },
@@ -1684,9 +3159,25 @@
     ],
     "type": "doc"
   },
+  "doc:web": {
+    "path": "docs/web.md",
+    "summary": "Web build (Web Bluetooth)",
+    "tokens": [
+      "bluetooth",
+      "build",
+      "web"
+    ],
+    "type": "doc"
+  },
   "feature:adaptations": {
     "path": "src/features/adaptations",
     "summary": "VCDS-style **adaptation channels**: small numeric module values (idle offset, base duties, service",
+    "tests": [
+      "src/features/adaptations/api/adaptationService.test.ts",
+      "src/features/adaptations/api/codeBook.test.ts",
+      "src/features/adaptations/hooks/useAdaptations.test.tsx",
+      "src/features/adaptations/ui/AdaptationsScreen.test.tsx"
+    ],
     "tokens": [
       "adaptations"
     ],
@@ -1696,7 +3187,9 @@
     "path": "src/features/adapter-health",
     "summary": "A one-tap **adapter health check** that grades your ELM327 so \"is my clone junk?\" support questions",
     "tests": [
-      "src/features/adapter-health/api/gradeAdapter.test.ts"
+      "src/features/adapter-health/api/adapterReportJson.test.ts",
+      "src/features/adapter-health/api/gradeAdapter.test.ts",
+      "src/features/adapter-health/ui/AdapterHealthScreen.test.tsx"
     ],
     "tokens": [
       "adapter",
@@ -1706,7 +3199,10 @@
   },
   "feature:ai-diagnose": {
     "path": "src/features/ai-diagnose",
-    "summary": "**One-tap, AI-assisted health check.** Reads the car in one pass, sends a structured snapshot to a",
+    "summary": "**One-tap, AI-assisted health check.** Reads the car in one pass, sends a structured snapshot to the",
+    "tests": [
+      "src/features/ai-diagnose/ui/AiDiagnoseScreen.test.tsx"
+    ],
     "tokens": [
       "ai",
       "diagnose"
@@ -1716,14 +3212,35 @@
   "feature:alerts": {
     "path": "src/features/alerts",
     "summary": "User-defined **thresholds** on live PIDs that fire visual + haptic (and optional audible) alerts \u2014",
+    "tests": [
+      "src/features/alerts/ui/AlertsScreen.test.tsx"
+    ],
     "tokens": [
       "alerts"
+    ],
+    "type": "feature"
+  },
+  "feature:backup": {
+    "path": "src/features/backup",
+    "summary": "**Backup & restore** (plan 18, [plan](../plans/18-backup-restore.md)): every persisted store",
+    "tests": [
+      "src/features/backup/api/backupService.test.ts",
+      "src/features/backup/api/resetAppData.test.ts",
+      "src/features/backup/api/storeCsv.test.ts",
+      "src/features/backup/api/storeVersions.test.ts",
+      "src/features/backup/ui/BackupScreen.test.tsx"
+    ],
+    "tokens": [
+      "backup"
     ],
     "type": "feature"
   },
   "feature:battery-health": {
     "path": "src/features/battery-health",
     "summary": "Track the **12 V battery and charging system** from system voltage: resting voltage \u2192 state of",
+    "tests": [
+      "src/features/battery-health/model/batteryStore.test.ts"
+    ],
     "tokens": [
       "battery",
       "health"
@@ -1732,7 +3249,13 @@
   },
   "feature:can-sniffer": {
     "path": "src/features/can-sniffer",
-    "summary": "Can Sniffer feature (screen + hooks + model).",
+    "summary": "A raw **bus monitor** built on the ELM327 `ATMA` (monitor all) command: every frame the adapter",
+    "tests": [
+      "src/features/can-sniffer/api/captureExport.test.ts",
+      "src/features/can-sniffer/model/snifferController.test.ts",
+      "src/features/can-sniffer/model/snifferStore.test.ts",
+      "src/features/can-sniffer/ui/SnifferScreen.test.tsx"
+    ],
     "tokens": [
       "can",
       "sniffer"
@@ -1743,7 +3266,13 @@
     "path": "src/features/coding",
     "summary": "**Custom coding** = changing a control module's configuration (\"long coding\" / adaptation) rather",
     "tests": [
-      "src/features/coding/api/carBackup.test.ts"
+      "src/features/coding/api/adaptationRestore.integration.test.ts",
+      "src/features/coding/api/adaptationRestore.test.ts",
+      "src/features/coding/api/carBackup.test.ts",
+      "src/features/coding/hooks/useAdaptationRestore.security.test.tsx",
+      "src/features/coding/hooks/useCoding.security.test.tsx",
+      "src/features/coding/ui/CodingBackup.test.tsx",
+      "src/features/coding/ui/CodingTweaks.test.tsx"
     ],
     "tokens": [
       "coding"
@@ -1752,9 +3281,17 @@
   },
   "feature:connection": {
     "path": "src/features/connection",
-    "summary": "Scan for, connect to, and initialize the ELM327 BLE adapter.",
+    "summary": "Scan for, connect to, and initialize the ELM327 adapter \u2014 Bluetooth LE, Wi-Fi over TCP (plan 26),",
     "tests": [
-      "src/features/connection/api/reconnect.test.ts"
+      "src/features/connection/api/connectionService.test.ts",
+      "src/features/connection/api/diagnoseFailure.test.ts",
+      "src/features/connection/api/flapGuard.test.ts",
+      "src/features/connection/api/reconnect.test.ts",
+      "src/features/connection/hooks/usePairedAdapters.test.tsx",
+      "src/features/connection/hooks/useScan.test.tsx",
+      "src/features/connection/ui/BluetoothPrompt.test.tsx",
+      "src/features/connection/ui/ConnectionScreen.test.tsx",
+      "src/features/connection/ui/DeviceRow.test.tsx"
     ],
     "tokens": [
       "connection"
@@ -1764,6 +3301,9 @@
   "feature:dpf": {
     "path": "src/features/dpf",
     "summary": "A diesel-focused read-only view of the **diesel particulate filter**: soot load, ash load, distance",
+    "tests": [
+      "src/features/dpf/ui/DpfScreen.test.tsx"
+    ],
     "tokens": [
       "dpf"
     ],
@@ -1771,8 +3311,11 @@
   },
   "feature:engine-host": {
     "path": "src/features/engine-host",
-    "summary": "Engine Host feature (screen + hooks + model).",
+    "summary": "The headless **engine host**: one component, mounted once at the app root, that owns every",
     "tests": [
+      "src/features/engine-host/EngineHost.extended.test.tsx",
+      "src/features/engine-host/EngineHost.test.tsx",
+      "src/features/engine-host/extendedSnapshot.test.ts",
       "src/features/engine-host/pollPids.test.ts"
     ],
     "tokens": [
@@ -1784,6 +3327,10 @@
   "feature:error-log": {
     "path": "src/features/error-log",
     "summary": "A persistent, on-device **logging zone**: a capped store of the errors the app has hit, so they can",
+    "tests": [
+      "src/features/error-log/hooks/useErrorLogExport.test.tsx",
+      "src/features/error-log/ui/ErrorLogScreen.test.tsx"
+    ],
     "tokens": [
       "error",
       "log"
@@ -1794,7 +3341,9 @@
     "path": "src/features/extended-pids",
     "summary": "Profile-driven **manufacturer-specific** reads via **Mode 22** (UDS `readDataByIdentifier`). **VAG is",
     "tests": [
-      "src/features/extended-pids/api/measuringLog.test.ts"
+      "src/features/extended-pids/api/measuringLog.test.ts",
+      "src/features/extended-pids/model/measuringGroups.test.ts",
+      "src/features/extended-pids/ui/ExtendedPidsScreen.test.tsx"
     ],
     "tokens": [
       "extended",
@@ -1805,15 +3354,36 @@
   "feature:fault-codes": {
     "path": "src/features/fault-codes",
     "summary": "Read and clear Diagnostic Trouble Codes (DTCs), show freeze frame and readiness monitors. Every read is saved to [History](./history.md).",
+    "tests": [
+      "src/features/fault-codes/api/dtcService.test.ts",
+      "src/features/fault-codes/model/dtcDetail.test.ts",
+      "src/features/fault-codes/ui/FaultCodesScreen.test.tsx"
+    ],
     "tokens": [
       "codes",
       "fault"
     ],
     "type": "feature"
   },
+  "feature:feedback": {
+    "path": "src/features/feedback",
+    "summary": "One tap in **More \u2192 Tools \u2192 Report a problem** (`/feedback`, plan 32) builds a **redacted problem",
+    "tests": [
+      "src/features/feedback/ui/FeedbackScreen.test.tsx"
+    ],
+    "tokens": [
+      "feedback"
+    ],
+    "type": "feature"
+  },
   "feature:history": {
     "path": "src/features/history",
-    "summary": "A persistent, on-device **history** of diagnostic activity: every **AI auto-diagnose run** and every",
+    "summary": "The **per-car timeline** ([plan 16](../plans/16-per-car-timeline.md)): one chronological view of",
+    "tests": [
+      "src/features/history/api/reportFile.test.ts",
+      "src/features/history/api/timelineSources.test.ts",
+      "src/features/history/ui/HistoryScreen.test.tsx"
+    ],
     "tokens": [
       "history"
     ],
@@ -1831,7 +3401,10 @@
     "path": "src/features/live-charts",
     "summary": "Plot live PIDs over **time** (line charts) alongside the gauges in [`live-data`](./live-data.md), and",
     "tests": [
-      "src/features/live-charts/api/chartCsv.test.ts"
+      "src/features/live-charts/api/chartCsv.test.ts",
+      "src/features/live-charts/api/chartGeometry.test.ts",
+      "src/features/live-charts/model/chartKeys.test.ts",
+      "src/features/live-charts/ui/ChartsScreen.test.tsx"
     ],
     "tokens": [
       "charts",
@@ -1843,7 +3416,10 @@
     "path": "src/features/live-data",
     "summary": "Stream and display live engine parameters (Mode 01 PIDs).",
     "tests": [
-      "src/features/live-data/model/dashboardLayout.test.ts"
+      "src/features/live-data/model/dashboardLayout.test.ts",
+      "src/features/live-data/model/twoPaneGrid.test.ts",
+      "src/features/live-data/ui/DashboardScreen.test.tsx",
+      "src/features/live-data/ui/SensorGroups.test.tsx"
     ],
     "tokens": [
       "data",
@@ -1854,6 +3430,10 @@
   "feature:maintenance": {
     "path": "src/features/maintenance",
     "summary": "Maintenance feature (screen + hooks + model).",
+    "tests": [
+      "src/features/maintenance/model/maintenanceStore.test.ts",
+      "src/features/maintenance/ui/MaintenanceScreen.test.tsx"
+    ],
     "tokens": [
       "maintenance"
     ],
@@ -1863,10 +3443,13 @@
     "path": "src/features/module-scan",
     "summary": "Scan every control module the profile declares: identification (part number, software version,",
     "tests": [
+      "src/features/module-scan/api/discovery.test.ts",
       "src/features/module-scan/api/scanDiff.test.ts",
       "src/features/module-scan/api/scanReport.test.ts",
       "src/features/module-scan/api/scanSearch.test.ts",
-      "src/features/module-scan/model/scanHistoryStore.test.ts"
+      "src/features/module-scan/model/scanHistoryStore.test.ts",
+      "src/features/module-scan/ui/ModuleScanScreen.test.tsx",
+      "src/features/module-scan/ui/ScanHistorySection.test.tsx"
     ],
     "tokens": [
       "module",
@@ -1876,7 +3459,11 @@
   },
   "feature:more": {
     "path": "src/features/more",
-    "summary": "More feature (screen + hooks + model).",
+    "summary": "The **More** tab: the hub that reaches every screen that is not a tab, plus **Check for updates**.",
+    "tests": [
+      "src/features/more/model/sections.test.ts",
+      "src/features/more/ui/MoreScreen.test.tsx"
+    ],
     "tokens": [
       "more"
     ],
@@ -1885,6 +3472,9 @@
   "feature:notifications": {
     "path": "src/features/notifications",
     "summary": "A single **local notification** layer (no server, no push tokens) that surfaces important events to",
+    "tests": [
+      "src/features/notifications/ui/NotificationsScreen.test.tsx"
+    ],
     "tokens": [
       "notifications"
     ],
@@ -1892,7 +3482,10 @@
   },
   "feature:onboarding": {
     "path": "src/features/onboarding",
-    "summary": "Onboarding feature (screen + hooks + model).",
+    "summary": "First-run guidance: dismissible hints and the three-step \"Getting started\" card on the Connect tab.",
+    "tests": [
+      "src/features/onboarding/model/firstRun.test.ts"
+    ],
     "tokens": [
       "onboarding"
     ],
@@ -1900,10 +3493,23 @@
   },
   "feature:performance-tests": {
     "path": "src/features/performance-tests",
-    "summary": "Measure vehicle performance from live OBD2 data: **0\u2013100 km/h** (and 0\u201360 mph), custom speed",
+    "summary": "Measure vehicle performance from live OBD2 data: **0\u2013100 km/h**, custom speed intervals, a",
     "tokens": [
       "performance",
       "tests"
+    ],
+    "type": "feature"
+  },
+  "feature:report": {
+    "path": "src/features/report",
+    "summary": "The **unified vehicle report** ([plan 15](../plans/15-unified-vehicle-report.md)): one tap produces",
+    "tests": [
+      "src/features/report/api/reportExport.test.ts",
+      "src/features/report/api/sections.test.ts",
+      "src/features/report/ui/ReportScreen.test.tsx"
+    ],
+    "tokens": [
+      "report"
     ],
     "type": "feature"
   },
@@ -1911,25 +3517,20 @@
     "path": "src/features/routines",
     "summary": "VCDS-style **output tests** (UDS `2F` InputOutputControlByIdentifier) and **basic settings**",
     "tests": [
-      "src/features/routines/api/routineService.test.ts"
+      "src/features/routines/api/routineService.test.ts",
+      "src/features/routines/ui/RoutinesScreen.test.tsx"
     ],
     "tokens": [
       "routines"
     ],
     "type": "feature"
   },
-  "feature:sensor-readings": {
-    "path": "src/features/sensor-readings",
-    "summary": "Sensor Readings feature (screen + hooks + model).",
-    "tokens": [
-      "readings",
-      "sensor"
-    ],
-    "type": "feature"
-  },
   "feature:sensor-tests": {
     "path": "src/features/sensor-tests",
     "summary": "Inspect and **actively test individual sensors** \u2014 watch a single sensor live while you actuate it",
+    "tests": [
+      "src/features/sensor-tests/ui/SensorTestScreen.test.tsx"
+    ],
     "tokens": [
       "sensor",
       "tests"
@@ -1938,7 +3539,11 @@
   },
   "feature:service-reset": {
     "path": "src/features/service-reset",
-    "summary": "Reset the **service interval / oil-service reminder** (\"SRI reset\" \u2014 the *service now / service in",
+    "summary": "Reset the **service interval / oil-service reminder** (\"SRI reset\" \u2014 the _service now / service in",
+    "tests": [
+      "src/features/service-reset/hooks/useServiceReset.security.test.tsx",
+      "src/features/service-reset/ui/ServiceResetScreen.test.tsx"
+    ],
     "tokens": [
       "reset",
       "service"
@@ -1947,7 +3552,17 @@
   },
   "feature:settings": {
     "path": "src/features/settings",
-    "summary": "Developer and runtime settings.",
+    "summary": "User preferences first, then the developer and simulator controls in their own collapsed section.",
+    "tests": [
+      "src/features/settings/api/replayFixtureFile.test.ts",
+      "src/features/settings/model/licenses.test.ts",
+      "src/features/settings/model/privacyPolicy.test.ts",
+      "src/features/settings/model/replayExport.test.ts",
+      "src/features/settings/ui/LabelPacksSection.test.tsx",
+      "src/features/settings/ui/LicensesScreen.test.tsx",
+      "src/features/settings/ui/SeedKeysSection.test.tsx",
+      "src/features/settings/ui/SettingsScreen.test.tsx"
+    ],
     "tokens": [
       "settings"
     ],
@@ -1957,7 +3572,11 @@
     "path": "src/features/trip-recording",
     "summary": "Record a drive as a typed **time-series** of live PIDs (plus DTC snapshots), persist it on the",
     "tests": [
-      "src/features/trip-recording/api/trackRecorder.test.ts"
+      "src/features/trip-recording/api/trackRecorder.test.ts",
+      "src/features/trip-recording/hooks/useTripRecorder.test.ts",
+      "src/features/trip-recording/model/tripStore.test.ts",
+      "src/features/trip-recording/ui/TripDetailScreen.test.tsx",
+      "src/features/trip-recording/ui/TripScreen.test.tsx"
     ],
     "tokens": [
       "recording",
@@ -1968,6 +3587,9 @@
   "feature:vehicle-info": {
     "path": "src/features/vehicle-info",
     "summary": "Show vehicle and adapter identity.",
+    "tests": [
+      "src/features/vehicle-info/ui/VehicleInfoScreen.test.tsx"
+    ],
     "tokens": [
       "info",
       "vehicle"
@@ -1976,7 +3598,13 @@
   },
   "feature:vehicle-select": {
     "path": "src/features/vehicle-select",
-    "summary": "Choose which vehicle profile to use (or **Auto / Generic**).",
+    "summary": "Choose the **active car**: a car from **My garage** (cars you added on this phone) or a **built-in",
+    "tests": [
+      "src/features/vehicle-select/api/garageExportFile.test.ts",
+      "src/features/vehicle-select/api/learnVehicle.test.ts",
+      "src/features/vehicle-select/model/vehicleDraft.test.ts",
+      "src/features/vehicle-select/ui/VehicleSelectScreen.test.tsx"
+    ],
     "tokens": [
       "select",
       "vehicle"
@@ -1991,6 +3619,29 @@
       "vin"
     ],
     "type": "feature"
+  },
+  "lib:appInfo": {
+    "path": "src/shared/lib/appInfo.ts",
+    "summary": "App identity read from app.json at bundle time.",
+    "tests": [
+      "src/shared/lib/appInfo.test.ts"
+    ],
+    "tokens": [
+      "app",
+      "info"
+    ],
+    "type": "lib"
+  },
+  "lib:backup": {
+    "path": "src/shared/lib/backup.ts",
+    "summary": "The app backup bundle (plan 18): every persisted store's zustand envelope plus the trip CSV files, in **one plain JSON file** the user keeps anywhere.",
+    "tests": [
+      "src/shared/lib/backup.test.ts"
+    ],
+    "tokens": [
+      "backup"
+    ],
+    "type": "lib"
   },
   "lib:base64": {
     "path": "src/shared/lib/base64.ts",
@@ -2009,6 +3660,29 @@
     "summary": "ASCII <-> byte helpers used to move text over the (byte-oriented) transport.",
     "tokens": [
       "bytes"
+    ],
+    "type": "lib"
+  },
+  "lib:contrast": {
+    "path": "src/shared/lib/contrast.ts",
+    "summary": "WCAG 2.1 contrast ratios and the palette check behind `npm run check:contrast` (plan 20, docs/accessibility.md).",
+    "tests": [
+      "src/shared/lib/contrast.test.ts"
+    ],
+    "tokens": [
+      "contrast"
+    ],
+    "type": "lib"
+  },
+  "lib:contribChecks": {
+    "path": "src/shared/lib/contribChecks.ts",
+    "summary": "Community contribution checks (plan 33): the pure rules behind `scripts/validate-contrib.mjs`, which CI runs in `verify` (`npm run validate:contrib`).",
+    "tests": [
+      "src/shared/lib/contribChecks.test.ts"
+    ],
+    "tokens": [
+      "checks",
+      "contrib"
     ],
     "type": "lib"
   },
@@ -2036,6 +3710,37 @@
     ],
     "type": "lib"
   },
+  "lib:export": {
+    "path": "src/shared/lib/exchange/export.ts",
+    "summary": "Export side of the exchange files (plan 13), pure: a garage car, a built-in profile (as a **seed**) or a label pack as a versioned envelope, plus the\u2026",
+    "tokens": [
+      "export"
+    ],
+    "type": "lib"
+  },
+  "lib:feedbackBundle": {
+    "path": "src/shared/lib/feedbackBundle.ts",
+    "summary": "The problem-report bundle (plan 32): everything a maintainer needs to understand a problem \u2014 the error log, the adapter I/O log, app and device info,\u2026",
+    "tests": [
+      "src/shared/lib/feedbackBundle.test.ts"
+    ],
+    "tokens": [
+      "bundle",
+      "feedback"
+    ],
+    "type": "lib"
+  },
+  "lib:format": {
+    "path": "src/shared/lib/format.ts",
+    "summary": "Locale-aware number and date formatting (plan 11, docs/i18n.md).",
+    "tests": [
+      "src/shared/lib/format.test.ts"
+    ],
+    "tokens": [
+      "format"
+    ],
+    "type": "lib"
+  },
   "lib:hex": {
     "path": "src/shared/lib/hex.ts",
     "summary": "Hex <-> byte helpers.",
@@ -2047,20 +3752,172 @@
     ],
     "type": "lib"
   },
-  "lib:units": {
-    "path": "src/shared/lib/units.ts",
-    "summary": "Display-time unit conversion.",
+  "lib:i18nParity": {
+    "path": "src/shared/lib/i18nParity.ts",
+    "summary": "Locale completeness checks (plan 11, docs/i18n.md): every key of the reference language (English) exists in each translation and vice versa, no value\u2026",
     "tests": [
-      "src/shared/lib/units.test.ts"
+      "src/shared/lib/i18nParity.test.ts"
     ],
     "tokens": [
-      "units"
+      "18",
+      "parity"
+    ],
+    "type": "lib"
+  },
+  "lib:i18nResolve": {
+    "path": "src/shared/lib/i18nResolve.ts",
+    "summary": "Pure language resolution for the app's localization (plan 11, docs/i18n.md).",
+    "tests": [
+      "src/shared/lib/i18nResolve.test.ts"
+    ],
+    "tokens": [
+      "18",
+      "resolve"
+    ],
+    "type": "lib"
+  },
+  "lib:import": {
+    "path": "src/shared/lib/exchange/import.ts",
+    "summary": "Import side of the exchange files (plan 13), pure: parse + validate an untrusted file, then plan how it lands next to what is already on the phone (c\u2026",
+    "tests": [
+      "src/shared/lib/exchange/import.test.ts"
+    ],
+    "tokens": [
+      "import"
+    ],
+    "type": "lib"
+  },
+  "lib:reportHtml": {
+    "path": "src/shared/lib/reportHtml.ts",
+    "summary": "Shared building blocks for the self-contained HTML reports (`dtcReport.buildDtcReportHtml` and `vehicleReport.renderReportHtml`, plan 15): the inline\u2026",
+    "tokens": [
+      "html",
+      "report"
+    ],
+    "type": "lib"
+  },
+  "lib:saveFile": {
+    "path": "src/shared/lib/saveFile.ts",
+    "summary": "Save a text export where the platform keeps files (plan 28): - **native** \u2014 write `<documentDirectory><name>` with expo-file-system (legacy entry poi\u2026",
+    "tests": [
+      "src/shared/lib/saveFile.test.ts"
+    ],
+    "tokens": [
+      "file",
+      "save"
+    ],
+    "type": "lib"
+  },
+  "lib:schemas": {
+    "path": "src/shared/lib/exchange/schemas.ts",
+    "summary": "Validators for the exchange files (plan 13), built from the `validate.ts` combinators.",
+    "tests": [
+      "src/shared/lib/exchange/schemas.test.ts"
+    ],
+    "tokens": [
+      "schemas"
+    ],
+    "type": "lib"
+  },
+  "lib:scrub": {
+    "path": "src/shared/lib/scrub.ts",
+    "summary": "Text scrubbing for anything that leaves the phone: the problem report (plan 32, `feedbackBundle.ts`) and the opt-in crash reports (plan 31: `scrubEve\u2026",
+    "tests": [
+      "src/shared/lib/scrub.test.ts"
+    ],
+    "tokens": [
+      "scrub"
+    ],
+    "type": "lib"
+  },
+  "lib:seedKey": {
+    "path": "src/shared/lib/exchange/seedKey.ts",
+    "summary": "`bolid.seedkey.v1` \u2014 a user-supplied security-access plugin file (plan 23): validate an untrusted file with the plan-13 combinators, then compile its\u2026",
+    "tests": [
+      "src/shared/lib/exchange/seedKey.test.ts"
+    ],
+    "tokens": [
+      "key",
+      "seed"
+    ],
+    "type": "lib"
+  },
+  "lib:storeAssets": {
+    "path": "src/shared/lib/storeAssets.ts",
+    "summary": "Store listing rules (plan 30, store/README.md): the size of every graphic and screenshot set, the character limits of the listing text, and the check\u2026",
+    "tests": [
+      "src/shared/lib/storeAssets.test.ts"
+    ],
+    "tokens": [
+      "assets"
+    ],
+    "type": "lib"
+  },
+  "lib:storeLinks": {
+    "path": "src/shared/lib/storeLinks.ts",
+    "summary": "Store links (plan 30): where **Settings \u2192 About \u2192 Rate this app** sends the user, and the public listing URLs the README badges point at.",
+    "tests": [
+      "src/shared/lib/storeLinks.test.ts"
+    ],
+    "tokens": [
+      "links"
+    ],
+    "type": "lib"
+  },
+  "lib:timeline": {
+    "path": "src/shared/lib/timeline.ts",
+    "summary": "The per-car timeline (plan 16): one chronological list that merges every source of \"what happened to this car\" \u2014 AI runs, fault-code checks, saved mo\u2026",
+    "tests": [
+      "src/shared/lib/timeline.test.ts"
+    ],
+    "tokens": [
+      "timeline"
+    ],
+    "type": "lib"
+  },
+  "lib:types": {
+    "path": "src/shared/lib/exchange/types.ts",
+    "summary": "Exchange file formats (plan 13): a garage car (\"profile\") or a label pack as a versioned JSON envelope that travels between phones or comes from a co\u2026",
+    "tokens": [
+      "types"
+    ],
+    "type": "lib"
+  },
+  "lib:validate": {
+    "path": "src/shared/lib/validate.ts",
+    "summary": "A small, typed validator combinator set (plan 13) for **untrusted JSON**: imported profile and label-pack files today, seed/key plugin files (plan 23\u2026",
+    "tests": [
+      "src/shared/lib/validate.test.ts"
+    ],
+    "tokens": [
+      "validate"
+    ],
+    "type": "lib"
+  },
+  "lib:vehicleReport": {
+    "path": "src/shared/lib/vehicleReport.ts",
+    "summary": "The unified vehicle report (plan 15): one shareable document for the active car \u2014 identity, readiness + fault codes (with VAG numbers and freeze fram\u2026",
+    "tests": [
+      "src/shared/lib/vehicleReport.test.ts"
+    ],
+    "tokens": [
+      "report",
+      "vehicle"
+    ],
+    "type": "lib"
+  },
+  "lib:webRuntime": {
+    "path": "src/shared/lib/webRuntime.ts",
+    "summary": "Whether the app runs in a browser (the Expo web build, plan 28) rather than on a phone.",
+    "tokens": [
+      "runtime",
+      "web"
     ],
     "type": "lib"
   },
   "screen:_layout": {
     "path": "src/app/_layout.tsx",
-    "summary": "exports RootLayout",
+    "summary": "Header and tab-bar colours per scheme, from palette.json (plan 20): React Navigation sits outside the Tamagui theme, so it reads the palette directly.",
     "tokens": [
       "layout"
     ],
@@ -2097,6 +3954,14 @@
     "summary": "Route screen 'alerts' (expo-router).",
     "tokens": [
       "alerts"
+    ],
+    "type": "screen"
+  },
+  "screen:backup": {
+    "path": "src/app/backup.tsx",
+    "summary": "Route screen 'backup' (expo-router).",
+    "tokens": [
+      "backup"
     ],
     "type": "screen"
   },
@@ -2165,6 +4030,14 @@
     ],
     "type": "screen"
   },
+  "screen:feedback": {
+    "path": "src/app/feedback.tsx",
+    "summary": "The newest saved module scan as text, or null.",
+    "tokens": [
+      "feedback"
+    ],
+    "type": "screen"
+  },
   "screen:history": {
     "path": "src/app/history.tsx",
     "summary": "Route screen 'history' (expo-router).",
@@ -2192,6 +4065,14 @@
     "summary": "Route screen 'inspection' (expo-router).",
     "tokens": [
       "inspection"
+    ],
+    "type": "screen"
+  },
+  "screen:licenses": {
+    "path": "src/app/licenses.tsx",
+    "summary": "Settings \u2192 About \u2192 **Licences** (plan 30): the third-party notices.",
+    "tokens": [
+      "licenses"
     ],
     "type": "screen"
   },
@@ -2236,20 +4117,19 @@
     ],
     "type": "screen"
   },
+  "screen:report": {
+    "path": "src/app/report.tsx",
+    "summary": "Route screen 'report' (expo-router).",
+    "tokens": [
+      "report"
+    ],
+    "type": "screen"
+  },
   "screen:routines": {
     "path": "src/app/routines.tsx",
     "summary": "Route screen 'routines' (expo-router).",
     "tokens": [
       "routines"
-    ],
-    "type": "screen"
-  },
-  "screen:sensor-readings": {
-    "path": "src/app/sensor-readings.tsx",
-    "summary": "Route screen 'sensor readings' (expo-router).",
-    "tokens": [
-      "readings",
-      "sensor"
     ],
     "type": "screen"
   },
@@ -2272,7 +4152,7 @@
   },
   "screen:settings": {
     "path": "src/app/settings.tsx",
-    "summary": "Route screen 'settings' (expo-router).",
+    "summary": "The route composes Settings with the backup slice's **Reset all app data** (plan 07): no feature imports the backup slice, so the app layer hands Set\u2026",
     "tokens": [
       "settings"
     ],
@@ -2283,6 +4163,15 @@
     "summary": "Route screen 'sniffer' (expo-router).",
     "tokens": [
       "sniffer"
+    ],
+    "type": "screen"
+  },
+  "screen:trip-detail": {
+    "path": "src/app/trip-detail.tsx",
+    "summary": "Route screen 'trip detail' (expo-router).",
+    "tokens": [
+      "detail",
+      "trip"
     ],
     "type": "screen"
   },
@@ -2313,7 +4202,7 @@
   },
   "service:ai": {
     "path": "src/shared/ai",
-    "summary": "AI client (OpenAI-compatible) for the diagnose feature.",
+    "summary": "Canned AI \"server\" for development (plan 19).",
     "tokens": [
       "ai",
       "client",
@@ -2335,6 +4224,15 @@
     ],
     "type": "service"
   },
+  "store:activeProfile": {
+    "path": "src/shared/state/activeProfile.ts",
+    "summary": "The active vehicle profile (plan 06): `vehicleStore.selectedProfileId` resolved over the registry and the garage (`resolveProfile`).",
+    "tokens": [
+      "active",
+      "profile"
+    ],
+    "type": "store"
+  },
   "store:adapterLog": {
     "path": "src/shared/state/adapterLog.ts",
     "summary": "Adapter I/O log \u2014 a module-level ring buffer for the raw tx/rx traffic between the app and the ELM327, decoupled from React state on the hot path.",
@@ -2344,6 +4242,33 @@
     "tokens": [
       "adapter",
       "log"
+    ],
+    "type": "store"
+  },
+  "store:chartsStore": {
+    "path": "src/shared/state/chartsStore.ts",
+    "summary": "Chart panel definitions (in-memory).",
+    "tokens": [
+      "charts"
+    ],
+    "type": "store"
+  },
+  "store:dialogStore": {
+    "path": "src/shared/state/dialogStore.ts",
+    "summary": "The in-app replacement for `Alert.alert` in the browser (plan 28 review).",
+    "tokens": [
+      "dialog"
+    ],
+    "type": "store"
+  },
+  "store:dtcStore": {
+    "path": "src/shared/state/dtcStore.ts",
+    "summary": "One freeze frame per stored code (frame n belongs to stored[n] on most ECUs).",
+    "tests": [
+      "src/shared/state/dtcStore.test.ts"
+    ],
+    "tokens": [
+      "dtc"
     ],
     "type": "store"
   },
@@ -2365,14 +4290,74 @@
     ],
     "type": "store"
   },
+  "store:exchangeService": {
+    "path": "src/shared/state/exchangeService.ts",
+    "summary": "Profile and label-pack import / export (plan 13): the I/O and store side of the pure exchange library (`shared/lib/exchange`).",
+    "tests": [
+      "src/shared/state/exchangeService.test.ts"
+    ],
+    "tokens": [
+      "exchange",
+      "service"
+    ],
+    "type": "store"
+  },
+  "store:garageStore": {
+    "path": "src/shared/state/garageStore.ts",
+    "summary": "\"My garage\" (plan 06): the cars the user added on this phone \u2014 learned from a live connection or entered by hand.",
+    "tests": [
+      "src/shared/state/garageStore.test.ts"
+    ],
+    "tokens": [
+      "garage"
+    ],
+    "type": "store"
+  },
   "store:historyStore": {
     "path": "src/shared/state/historyStore.ts",
-    "summary": "Persistent history of diagnostic activity: every AI auto-diagnose run and every fault-code check, each **linked to a car**.",
+    "summary": "Persistent history of diagnostic activity: every AI auto-diagnose run, every fault-code check and every generated vehicle report (plan 15), each **li\u2026",
     "tests": [
       "src/shared/state/historyStore.test.ts"
     ],
     "tokens": [
       "history"
+    ],
+    "type": "store"
+  },
+  "store:labelPackStore": {
+    "path": "src/shared/state/labelPackStore.ts",
+    "summary": "Imported label packs (plan 13): packs the user brought in as `bolid.labelpack.v1` files (or embedded in a profile file), newest first, at most `MAX_U\u2026",
+    "tests": [
+      "src/shared/state/labelPackStore.test.ts"
+    ],
+    "tokens": [
+      "label",
+      "pack"
+    ],
+    "type": "store"
+  },
+  "store:linkStore": {
+    "path": "src/shared/state/linkStore.ts",
+    "summary": "Live facts about the current / latest connect attempt, for the Connect screen's diagnostics panel: the kind of link (Bluetooth LE, Wi-Fi \u2014 plan 26 \u2014\u2026",
+    "tokens": [
+      "link"
+    ],
+    "type": "store"
+  },
+  "store:liveDataStore": {
+    "path": "src/shared/state/liveDataStore.ts",
+    "summary": "PID interest per subscriber id \u2014 the union drives what the app-wide poll loop reads.",
+    "tokens": [
+      "data",
+      "live"
+    ],
+    "type": "store"
+  },
+  "store:onboardingStore": {
+    "path": "src/shared/state/onboardingStore.ts",
+    "summary": "First-run hints are dismissible and stay dismissed across launches.",
+    "tokens": [
+      "onboarding"
     ],
     "type": "store"
   },
@@ -2390,13 +4375,22 @@
   },
   "store:secureApiKey": {
     "path": "src/shared/state/secureApiKey.ts",
-    "summary": "Secure storage for the AI `apiKey` (finding F8).",
+    "summary": "Secure storage for the AI API keys (finding F8, per provider since plan 19).",
     "tests": [
       "src/shared/state/secureApiKey.test.ts"
     ],
     "tokens": [
       "key",
       "secure"
+    ],
+    "type": "store"
+  },
+  "store:seedKeyStore": {
+    "path": "src/shared/state/seedKeyStore.ts",
+    "summary": "Installed security-access plugins (plan 23): the **index** of the `bolid.seedkey.v1` files the owner imported \u2014 name, scope, widths, where the file l\u2026",
+    "tokens": [
+      "key",
+      "seed"
     ],
     "type": "store"
   },
@@ -2411,10 +4405,53 @@
   "store:settingsStore": {
     "path": "src/shared/state/settingsStore.ts",
     "summary": "Cross-cutting runtime settings, persisted across launches via expo-file-system \u2014 see persistStorage.ts and docs/features/settings.md.",
+    "tests": [
+      "src/shared/state/settingsStore.test.ts"
+    ],
     "tokens": [
       "settings"
     ],
     "type": "store"
+  },
+  "store:toastStore": {
+    "path": "src/shared/state/toastStore.ts",
+    "summary": "A single, short-lived message at the bottom of the screen (plan 28) \u2014 the app had no toast.",
+    "tokens": [
+      "toast"
+    ],
+    "type": "store"
+  },
+  "store:vehicleStore": {
+    "path": "src/shared/state/vehicleStore.ts",
+    "summary": "The selected vehicle id (`bolid.vehicle` v1): a registry profile id or a garage `user:` id.",
+    "tokens": [
+      "vehicle"
+    ],
+    "type": "store"
+  },
+  "telemetry:crashReporting": {
+    "path": "src/shared/telemetry/crashReporting.ts",
+    "summary": "Opt-in crash reporting (plan 31).",
+    "tests": [
+      "src/shared/telemetry/crashReporting.test.ts"
+    ],
+    "tokens": [
+      "crash",
+      "reporting"
+    ],
+    "type": "service"
+  },
+  "telemetry:useCrashReporting": {
+    "path": "src/shared/telemetry/useCrashReporting.ts",
+    "summary": "App-shell wiring of the opt-in crash reporter (plan 31), mounted once by `src/app/_layout.tsx` as `<CrashReportingHost />`: - starts it with the stor\u2026",
+    "tests": [
+      "src/shared/telemetry/useCrashReporting.test.tsx"
+    ],
+    "tokens": [
+      "crash",
+      "reporting"
+    ],
+    "type": "service"
   },
   "transport:BleTransport": {
     "path": "src/shared/transports/ble/BleTransport.ts",
@@ -2428,6 +4465,69 @@
     ],
     "type": "transport"
   },
+  "transport:SppTransport": {
+    "path": "src/shared/transports/spp/SppTransport.ts",
+    "summary": "Transport implementation over Classic Bluetooth (RFCOMM / Serial Port Profile), for the cheap \"Bluetooth 3.0\" ELM327 adapters that `react-native-ble-\u2026",
+    "tests": [
+      "src/shared/transports/spp/SppTransport.test.ts"
+    ],
+    "tokens": [
+      "spp",
+      "transport"
+    ],
+    "type": "transport"
+  },
+  "transport:TcpTransport": {
+    "path": "src/shared/transports/tcp/TcpTransport.ts",
+    "summary": "Transport implementation over a TCP socket, for Wi-Fi ELM327 adapters (plan 26).",
+    "tests": [
+      "src/shared/transports/tcp/TcpTransport.test.ts"
+    ],
+    "tokens": [
+      "tcp",
+      "transport"
+    ],
+    "type": "transport"
+  },
+  "transport:adapterNames": {
+    "path": "src/shared/transports/adapterNames.ts",
+    "summary": "Device-name hints shared by every Bluetooth transport (BLE scan results and the Classic Bluetooth bonded list, plan 27).",
+    "tokens": [
+      "adapter",
+      "names"
+    ],
+    "type": "transport"
+  },
+  "transport:endpoint": {
+    "path": "src/shared/transports/tcp/endpoint.ts",
+    "summary": "Wi-Fi adapter endpoints (plan 26) \u2014 pure parsing / formatting, unit-tested in the core project.",
+    "tests": [
+      "src/shared/transports/tcp/endpoint.test.ts"
+    ],
+    "tokens": [
+      "endpoint"
+    ],
+    "type": "transport"
+  },
+  "transport:fakeSocket": {
+    "path": "src/shared/transports/tcp/testing/fakeSocket.ts",
+    "summary": "Test-only fakes for `TcpTransport` (plan 26): a scriptable `TcpSocketLike` and a socket that plays a Wi-Fi ELM327 by forwarding to the simulator thro\u2026",
+    "tokens": [
+      "fake",
+      "socket"
+    ],
+    "type": "transport"
+  },
+  "transport:fakeSppModule": {
+    "path": "src/shared/transports/spp/testing/fakeSppModule.ts",
+    "summary": "Test-only fakes for `SppTransport` (plan 27): a scriptable `SppDeviceLike` / `SppModuleLike`, and a device that plays a Classic Bluetooth ELM327 thro\u2026",
+    "tokens": [
+      "fake",
+      "module",
+      "spp"
+    ],
+    "type": "transport"
+  },
   "transport:manager": {
     "path": "src/shared/transports/ble/manager.ts",
     "summary": "Lazily-created singleton BleManager (react-native-ble-plx).",
@@ -2438,15 +4538,30 @@
   },
   "transport:permissions": {
     "path": "src/shared/transports/ble/permissions.ts",
-    "summary": "Runtime BLE permissions.",
+    "summary": "Runtime Bluetooth permissions.",
+    "tests": [
+      "src/shared/transports/ble/permissions.test.ts"
+    ],
     "tokens": [
       "permissions"
     ],
     "type": "transport"
   },
+  "ui:AlertDialog": {
+    "path": "src/shared/ui/AlertDialog.tsx",
+    "summary": "The browser's alert box (plan 28 review): renders the dialog `appAlert()` queued on the web \u2014 title, message and the caller's buttons (any number, e.\u2026",
+    "tests": [
+      "src/shared/ui/AlertDialog.test.tsx"
+    ],
+    "tokens": [
+      "alert",
+      "dialog"
+    ],
+    "type": "ui"
+  },
   "ui:AppLogo": {
     "path": "src/shared/ui/AppLogo.tsx",
-    "summary": "exports AppLogo",
+    "summary": "The brand mark.",
     "tokens": [
       "app",
       "logo"
@@ -2455,10 +4570,22 @@
   },
   "ui:AppSplash": {
     "path": "src/shared/ui/AppSplash.tsx",
-    "summary": "Keep the splash up at least this long so the animation is actually seen, never a one-frame flash.",
+    "summary": "Brand green screen with the title and subtitle in ink: 7.3:1 (white on the green was 2.6:1, plan 20).",
+    "tests": [
+      "src/shared/ui/AppSplash.test.tsx"
+    ],
     "tokens": [
       "app",
       "splash"
+    ],
+    "type": "ui"
+  },
+  "ui:CardGrid": {
+    "path": "src/shared/ui/CardGrid.tsx",
+    "summary": "Vertical gap between rows (and between items on a phone), in dp.",
+    "tokens": [
+      "card",
+      "grid"
     ],
     "type": "ui"
   },
@@ -2470,9 +4597,34 @@
     ],
     "type": "ui"
   },
+  "ui:ImportPreviewSheet": {
+    "path": "src/shared/ui/ImportPreviewSheet.tsx",
+    "summary": "How many validator errors the sheet lists for a refused file.",
+    "tests": [
+      "src/shared/ui/ImportPreviewSheet.test.tsx"
+    ],
+    "tokens": [
+      "import",
+      "preview",
+      "sheet"
+    ],
+    "type": "ui"
+  },
+  "ui:LabeledSwitch": {
+    "path": "src/shared/ui/LabeledSwitch.tsx",
+    "summary": "On / off controls (plan 20): AccessibleSwitch adds accessible, the switch role, a required name and checked / disabled state to Tamagui's Switch; Lab\u2026",
+    "tokens": [
+      "labeled",
+      "switch"
+    ],
+    "type": "ui"
+  },
   "ui:RootErrorBoundary": {
     "path": "src/shared/ui/RootErrorBoundary.tsx",
     "summary": "App-wide React render error boundary (finding F9).",
+    "tests": [
+      "src/shared/ui/RootErrorBoundary.test.tsx"
+    ],
     "tokens": [
       "boundary",
       "error",
@@ -2482,27 +4634,168 @@
   },
   "ui:Screen": {
     "path": "src/shared/ui/Screen.tsx",
-    "summary": "Standard scrollable screen frame with safe-area + optional pull-to-refresh.",
+    "summary": "Use the full window width on tablets instead of the centred \u2264 1100 dp column (plan 21) \u2014 for screens that lay out their own columns (Live, Charts, th\u2026",
+    "tests": [
+      "src/shared/ui/Screen.test.tsx"
+    ],
     "tokens": [],
+    "type": "ui"
+  },
+  "ui:SectionTitle": {
+    "path": "src/shared/ui/SectionTitle.tsx",
+    "summary": "A section heading inside a screen (plan 20): announced as a heading, so screen-reader users can jump between sections.",
+    "tokens": [
+      "section",
+      "title"
+    ],
+    "type": "ui"
+  },
+  "ui:SegmentedControl": {
+    "path": "src/shared/ui/SegmentedControl.tsx",
+    "summary": "Single-choice row (plan 20): a named radiogroup of radio options reporting selected / checked, 36 dp + HIT_SLOP 8, spoken labels, optional vertical l\u2026",
+    "tests": [
+      "src/shared/ui/SegmentedControl.test.tsx"
+    ],
+    "tokens": [
+      "control",
+      "segmented"
+    ],
     "type": "ui"
   },
   "ui:StatusBadge": {
     "path": "src/shared/ui/StatusBadge.tsx",
-    "summary": "exports StatusBadge",
+    "summary": "Fill tokens (plan 20): the semantic colours, with `$onFill` text on them \u2014 ink on the dark theme's bright fills, white on the light theme's deep ones\u2026",
     "tokens": [
       "badge",
       "status"
     ],
     "type": "ui"
   },
+  "ui:Toast": {
+    "path": "src/shared/ui/Toast.tsx",
+    "summary": "The app's one toast (plan 28): a short message pinned above the tab bar, from `showToast()`.",
+    "tests": [
+      "src/shared/ui/Toast.test.tsx"
+    ],
+    "tokens": [
+      "toast"
+    ],
+    "type": "ui"
+  },
+  "ui:UnlockBadge": {
+    "path": "src/shared/ui/UnlockBadge.tsx",
+    "summary": "Status pills use the semantic fills with `$onFill` text (plan 20), as StatusBadge does; the neutral one keeps the theme's own text on a light grey.",
+    "tests": [
+      "src/shared/ui/UnlockBadge.test.tsx"
+    ],
+    "tokens": [
+      "badge",
+      "unlock"
+    ],
+    "type": "ui"
+  },
   "ui:ValueCard": {
     "path": "src/shared/ui/ValueCard.tsx",
-    "summary": "Compact live-parameter tile.",
+    "summary": "Above this OS font scale a value card takes the whole row (plan 20): two 150 dp tiles side by side cannot hold a 2\u00d7 number and its unit.",
+    "tests": [
+      "src/shared/ui/ValueCard.test.tsx"
+    ],
     "tokens": [
       "card",
       "value"
     ],
     "type": "ui"
+  },
+  "ui:VerificationBadge": {
+    "path": "src/shared/ui/VerificationBadge.tsx",
+    "summary": "Semantic fills with `$onFill` text (plan 20), the StatusBadge pattern: every pair is held to 4.5:1 in both themes by `npm run check:contrast` (white\u2026",
+    "tests": [
+      "src/shared/ui/VerificationBadge.test.tsx"
+    ],
+    "tokens": [
+      "badge",
+      "verification"
+    ],
+    "type": "ui"
+  },
+  "ui:appAlert": {
+    "path": "src/shared/ui/appAlert.ts",
+    "summary": "The app's `Alert.alert` (plan 28 review): the system alert on the phone, the in-app `AlertDialog` in the browser \u2014 react-native-web's `Alert.alert` i\u2026",
+    "tokens": [
+      "alert",
+      "app"
+    ],
+    "type": "ui"
+  },
+  "ui:layoutClass": {
+    "path": "src/shared/ui/layoutClass.ts",
+    "summary": "Window-size classes for the tablet / landscape layout (plan 21).",
+    "tokens": [
+      "class",
+      "layout"
+    ],
+    "type": "ui"
+  },
+  "ui:monoFont": {
+    "path": "src/shared/ui/monoFont.ts",
+    "summary": "The monospace font family per platform (plan 09).",
+    "tests": [
+      "src/shared/ui/monoFont.test.ts"
+    ],
+    "tokens": [
+      "font",
+      "mono"
+    ],
+    "type": "ui"
+  },
+  "ui:useExchangeImport": {
+    "path": "src/shared/ui/useExchangeImport.ts",
+    "summary": "What the import sheet shows: a preview to confirm, or why the file was refused.",
+    "tokens": [
+      "exchange",
+      "import"
+    ],
+    "type": "ui"
+  },
+  "ui:useLayoutClass": {
+    "path": "src/shared/ui/useLayoutClass.ts",
+    "summary": "The current window's layout class (plan 21): `useWindowDimensions()` \u2192 `classify`.",
+    "tokens": [
+      "class",
+      "layout"
+    ],
+    "type": "ui"
+  },
+  "ui:usePalette": {
+    "path": "src/shared/ui/usePalette.ts",
+    "summary": "A semantic colour (plan 20): the meaning, not the hex.",
+    "tokens": [
+      "palette"
+    ],
+    "type": "ui"
+  },
+  "ui:useReducedMotion": {
+    "path": "src/shared/ui/useReducedMotion.ts",
+    "summary": "True while the OS \"Reduce motion\" / \"Remove animations\" setting is on (plan 20).",
+    "tests": [
+      "src/shared/ui/useReducedMotion.test.tsx"
+    ],
+    "tokens": [
+      "motion",
+      "reduced"
+    ],
+    "type": "ui"
+  },
+  "vehicle:confirmation": {
+    "path": "src/shared/vehicles/confirmation.ts",
+    "summary": "Verification state of a per-car profile item (plan 25): standard OBD2, confirmed on the real car (with evidence), or illustrative / not yet confirmed.",
+    "tests": [
+      "src/shared/vehicles/confirmation.test.ts"
+    ],
+    "tokens": [
+      "confirmation"
+    ],
+    "type": "vehicle"
   },
   "vehicle:faultGuides": {
     "path": "src/shared/vehicles/faultGuides.ts",
@@ -2547,6 +4840,18 @@
     ],
     "type": "vehicle"
   },
+  "vehicle:loginBook": {
+    "path": "src/shared/vehicles/loginBook.ts",
+    "summary": "The per-car **code book** (plan 22): resolve, add and remove KWP module login codes.",
+    "tests": [
+      "src/shared/vehicles/loginBook.test.ts"
+    ],
+    "tokens": [
+      "book",
+      "login"
+    ],
+    "type": "vehicle"
+  },
   "vehicle:passat-b55-19tdi": {
     "path": "src/shared/vehicles/passat-b55-19tdi.ts",
     "summary": "VW Passat B5.5 1.9 TDI AVB \u2014 older K-line diesel (the hard case).",
@@ -2568,11 +4873,43 @@
     ],
     "type": "vehicle"
   },
+  "vehicle:resolve": {
+    "path": "src/shared/vehicles/resolve.ts",
+    "summary": "Resolve any vehicle id the app stores \u2014 a registry profile id or a garage `user:` id \u2014 into the runtime `VehicleProfile` every feature reads (plan 06\u2026",
+    "tests": [
+      "src/shared/vehicles/resolve.test.ts"
+    ],
+    "tokens": [
+      "resolve"
+    ],
+    "type": "vehicle"
+  },
   "vehicle:types": {
     "path": "src/shared/vehicles/types.ts",
     "summary": "Vehicle profile types.",
     "tokens": [
       "types"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:userVehicle": {
+    "path": "src/shared/vehicles/userVehicle.ts",
+    "summary": "User vehicles (\"My garage\", plan 06): cars the user added on this phone, either learned from a live connection (VIN, protocol, supported-PID set, cal\u2026",
+    "tests": [
+      "src/shared/vehicles/userVehicle.test.ts"
+    ],
+    "tokens": [
+      "user",
+      "vehicle"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:validatedOn": {
+    "path": "src/shared/vehicles/validatedOn.ts",
+    "summary": "The \"Validated on the car\" table every vehicle doc carries (docs/vehicles/README.md): one row per on-car flow, its last column naming the committed r\u2026",
+    "tokens": [
+      "on",
+      "validated"
     ],
     "type": "vehicle"
   },

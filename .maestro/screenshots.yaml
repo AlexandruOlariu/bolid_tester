@@ -1,0 +1,164 @@
+# Store screenshots (plan 30, store/README.md): eight screens in store order, from the simulator on a
+# fresh install. Run through scripts/screenshots.sh, which cleans the status bar (demo mode), passes
+# the labels of the chosen language (read from src/shared/i18n/locales/<lang>/*.json, regex-escaped)
+# and resizes the results to the store size:
+#   scripts/screenshots.sh            # English, then Romanian
+#   scripts/screenshots.sh ro         # one language
+# The labels are NOT defaulted here: Maestro 2.x lets a flow's `env:` win over `maestro test -e`, so
+# English defaults in this file silently replaced the Romanian labels (and the RO run captured an
+# English UI). Run the flow through the script; `OUT` and every label below come from it.
+# Labels come from the app's strings (tapOn text is a regular expression); when a screen's copy
+# changes, the script picks the new text up from the locale files. Screens are opened by deep link
+# (scheme `bolidtester`, app.json), so only the setup steps depend on labels.
+#   OUT, LANG_BUTTON, TAB_SETTINGS, TAB_CONNECT, DEV_TITLE, SIM_SOURCE, CUSTOM_DTCS,
+#   CUSTOM_PLACEHOLDER, CONNECT_SIM, PROFILES_TITLE, RUN_INSPECTION, SCAN_ALL, CHART_HINT_DISMISS,
+#   BATTERY_CAPTURE, MAINT_ODO_LABEL, MAINT_ODO_PLACEHOLDER, MAINT_SAVE, MAINT_LOG_SERVICE,
+#   MAINT_AIR_FILTER, MAINT_CABIN_FILTER, MAINT_LOG_TODAY  (scripts/screenshot-labels.mjs)
+appId: com.bolidtester.app
+name: Store screenshots — simulator, Golf, two injected faults
+env:
+  # Not language-dependent: the simulated vehicle id and the built-in profile's display name.
+  SIM_VEHICLE: golf-plus-2009-20tdi
+  SIM_PROFILE_NAME: VW Golf Plus 2009 2\.0 TDI 81 kW
+---
+- launchApp:
+    clearState: true
+# Android 13+ may ask for the notification permission on first launch; dismiss it if it shows.
+- tapOn:
+    text: '(?i)(allow|don.t allow)'
+    optional: true
+- extendedWaitUntil:
+    visible: 'Scan for adapters'
+    timeout: 30000
+
+# 1. Language first (the phone stays en-US; the app's own setting switches every label).
+- tapOn: 'Settings'
+- scrollUntilVisible:
+    element:
+      text: ${LANG_BUTTON}
+    direction: DOWN
+- tapOn: ${LANG_BUTTON}
+- waitForAnimationToEnd
+
+# 2. Connect tab on a fresh install: Bluetooth mode with the first-run card (store slot 8).
+- tapOn: ${TAB_CONNECT}
+- waitForAnimationToEnd
+- takeScreenshot: ${OUT}/08-connect
+
+# 3. Settings → Developer & simulator → simulator, the Golf profile, P2183 + P2015 injected.
+- tapOn: ${TAB_SETTINGS}
+- scrollUntilVisible:
+    element:
+      text: '(?i)${DEV_TITLE}.*'
+    direction: DOWN
+- tapOn: '(?i)${DEV_TITLE}.*'
+- scrollUntilVisible:
+    element:
+      text: ${SIM_SOURCE}
+    direction: DOWN
+- tapOn: ${SIM_SOURCE}
+- scrollUntilVisible:
+    element:
+      text: ${SIM_VEHICLE}
+    direction: DOWN
+- tapOn: ${SIM_VEHICLE}
+- scrollUntilVisible:
+    element:
+      text: ${CUSTOM_DTCS}
+    direction: DOWN
+- tapOn: ${CUSTOM_DTCS}
+# The custom-codes field opens below the chips, off screen when the labels are long (Romanian).
+- scrollUntilVisible:
+    element:
+      text: ${CUSTOM_PLACEHOLDER}
+    direction: DOWN
+- tapOn: ${CUSTOM_PLACEHOLDER}
+- inputText: 'P2183, P2015'
+- hideKeyboard
+
+# 4. Connect to the simulator; a successful connect moves on to vehicle selection.
+- tapOn: ${TAB_CONNECT}
+- tapOn: ${CONNECT_SIM}
+- extendedWaitUntil:
+    visible: ${PROFILES_TITLE}
+    timeout: 30000
+# The app suggests the Golf profile from the VIN but stays on Auto / Generic until the user picks
+# it; select it so Module scan, Battery and Maintenance have the car-specific content.
+- scrollUntilVisible:
+    element:
+      text: ${SIM_PROFILE_NAME}
+    direction: DOWN
+- tapOn: ${SIM_PROFILE_NAME}
+- waitForAnimationToEnd
+
+# 5. The screens, in store order. The simulator keeps the engine running, so Live moves.
+- openLink: bolidtester://dashboard
+- waitForAnimationToEnd:
+    timeout: 4000
+- takeScreenshot: ${OUT}/01-live
+
+- openLink: bolidtester://faults
+- extendedWaitUntil:
+    visible: 'P2183'
+    timeout: 20000
+- takeScreenshot: ${OUT}/02-faults
+
+- openLink: bolidtester://inspection
+- tapOn: ${RUN_INSPECTION}
+- extendedWaitUntil:
+    visible: ${RUN_INSPECTION}
+    timeout: 60000
+- takeScreenshot: ${OUT}/03-inspection
+
+- openLink: bolidtester://charts
+# The first visit shows a gesture hint over the first chart; dismiss it so the plots fill the shot.
+- tapOn:
+    text: ${CHART_HINT_DISMISS}
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: ${OUT}/04-charts
+
+- openLink: bolidtester://module-scan
+- tapOn: ${SCAN_ALL}
+- extendedWaitUntil:
+    visible: ${SCAN_ALL}
+    timeout: 90000
+- takeScreenshot: ${OUT}/05-module-scan
+
+# Battery: live voltage is read only while capturing, so run one capture (about 6 s) for a report.
+- openLink: bolidtester://battery
+- tapOn: ${BATTERY_CAPTURE}
+- extendedWaitUntil:
+    visible: ${BATTERY_CAPTURE}
+    timeout: 30000
+- takeScreenshot: ${OUT}/06-battery
+
+# Maintenance: enter an odometer and log three services today, so the list shows due distances
+# instead of "no history yet". Item buttons repeat the list titles, hence `below` the section title.
+- openLink: bolidtester://maintenance
+- tapOn: ${MAINT_ODO_PLACEHOLDER}
+- inputText: '184500'
+# No hideKeyboard here: on this screen Maestro's Back press can leave the route. The first tap may
+# only close the keyboard, so Save is tapped twice (saving again is harmless).
+- tapOn: ${MAINT_SAVE}
+- tapOn: ${MAINT_SAVE}
+- scrollUntilVisible:
+    element:
+      text: ${MAINT_LOG_TODAY}
+    direction: DOWN
+- tapOn: ${MAINT_LOG_TODAY}
+- tapOn:
+    text: ${MAINT_AIR_FILTER}
+    below: ${MAINT_LOG_SERVICE}
+- tapOn: ${MAINT_LOG_TODAY}
+- tapOn:
+    text: ${MAINT_CABIN_FILTER}
+    below: ${MAINT_LOG_SERVICE}
+- tapOn: ${MAINT_LOG_TODAY}
+- scrollUntilVisible:
+    element:
+      text: ${MAINT_ODO_LABEL}
+    direction: UP
+- waitForAnimationToEnd
+- takeScreenshot: ${OUT}/07-maintenance

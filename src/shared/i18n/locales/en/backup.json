@@ -1,0 +1,116 @@
+{
+  "title": "Backup & restore",
+  "subtitle": "Everything in one file you keep",
+  "unknownDate": "unknown date",
+  "unknown": "unknown",
+  "saved": "Saved",
+  "items_one": "{{count}} item",
+  "items_other": "{{count}} items",
+  "shareSave": "Save backup",
+  "shareExport": "Export {{name}}",
+  "store": {
+    "settings": "Settings",
+    "garage": "Garage (my cars)",
+    "vehicle": "Selected vehicle",
+    "loginBook": "Module login codes (code book)",
+    "labelPacks": "Imported label packs",
+    "history": "History (diagnoses, fault-code checks, reports)",
+    "maintenance": "Maintenance log",
+    "trips": "Trips",
+    "scans": "Module scans",
+    "carBackups": "Coding backups (full-car snapshots)",
+    "dashboard-layout": "Dashboard layout",
+    "alerts": "Alert rules",
+    "notifications": "Notification settings and reminders",
+    "onboarding": "Dismissed hints",
+    "errors": "Error log"
+  },
+  "restore": {
+    "file": "Backup file",
+    "made": "Made {{date}} by app version {{version}} ({{platform}}).",
+    "choose": "Choose what to restore. Everything else stays as it is.",
+    "notInBackup": "Not in this backup",
+    "trips": "Trip recordings",
+    "tripFiles_one": "{{count}} file, {{size}}; only for trips in the trips list",
+    "tripFiles_other": "{{count}} files, {{size}}; only for trips in the trips list",
+    "restoreA11y": "Restore the selected data",
+    "restore": "Restore"
+  },
+  "result": {
+    "nothing": "Nothing was restored",
+    "finished": "Restore finished",
+    "restored": "Restored: {{list}}.",
+    "noData": "No data was restored.",
+    "trips": "Trip recordings restored: {{count}}.",
+    "skipped": "Skipped {{name}}: {{reason}}",
+    "undo": "Your data from before the restore was saved as {{file}}. Restore that file from the list below to undo."
+  },
+  "record": {
+    "automatic": "Automatic, before a restore",
+    "withTrips": "with trips",
+    "shareA11y": "Share {{file}}",
+    "share": "Share",
+    "restoreA11y": "Restore {{file}}",
+    "deleteA11y": "Delete {{file}}",
+    "delete": "Delete"
+  },
+  "status": {
+    "saved": "Saved {{file}} ({{size}}).",
+    "notShared": "Sharing is not available here; the file is in the list below.",
+    "failed": "The backup could not be saved. See More → Error log for details."
+  },
+  "pick": {
+    "title": "Restore from file",
+    "unavailable": "Choosing a file needs a newer build of the app. You can still restore a backup from the list below.",
+    "help": "Pick a backup file. You see what it holds and choose what to restore before anything changes.",
+    "choose": "Choose a backup file…"
+  },
+  "confirm": {
+    "trips_one": "{{count}} trip recording",
+    "trips_other": "{{count}} trip recordings",
+    "title": "Restore from this backup?",
+    "body": "This replaces: {{what}}. Your current data is snapshotted first, so you can undo.",
+    "continue": "Continue",
+    "title2": "Replace your data?",
+    "body2": "The selected data on this phone is replaced by the backup. The adapter is disconnected first."
+  },
+  "deleteTitle": "Delete this backup?",
+  "deleteBody": "{{file}} is deleted from this phone.",
+  "export": {
+    "saved": "Saved {{file}}.",
+    "failed": "The export could not be saved. See More → Error log for details.",
+    "title": "Export one part",
+    "help": "Share one kind of data on its own: JSON for any of them, CSV (opens in a spreadsheet) for history, module scans and the maintenance log.",
+    "jsonA11y": "Export {{name}} as JSON",
+    "csvA11y": "Export {{name}} as CSV"
+  },
+  "backUp": {
+    "title": "Back up",
+    "help": "One file with your garage, history, scans, trips, maintenance log, coding backups, alert rules and settings. It stays on this phone until you share it; keep a copy somewhere else. The file is plain text and holds your VINs, but never an AI API key.",
+    "includeTrips": "Include trip recordings",
+    "tripHint_one": "{{count}} file, about {{size}}",
+    "tripHint_other": "{{count}} files, about {{size}}",
+    "noTrips": "No trip recordings yet",
+    "estimate": "The backup file will be about {{size}}.",
+    "large": "This backup is large (about {{size}}). Sharing a file this big can fail.",
+    "largeTrips": "This backup is large (about {{size}}). Sharing a file this big can fail; leave the trip recordings out to make a small backup.",
+    "now": "Back up now"
+  },
+  "list": {
+    "title": "Backups on this phone",
+    "help": "The newest {{max}} backups are kept (the automatic snapshots taken before a restore are counted apart); an older file is deleted when a new one is saved. Share the ones you want to keep elsewhere.",
+    "empty": "No backups yet."
+  },
+  "err": {
+    "read": "The file could not be read.",
+    "open": "The file could not be opened.",
+    "noStorage": "This device has no app storage to restore into.",
+    "snapshot": "The current data could not be saved first, so nothing was restored.",
+    "skipped": "Could not be restored (see the error log).",
+    "noStorageShort": "This device has no app storage."
+  },
+  "reset": {
+    "listFailed": "Could not list the exported files to delete them.",
+    "deleteFailed": "Could not delete {{name}}."
+  }
+}

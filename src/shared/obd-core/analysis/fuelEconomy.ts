@@ -1,7 +1,7 @@
 /** Pure fuel-economy math over live PIDs. No React/RN deps, so it is unit-tested in isolation.
  *
- *  Values are kept **canonical/SI** here (L/h and L/100km); imperial display conversions (MPG, etc.)
- *  live in the UI layer (`shared/lib/units.ts`). Two data paths, in order of preference:
+ *  Values are metric (L/h and L/100km) and shown as such: the app is metric only, with no unit
+ *  conversion layer (plan 07). Two data paths, in order of preference:
  *
  *   1. **Fuel-rate PID `015E`** (litres/hour) when the ECU supports it — the direct, accurate figure.
  *   2. **MAF `0110` (g/s) + fuel type** — derive fuel mass flow from air mass flow and the fuel's
@@ -147,7 +147,8 @@ export function tripFuelAverage(
   const flow: FuelFlowSample[] = [];
   for (const s of samples) {
     const r = fuelEconomyFromValues(s.values, fuel);
-    if (r) flow.push({ t: s.t, litresPerHour: r.litresPerHour, speedKmh: s.values['010D'] ?? null });
+    if (r)
+      flow.push({ t: s.t, litresPerHour: r.litresPerHour, speedKmh: s.values['010D'] ?? null });
   }
   return averageFuelEconomy(flow);
 }

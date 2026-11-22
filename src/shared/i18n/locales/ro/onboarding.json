@@ -1,0 +1,24 @@
+{
+  "hint": {
+    "dismissA11y": "Închide sfatul: {{title}}"
+  },
+  "firstRun": {
+    "title": "Primii pași",
+    "dismissA11y": "Închide ghidul de primi pași",
+    "stepA11y": "Pasul {{n}}: {{title}}",
+    "stepDoneA11y": "Pasul {{n}}: {{title}}, gata",
+    "useGeneric": "Folosește Auto / Generic",
+    "vehicle": {
+      "title": "Alege-ți mașina",
+      "hint": "Alege modelul în fila Vehicul sau păstrează Auto / Generic pentru orice mașină OBD2."
+    },
+    "connect": {
+      "title": "Conectează adaptorul",
+      "hint": "Introdu adaptorul în priza OBD2, pune contactul, apoi caută mai jos."
+    },
+    "faults": {
+      "title": "Citește codurile de eroare",
+      "hint": "Deschide fila Erori pentru a citi codurile memorate, în așteptare și permanente."
+    }
+  }
+}

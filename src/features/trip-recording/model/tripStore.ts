@@ -16,6 +16,27 @@ export interface TripSummary {
   header: TripHeader;
   stats: TripStats;
   markerCount: number;
+  /** The active car (registry or garage id) when the trip was recorded (plan 06). Absent on trips
+   *  recorded before the garage existed — those group by `header.profileId`, which has always held
+   *  the selected profile id. */
+  vehicleId?: string;
+  /** True when the track was the simulator's synthetic loop, not real GPS (plan 17) — the detail
+   *  screen badges it "simulated GPS". Absent on real-GPS and track-less trips. */
+  syntheticTrack?: boolean;
+}
+
+/** Filter key of a trip's car: its `vehicleId`, else the header's `profileId` (every trip recorded
+ *  before plan 06 carries it), else `UNKNOWN_TRIP_CAR` for a malformed summary. */
+export const UNKNOWN_TRIP_CAR = 'unknown';
+export function tripCarKey(t: TripSummary): string {
+  return t.vehicleId || t.header?.profileId || UNKNOWN_TRIP_CAR;
+}
+
+/** Distinct cars in a trip list (first-seen order) with their trip counts, for the filter chips. */
+export function tripCars(trips: TripSummary[]): { key: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const t of trips) counts.set(tripCarKey(t), (counts.get(tripCarKey(t)) ?? 0) + 1);
+  return [...counts].map(([key, count]) => ({ key, count }));
 }
 
 /** Coalesce persist writes: adding/removing trips rewrites the JSON once, ~500 ms after the last
@@ -50,13 +71,21 @@ export const useTripStore = create<TripState>()(
       pushSample: (s) => set((st) => (st.recording ? { samples: [...st.samples, s] } : {})),
       pushMarker: (m) => set((st) => (st.recording ? { markers: [...st.markers, m] } : {})),
       finish: (summary) =>
-        set((st) => ({ recording: false, startedAt: null, samples: [], markers: [], trips: [summary, ...st.trips] })),
+        set((st) => ({
+          recording: false,
+          startedAt: null,
+          samples: [],
+          markers: [],
+          trips: [summary, ...st.trips],
+        })),
       removeTrip: (id) => set((st) => ({ trips: st.trips.filter((t) => t.header.id !== id) })),
     }),
     {
       name: 'bolid.trips',
       version: 1,
-      storage: createJSONStorage(() => debouncedStorage(fileStateStorage, TRIPS_PERSIST_DEBOUNCE_MS)),
+      storage: createJSONStorage(() =>
+        debouncedStorage(fileStateStorage, TRIPS_PERSIST_DEBOUNCE_MS),
+      ),
       // Persist only the summary list — never the transient in-progress recording buffers.
       partialize: (s) => ({ trips: s.trips }),
       // A trip finished during the async rehydration window lives in `current.trips`; concatenate

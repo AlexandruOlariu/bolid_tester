@@ -3,46 +3,46 @@ import { YStack, XStack, Paragraph, H2, H4, Button, Card, Text } from 'tamagui';
 import { Screen } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useInspection } from '../hooks/useInspection';
+import { useTranslation } from '@/shared/i18n';
 
-const VERDICT: Record<string, { color: string; label: string }> = {
-  pass: { color: '#2bb673', label: 'PASS' },
-  caution: { color: '#d29922', label: 'CAUTION' },
-  fail: { color: '#f85149', label: 'FAIL' },
+/** Verdict colours; the labels are `inspection:verdict.<verdict>` (plan 11). */
+const VERDICT: Record<string, { color: string }> = {
+  pass: { color: '$statusOk' },
+  caution: { color: '$statusWarn' },
+  fail: { color: '$statusError' },
 };
 
 const CHECK_COLOR: Record<string, string> = {
-  pass: '#2bb673',
-  warn: '#d29922',
-  fail: '#f85149',
-  info: '#8B949E',
+  pass: '$statusOk',
+  warn: '$statusWarn',
+  fail: '$statusError',
+  info: '$muted',
 };
 
 export function InspectionScreen() {
+  const { t } = useTranslation('inspection');
   const status = useSessionStore((s) => s.status);
   const { report, running, run } = useInspection();
 
   if (status !== 'connected') {
     return (
-      <Screen title="Used-car inspection">
-        <Paragraph theme="alt2">Connect to the car (or the simulator) to run an inspection.</Paragraph>
+      <Screen title={t('title')}>
+        <Paragraph theme="alt2">{t('notConnected')}</Paragraph>
       </Screen>
     );
   }
 
   return (
-    <Screen
-      title="Used-car inspection"
-      subtitle="Screens the engine/emissions ECU — not a mechanical check."
-    >
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <Button theme="blue" onPress={run} disabled={running}>
-        {running ? 'Running…' : 'Run inspection'}
+        {running ? t('running') : t('run')}
       </Button>
 
       {report ? (
         <YStack gap="$3">
           <Card bordered padding="$3" backgroundColor="$color2">
             <XStack justifyContent="space-between" alignItems="center">
-              <H2 color={VERDICT[report.verdict].color}>{VERDICT[report.verdict].label}</H2>
+              <H2 color={VERDICT[report.verdict].color}>{t(`verdict.${report.verdict}`)}</H2>
               <Text fontSize="$8" fontWeight="800">
                 {report.score}
               </Text>

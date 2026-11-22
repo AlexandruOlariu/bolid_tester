@@ -117,7 +117,7 @@ def ts_summary(path):
     """One-line summary for a TS/TSX module: first JSDoc sentence, else first
     `//` comment, else first exported symbol name."""
     txt = read_text(path)
-    m = _JSDOC.search(txt[:1200])
+    m = _JSDOC.search(txt[:2400])
     if m:
         body = re.sub(r"^\s*\*\s?", "", m.group(1), flags=re.M)
         body = re.sub(r"\s+", " ", body).strip()
@@ -307,12 +307,15 @@ def build_shared(g):
             else:
                 add_filenode(f"core:{sub}", "core", p)
 
-    # lib / state(store) / ui / transports(ble)
+    # lib / state(store) / ui / transports(ble, tcp, spp) / telemetry (opt-in crash reports)
     for sub, prefix, ntype in (
         ("lib", "lib", "lib"),
         ("state", "store", "store"),
         ("ui", "ui", "ui"),
         ("transports/ble", "transport", "transport"),
+        ("transports/tcp", "transport", "transport"),
+        ("transports/spp", "transport", "transport"),
+        ("telemetry", "telemetry", "service"),
     ):
         d = root / sub
         if not d.is_dir():
@@ -321,6 +324,13 @@ def build_shared(g):
             if p.stem == "index":
                 continue
             add_filenode(f"{prefix}:{p.stem}", ntype, p)
+
+    # transport helpers shared by every radio (e.g. adapterNames.ts), at the transports/ root
+    tdir = root / "transports"
+    if tdir.is_dir():
+        for p in sorted(tdir.glob("*.ts")):
+            if ".test." not in p.name and p.stem != "index":
+                add_filenode(f"transport:{p.stem}", "transport", p)
 
     # ai / notify: collapse each directory to a single service node
     for sub, nid, default in (

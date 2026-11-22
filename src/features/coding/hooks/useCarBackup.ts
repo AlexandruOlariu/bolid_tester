@@ -1,16 +1,12 @@
 import { useCallback, useState } from 'react';
-import {
-  readModuleIdent,
-  decodeAdaptationRaw,
-  isCan,
-  PROTOCOL_LABELS,
-} from '@/shared/obd-core';
+import { readModuleIdent, decodeAdaptationRaw, isCan, PROTOCOL_LABELS } from '@/shared/obd-core';
 import type { AdaptationChannel, CodingModule } from '@/shared/vehicles';
-import { getVehicleProfile, vehicleLabel } from '@/shared/vehicles';
+import { vehicleLabel, type VehicleProfile } from '@/shared/vehicles';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
-// Reuse the adaptations feature's READ path only (no writes) — do not modify that feature.
+import { fileStamp, saveTextFile } from '@/shared/lib/saveFile';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
+// Reuse the adaptations feature's read path (the restore writes live in useAdaptationRestore).
 import { readChannel } from '@/features/adaptations/api/adaptationService';
 import {
   buildCarBackup,
@@ -19,6 +15,8 @@ import {
   type CarBackupAdaptation,
 } from '../api/carBackup';
 import { useCarBackupStore } from '../model/carBackupStore';
+import { useBackupWorkStore } from '../model/backupWorkStore';
+import { translate } from '@/shared/i18n';
 
 interface ModuleSpec {
   reqHeader: string;
@@ -31,8 +29,7 @@ interface ModuleSpec {
 
 /** Union (by ATSH request header) of the profile's codeable modules and its adaptation-channel
  *  modules — every module the snapshot should read. Coding modules first, then adaptation-only. */
-function moduleSpecs(profileId: string): ModuleSpec[] {
-  const profile = getVehicleProfile(profileId);
+function moduleSpecs(profile: VehicleProfile): ModuleSpec[] {
   const specs = new Map<string, ModuleSpec>();
   const addressOf = (header: string) =>
     profile.modules?.find((m) => m.reqHeader === header)?.address;
@@ -64,20 +61,21 @@ function moduleSpecs(profileId: string): ModuleSpec[] {
 
 /** Full coding backup ("clone my car"): read every profile-declared module's coding + adaptation
  *  channel values into a dated snapshot; export as JSON. Restore is per-module through the existing
- *  gated coding write (see CodingBackup UI); adaptation restore is manual in v1. */
+ *  gated coding write and adaptation channels through useAdaptationRestore (see CodingBackup UI). */
 export function useCarBackup() {
   const session = useSessionStore((s) => s.session);
-  const profileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const save = useCarBackupStore((s) => s.save);
   const [creating, setCreating] = useState(false);
 
-  const profile = getVehicleProfile(profileId);
-  const specs = moduleSpecs(profileId);
-  const available =
-    specs.length > 0 && isCan(session?.currentProtocol ?? 'UNKNOWN') && !!session;
+  const specs = moduleSpecs(profile);
+  const available = specs.length > 0 && isCan(session?.currentProtocol ?? 'UNKNOWN') && !!session;
 
   const create = useCallback(async (): Promise<CarBackup | null> => {
     if (!session) return null;
+    // Shared Backup-section gate: never read modules while a restore / compare drives the bus.
+    const gate = useBackupWorkStore.getState();
+    if (!gate.tryBegin()) return null;
     setCreating(true);
     try {
       const modules: CarBackupModuleInput[] = [];
@@ -97,7 +95,12 @@ export function useCarBackup() {
             if (bytes) coding = { did: spec.coding.codingDid, bytes };
           }
         } catch (e) {
-          logError({ source: 'coding/backup', error: e, severity: 'warning', context: { module: spec.name } });
+          logError({
+            source: 'coding/backup',
+            error: e,
+            severity: 'warning',
+            context: { module: spec.name },
+          });
         } finally {
           await session.resetAddressing();
         }
@@ -138,23 +141,19 @@ export function useCarBackup() {
       return null;
     } finally {
       setCreating(false);
+      gate.end();
     }
   }, [session, specs, profile, save]);
 
-  /** Write a snapshot to a JSON file and open the OS share sheet (dependency-tolerant). */
+  /** Save a snapshot as JSON: the OS share sheet on native, a browser download on web (plan 28). */
   const exportBackup = useCallback(async (backup: CarBackup): Promise<string | null> => {
     try {
-      const FileSystem = await import('expo-file-system' as string);
-      const Sharing = await import('expo-sharing' as string);
-      const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
-      if (!dir) return null;
-      const stamp = new Date(backup.ts).toISOString().replace(/[:.]/g, '-');
-      const uri = `${dir}car-backup-${stamp}.json`;
-      await FileSystem.writeAsStringAsync(uri, JSON.stringify(backup, null, 2));
-      if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'application/json', dialogTitle: 'Export car backup' });
-      }
-      return uri;
+      return await saveTextFile(
+        `car-backup-${fileStamp(backup.ts)}.json`,
+        JSON.stringify(backup, null, 2),
+        'application/json',
+        { dialogTitle: translate('common:share.carBackup') },
+      );
     } catch (e) {
       logError({ source: 'coding/backup/export', error: e });
       return null;

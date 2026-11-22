@@ -1,0 +1,24 @@
+{
+  "hint": {
+    "dismissA11y": "Dismiss hint: {{title}}"
+  },
+  "firstRun": {
+    "title": "Getting started",
+    "dismissA11y": "Dismiss the getting started guide",
+    "stepA11y": "Step {{n}}: {{title}}",
+    "stepDoneA11y": "Step {{n}}: {{title}}, done",
+    "useGeneric": "Use Auto / Generic",
+    "vehicle": {
+      "title": "Pick your car",
+      "hint": "Choose your model on the Vehicle tab, or keep Auto / Generic for any OBD2 car."
+    },
+    "connect": {
+      "title": "Connect the adapter",
+      "hint": "Plug the adapter into the OBD2 port, switch the ignition on, then scan below."
+    },
+    "faults": {
+      "title": "Read fault codes",
+      "hint": "Open the Faults tab to read stored, pending and permanent trouble codes."
+    }
+  }
+}

@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef } from 'react';
 import { isCan } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile } from '@/shared/vehicles';
+import { securityDecisionForActiveCar } from '@/shared/security';
 import type { GuidedRoutine } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import {
   checkInterlocks,
   checkInterlocksDuringRun,
@@ -16,6 +16,7 @@ import {
   readLiveValues,
 } from '../api/routineService';
 import { useRoutinesStore } from '../model/routinesStore';
+import { translate } from '@/shared/i18n';
 
 /** One periodic tick drives keep-alive, live values AND the interlock re-check, in that order —
  *  a single interval keeps the sequencing deterministic (no keep-alive racing an address switch). */
@@ -26,14 +27,14 @@ const TICK_MS = 1500;
  *  restores default addressing. */
 export function useRoutines() {
   const session = useSessionStore((s) => s.session);
-  const profileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const store = useRoutinesStore();
   const timers = useRef<{ tick?: ReturnType<typeof setInterval> }>({});
   const ticking = useRef(false);
 
-  const profile = getVehicleProfile(profileId);
   const routines = profile.routines ?? [];
-  const available = !!session && routines.length > 0 && isCan(session?.currentProtocol ?? 'UNKNOWN');
+  const available =
+    !!session && routines.length > 0 && isCan(session?.currentProtocol ?? 'UNKNOWN');
 
   const clearTimers = () => {
     if (timers.current.tick) clearInterval(timers.current.tick);
@@ -57,7 +58,7 @@ export function useRoutines() {
     async (routine: GuidedRoutine) => {
       if (!session) return;
       if (!store.unlocked) {
-        store.setMessage('Locked — enable the routines unlock first.');
+        store.setMessage(translate('routines:msg.locked'));
         return;
       }
       store.setMessage(null);
@@ -70,12 +71,21 @@ export function useRoutines() {
           store.setActive(null, 'blocked');
           return;
         }
-        await startRoutine(session, routine);
+        // SecurityAccess (plan 23): unlock with an installed plugin when there is one; without
+        // one the routine is attempted unlocked and the module decides (NRC 0x33 is explained).
+        const decision = await securityDecisionForActiveCar(routine.security, {
+          reqHeader: routine.reqHeader,
+        });
+        await startRoutine(
+          session,
+          routine,
+          decision.kind === 'unlock' ? { seedToKey: decision.security.seedToKey } : {},
+        );
         store.setActive(routine.id, 'running');
         store.setMessage(
           routine.service === '2F'
-            ? 'Output under test — stop to return control to the ECU.'
-            : 'Routine started.',
+            ? translate('routines:msg.outputRunning')
+            : translate('routines:msg.started'),
         );
         timers.current.tick = setInterval(async () => {
           if (ticking.current) return; // previous tick still on the wire (slow BLE) — skip
@@ -90,7 +100,11 @@ export function useRoutines() {
               const check = await checkInterlocksDuringRun(session, routine);
               if (!check.ok) {
                 store.setInterlockFailures(check.failures);
-                await stop(routine, 'error', `Stopped — interlock violated: ${check.failures[0]}`);
+                await stop(
+                  routine,
+                  'error',
+                  translate('routines:msg.interlockStop', { failure: check.failures[0] }),
+                );
               }
             }
           } catch {
@@ -100,12 +114,16 @@ export function useRoutines() {
           }
         }, TICK_MS);
       } catch (e) {
-        logError({ source: 'routines', error: e, context: { routine: routine.name, id: routine.id } });
+        logError({
+          source: 'routines',
+          error: e,
+          context: { routine: routine.name, id: routine.id },
+        });
         await stop(routine, 'error', describeRoutineFailure(e, routine));
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable; profile.extendedPids derives from the listed profileId
-    [session, store.unlocked, profileId, stop],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- store methods are stable; profile is the memoised active profile, so editing a garage car re-creates this
+    [session, store.unlocked, profile, stop],
   );
 
   // Safety: never leave a routine running when the screen unmounts.
@@ -118,8 +136,8 @@ export function useRoutines() {
       }
       clearTimers();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- routines derives from the listed profileId; cleanup reads it via getState at unmount
-  }, [session, profileId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- routines derives from the listed profile (memoised active profile, re-keyed when a garage car is edited); activeId is read via getState at unmount
+  }, [session, profile]);
 
   return { available, routines, start, stop };
 }

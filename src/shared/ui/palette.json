@@ -1,0 +1,56 @@
+{
+  "$comment": "The only colour source for on-screen UI (plan 20, docs/accessibility.md). tamagui.config.ts merges `themes.<scheme>.text`, `.graphic` and `onFill` into every light / dark theme as `$accent`, `$statusError`, … ; components read them as tokens or through usePalette(). `npm run check:contrast` (scripts/contrast-check.mjs) fails CI when a text token is under 4.5:1 or a graphic token under 3:1 against any of its theme's surfaces, or when onFill text is under 4.5:1 on a text token used as a fill. `chrome` is the navigation bar / header (React Navigation sits outside the Tamagui theme), its text checked against its background. `brand` is the fixed logo / splash artwork, the same in both themes.",
+  "themes": {
+    "dark": {
+      "surfaces": ["#0D1117", "#161B22"],
+      "text": {
+        "accent": "#2bb673",
+        "muted": "#8B949E",
+        "statusOk": "#3fb950",
+        "statusWarn": "#E3B341",
+        "statusError": "#F85149",
+        "statusInfo": "#58a6ff",
+        "statusFatal": "#a371f7",
+        "placeholderColor": "#7D8590"
+      },
+      "graphic": {
+        "gaugeTrack": "#6E7681"
+      },
+      "onFill": "#0D1117",
+      "chrome": {
+        "background": "#0D1117",
+        "border": "#30363D",
+        "text": "#E6EDF3"
+      }
+    },
+    "light": {
+      "surfaces": ["#FFFFFF", "#F8F8F8"],
+      "text": {
+        "accent": "#1E7F52",
+        "muted": "#57606A",
+        "statusOk": "#1A7F37",
+        "statusWarn": "#9A6700",
+        "statusError": "#CF222E",
+        "statusInfo": "#0969DA",
+        "statusFatal": "#8250DF",
+        "placeholderColor": "#656D76"
+      },
+      "graphic": {
+        "gaugeTrack": "#868E96"
+      },
+      "onFill": "#FFFFFF",
+      "chrome": {
+        "background": "#FFFFFF",
+        "border": "#E2E8F0",
+        "text": "#1A1A1A"
+      }
+    }
+  },
+  "brand": {
+    "green": "#2bb673",
+    "ink": "#0D1117",
+    "logoPanel": "#111827",
+    "logoLine": "#E6EDF3",
+    "logoShade": "#193C32"
+  }
+}

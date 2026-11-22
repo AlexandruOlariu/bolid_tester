@@ -1,13 +1,14 @@
 import { useCallback, useState } from 'react';
 import { formatErrorsForExport, errorsToJson, type LoggedError } from '@/shared/lib/errorLog';
 import { logError } from '@/shared/state/errorLogStore';
+import { fileStamp, saveTextFile } from '@/shared/lib/saveFile';
+import { translate } from '@/shared/i18n';
 
 export type ExportFormat = 'md' | 'json';
 
-/** Write the saved errors to a file (expo-file-system) and open the OS share sheet (expo-sharing).
- *  Both native modules are loaded via variable specifiers so this builds/tests without them — the
- *  same dependency-tolerant pattern used by the trip recorder and notifier. Returns the file URI on
- *  success, or null when sharing is unavailable (e.g. web/tests). */
+/** Save the errors as a file: on native, written to the document directory and handed to the OS
+ *  share sheet; on web, downloaded by the browser (`saveTextFile`, plan 28). Returns the file URI
+ *  (native) or name (web), or null when nothing was written. */
 export function useErrorLogExport() {
   const [busy, setBusy] = useState(false);
 
@@ -15,24 +16,13 @@ export function useErrorLogExport() {
     async (errors: LoggedError[], format: ExportFormat = 'md'): Promise<string | null> => {
       setBusy(true);
       try {
-        const FileSystem = await import('expo-file-system' as string);
-        const Sharing = await import('expo-sharing' as string);
-        const dir = (FileSystem as { documentDirectory?: string }).documentDirectory ?? '';
-        if (!dir) return null;
-
-        const stamp = new Date().toISOString().replace(/[:.]/g, '-');
         const isJson = format === 'json';
-        const uri = `${dir}bolid-errors-${stamp}.${isJson ? 'json' : 'md'}`;
-        const body = isJson ? errorsToJson(errors) : formatErrorsForExport(errors);
-        await FileSystem.writeAsStringAsync(uri, body);
-
-        if (await Sharing.isAvailableAsync()) {
-          await Sharing.shareAsync(uri, {
-            mimeType: isJson ? 'application/json' : 'text/markdown',
-            dialogTitle: 'Export error log',
-          });
-        }
-        return uri;
+        return await saveTextFile(
+          `bolid-errors-${fileStamp()}.${isJson ? 'json' : 'md'}`,
+          isJson ? errorsToJson(errors) : formatErrorsForExport(errors),
+          isJson ? 'application/json' : 'text/markdown',
+          { dialogTitle: translate('common:share.errorLog') },
+        );
       } catch (e) {
         // Don't let an export failure vanish — record it in the same zone.
         logError({ source: 'error-log/export', error: e });

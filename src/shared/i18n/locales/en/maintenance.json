@@ -1,0 +1,34 @@
+{
+  "title": "Maintenance log",
+  "subtitle": "Odometer is entered by you — it isn't an OBD2 value.",
+  "logbookFor": "Logbook for <b>{{car}}</b>. Each car keeps its own logbook — switch cars on the Vehicle screen.",
+  "odometer": "Current odometer (km)",
+  "odometerPlaceholder": "e.g. 215000",
+  "odometerA11y": "Current odometer in kilometres",
+  "save": "Save",
+  "due": {
+    "kmOver": "{{km}} km over",
+    "inKm": "in {{km}} km",
+    "daysOver": "{{days}} d over",
+    "inDays": "in {{days}} d",
+    "noHistory": "no history yet"
+  },
+  "status": {
+    "overdue": "OVERDUE",
+    "soon": "SOON",
+    "ok": "OK",
+    "unknown": "UNKNOWN"
+  },
+  "logService": "Log a service (at the odometer above)",
+  "logToday": "Log “{{name}}” today",
+  "item": {
+    "engine-oil": "Engine oil & filter",
+    "fuel-filter": "Fuel filter (diesel)",
+    "air-filter": "Air filter",
+    "cabin-filter": "Cabin/pollen filter",
+    "timing-belt": "Timing belt + water pump",
+    "brake-fluid": "Brake fluid",
+    "coolant": "Coolant",
+    "dpf-check": "DPF inspection"
+  }
+}

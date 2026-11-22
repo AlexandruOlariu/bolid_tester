@@ -60,7 +60,7 @@ From `docs/improvement-plan-2026-07.md` → "Phase 6b — VCDS parity, next tier
   `docs/features/coding.md`.
 - **6b.8 Full coding backup ("clone my car")** (✅) — one-tap snapshot of every declared module's
   coding + adaptation values → dated JSON, capped store, export/share, per-module gated coding
-  restore (adaptation restore manual in v1). `features/coding/api/carBackup.ts`; `docs/features/coding.md`.
+  restore (adaptation channels restore per channel or per module since plan 24). `features/coding/api/carBackup.ts`; `docs/features/coding.md`.
 - **6b.10 Bus wake / tester-present broadcast** (✅) — best-effort functional `3E 00` burst before a
   module scan, fully swallowed. `obd-core/uds/testerPresent.ts`; `docs/features/module-scan.md`.
 
@@ -68,8 +68,12 @@ All ten Phase 6b items have now landed (simulator-first, tested).
 
 ## Still open (⏳ / ❌)
 
-- **KWP login (`2B`) UI + code book** (⏳) — the UDS/adaptation write paths exist; a K-line KWP
-  login screen for pre-UDS adaptations is not built.
+- **KWP login (`2B`) UI + code book** (✅ code) — `kwpLogin` (`obd-core/coding/kwpLogin.ts`), KWP
+  adaptation channels (`21` / `3B` on K-line), the login sheet, the per-car code book (garage /
+  `bolid.loginBook`) and full simulator coverage landed with
+  [plan 22](./plans/22-kwp-login-code-book.md); no login code ships. Pending: the TP2.0 pre-UDS
+  modules (Golf cluster `17`, comfort `46`) — see the plan's
+  [deferred section](./plans/22-kwp-login-code-book.md#deferred-until-an-on-car-session).
 - **Label-pack coverage** (⏳) — format + one EDC17 pack ship; more packs are a data effort.
 - **Real-hardware TP2.0 validation** (❌) — code + sim done; needs on-car confirmation per adapter.
 - **On-car validation of the UDS module scan / adaptations / routines** (❌) — unblocked by the
@@ -86,7 +90,7 @@ Written after a review of the then code-complete state (24 features, UDS write c
 
 - **SRI / service reset** — done, both methods (UDS routine + adaptation write), CAN and KWP paths.
 - **Long-coding read/edit/write** — done for UDS modules, profile-gated, with backup/diff/restore
-  (`coding` feature + `coding.ts` bit/byte schema — this *is* a long-coding editor).
+  (`coding` feature + `coding.ts` bit/byte schema — this _is_ a long-coding editor).
 - **Security access `27`** — pluggable seed/key per profile.
 - **Measuring-data reads** — engine Mode 22 DIDs (`extended-pids`), ABS module DIDs
   (`sensor-tests` module tier), DPF pack (`dpf`).
@@ -94,19 +98,19 @@ Written after a review of the then code-complete state (24 features, UDS write c
 
 ## The gap map (VCDS function → app status)
 
-| VCDS function | App today | What it takes |
-|---|---|---|
-| **Auto-Scan** (all modules: part no, coding, faults) | ❌ | Module registry + iterate: UDS `10 03` → `22 F187/F189/F19E` → `19 02`. UDS-only v1 is buildable **now** on existing infra. |
-| **Per-module fault codes** (ABS, airbag, cluster…) | ❌ engine-only (Mode 03/07/0A) | UDS `19 02` read / `14` clear / `19 04` freeze frame, addressed via existing `setHeader`/`setRxFilter`. |
-| **VAG fault-code texts** (5-digit codes + symptom bytes) | ❌ generic OBD2 dictionary only | VAG DTC dictionary + UDS status-byte decoding (intermittent/confirmed/…). |
-| **Output tests** (actuators) | ❌ (sensor-tests is read-only by design) | UDS `2F` InputOutputControl / KWP `30`, behind the same guardrails as coding. |
-| **Basic settings** (throttle-body align, SAS G85 cal, EGR learn, brake bleed, **forced DPF regen**) | ❌ (`routineControl 31` exists in core, unused for this) | A gated "guided routines" feature: pick routine from profile, show live values while it runs, hard safety interlocks (engine state, voltage). |
-| **Adaptation channels** (read → test → save) | ⚠️ writes possible via coding path; no channel browser | Generic browse/read/backup/write UI over `22`/`2E` (UDS) and read/write-local-id (KWP). |
-| **Measuring blocks** (grouped, labeled, per module) | ⚠️ flat experimental DID lists | Label packs (below) + group presentation; KWP `21 <group>` for pre-UDS modules. |
-| **Label files** (per-part-number names for blocks/bits/channels) | ⚠️ hardcoded in profiles | A JSON "label pack" format keyed by module part number — the single highest-leverage data investment; keeps profiles thin and community-extensible. (Own format — VCDS label files are proprietary.) |
-| **Gateway installation list** | ❌ | On PQ35 it's KWP-over-**TP2.0** to the gateway → needs the TP2.0 work below. |
-| **Login codes** (KWP `2B` 5-digit login) | ⚠️ only a comment in `udsCoding.ts` | Login-code entry UI + per-profile code book; needed before KWP adaptations. |
-| **SFD unlock** (2020+ cars) | — | Not applicable to these cars; out of scope. |
+| VCDS function                                                                                       | App today                                                                                                            | What it takes                                                                                                                                                                                        |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Auto-Scan** (all modules: part no, coding, faults)                                                | ❌                                                                                                                   | Module registry + iterate: UDS `10 03` → `22 F187/F189/F19E` → `19 02`. UDS-only v1 is buildable **now** on existing infra.                                                                          |
+| **Per-module fault codes** (ABS, airbag, cluster…)                                                  | ❌ engine-only (Mode 03/07/0A)                                                                                       | UDS `19 02` read / `14` clear / `19 04` freeze frame, addressed via existing `setHeader`/`setRxFilter`.                                                                                              |
+| **VAG fault-code texts** (5-digit codes + symptom bytes)                                            | ❌ generic OBD2 dictionary only                                                                                      | VAG DTC dictionary + UDS status-byte decoding (intermittent/confirmed/…).                                                                                                                            |
+| **Output tests** (actuators)                                                                        | ❌ (sensor-tests is read-only by design)                                                                             | UDS `2F` InputOutputControl / KWP `30`, behind the same guardrails as coding.                                                                                                                        |
+| **Basic settings** (throttle-body align, SAS G85 cal, EGR learn, brake bleed, **forced DPF regen**) | ❌ (`routineControl 31` exists in core, unused for this)                                                             | A gated "guided routines" feature: pick routine from profile, show live values while it runs, hard safety interlocks (engine state, voltage).                                                        |
+| **Adaptation channels** (read → test → save)                                                        | ⚠️ writes possible via coding path; no channel browser                                                               | Generic browse/read/backup/write UI over `22`/`2E` (UDS) and read/write-local-id (KWP).                                                                                                              |
+| **Measuring blocks** (grouped, labeled, per module)                                                 | ⚠️ flat experimental DID lists                                                                                       | Label packs (below) + group presentation; KWP `21 <group>` for pre-UDS modules.                                                                                                                      |
+| **Label files** (per-part-number names for blocks/bits/channels)                                    | ⚠️ hardcoded in profiles                                                                                             | A JSON "label pack" format keyed by module part number — the single highest-leverage data investment; keeps profiles thin and community-extensible. (Own format — VCDS label files are proprietary.) |
+| **Gateway installation list**                                                                       | ❌                                                                                                                   | On PQ35 it's KWP-over-**TP2.0** to the gateway → needs the TP2.0 work below.                                                                                                                         |
+| **Login codes** (KWP `2B` 5-digit login)                                                            | ✅ (code) `kwpLogin` + login sheet + per-car code book on K-line KWP channels; no code ships; TP2.0 modules deferred | Login-code entry UI + per-profile code book ([plan 22](./plans/22-kwp-login-code-book.md)); needed before KWP adaptations.                                                                           |
+| **SFD unlock** (2020+ cars)                                                                         | —                                                                                                                    | Not applicable to these cars; out of scope.                                                                                                                                                          |
 
 ## Hardware honesty (what parity is even possible)
 

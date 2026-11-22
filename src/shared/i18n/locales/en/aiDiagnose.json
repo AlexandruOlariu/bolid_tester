@@ -1,0 +1,56 @@
+{
+  "title": "Diagnose (AI)",
+  "subtitle": "One-tap health check of your car",
+  "notConnected": "Not connected. Pair your adapter on the Connect tab (or switch to the Simulator in Settings) to run a diagnosis.",
+  "runFull": "Run full diagnosis",
+  "rerun": "Re-run diagnosis",
+  "run": "Run diagnosis",
+  "working": "Working…",
+  "intro": "Tap “Run diagnosis” to read your car’s fault codes, readiness and live data and get a plain-language health report.",
+  "clearCodes": "Clear fault codes",
+  "clear": {
+    "title": "Clear fault codes?",
+    "body": "This erases stored/pending codes and resets readiness monitors. Codes will return if the fault persists.",
+    "confirm": "Clear"
+  },
+  "overall": {
+    "ok": "Looks healthy",
+    "attention": "Needs attention",
+    "urgent": "Urgent"
+  },
+  "source": {
+    "ai": "AI analysis",
+    "rules": "On-device rule-based analysis"
+  },
+  "severity": {
+    "ok": "OK",
+    "info": "INFO",
+    "warn": "ATTENTION",
+    "critical": "CRITICAL"
+  },
+  "knownCheck": "Known check for this car: {{note}}",
+  "likelyCauses": "Likely causes: {{causes}}.",
+  "findings": "Findings ({{count}})",
+  "noIssues": "No specific issues were flagged.",
+  "actions": "Recommended actions",
+  "focus": {
+    "title": "Focused on fault code {{code}}",
+    "help": "The report explains this code first: what it means, likely causes and what to check."
+  },
+  "followUp": {
+    "title": "Ask about this report",
+    "clearA11y": "Clear the conversation",
+    "clear": "Clear",
+    "needsProvider": "Follow-up questions need an AI provider. This report came from the on-device rules; set up a provider in Settings → AI assistant and re-run the diagnosis.",
+    "asking": "Asking the AI…",
+    "placeholder": "Ask a question about this report",
+    "inputA11y": "Follow-up question",
+    "sendA11y": "Send the question"
+  },
+  "msg": {
+    "connectFirst": "Connect to a vehicle first (Connect tab).",
+    "gathering": "Reading fault codes, readiness & live data…",
+    "analyzing": "Asking the AI model to analyse the data…"
+  },
+  "unknownVehicle": "Unknown vehicle"
+}

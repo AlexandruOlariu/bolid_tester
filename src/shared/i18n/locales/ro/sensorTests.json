@@ -1,0 +1,16 @@
+{
+  "title": "Teste senzori",
+  "subtitle": "Monitoare Mode 06 + senzori experimentali ai modulelor",
+  "run": "Rulează testele",
+  "mode06": "Mode 06 (grup motopropulsor)",
+  "mode06Row": "MID {{mid}} · {{value}} {{unit}} (min {{min}} / max {{max}}) · {{result}}",
+  "pass": "TRECUT",
+  "fail": "PICAT",
+  "mode05": "Mode 05 (senzori O2, pre-CAN)",
+  "sensor": "senzor {{n}}",
+  "raw": "brut {{raw}}",
+  "noMode05": "Niciun rezultat Mode 05 încă — rulează testele (multe ECU-uri nu îl suportă).",
+  "modules": "Module (experimental)",
+  "modulesHelp": "Doar CAN, adresare pe fiecare mașină. Ai încredere într-o valoare doar când insigna ei arată că a fost confirmată pe această mașină.",
+  "noModules": "Niciun senzor experimental de modul pentru această mașină / acest protocol."
+}

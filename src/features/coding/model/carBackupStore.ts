@@ -13,6 +13,20 @@ export const MAX_CAR_BACKUPS = 10;
 
 const BACKUPS_PERSIST_DEBOUNCE_MS = 500;
 
+/** Data version of `bolid.carBackups`. The store first shipped without one (zustand wrote 0); v1
+ *  has the same shape and only makes the version explicit, so a backup (plan 18) can tell old from
+ *  new. */
+export const CAR_BACKUPS_VERSION = 1;
+
+/** v0 (unversioned) → v1: same shape; anything that is not a snapshot list becomes an empty one. */
+export function migrateCarBackups(
+  persisted: unknown,
+  _fromVersion: number,
+): { backups: CarBackup[] } {
+  const p = (persisted ?? {}) as { backups?: unknown };
+  return { backups: Array.isArray(p.backups) ? (p.backups as CarBackup[]) : [] };
+}
+
 interface CarBackupState {
   backups: CarBackup[];
   save: (backup: CarBackup) => void;
@@ -34,6 +48,9 @@ export const useCarBackupStore = create<CarBackupState>()(
     }),
     {
       name: 'bolid.carBackups',
+      version: CAR_BACKUPS_VERSION,
+      migrate: (persisted, version) =>
+        migrateCarBackups(persisted, version) as unknown as CarBackupState,
       storage: createJSONStorage(() =>
         debouncedStorage(fileStateStorage, BACKUPS_PERSIST_DEBOUNCE_MS),
       ),

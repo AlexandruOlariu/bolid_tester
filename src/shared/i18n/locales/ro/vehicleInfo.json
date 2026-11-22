@@ -1,0 +1,15 @@
+{
+  "title": "Informații vehicul",
+  "notConnected": "Neconectat.",
+  "fullReport": "Raport complet al vehiculului",
+  "notAvailable": "indisponibil",
+  "calibrationId": "ID calibrare",
+  "protocol": "Protocol",
+  "adapter": "Adaptor",
+  "elmVersion": "Versiune ELM",
+  "voltage": "Tensiune",
+  "supportedPids": "PID-uri suportate",
+  "supportedMode01": "PID-uri Mode 01 suportate",
+  "extended": "PID-uri extinse (experimental)",
+  "decodeVin": "Decodează VIN"
+}

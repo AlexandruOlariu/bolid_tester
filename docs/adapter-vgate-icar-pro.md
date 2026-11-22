@@ -14,6 +14,26 @@ The user's adapter:
   ISO 14230-4 KWP2000, ISO 15765-4 CAN 11/29-bit at 250/500 kbps).
 - Has an auto-sleep feature (low power when the car is off).
 
+### BLE vs classic variants of common adapters
+
+Many adapter families ship in two radio variants that look alike and share a name, so check the
+box or listing before buying:
+
+| Marking                                     | Radio                       | In Bolid Tester                                                                             |
+| ------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------- |
+| "Bluetooth 4.0", "BLE", "iOS + Android"     | Bluetooth Low Energy (GATT) | **Bluetooth LE** source — scan, no pairing; Android and iOS                                 |
+| "Bluetooth 3.0", "Bluetooth 2.0", "Android" | Classic Bluetooth (SPP)     | **Classic Bluetooth** source — pair in Android settings (PIN 1234 / 0000); **Android only** |
+| "WiFi", network `WiFi_OBDII`                | Wi-Fi (TCP)                 | **Wi-Fi adapter** source — `192.168.0.10:35000`; Android and iOS                            |
+
+- The **Vgate iCar Pro** is sold as both "Bluetooth 4.0" (BLE — this doc) and older "Bluetooth 3.0"
+  / Wi-Fi models; Veepeak's **OBDCheck BLE** is BLE while the plain **Mini** is classic; cheap
+  blue "ELM327 mini" clones named `OBDII` / `OBD2` are almost always classic SPP.
+- A classic adapter never shows up in a BLE scan, and on iPhone it cannot be used at all: iOS lets
+  apps open classic Bluetooth accessories only through Apple's MFi programme, which ELM327 clones
+  are not part of. Some "dual" adapters advertise both radios; use the BLE side.
+- The classic link has one app-side limit: the bus sniffer (`ATMA`) is unavailable over it (see
+  [connection § Classic Bluetooth](./features/connection.md#classic-bluetooth-spp-android--plan-27)).
+
 ## What it can do (and our app targets)
 
 - Read **live data** (Mode 01), **read & clear fault codes** (Modes 03/04/07), **freeze frame**
@@ -45,6 +65,11 @@ Advertised device names seen on these adapters include `IOS-Vlink`, `Vlink`, `VE
 `V-LINK`. The scan screen lists everything and lets the user pick; we can pre-filter by these name
 hints and by the presence of a serial-like service.
 
+On **iOS** (plan 09) the scanned device id is a CoreBluetooth UUID that iOS generates per phone, not
+the adapter's MAC address, so the Connect screen has no "connect by address" field there. The
+adapter is never paired in iOS Settings; if it does not show up in the scan, power-cycle it (unplug
+for 10 s). iOS negotiates the MTU itself (`requestMTU` is sent on Android only).
+
 ## ELM327 quirks handled in the client
 
 - **Half-duplex.** One command at a time; we queue and wait for the `>` prompt.
@@ -55,7 +80,17 @@ hints and by the presence of a serial-like service.
 - **Latency / buffering.** BLE notifications can split a response across packets; the client buffers
   incoming bytes until it sees `>`.
 - **MTU.** Default ~20-byte BLE payloads; long responses (VIN, many DTCs) arrive in several
-  notifications and are reassembled.
+  notifications and are reassembled. Writes are chunked to the negotiated payload (`device.mtu - 3`,
+  floor 20), so a long command (a 16-byte coding write is 39 bytes) also survives a failed MTU
+  negotiation. The negotiated MTU is shown in the Connect screen's diagnostics panel.
+- **Auto-sleep.** After an idle gap the client sends a wake-up (`\r`, or `ATI` when repeating the
+  last command is unsafe) before the next command — see
+  [connection](./features/connection.md#adapter-sleep--wake).
+- **Late replies.** After a timeout the client drains the late reply up to its `>` (≤ 300 ms) so it
+  can never be taken as the answer to the next command.
+- **To confirm on the car (plan 12, deferred):** the Vgate's actual sleep delay and whether a bare
+  `\r` wakes it (adjust `wakeAfterIdleMs`), and the negotiated MTU on the owner's Android and iOS
+  phones (read from the diagnostics panel).
 
 ## Init sequence
 
@@ -64,12 +99,13 @@ read `ATDPN` (protocol number) and `ATRV` (voltage). See [`obd2-reference.md`](.
 
 ## Expectations per example car
 
-| Car | Likely negotiated protocol | Notes |
-|-----|----------------------------|-------|
-| Golf Plus 2009 2.0 TDI | CAN 11/500 (`6`) | Full, fast, many PIDs. |
-| Fiat Grande Punto 1.2 2008 | CAN 11/500 (`6`) | 199-body petrol on CAN; auto-detect confirms. |
-| Passat B5.5 1.9 TDI | KWP2000 fast (`5`) / ISO 9141-2 (`3`) | Slower K-line; fewer live PIDs; engine DTC read/clear OK. |
+| Car                        | Likely negotiated protocol            | Notes                                                     |
+| -------------------------- | ------------------------------------- | --------------------------------------------------------- |
+| Golf Plus 2009 2.0 TDI     | CAN 11/500 (`6`)                      | Full, fast, many PIDs.                                    |
+| Fiat Grande Punto 1.2 2008 | CAN 11/500 (`6`)                      | 199-body petrol on CAN; auto-detect confirms.             |
+| Passat B5.5 1.9 TDI        | KWP2000 fast (`5`) / ISO 9141-2 (`3`) | Slower K-line; fewer live PIDs; engine DTC read/clear OK. |
 
 ## Sources
+
 - vgatemall.com, astools.eu (product specs: genuine ELM327, BLE, all OBD2 protocols, iOS).
 - carscanner.info "Choosing an OBD adapter" (BLE adapters, no MS/SW-CAN).

@@ -4,7 +4,7 @@
  *  SAE code + text + status flags. No I/O; kept separate from the React layer so it is unit-tested
  *  against a fixture and reused by the share action. See docs/features/module-scan.md. */
 
-import { decodeDtcStatusByte } from '@/shared/obd-core';
+import { decodeDtcStatusByte, vagNativeDtcText } from '@/shared/obd-core';
 import type {
   SavedScan,
   SavedScanModule,
@@ -74,8 +74,12 @@ function tp20Block(m: SavedScanTp20Module): string[] {
   if (m.ident) lines.push(`   Component: ${m.ident}`);
   if (m.dtcs && m.dtcs.length) {
     lines.push(`   ${m.dtcs.length} Fault${m.dtcs.length > 1 ? 's' : ''} Found:`);
-    for (const d of m.dtcs)
-      lines.push(`   ${d.vag} - Status 0x${d.status.toString(16).padStart(2, '0').toUpperCase()}`);
+    for (const d of m.dtcs) {
+      // Native KWP fault number: its component text when the seed table knows it.
+      const text = vagNativeDtcText(d.vag);
+      const status = d.status.toString(16).padStart(2, '0').toUpperCase();
+      lines.push(`   ${d.vag} - ${text ? `${text} - ` : ''}Status 0x${status}`);
+    }
   } else if (m.dtcs) {
     lines.push('   No fault code found.');
   } else {

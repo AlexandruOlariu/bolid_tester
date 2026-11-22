@@ -1,0 +1,66 @@
+# Smoke flow (plan 10): simulator connect → read faults → clear, on a fresh install.
+# Run locally against an emulator with the app installed (see docs/testing.md → "End-to-end"):
+#   maestro test .maestro/simulator-smoke.yaml
+# CI: .github/workflows/e2e.yml (manual dispatch + nightly). Labels are the app's real strings; when
+# a screen's copy changes, update this flow in the same change.
+appId: com.bolidtester.app
+name: Simulator smoke — connect, read faults, clear
+---
+- launchApp:
+    clearState: true
+# Android 13+ may ask for the notification permission on first launch; dismiss it if it shows.
+- tapOn:
+    text: '(?i)(allow|don.t allow)'
+    optional: true
+# A fresh install defaults to the real Bluetooth adapter; the splash fades once stores hydrate.
+- extendedWaitUntil:
+    visible: 'Scan for adapters'
+    timeout: 30000
+
+# Settings → Developer & simulator (collapsed by default, plan 07) → simulator with one injected fault.
+- tapOn: 'Settings'
+- scrollUntilVisible:
+    element:
+      text: '(?i)developer & simulator.*'
+    direction: DOWN
+# The header reads upper-case on Android and is labelled "Developer & simulator. Show".
+- tapOn: '(?i)developer & simulator.*'
+- scrollUntilVisible:
+    element:
+      text: 'Simulator \(no car\)'
+    direction: DOWN
+- tapOn: 'Simulator \(no car\)'
+- scrollUntilVisible:
+    element:
+      text: 'P0299'
+    direction: DOWN
+- tapOn: 'P0299'
+
+# Connect tab → connect to the simulator; a successful connect moves on to vehicle selection.
+- tapOn: 'Connect'
+- tapOn: 'Connect to simulator'
+- extendedWaitUntil:
+    visible: 'Pick a car, or use Auto / Generic for any OBD2 car'
+    timeout: 30000
+- tapOn: 'Connect'
+- assertVisible: 'Connected'
+
+# Faults tab → the injected code is read back.
+- tapOn: 'Faults'
+- extendedWaitUntil:
+    visible: 'P0299'
+    timeout: 20000
+- assertVisible: 'Stored \(1\)'
+
+# Clear codes → confirm in the system alert (Android may render the button upper-case).
+- scrollUntilVisible:
+    element:
+      text: 'Clear codes'
+    direction: DOWN
+- tapOn: 'Clear codes'
+- assertVisible: 'Clear fault codes\?'
+- tapOn: '(?i)clear'
+- extendedWaitUntil:
+    visible: 'Stored \(0\)'
+    timeout: 20000
+- assertNotVisible: 'P0299'

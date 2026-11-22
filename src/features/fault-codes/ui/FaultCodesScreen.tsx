@@ -1,14 +1,26 @@
 import React, { useState } from 'react';
-import { Alert } from 'react-native';
-import { router } from 'expo-router';
-import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Switch } from 'tamagui';
-import { Share2, FileText } from 'lucide-react-native';
-import { Screen, ValueCard } from '@/shared/ui';
+import { YStack, XStack, Card, Text, Paragraph, Button, Spinner } from 'tamagui';
+import { useRouter } from 'expo-router';
+import { Share2, FileText, FileStack } from 'lucide-react-native';
+import {
+  Screen,
+  ValueCard,
+  appAlert,
+  SectionTitle,
+  usePalette,
+  HIT_SLOP,
+  AccessibleSwitch,
+} from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
-import { getVehicleProfile, vehicleLabel } from '@/shared/vehicles';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
+import { curatedProfileId, vehicleLabel } from '@/shared/vehicles';
 import { matchFaultGuide } from '@/shared/vehicles/faultGuides';
-import { formatDtcReport, buildDtcReportHtml, type DtcCheckReport } from '@/shared/lib/dtcReport';
+import {
+  formatDtcReport,
+  buildDtcReportHtml,
+  dtcCheckFromRead,
+  type DtcCheckReport,
+} from '@/shared/lib/dtcReport';
 import { vagCodeForDtc, type Dtc } from '@/shared/obd-core/obd/dtc';
 import type { MonitorStatus } from '@/shared/obd-core/obd/readiness';
 import { driveCyclePattern, DRIVE_CYCLE_DISCLAIMER } from '@/shared/obd-core';
@@ -16,78 +28,56 @@ import type { FreezeFrame } from '@/shared/obd-core/session/DiagnosticSession';
 import { useDtcs } from '../hooks/useDtcs';
 import { useDtcExport } from '../hooks/useDtcExport';
 import { useCoachStore } from '../model/coachStore';
+import { DtcDetailSheet } from './DtcDetailSheet';
+import { CodeFreezeFrame, GuideLinks } from './DtcGuideParts';
+import { useTranslation } from '@/shared/i18n';
 
-/** A single DTC with an expandable "Guide" (6b.7): the note, deep-links to related data / routine,
- *  and the captured freeze frame for this code. */
+/** A single DTC: tap the code (or description) for the detail sheet; the inline **Guide** (6b.7)
+ *  shows the note, deep-links to related data / routine and the captured freeze frame. */
 function DtcRow({
-  code,
-  description,
+  dtc,
   profileId,
   freezeFrames,
+  onOpenDetail,
 }: {
-  code: string;
-  description: string;
+  dtc: Dtc;
   profileId: string;
   freezeFrames: FreezeFrame[];
+  onOpenDetail: (dtc: Dtc) => void;
 }) {
+  const { t } = useTranslation('faultCodes');
   const [open, setOpen] = useState(false);
+  const { code, description } = dtc;
   const guide = matchFaultGuide(profileId, code, vagCodeForDtc(code) || undefined);
-  const ff = guide.freezeFrame ? freezeFrames.find((f) => f.triggerDtc === code) : undefined;
-  const hasLinks = Boolean(guide.relatedDids?.length) || Boolean(guide.routineId);
 
   return (
     <Card bordered padding="$3" gap="$2">
       <XStack justifyContent="space-between" alignItems="center">
-        <Text fontWeight="800" color="$red10">
-          {code}
-        </Text>
-        <Button size="$2" chromeless onPress={() => setOpen((v) => !v)}>
-          {open ? 'Hide guide' : 'Guide'}
+        <YStack
+          flex={1}
+          onPress={() => onOpenDetail(dtc)}
+          pressStyle={{ opacity: 0.6 }}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={t('row.a11y', { code, description })}
+        >
+          <Text fontWeight="800" color="$statusError">
+            {code}
+          </Text>
+          <Paragraph theme="alt2" fontSize="$2">
+            {description}
+          </Paragraph>
+        </YStack>
+        <Button size="$3" hitSlop={HIT_SLOP} chromeless onPress={() => setOpen((v) => !v)}>
+          {open ? t('row.hideGuide') : t('row.guide')}
         </Button>
       </XStack>
-      <Paragraph theme="alt2" fontSize="$2">
-        {description}
-      </Paragraph>
 
       {open ? (
         <YStack gap="$2" backgroundColor="$color2" padding="$2" borderRadius="$3">
           <Paragraph fontSize="$2">{guide.note}</Paragraph>
-          {hasLinks ? (
-            <XStack gap="$2" flexWrap="wrap">
-              {guide.relatedDids?.length ? (
-                <Button
-                  size="$2"
-                  theme="blue"
-                  onPress={() =>
-                    router.push(`/extended?dids=${encodeURIComponent(guide.relatedDids!.join(','))}`)
-                  }
-                >
-                  Related data
-                </Button>
-              ) : null}
-              {guide.routineId ? (
-                <Button size="$2" theme="blue" onPress={() => router.push('/routines')}>
-                  Open routine
-                </Button>
-              ) : null}
-            </XStack>
-          ) : null}
-          {ff ? (
-            <YStack gap="$1">
-              <Text fontWeight="700" fontSize="$2">
-                Freeze frame
-              </Text>
-              <XStack flexWrap="wrap" gap="$2">
-                {ff.values.map((v) => (
-                  <ValueCard key={v.pid} name={v.name} value={v.value} unit={v.unit} />
-                ))}
-              </XStack>
-            </YStack>
-          ) : guide.freezeFrame ? (
-            <Paragraph theme="alt2" fontSize="$2">
-              No freeze frame captured for this code.
-            </Paragraph>
-          ) : null}
+          <GuideLinks guide={guide} />
+          <CodeFreezeFrame code={code} guide={guide} freezeFrames={freezeFrames} />
         </YStack>
       ) : null}
     </Card>
@@ -99,27 +89,30 @@ function Section({
   codes,
   profileId,
   freezeFrames,
+  onOpenDetail,
 }: {
   title: string;
   codes: Dtc[];
   profileId: string;
   freezeFrames: FreezeFrame[];
+  onOpenDetail: (dtc: Dtc) => void;
 }) {
+  const { t } = useTranslation('faultCodes');
   return (
     <YStack gap="$2">
-      <Text fontWeight="800" fontSize="$5">
+      <SectionTitle>
         {title} ({codes.length})
-      </Text>
+      </SectionTitle>
       {codes.length === 0 ? (
-        <Paragraph theme="alt2">None</Paragraph>
+        <Paragraph theme="alt2">{t('section.none')}</Paragraph>
       ) : (
         codes.map((d) => (
           <DtcRow
             key={`${title}-${d.code}`}
-            code={d.code}
-            description={d.description}
+            dtc={d}
             profileId={profileId}
             freezeFrames={freezeFrames}
+            onOpenDetail={onOpenDetail}
           />
         ))
       )}
@@ -128,24 +121,51 @@ function Section({
 }
 
 function ReadinessPanel({ readiness }: { readiness: MonitorStatus }) {
+  const { t } = useTranslation('faultCodes');
   const supported = readiness.monitors.filter((m) => m.supported);
   const complete = supported.filter((m) => m.complete).length;
   const notReady = supported.filter((m) => !m.complete);
   return (
-    <Card bordered padding="$3" gap="$1">
-      <XStack justifyContent="space-between" alignItems="center">
-        <Text fontWeight="800">Readiness</Text>
-        <Text fontWeight="800" color={readiness.milOn ? '$red10' : '$green10'}>
-          MIL {readiness.milOn ? 'ON' : 'off'}
+    // A polite live region (plan 20): a MIL that switches on, or a changed monitor count, is
+    // announced without moving focus. Not on the 1 Hz live values — they would never stop talking.
+    <Card
+      bordered
+      padding="$3"
+      gap="$1"
+      accessible
+      accessibilityLabel={`${t('readiness.a11y', {
+        mil: readiness.milOn ? t('readiness.milOnA11y') : t('readiness.milOffA11y'),
+        complete,
+        total: supported.length,
+        count: readiness.dtcCount,
+      })}${notReady.length > 0 ? ` ${t('readiness.notReadyA11y', { names: notReady.map((m) => m.name).join(', ') })}` : ''}`}
+      accessibilityLiveRegion="polite"
+      testID="readiness-panel"
+    >
+      {/* Wraps when the title and the MIL state don't fit one line (longer languages, large text). */}
+      <XStack flexWrap="wrap" columnGap="$3" alignItems="center">
+        <Text flexShrink={1} fontWeight="800">
+          {t('readiness.title')}
+        </Text>
+        <Text
+          marginLeft="auto"
+          fontWeight="800"
+          color={readiness.milOn ? '$statusError' : '$statusOk'}
+        >
+          {readiness.milOn ? t('readiness.milOn') : t('readiness.milOff')}
         </Text>
       </XStack>
       <Paragraph theme="alt2" fontSize="$2">
-        {complete}/{supported.length} monitors complete · {readiness.ignition} ignition ·{' '}
-        {readiness.dtcCount} DTC(s)
+        {t('readiness.summary', {
+          complete,
+          total: supported.length,
+          ignition: t(`readiness.ignitionType.${readiness.ignition}`),
+          count: readiness.dtcCount,
+        })}
       </Paragraph>
       {notReady.length > 0 ? (
         <Paragraph theme="alt2" fontSize="$2">
-          Not ready: {notReady.map((m) => m.name).join(', ')}
+          {t('readiness.notReady', { names: notReady.map((m) => m.name).join(', ') })}
         </Paragraph>
       ) : null}
     </Card>
@@ -157,6 +177,7 @@ function ReadinessPanel({ readiness }: { readiness: MonitorStatus }) {
  *  live-updating readiness comes from EngineHost's 30 s watcher via coachStore, falling back to the
  *  last manual read. */
 function CoachPanel({ readiness }: { readiness: MonitorStatus | null }) {
+  const { t } = useTranslation('faultCodes');
   const enabled = useCoachStore((s) => s.enabled);
   const coachReadiness = useCoachStore((s) => s.readiness);
   const setEnabled = useCoachStore((s) => s.setEnabled);
@@ -170,22 +191,23 @@ function CoachPanel({ readiness }: { readiness: MonitorStatus | null }) {
     <Card bordered padding="$3" gap="$2">
       <XStack justifyContent="space-between" alignItems="center">
         <YStack flex={1}>
-          <Text fontWeight="800">Drive-cycle coach</Text>
+          <Text fontWeight="800">{t('coach.title')}</Text>
           <Paragraph theme="alt2" fontSize="$2">
             {incomplete.length > 0
-              ? `${incomplete.length} monitor(s) not ready`
-              : 'All monitors ready'}
+              ? t('coach.notReady', { count: incomplete.length })
+              : t('coach.allReady')}
           </Paragraph>
         </YStack>
-        <Switch checked={enabled} onCheckedChange={(v) => (v ? setEnabled(true) : reset())}>
-          <Switch.Thumb />
-        </Switch>
+        <AccessibleSwitch
+          checked={enabled}
+          onCheckedChange={(v) => (v ? setEnabled(true) : reset())}
+          accessibilityLabel={t('coach.title')}
+        />
       </XStack>
 
       {enabled ? (
         <Paragraph theme="alt2" fontSize="$2">
-          Checking readiness every 30 s while connected. You'll get a notification as each monitor
-          completes, and once when all are ready.
+          {t('coach.help')}
         </Paragraph>
       ) : null}
 
@@ -210,8 +232,8 @@ function CoachPanel({ readiness }: { readiness: MonitorStatus | null }) {
           </Paragraph>
         </YStack>
       ) : enabled ? (
-        <Paragraph color="$green10" fontWeight="700">
-          All readiness monitors complete.
+        <Paragraph color="$statusOk" fontWeight="700">
+          {t('coach.complete')}
         </Paragraph>
       ) : null}
     </Card>
@@ -219,13 +241,12 @@ function CoachPanel({ readiness }: { readiness: MonitorStatus | null }) {
 }
 
 function FreezeFrameView({ ff }: { ff: FreezeFrame }) {
+  const { t } = useTranslation('faultCodes');
   return (
     <YStack gap="$2">
-      <Text fontWeight="800" fontSize="$5">
-        Freeze frame
-      </Text>
+      <SectionTitle>{t('freezeFrame.title')}</SectionTitle>
       <Paragraph theme="alt2" fontSize="$2">
-        Captured when {ff.triggerDtc ?? 'a code'} set
+        {t('freezeFrame.captured', { code: ff.triggerDtc ?? t('freezeFrame.aCode') })}
       </Paragraph>
       <XStack flexWrap="wrap" gap="$2">
         {ff.values.map((v) => (
@@ -237,47 +258,34 @@ function FreezeFrameView({ ff }: { ff: FreezeFrame }) {
 }
 
 export function FaultCodesScreen() {
+  const { t } = useTranslation('faultCodes');
+  const palette = usePalette();
   const status = useSessionStore((s) => s.status);
   const info = useSessionStore((s) => s.info);
-  const selectedProfileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
+  // Fault guides are curated per registry profile; a garage car uses its base profile's guides.
+  const guideProfileId = curatedProfileId(profile);
   const { stored, pending, permanent, readiness, freezeFrames, loading, error, refresh, clear } =
     useDtcs();
   const { exportReport, busy: exporting } = useDtcExport();
+  const [detail, setDetail] = useState<Dtc | null>(null);
 
+  const deviceName = useSessionStore((s) => s.deviceName);
+  const router = useRouter();
   // Snapshot the current read as the normalised report shape, shared by both the Markdown export and
-  // the HTML "send to my mechanic" report. `protocol` is HTML-only (ignored by the Markdown renderer).
-  const buildCheck = (): DtcCheckReport => {
-    const profile = getVehicleProfile(selectedProfileId);
-    const supported = readiness ? readiness.monitors.filter((m) => m.supported) : [];
-    return {
-      ts: Date.now(),
-      vehicleLabel: vehicleLabel(profile),
-      vin: info?.vin ?? null,
-      protocol: info?.protocol ?? null,
-      milOn: readiness ? readiness.milOn : null,
-      stored,
-      pending,
-      permanent,
-      monitorsComplete: readiness ? supported.filter((m) => m.complete).length : null,
-      monitorsTotal: readiness ? supported.length : null,
-      notReady: readiness ? supported.filter((m) => !m.complete).map((m) => m.name) : [],
-      freezeFrame: freezeFrames[0]
-        ? {
-            triggerDtc: freezeFrames[0].triggerDtc,
-            values: freezeFrames[0].values.map((v) => ({ name: v.name, value: v.value, unit: v.unit })),
-          }
-        : null,
-      freezeFrames: freezeFrames.map((ff) => ({
-        triggerDtc: ff.triggerDtc,
-        values: ff.values.map((v) => ({ name: v.name, value: v.value, unit: v.unit })),
-      })),
-    };
-  };
+  // the HTML "send to my mechanic" report (`dtcCheckFromRead`, also used by the vehicle report).
+  const buildCheck = (): DtcCheckReport =>
+    dtcCheckFromRead(
+      { stored, pending, permanent, readiness, freezeFrames },
+      info,
+      vehicleLabel(profile),
+      { adapter: deviceName },
+    );
 
   const onExport = async () => {
     const body = formatDtcReport([buildCheck()], { title: 'Bolid Tester — fault codes' });
     const uri = await exportReport('bolid-fault-codes', body);
-    if (!uri) Alert.alert('Export unavailable', 'Sharing is not available on this device.');
+    if (!uri) appAlert(t('export.unavailable'), t('export.noSharing'));
   };
 
   const onShareReport = async () => {
@@ -285,41 +293,50 @@ export function FaultCodesScreen() {
     const uri = await exportReport('bolid-diagnostic-report', html, {
       ext: 'html',
       mimeType: 'text/html',
-      dialogTitle: 'Share diagnostic report',
+      dialogTitle: t('export.shareDialog'),
     });
-    if (!uri) Alert.alert('Share unavailable', 'Sharing is not available on this device.');
+    if (!uri) appAlert(t('export.shareUnavailable'), t('export.noSharing'));
   };
 
   const confirmClear = () =>
-    Alert.alert(
-      'Clear fault codes?',
-      'This erases stored codes and resets readiness monitors. Codes will return if the fault persists.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Clear', style: 'destructive', onPress: () => void clear() },
-      ],
-    );
+    appAlert(t('clear.title'), t('clear.body'), [
+      { text: t('common:actions.cancel'), style: 'cancel' },
+      { text: t('clear.confirm'), style: 'destructive', onPress: () => void clear() },
+    ]);
 
   if (status !== 'connected') {
     return (
-      <Screen title="Fault codes">
-        <Paragraph theme="alt2">Not connected.</Paragraph>
+      <Screen title={t('title')}>
+        <Paragraph theme="alt2">{t('notConnected')}</Paragraph>
       </Screen>
     );
   }
 
   return (
-    <Screen title="Fault codes" onRefresh={refresh} refreshing={loading}>
-      {error ? <Paragraph color="$red10">{error}</Paragraph> : null}
+    <Screen title={t('title')} onRefresh={refresh} refreshing={loading}>
+      {error ? <Paragraph color="$statusError">{error}</Paragraph> : null}
       {readiness ? <ReadinessPanel readiness={readiness} /> : null}
       <CoachPanel readiness={readiness} />
-      <Section title="Stored" codes={stored} profileId={selectedProfileId} freezeFrames={freezeFrames} />
-      <Section title="Pending" codes={pending} profileId={selectedProfileId} freezeFrames={freezeFrames} />
       <Section
-        title="Permanent"
-        codes={permanent}
-        profileId={selectedProfileId}
+        title={t('section.stored')}
+        codes={stored}
+        profileId={guideProfileId}
         freezeFrames={freezeFrames}
+        onOpenDetail={setDetail}
+      />
+      <Section
+        title={t('section.pending')}
+        codes={pending}
+        profileId={guideProfileId}
+        freezeFrames={freezeFrames}
+        onOpenDetail={setDetail}
+      />
+      <Section
+        title={t('section.permanent')}
+        codes={permanent}
+        profileId={guideProfileId}
+        freezeFrames={freezeFrames}
+        onOpenDetail={setDetail}
       />
       {freezeFrames.map((ff) => (
         <FreezeFrameView key={ff.frame ?? ff.triggerDtc ?? 0} ff={ff} />
@@ -327,10 +344,10 @@ export function FaultCodesScreen() {
 
       <XStack gap="$3" marginTop="$2">
         <Button flex={1} onPress={refresh} icon={loading ? () => <Spinner /> : undefined}>
-          Re-read
+          {t('actions.reread')}
         </Button>
         <Button flex={1} theme="red" onPress={confirmClear} disabled={loading}>
-          Clear codes
+          {t('actions.clear')}
         </Button>
       </XStack>
       <XStack gap="$3" marginTop="$2">
@@ -338,19 +355,32 @@ export function FaultCodesScreen() {
           flex={1}
           onPress={onExport}
           disabled={exporting}
-          icon={exporting ? () => <Spinner /> : () => <Share2 size={18} color="#2bb673" />}
+          icon={exporting ? () => <Spinner /> : <Share2 size={18} color={palette.accent} />}
         >
-          Export report
+          {t('actions.export')}
         </Button>
         <Button
           flex={1}
           onPress={onShareReport}
           disabled={exporting}
-          icon={exporting ? () => <Spinner /> : () => <FileText size={18} color="#2bb673" />}
+          icon={exporting ? () => <Spinner /> : <FileText size={18} color={palette.accent} />}
         >
-          Share report
+          {t('actions.share')}
         </Button>
       </XStack>
+      <Button
+        marginTop="$2"
+        onPress={() => router.push('/report')}
+        icon={<FileStack size={18} color={palette.accent} />}
+      >
+        {t('actions.fullReport')}
+      </Button>
+      <DtcDetailSheet
+        dtc={detail}
+        profile={profile}
+        freezeFrames={freezeFrames}
+        onClose={() => setDetail(null)}
+      />
     </Screen>
   );
 }

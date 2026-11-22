@@ -1,0 +1,18 @@
+{
+  "title": "Battery & charging",
+  "notConnected": "Connect to a car (or the simulator) to capture voltage.",
+  "subtitle": "Voltage-based health — not a load test.",
+  "live": "Live voltage",
+  "capturing": "Capturing… (start the engine to catch the crank dip)",
+  "capture": "Capture (~6 s)",
+  "verdict": {
+    "good": "GOOD",
+    "fair": "FAIR",
+    "weak": "WEAK",
+    "unknown": "UNKNOWN"
+  },
+  "charge": "{{pct}}% charge",
+  "resting": "Resting",
+  "crankDip": "Crank dip",
+  "charging": "Charging"
+}

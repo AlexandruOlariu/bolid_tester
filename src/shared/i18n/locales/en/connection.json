@@ -1,0 +1,220 @@
+{
+  "title": "Connect",
+  "subtitle": {
+    "ble": "Pair with your OBD2 Bluetooth adapter",
+    "wifi": "Connect to your Wi-Fi OBD2 adapter",
+    "spp": "Connect to your paired classic Bluetooth adapter",
+    "mock": "Pair with your OBD2 Bluetooth adapter"
+  },
+  "status": {
+    "adapter": "OBD2 adapter",
+    "a11y": "OBD2 adapter: {{status}}"
+  },
+  "notice": {
+    "sppFallback": "Classic Bluetooth adapters work only on Android, so the app switched to Bluetooth LE. Use a Bluetooth LE or Wi-Fi OBD2 adapter on this device.",
+    "webSourceFallback": "A browser cannot reach Wi-Fi or classic Bluetooth adapters, so the app switched to Bluetooth LE. Use a Bluetooth LE OBD2 adapter in Chrome or Edge, or the simulator."
+  },
+  "wifi": {
+    "title": "Wi-Fi adapter",
+    "join": "Join the adapter’s Wi-Fi network first (usually <b>WiFi_OBDII</b>, no password). On Android, if the phone warns the network has no internet, choose <i>Stay connected</i>.",
+    "address": "Adapter address: <b>{{endpoint}}</b> — change it in Settings → Developer & simulator → Adapter source.",
+    "connect": "Connect over Wi-Fi",
+    "useBluetooth": "Use a Bluetooth adapter"
+  },
+  "mock": {
+    "notice": "Simulator mode is on — readings are not from a real car.\nEmulating: <b>{{vehicle}}</b>",
+    "connect": "Connect to simulator",
+    "useReal": "Use a real adapter"
+  },
+  "ble": {
+    "scanning": "Scanning…",
+    "scan": "Scan for adapters",
+    "noDevicesAndroid": "No devices yet. Plug in the adapter, switch the ignition on, then scan. If the adapter is already paired in Android’s Bluetooth settings it may have stopped advertising — “Forget” it there first, or connect by address below.",
+    "noDevices": "No devices yet. Plug in the adapter, switch the ignition on, then scan.",
+    "iosHint": "If the adapter is not listed, turn it off and on; iOS does not pair OBD2 BLE adapters in Settings.",
+    "byAddress": "Connect by address",
+    "byAddressHelp": "If the adapter never shows up in the scan, copy its Bluetooth MAC (from Android Settings → Bluetooth) and connect directly.",
+    "macLabel": "Adapter Bluetooth MAC address",
+    "connect": "Connect",
+    "useWifi": "Using a Wi-Fi adapter instead?",
+    "useSpp": "Using a classic Bluetooth (3.0) adapter instead?"
+  },
+  "prompt": {
+    "turnOnFailed": "Couldn’t turn Bluetooth on automatically — open Quick Settings and enable it.",
+    "unsupportedTitle": "Bluetooth LE not available",
+    "unsupportedBody": "This device doesn’t support Bluetooth Low Energy, so a wireless OBD2 adapter can’t be used. You can still use the built-in simulator (Settings → Developer & simulator).",
+    "permissionTitle": "Bluetooth permission needed",
+    "permissionIos": "Allow Bluetooth for Bolid Tester in Settings, then return here.",
+    "permissionAndroid": "Allow “Nearby devices” for Bolid Tester in system settings, then return here.",
+    "openSettings": "Open settings",
+    "offTitle": "Bluetooth is off",
+    "offAndroid": "Turn Bluetooth on to scan for your OBD2 adapter.",
+    "offIos": "Open Control Center and turn Bluetooth on to scan for your OBD2 adapter.",
+    "turningOn": "Turning on…",
+    "turnOn": "Turn on Bluetooth"
+  },
+  "device": {
+    "unnamed": "(unnamed)",
+    "connectTo": "Connect to {{name}}",
+    "knownA11y": "Known adapter: {{summary}}",
+    "known": {
+      "good": "known good",
+      "ok": "known ok",
+      "poor": "known poor"
+    }
+  },
+  "banner": {
+    "a11y": "Simulator mode is on. Readings are not from a real car.",
+    "text": "Simulator mode · emulating {{vehicle}}",
+    "useReal": "Use real adapter"
+  },
+  "diag": {
+    "shareTitle": "Connection diagnostics",
+    "failedAt": "Failed at: {{stage}}",
+    "whatToTry": "What to try",
+    "hideDetails": "Hide connection details",
+    "showDetails": "Show connection details",
+    "details": "Details",
+    "device": "Device: {{name}}",
+    "unknown": "unknown",
+    "reached": "Got as far as: {{stage}}",
+    "bleLink": "Link: MTU {{mtu}} ({{payload}} bytes per write) · service {{service}} · {{mode}}",
+    "writeNoResponse": "write without response",
+    "writeWithResponse": "write with response",
+    "wifiLink": "Link: Wi-Fi (TCP socket)",
+    "wifiLinkTo": "Link: Wi-Fi (TCP socket) to {{target}}",
+    "sppLink": "Link: Classic Bluetooth (serial port)",
+    "sppLinkTo": "Link: Classic Bluetooth (serial port) to {{target}}",
+    "noTraffic": "No adapter traffic in this attempt.",
+    "copy": "Copy details",
+    "openErrorLog": "Open error log"
+  },
+  "spp": {
+    "title": "Paired adapters",
+    "help": "Classic Bluetooth (“3.0”) adapters connect as a paired device — pick yours below. The bus sniffer is not available over classic Bluetooth.",
+    "pairFirst": "Pair the adapter first: Android Settings → Bluetooth → pair <b>OBDII</b> (PIN 1234 or 0000), then come back.",
+    "openSettings": "Open Bluetooth settings",
+    "refresh": "Refresh",
+    "useBle": "Use a Bluetooth LE adapter",
+    "permissionDenied": "Bluetooth permission denied. Allow “Nearby devices” for Bolid Tester in system settings, then refresh the list."
+  },
+  "web": {
+    "note": "Works in Chrome and Edge on a computer or an Android phone, over HTTPS. Not in Safari, Firefox or on an iPhone.",
+    "unsupportedTitle": "Bluetooth adapters are not supported in this browser",
+    "unsupported": "This browser cannot talk to Bluetooth adapters. Use Chrome or Edge on a computer or on Android, over HTTPS — Safari, Firefox and every iPhone browser do not support Web Bluetooth. The simulator still works here.",
+    "useSimulator": "Use the simulator",
+    "instructions": "Plug the adapter into the OBD2 port and switch the ignition on. The browser then lists nearby Bluetooth devices — pick your OBD2 adapter (often named OBDII, Vgate or IOS-Vlink).",
+    "choose": "Choose adapter & connect",
+    "trySimulator": "No adapter? Try the simulator"
+  },
+  "diagnose": {
+    "stage": {
+      "bluetooth": "Phone Bluetooth",
+      "transport": "Bluetooth link",
+      "init": "Adapter start-up",
+      "probe": "Car not answering",
+      "identify": "Reading car details",
+      "wifi": "Wi-Fi link",
+      "spp": "Classic Bluetooth link"
+    },
+    "wifiUnreachable": {
+      "title": "Can’t reach the Wi-Fi adapter",
+      "explanation": "The phone is not on the adapter’s Wi-Fi network, or the adapter uses a different address.",
+      "s1": "Join the adapter’s Wi-Fi network (usually “WiFi_OBDII”, no password). On Android, choose “Stay connected” if the phone warns the network has no internet.",
+      "s2": "Check the adapter’s address: most use 192.168.0.10, port 35000 (Settings → Developer & simulator → Adapter source).",
+      "s3": "Turn mobile data off, so the phone does not send the connection over the mobile network instead.",
+      "s4": "On iPhone, allow Local Network for Bolid Tester (Settings → Privacy & Security → Local Network)."
+    },
+    "sppUnreachable": {
+      "title": "Can’t open the Classic Bluetooth adapter",
+      "explanation": "The adapter is paired but not reachable.",
+      "s1": "Power-cycle the adapter: unplug it for 10 seconds, plug it back in, then reconnect.",
+      "s2": "Make sure no other app (e.g. Torque) holds the connection — close it, or turn its auto-connect off.",
+      "s3": "Keep the phone close to the adapter, with the ignition on.",
+      "s4": "Still failing? Unpair the adapter in Android Settings → Bluetooth, pair it again (PIN 1234 or 0000), then refresh the list."
+    },
+    "btPermission": {
+      "title": "Bluetooth permission needed",
+      "explanation": "Bolid Tester is not allowed to use Bluetooth, so it cannot reach the adapter.",
+      "s1": "Open system settings and allow “Nearby devices” (Android) or Bluetooth (iOS) for Bolid Tester.",
+      "s2": "Come back here and connect again."
+    },
+    "bleUnsupported": {
+      "title": "Bluetooth LE not available",
+      "explanation": "This device doesn’t support Bluetooth Low Energy, so a wireless OBD2 adapter can’t be used.",
+      "s1": "Use a phone or tablet with Bluetooth Low Energy.",
+      "s2": "Explore the app with the built-in simulator (Settings → Developer & simulator → Adapter source)."
+    },
+    "btOff": {
+      "title": "Bluetooth is off",
+      "explanation": "The phone’s Bluetooth radio is off, so the app can’t reach the adapter.",
+      "s1": "Turn Bluetooth on (Quick Settings on Android, Control Center on iOS).",
+      "s2": "Scan for the adapter again once it is on."
+    },
+    "notBleSerial": {
+      "title": "Not a Bluetooth LE serial adapter",
+      "explanation": "This device does not expose the serial-over-BLE characteristics an ELM327 uses — it may be a classic Bluetooth (SPP) adapter, which connects as a paired device instead.",
+      "s1": "Check that you picked the OBD2 adapter, not another nearby device.",
+      "s2": "A classic Bluetooth (“3.0”) adapter: on Android, pair it in the phone’s Bluetooth settings and choose Classic Bluetooth (Settings → Developer & simulator → Adapter source). iPhones cannot use classic adapters.",
+      "s3": "Scan again and pick the adapter by name (Vlink, OBDII, VEEPEAK…)."
+    },
+    "adapterSilent": {
+      "title": "Adapter not answering",
+      "explanation": "The adapter accepted the link but did not answer `ATZ` — it is unpowered or asleep.",
+      "s1": "Check the adapter is pushed fully into the OBD2 port and its light is on.",
+      "s2": "Wake it: unplug the adapter for 10 seconds, plug it back in, then reconnect.",
+      "s3": "Move the phone closer to the adapter.",
+      "s4wifi": "Still failing? Check the phone is still on the adapter’s Wi-Fi network.",
+      "s4spp": "Still failing? Close any other OBD2 app that may hold the adapter, then reconnect.",
+      "s4ble": "Still failing? Remove the adapter from the phone’s Bluetooth list and scan again."
+    },
+    "carSilent": {
+      "title": "The car is not answering",
+      "explanation": "The adapter is working, but the car’s engine computer did not answer the first OBD2 request (“0100”). This almost always means the ignition is off.",
+      "s1": "Turn the ignition to ON — engine running is most reliable.",
+      "s2": "Check the adapter is fully seated in the OBD2 port.",
+      "s3": "Reconnect."
+    },
+    "busInit": {
+      "title": "Could not start the diagnostic bus",
+      "explanation": "The adapter could not open a session on the car’s bus (“UNABLE TO CONNECT” / “BUS INIT”). Older cars use the slow K-line bus, which needs the ignition on and a few seconds to start.",
+      "s1": "Turn the ignition to ON and wait 5 seconds before connecting.",
+      "s2": "Reconnect — a K-line start-up often succeeds on the second try.",
+      "s3": "Check the adapter is fully seated in the OBD2 port.",
+      "s4": "Check the car has OBD2 / EOBD (EU: petrol from 2001, diesel from 2004)."
+    },
+    "linkStalled": {
+      "title": "The link stopped answering",
+      "explanation": "The car answered at first, but a request timed out while the app was reading the car’s details — the {{link}} or the adapter stalled.",
+      "s1": "Reconnect.",
+      "s2": "Move the phone closer to the adapter.",
+      "s3": "If it keeps happening, unplug the adapter for 10 seconds and plug it back in."
+    },
+    "failed": {
+      "title": "Connection failed",
+      "error": "The connection failed: {{error}}",
+      "errorTo": "The connection to {{device}} failed: {{error}}",
+      "unknown": "The connection failed for an unknown reason.",
+      "unknownTo": "The connection to {{device}} failed for an unknown reason.",
+      "s1": "Check the adapter is plugged in and its light is on.",
+      "s2": "Move the phone closer to the adapter.",
+      "s3wifi": "Rejoin the adapter’s Wi-Fi network, then reconnect.",
+      "s3bt": "Turn Bluetooth off and on again, then reconnect.",
+      "s4": "Open the error log for the technical details."
+    }
+  },
+  "service": {
+    "linkLost": "Adapter link lost — the connection dropped unexpectedly. Check the adapter is seated in the OBD2 port and reconnect.",
+    "flapPaused": "The link dropped 3 times in a minute — auto-reconnect paused. Check the adapter is seated and reconnect manually.",
+    "reconnecting": "Reconnecting to the adapter… attempt {{attempt}} of {{total}}.",
+    "lastError": "Last error: {{error}}",
+    "reconnectFailed_one": "Auto-reconnect failed after {{count}} attempt. Reconnect manually when the adapter is powered and back in range.",
+    "reconnectFailed_other": "Auto-reconnect failed after {{count}} attempts. Reconnect manually when the adapter is powered and back in range."
+  },
+  "scan": {
+    "permissionDenied": "Bluetooth permission denied. Allow “Nearby devices” (Android 12+) or Location (Android 11 and below) for Bolid Tester in system settings, turn Bluetooth on, then scan again.",
+    "permissionDeniedIos": "Bluetooth permission denied. Allow Bluetooth for Bolid Tester in Settings → Bolid Tester, then scan again.",
+    "off": "Bluetooth is off. Turn Bluetooth on, then scan again.",
+    "settling": "Bluetooth is not ready yet. Wait a moment, then scan again."
+  }
+}

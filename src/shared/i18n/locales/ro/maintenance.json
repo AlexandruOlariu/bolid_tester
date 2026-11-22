@@ -1,0 +1,34 @@
+{
+  "title": "Jurnal de întreținere",
+  "subtitle": "Kilometrajul îl introduci tu — nu este o valoare OBD2.",
+  "logbookFor": "Jurnal pentru <b>{{car}}</b>. Fiecare mașină are propriul jurnal — schimbă mașina din ecranul Vehicul.",
+  "odometer": "Kilometraj actual (km)",
+  "odometerPlaceholder": "de ex. 215000",
+  "odometerA11y": "Kilometrajul actual în kilometri",
+  "save": "Salvează",
+  "due": {
+    "kmOver": "depășit cu {{km}} km",
+    "inKm": "peste {{km}} km",
+    "daysOver": "depășit cu {{days}} z",
+    "inDays": "peste {{days}} z",
+    "noHistory": "fără istoric încă"
+  },
+  "status": {
+    "overdue": "DEPĂȘIT",
+    "soon": "CURÂND",
+    "ok": "OK",
+    "unknown": "NECUNOSCUT"
+  },
+  "logService": "Înregistrează un service (la kilometrajul de mai sus)",
+  "logToday": "Înregistrează „{{name}}” azi",
+  "item": {
+    "engine-oil": "Ulei motor și filtru",
+    "fuel-filter": "Filtru de combustibil (diesel)",
+    "air-filter": "Filtru de aer",
+    "cabin-filter": "Filtru de habitaclu/polen",
+    "timing-belt": "Curea de distribuție + pompă de apă",
+    "brake-fluid": "Lichid de frână",
+    "coolant": "Lichid de răcire",
+    "dpf-check": "Verificare filtru de particule (DPF)"
+  }
+}

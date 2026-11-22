@@ -11,6 +11,9 @@ build/
 .expo-shared/
 ios/
 android/
+# …but not the store screenshot sets (store/screenshots/<platform>/…), which are committed.
+!store/screenshots/android/
+!store/screenshots/ios/
 *.orig.*
 web-build/
 
@@ -18,3 +21,11 @@ web-build/
 *.log
 .DS_Store
 .env*.local
+
+# release signing (plan 08): never commit a keystore
+*.keystore
+*.jks
+
+# store submission (plan 30): the Play service-account JSON for `eas submit` and any other store
+# credential live here, never in git
+secrets/

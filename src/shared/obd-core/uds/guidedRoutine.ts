@@ -35,18 +35,15 @@ export interface GuidedRoutineDescriptor {
   /** Diagnostic session to enter first (default 0x03 extended). */
   session?: number;
   /** SecurityAccess to perform after the session, before the routine. Only run when a `seedToKey`
-   *  algorithm is supplied — the `level` alone (as a profile may declare) is not enough to unlock,
-   *  so without the algorithm the routine is attempted unlocked and the ECU decides (NRC 0x33 if it
-   *  needed access). See docs/features/routines.md. */
+   *  routine is supplied (from an installed security-access plugin, plan 23) — the `level` alone
+   *  (as a profile may declare) is not enough to unlock, so without one the routine is attempted
+   *  unlocked and the ECU decides (NRC 0x33 if it needed access). See docs/features/routines.md. */
   security?: { level: number; seedToKey?: (seed: number[]) => number[] };
 }
 
 /** Enter the diagnostic session, optionally unlock (SecurityAccess), then start the routine /
  *  output control. */
-export async function startGuidedRoutine(
-  send: UdsSend,
-  d: GuidedRoutineDescriptor,
-): Promise<void> {
+export async function startGuidedRoutine(send: UdsSend, d: GuidedRoutineDescriptor): Promise<void> {
   await enterSession(send, d.session ?? 0x03);
   if (d.security?.seedToKey) {
     await securityAccess(send, d.security.level, d.security.seedToKey);
@@ -70,7 +67,8 @@ export async function guidedRoutineResults(
   send: UdsSend,
   d: GuidedRoutineDescriptor,
 ): Promise<number[]> {
-  if (d.service !== '31') throw new UdsError('Results are only defined for RoutineControl routines');
+  if (d.service !== '31')
+    throw new UdsError('Results are only defined for RoutineControl routines');
   const res = await routineControl(send, 0x03, d.id);
   return res.slice(2 + d.id.length / 2);
 }

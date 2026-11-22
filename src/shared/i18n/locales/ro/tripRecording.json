@@ -1,0 +1,81 @@
+{
+  "title": "Călătorii",
+  "subtitle": "Înregistrează date live și exportă-le",
+  "recording_one": "Se înregistrează… {{count}} eșantion",
+  "recording_few": "Se înregistrează… {{count}} eșantioane",
+  "recording_other": "Se înregistrează… {{count}} de eșantioane",
+  "notRecording": "Nu se înregistrează",
+  "stop": "Oprește",
+  "record": "Înregistrează",
+  "shareCsv": "Partajează CSV",
+  "exportDialog": "Exportă călătoria",
+  "notify": {
+    "title": "Călătorie înregistrată",
+    "body_one": "{{seconds}} s, {{count}} eșantion",
+    "body_few": "{{seconds}} s, {{count}} eșantioane",
+    "body_other": "{{seconds}} s, {{count}} de eșantioane"
+  },
+  "list": {
+    "title": "Călătorii salvate",
+    "empty": "Nicio călătorie încă.",
+    "filterA11y": "Arată călătoriile pentru",
+    "allCars": "Toate mașinile ({{count}})",
+    "unknownCar": "Mașină necunoscută",
+    "removedCar": "Mașină ștearsă",
+    "samples_one": "{{count}} eșantion",
+    "samples_few": "{{count}} eșantioane",
+    "samples_other": "{{count}} de eșantioane",
+    "markers_one": "{{count}} marcaj",
+    "markers_few": "{{count}} marcaje",
+    "markers_other": "{{count}} de marcaje",
+    "open": "Deschide",
+    "delete": "Șterge"
+  },
+  "detail": {
+    "title": "Călătorie",
+    "saved": "Călătorie salvată",
+    "notFound": "Această călătorie nu a fost găsită — poate a fost ștearsă.",
+    "back": "Înapoi la călătorii",
+    "duration": "Durată",
+    "samples": "Eșantioane",
+    "obdDistance": "Distanță OBD",
+    "gpsDistance": "Distanță GPS",
+    "loading": "Se încarcă călătoria…",
+    "noSamples": "Niciun eșantion salvat pentru această călătorie.",
+    "gpsVsObd": "GPS vs OBD",
+    "noSpeedReading": "— (fără citire de viteză)",
+    "avgSpeed": "Viteză medie OBD {{obd}} vs GPS {{gps}}",
+    "verdict": {
+      "ok": "Distanțele se potrivesc",
+      "check": "Merită verificat",
+      "mismatch": "Nu se potrivesc",
+      "unknown": "Date insuficiente"
+    },
+    "gpsTrack": "Traseu GPS",
+    "simulatedGps": "GPS simulat",
+    "oneFix": "O singură poziție GPS — nu ajunge pentru a desena un traseu.",
+    "noTrack": "Niciun traseu GPS pentru această călătorie.",
+    "speedOverTime": "Viteza în timp",
+    "allTrips": "Toate călătoriile"
+  },
+  "map": {
+    "speed": "Viteză",
+    "rpm": "Turație",
+    "fuel": "Combustibil",
+    "fuelA11y": "Debit de combustibil",
+    "none": "Nimic",
+    "noneA11y": "Fără colorare",
+    "colourBy": "Colorează traseul după",
+    "a11y_one": "Hartă traseu GPS, {{count}} poziție. Atinge traseul pentru detalii.",
+    "a11y_few": "Hartă traseu GPS, {{count}} poziții. Atinge traseul pentru detalii.",
+    "a11y_other": "Hartă traseu GPS, {{count}} de poziții. Atinge traseul pentru detalii.",
+    "north": "Nordul este sus",
+    "tapHint": "Atinge traseul pentru a vedea viteza, turația și debitul de combustibil în acel punct."
+  },
+  "speed": {
+    "notEnough": "Prea puține citiri de viteză pentru a desena viteza în timp.",
+    "a11y_one": "Viteza în timp, {{count}} punct, până la {{top}} km/h",
+    "a11y_few": "Viteza în timp, {{count}} puncte, până la {{top}} km/h",
+    "a11y_other": "Viteza în timp, {{count}} de puncte, până la {{top}} km/h"
+  }
+}

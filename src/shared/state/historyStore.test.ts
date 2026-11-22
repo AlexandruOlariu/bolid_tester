@@ -59,4 +59,29 @@ describe('historyStore retention', () => {
     expect(entries[0].kind).toBe('ai');
     expect((entries[0] as { report: unknown }).report).toBe(report);
   });
+
+  it('addReportRun prepends a kind: report entry under the cap (plan 15)', () => {
+    const { addDtcCheck, addReportRun } = useHistoryStore.getState();
+    for (let i = 0; i < MAX_HISTORY; i++) addDtcCheck(dtcEntry(i));
+    addReportRun({
+      ts: 9999,
+      vehicle: { id: 'golf-plus-2009-20tdi', label: 'Golf', vin: 'WVWZZZ1KZ9W903398' },
+      sections: ['faults', 'scan'],
+      format: 'pdf',
+      fileName: 'bolid-report-WVWZZZ1KZ9W903398-20261109-0805.pdf',
+    });
+
+    const entries = useHistoryStore.getState().entries;
+    expect(entries).toHaveLength(MAX_HISTORY);
+    expect(entries[0]).toMatchObject({
+      kind: 'report',
+      ts: 9999,
+      sections: ['faults', 'scan'],
+      format: 'pdf',
+      fileName: 'bolid-report-WVWZZZ1KZ9W903398-20261109-0805.pdf',
+    });
+    expect(typeof entries[0].id).toBe('string');
+    // The oldest check was evicted to make room.
+    expect(entries[entries.length - 1].ts).toBe(1);
+  });
 });

@@ -1,21 +1,96 @@
-import React, { useState } from 'react';
-import { YStack, XStack, Paragraph, H4, Button, Switch, Input } from 'tamagui';
-import { Screen } from '@/shared/ui';
+import React, { useMemo, useRef, useState } from 'react';
+import { YStack, XStack, Paragraph, H4, Button, Input } from 'tamagui';
+import { useRouter } from 'expo-router';
+import { Screen, UnlockBadge, VerificationBadge, HIT_SLOP, AccessibleSwitch } from '@/shared/ui';
+import { useUnlockStatus } from '@/shared/security';
 import type { AdaptationChannel } from '@/shared/vehicles';
 import { useAdaptationsStore } from '../model/adaptationsStore';
-import { useAdaptations } from '../hooks/useAdaptations';
+import {
+  KwpSessionCacheContext,
+  newKwpSessionCache,
+  useAdaptations,
+  type LoginInput,
+} from '../hooks/useAdaptations';
+import { LoginSheet } from './LoginSheet';
+import { useTranslation } from '@/shared/i18n';
+import { formatTime } from '@/shared/lib/format';
+
+/** The honest K-line limit (plan 22): shown on a K-line link, where only KWP2000 modules answer. */
+export const KWP1281_LIMIT =
+  'On a K-line car only KWP2000 modules are reachable through a generic ELM327 adapter. Modules ' +
+  'that speak KWP1281 — on older VAG cars often the instrument cluster, comfort and climate ' +
+  'modules — cannot be addressed at all, so their adaptations are not offered. To reset the ' +
+  'service reminder on such a car, use the manual procedure on the Service reset screen.';
+
+/** What waits for a login code: the new value's confirm step, or a one-tap restore. */
+type PendingAction = { kind: 'write' } | { kind: 'restore'; raw: number[] };
 
 function ChannelRow({ ch }: { ch: AdaptationChannel }) {
-  const { describe, read, write, restore, display } = useAdaptations();
+  const { t } = useTranslation('adaptations');
+  const { describe, read, write, restore, display, loginInfo, forgetLogin, partNumberFor } =
+    useAdaptations();
   const unlocked = useAdaptationsStore((s) => s.unlocked);
   const running = useAdaptationsStore((s) => s.running);
   const raw = useAdaptationsStore((s) => s.values[ch.did]);
-  const backups = useAdaptationsStore((s) => s.backups.filter((b) => b.did === ch.did));
+  // Select the stable array and filter outside the selector: a selector returning a fresh array
+  // on every call makes zustand re-render forever ("getSnapshot should be cached").
+  const allBackups = useAdaptationsStore((s) => s.backups);
+  const backups = useMemo(() => allBackups.filter((b) => b.did === ch.did), [allBackups, ch.did]);
   const [draft, setDraft] = useState<string>('');
   const [confirming, setConfirming] = useState(false);
+  // KWP login (plan 22): the sheet's open state, the action waiting for it, and the code to use.
+  const [sheetFor, setSheetFor] = useState<PendingAction | null>(null);
+  const [login, setLogin] = useState<LoginInput | null>(null);
+  // The code the module just rejected: never re-sent without the sheet, never pre-filled. (A
+  // rejected *remembered* code is also forgotten by the hook, so this survives a remount.)
+  const [rejectedCode, setRejectedCode] = useState<number | null>(null);
 
   const current = display(ch, raw);
+  // Security-locked channels are writable only with an installed plugin (plan 23).
+  const unlock = useUnlockStatus(ch.security, {
+    reqHeader: ch.reqHeader,
+    address: ch.address,
+    partNumber: partNumberFor(ch),
+  });
+  const writable = !ch.security || unlock.state === 'unlockable';
   const description = describe(ch);
+  const info = loginInfo(ch);
+  const prefill = info?.entry && info.entry.code !== rejectedCode ? info.entry : null;
+
+  /** Run `action` with a login: the remembered one (no sheet), or the sheet first. */
+  const withLogin = (action: PendingAction) => {
+    if (info?.remembered && info.entry && info.entry.code !== rejectedCode) {
+      void runAction(action, { code: info.entry.code, wsc: info.entry.wsc });
+      return;
+    }
+    setSheetFor(action);
+  };
+
+  /** Track the code the module just rejected; any other outcome clears it. */
+  const settleLogin = (rejected: boolean | undefined, input: LoginInput | undefined) =>
+    setRejectedCode(rejected && input ? input.code : null);
+
+  const runAction = async (action: PendingAction, input: LoginInput | undefined) => {
+    if (action.kind === 'write') {
+      setLogin(input ?? null);
+      setConfirming(true);
+      return;
+    }
+    const res = await restore(ch, action.raw, input);
+    settleLogin(res.loginRejected, input);
+  };
+
+  const startWrite = () => (ch.login ? withLogin({ kind: 'write' }) : setConfirming(true));
+  const startRestore = (r: number[]) =>
+    ch.login ? withLogin({ kind: 'restore', raw: r }) : void restore(ch, r);
+
+  const confirmWrite = async () => {
+    setConfirming(false);
+    const res = await write(ch, Number(draft), login ?? undefined);
+    setLogin(null);
+    settleLogin(res.loginRejected, login ?? undefined);
+    setDraft('');
+  };
 
   return (
     <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$4">
@@ -23,8 +98,11 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
         <YStack flex={1}>
           <H4>{ch.name}</H4>
           <Paragraph theme="alt2" size="$2">
-            {ch.module} · DID {ch.did}
-            {ch.min !== undefined && ch.max !== undefined ? ` · ${ch.min}–${ch.max}${ch.unit ?? ''}` : ''}
+            {ch.module} ·{' '}
+            {ch.transport === 'kwp' ? t('row.localId', { id: ch.did }) : `DID ${ch.did}`}
+            {ch.min !== undefined && ch.max !== undefined
+              ? ` · ${ch.min}–${ch.max}${ch.unit ?? ''}`
+              : ''}
           </Paragraph>
         </YStack>
         <Paragraph>{current !== null ? `${current}${ch.unit ?? ''}` : '—'}</Paragraph>
@@ -34,69 +112,109 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
           {description}
         </Paragraph>
       ) : null}
-      <Paragraph theme="alt2" size="$2">
-        ⚠ Experimental / unverified channel — confirm behaviour on the real car.
-      </Paragraph>
+      <VerificationBadge item={ch} testID={`verify-channel-${ch.did}`} />
+      <UnlockBadge status={unlock} testID={`unlock-channel-${ch.did}`} />
+      {info ? (
+        <XStack gap="$2" alignItems="center">
+          <Paragraph theme="alt2" size="$2" flex={1}>
+            {info.remembered && info.entry
+              ? t('row.loginRemembered', {
+                  address: info.entry.address,
+                  purpose: info.entry.purpose || t('login.savedCode'),
+                })
+              : info.origin === 'pre-vin' && info.entry
+                ? t('row.loginPreVin', {
+                    address: info.entry.address,
+                    purpose: info.entry.purpose || t('login.savedCode'),
+                  })
+                : info.entry
+                  ? t('row.loginDocumented', {
+                      address: info.entry.address,
+                      purpose: info.entry.purpose,
+                    })
+                  : t('row.loginNeeded')}
+          </Paragraph>
+          {info.remembered ? (
+            <Button
+              size="$3"
+              hitSlop={HIT_SLOP}
+              onPress={() => forgetLogin(ch)}
+              accessibilityLabel={t('row.forgetA11y')}
+            >
+              {t('row.forget')}
+            </Button>
+          ) : null}
+        </XStack>
+      ) : null}
       <XStack gap="$2">
-        <Button size="$3" disabled={running} onPress={() => read(ch)}>
-          Read
+        <Button size="$3" hitSlop={HIT_SLOP} disabled={running} onPress={() => read(ch)}>
+          {t('row.read')}
         </Button>
-        {ch.security ? (
-          <Paragraph theme="alt2" size="$2" alignSelf="center">
-            Security-locked (read-only)
+        {!writable ? (
+          <Paragraph theme="alt2" size="$2" alignSelf="center" flex={1}>
+            {t('row.readOnly')}
           </Paragraph>
         ) : null}
       </XStack>
-      {unlocked && !ch.security ? (
+      {unlocked && writable ? (
         <YStack gap="$2">
           <XStack gap="$2" alignItems="center">
             <Input
               flex={1}
               size="$3"
               keyboardType="numeric"
-              placeholder={current !== null ? String(current) : 'new value'}
+              placeholder={current !== null ? String(current) : t('row.newValue')}
               value={draft}
               onChangeText={setDraft}
+              accessibilityLabel={t('row.newValueA11y', { name: ch.name })}
             />
             {!confirming ? (
               <Button
                 size="$3"
+                hitSlop={HIT_SLOP}
                 theme="red"
                 disabled={running || raw === undefined || draft.trim() === ''}
-                onPress={() => setConfirming(true)}
+                onPress={startWrite}
               >
-                Write
+                {t('row.write')}
               </Button>
             ) : null}
           </XStack>
           {raw === undefined ? (
             <Paragraph theme="alt2" size="$2">
-              Read the current value first — writes always start from a fresh backup.
+              {t('row.readFirst')}
             </Paragraph>
           ) : null}
           {confirming ? (
             <YStack gap="$2" backgroundColor="$color1" padding="$2" borderRadius="$3">
               <Paragraph size="$2">
-                Write {draft}
-                {ch.unit ?? ''} to {ch.name} (was {current ?? '—'}
-                {ch.unit ?? ''})? The old value is backed up and re-verified after writing.
+                {t('row.confirmText', {
+                  value: `${draft}${ch.unit ?? ''}`,
+                  name: ch.name,
+                  was: `${current ?? '—'}${ch.unit ?? ''}`,
+                })}
               </Paragraph>
               <XStack gap="$2">
                 <Button
                   flex={1}
                   size="$3"
+                  hitSlop={HIT_SLOP}
                   theme="red"
                   disabled={running}
-                  onPress={async () => {
+                  onPress={confirmWrite}
+                >
+                  {t('row.confirmWrite')}
+                </Button>
+                <Button
+                  flex={1}
+                  size="$3"
+                  hitSlop={HIT_SLOP}
+                  onPress={() => {
                     setConfirming(false);
-                    await write(ch, Number(draft));
-                    setDraft('');
+                    setLogin(null);
                   }}
                 >
-                  Confirm write
-                </Button>
-                <Button flex={1} size="$3" onPress={() => setConfirming(false)}>
-                  Cancel
+                  {t('common:actions.cancel')}
                 </Button>
               </XStack>
             </YStack>
@@ -104,46 +222,80 @@ function ChannelRow({ ch }: { ch: AdaptationChannel }) {
           {backups.length ? (
             <Button
               size="$3"
+              hitSlop={HIT_SLOP}
               disabled={running}
-              onPress={() => restore(ch, backups[0].raw)}
+              onPress={() => startRestore(backups[0].raw)}
             >
-              Restore backup ({new Date(backups[0].at).toLocaleTimeString()})
+              {t('row.restoreBackup', { time: formatTime(backups[0].at, true) })}
             </Button>
           ) : null}
           {ch.defaultRaw ? (
-            <Button size="$3" disabled={running} onPress={() => restore(ch, ch.defaultRaw!)}>
-              Restore known default
+            <Button
+              size="$3"
+              hitSlop={HIT_SLOP}
+              disabled={running}
+              onPress={() => startRestore(ch.defaultRaw!)}
+            >
+              {t('row.restoreDefault')}
             </Button>
           ) : null}
         </YStack>
+      ) : null}
+      {ch.login ? (
+        <LoginSheet
+          channel={sheetFor ? ch : null}
+          prefill={prefill}
+          prefillNote={
+            prefill && info?.origin === 'pre-vin'
+              ? t('row.prefillPreVin', { purpose: prefill.purpose || t('login.savedCode') })
+              : undefined
+          }
+          onClose={() => setSheetFor(null)}
+          onSubmit={(input) => {
+            const action = sheetFor;
+            setSheetFor(null);
+            if (action) void runAction(action, input);
+          }}
+        />
       ) : null}
     </YStack>
   );
 }
 
 export function AdaptationsScreen() {
-  const { available, channels } = useAdaptations();
+  const { t } = useTranslation('adaptations');
+  const { available, channels, declaredCount, kline } = useAdaptations();
   const unlocked = useAdaptationsStore((s) => s.unlocked);
   const setUnlocked = useAdaptationsStore((s) => s.setUnlocked);
   const lastResult = useAdaptationsStore((s) => s.lastResult);
+  const router = useRouter();
+  // One KWP session cache for this screen session, shared by every row (plan 22).
+  const kwpCache = useRef(newKwpSessionCache()).current;
+
+  const kwp1281 = kline ? (
+    <YStack gap="$2">
+      <Paragraph theme="alt2" size="$2">
+        {t('kwp1281', { defaultValue: KWP1281_LIMIT })}
+      </Paragraph>
+      <Button size="$3" hitSlop={HIT_SLOP} onPress={() => router.push('/service-reset')}>
+        {t('openServiceReset')}
+      </Button>
+    </YStack>
+  ) : null;
 
   if (!available) {
     return (
-      <Screen title="Adaptations">
+      <Screen title={t('title')}>
         <Paragraph theme="alt2">
-          Adaptation channels are unavailable for this car / protocol. They are experimental,
-          profile-driven and CAN-only — the current profile declares
-          {channels.length ? ' channels but the link is not CAN.' : ' none.'}
+          {declaredCount ? t('unavailableOther') : t('unavailableNone')}
         </Paragraph>
+        {kwp1281}
       </Screen>
     );
   }
 
   return (
-    <Screen
-      title="Adaptations"
-      subtitle="⚠ Experimental — writes module adaptation values. Backup + verify on every write."
-    >
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <XStack
         alignItems="center"
         justifyContent="space-between"
@@ -152,19 +304,24 @@ export function AdaptationsScreen() {
         borderRadius="$4"
       >
         <YStack flex={1}>
-          <H4>Unlock writes</H4>
+          <H4>{t('unlock')}</H4>
           <Paragraph theme="alt2" size="$2">
-            Off = read-only. Writes back up the old value and verify after writing.
+            {t('unlockHelp')}
           </Paragraph>
         </YStack>
-        <Switch checked={unlocked} onCheckedChange={(v) => setUnlocked(!!v)}>
-          <Switch.Thumb />
-        </Switch>
+        <AccessibleSwitch
+          checked={unlocked}
+          onCheckedChange={setUnlocked}
+          accessibilityLabel={t('unlock')}
+        />
       </XStack>
+      {kwp1281}
       {lastResult ? <Paragraph>{lastResult}</Paragraph> : null}
-      {channels.map((ch) => (
-        <ChannelRow key={ch.did} ch={ch} />
-      ))}
+      <KwpSessionCacheContext.Provider value={kwpCache}>
+        {channels.map((ch) => (
+          <ChannelRow key={`${ch.reqHeader}:${ch.did}`} ch={ch} />
+        ))}
+      </KwpSessionCacheContext.Provider>
     </Screen>
   );
 }

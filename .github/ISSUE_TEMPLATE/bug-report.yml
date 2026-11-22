@@ -1,0 +1,69 @@
+name: Bug report
+description: Something in the app does not work as it should.
+title: 'Bug: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. The fastest way to a fix is the app's own problem report:
+        **More → Tools → Report a problem**. It bundles the error log, the adapter log, device
+        info, the vehicle and the last module scan, with the VIN, adapter address, URLs and keys
+        redacted. Issues are public, so check the summary before you paste it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Connect to the adapter
+        2. Open Fault codes
+        3. Tap Read
+    validations:
+      required: false
+  - type: textarea
+    id: bundle
+    attributes:
+      label: Problem report (from More → Tools → Report a problem)
+      description: Paste the Markdown summary, or attach the JSON bundle. Leave redaction on.
+      render: markdown
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      description: Settings → About.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: car
+    attributes:
+      label: Car
+      placeholder: VW Golf Plus 2009 2.0 TDI (CBD)
+    validations:
+      required: false
+  - type: input
+    id: adapter
+    attributes:
+      label: Adapter
+      placeholder: Vgate iCar Pro BLE 4.0, simulator, Wi-Fi ELM327 …
+    validations:
+      required: false
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Android
+        - iOS
+        - Web (Chrome / Edge)
+    validations:
+      required: true

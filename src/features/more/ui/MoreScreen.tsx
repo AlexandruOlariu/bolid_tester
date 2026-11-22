@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import { Alert } from 'react-native';
-import { YStack, XStack, Paragraph, H4, Spinner } from 'tamagui';
+import React, { useMemo, useState } from 'react';
+import { YStack, XStack, Paragraph, H4, Spinner, Text, Input } from 'tamagui';
 import { useRouter } from 'expo-router';
 import {
   LineChart,
@@ -25,113 +24,199 @@ import {
   Radio,
   HeartPulse,
   DownloadCloud,
+  FileStack,
+  Archive,
+  MessageSquareWarning,
 } from 'lucide-react-native';
-import { Screen } from '@/shared/ui';
+import { CardGrid, Screen, appAlert, usePalette } from '@/shared/ui';
 import { checkForUpdate, fetchAndReload } from '../api/updates';
+import {
+  MORE_SECTIONS,
+  entryKey,
+  filterSections,
+  localizeSections,
+  type IconName,
+  type MoreEntry,
+} from '../model/sections';
+import { useTranslation } from '@/shared/i18n';
 
-interface Entry {
-  route: string;
-  title: string;
-  subtitle: string;
-  Icon: typeof LineChart;
+/** The lucide icon for each `IconName` (kept here so the model stays icon-free and node-testable). */
+const ICONS: Record<IconName, typeof LineChart> = {
+  stethoscope: Stethoscope,
+  'clipboard-check': ClipboardCheck,
+  history: History,
+  'file-stack': FileStack,
+  gauge: GaugeIcon,
+  'line-chart': LineChart,
+  timer: Timer,
+  route: RouteIcon,
+  bell: Bell,
+  'calendar-clock': CalendarClock,
+  'battery-charging': BatteryCharging,
+  wind: Wind,
+  'scan-line': ScanLine,
+  'bell-ring': BellRing,
+  network: Network,
+  sliders: SlidersHorizontal,
+  zap: Zap,
+  'key-round': KeyRound,
+  wrench: Wrench,
+  radio: Radio,
+  'heart-pulse': HeartPulse,
+  archive: Archive,
+  bug: Bug,
+  'message-square-warning': MessageSquareWarning,
+  'download-cloud': DownloadCloud,
+};
+
+function SectionHeader({ title, workshop }: { title: string; workshop: boolean }) {
+  return (
+    <Text
+      fontWeight="800"
+      fontSize="$2"
+      color="$accent"
+      letterSpacing={0.8}
+      textTransform="uppercase"
+      accessibilityRole="header"
+    >
+      {workshop ? `${title} 🧪` : title}
+    </Text>
+  );
 }
 
-const ENTRIES: Entry[] = [
-  { route: '/ai-diagnose', title: 'Diagnose (AI)', subtitle: 'One-tap AI health check', Icon: Stethoscope },
-  { route: '/history', title: 'History', subtitle: 'Past diagnoses & fault-code checks', Icon: History },
-  { route: '/inspection', title: 'Used-car inspection', subtitle: 'Pre-purchase health check', Icon: ClipboardCheck },
-  { route: '/dpf', title: 'DPF / regen', subtitle: 'Diesel soot & regeneration', Icon: Wind },
-  { route: '/battery', title: 'Battery & charging', subtitle: 'Voltage, cranking, alternator', Icon: BatteryCharging },
-  { route: '/adapter-health', title: 'Adapter health', subtitle: 'Grade your ELM327: firmware, latency', Icon: HeartPulse },
-  { route: '/vin-decode', title: 'VIN decoder', subtitle: 'Decode the VIN offline', Icon: ScanLine },
-  { route: '/maintenance', title: 'Maintenance log', subtitle: 'Service history & due items', Icon: CalendarClock },
-  { route: '/charts', title: 'Charts', subtitle: 'Live parameters over time', Icon: LineChart },
-  { route: '/performance', title: 'Performance', subtitle: '0–100, ¼-mile, braking', Icon: Timer },
-  { route: '/trips', title: 'Trips', subtitle: 'Record & export live data', Icon: RouteIcon },
-  { route: '/alerts', title: 'Alerts', subtitle: 'Threshold warnings', Icon: Bell },
-  { route: '/sensor-readings', title: 'Sensor readings', subtitle: 'Live sensors, grouped', Icon: GaugeIcon },
-  { route: '/sensors', title: 'Sensor tests', subtitle: 'Mode 06 + module sensors', Icon: GaugeIcon },
-  { route: '/module-scan', title: 'Module scan', subtitle: 'VCDS-style auto-scan: all modules', Icon: Network },
-  { route: '/service-reset', title: 'Service reset', subtitle: 'Reset the service interval', Icon: Wrench },
-  { route: '/coding', title: 'Coding', subtitle: 'Experimental module coding', Icon: KeyRound },
-  { route: '/adaptations', title: 'Adaptations', subtitle: 'Channel read/write with backup', Icon: SlidersHorizontal },
-  { route: '/routines', title: 'Routines & output tests', subtitle: 'Basic settings, actuator tests, DPF regen', Icon: Zap },
-  { route: '/notifications', title: 'Notifications', subtitle: 'Alerts & reminders', Icon: BellRing },
-  { route: '/sniffer', title: 'Bus sniffer', subtitle: 'Raw CAN/K-line monitor (ATMA)', Icon: Radio },
-  { route: '/error-log', title: 'Error log', subtitle: 'Saved errors to export & fix later', Icon: Bug },
-];
+function ExperimentalChip() {
+  const { t } = useTranslation('more');
+  return (
+    <Text
+      fontSize="$1"
+      fontWeight="700"
+      color="$yellow11"
+      backgroundColor="$yellow3"
+      borderColor="$yellow7"
+      borderWidth={1}
+      borderRadius="$2"
+      paddingHorizontal="$1.5"
+      paddingVertical={1}
+    >
+      {t('experimental')}
+    </Text>
+  );
+}
+
+function EntryRow({
+  entry,
+  busy,
+  onPress,
+}: {
+  entry: MoreEntry;
+  busy: boolean;
+  onPress: (() => void) | undefined;
+}) {
+  const { t } = useTranslation('more');
+  const Icon = ICONS[entry.icon];
+  const palette = usePalette();
+  const subtitle = busy ? t('checking') : entry.subtitle;
+  return (
+    <XStack
+      alignItems="center"
+      gap="$3"
+      padding="$3"
+      backgroundColor="$color2"
+      borderRadius="$4"
+      pressStyle={{ backgroundColor: '$color4' }}
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={`${entry.title}. ${entry.subtitle}${entry.experimental ? `. ${t('experimentalA11y')}` : ''}`}
+      onPress={onPress}
+    >
+      {busy ? <Spinner /> : <Icon size={22} color={palette.accent} />}
+      <YStack flex={1} gap="$1">
+        <XStack alignItems="center" gap="$2" flexWrap="wrap">
+          <H4>{entry.title}</H4>
+          {entry.experimental ? <ExperimentalChip /> : null}
+        </XStack>
+        <Paragraph theme="alt2" size="$2">
+          {subtitle}
+        </Paragraph>
+      </YStack>
+      <Paragraph theme="alt2" accessibilityElementsHidden importantForAccessibility="no">
+        ›
+      </Paragraph>
+    </XStack>
+  );
+}
 
 export function MoreScreen() {
+  const { t } = useTranslation('more');
   const router = useRouter();
   const [checking, setChecking] = useState(false);
+  const [query, setQuery] = useState('');
+  const localized = useMemo(
+    () => localizeSections(MORE_SECTIONS, (key, english) => t(key, { defaultValue: english })),
+    [t],
+  );
+  const sections = useMemo(() => filterSections(localized, query), [localized, query]);
 
   const onCheckUpdates = async () => {
     setChecking(true);
     try {
       const result = await checkForUpdate();
       if (result === 'available') {
-        Alert.alert('Update available', 'Download and restart now?', [
-          { text: 'Later', style: 'cancel' },
-          { text: 'Update', onPress: () => fetchAndReload() },
+        appAlert(t('updates.availableTitle'), t('updates.availableBody'), [
+          { text: t('updates.later'), style: 'cancel' },
+          { text: t('updates.update'), onPress: () => fetchAndReload() },
         ]);
       } else if (result === 'up-to-date') {
-        Alert.alert('Up to date', 'You already have the latest version.');
+        appAlert(t('updates.upToDateTitle'), t('updates.upToDateBody'));
       } else {
-        Alert.alert('Updates unavailable', 'Over-the-air updates are not enabled in this build.');
+        appAlert(t('updates.unavailableTitle'), t('updates.unavailableBody'));
       }
     } finally {
       setChecking(false);
     }
   };
 
-  return (
-    <Screen title="More" subtitle="Diagnostics, performance & tools">
-      <YStack gap="$2">
-        {ENTRIES.map(({ route, title, subtitle, Icon }) => (
-          <XStack
-            key={route}
-            alignItems="center"
-            gap="$3"
-            padding="$3"
-            backgroundColor="$color2"
-            borderRadius="$4"
-            pressStyle={{ backgroundColor: '$color4' }}
-            accessibilityRole="button"
-            accessibilityLabel={`${title}. ${subtitle}`}
-            onPress={() => router.push(route)}
-          >
-            <Icon size={22} color="#2bb673" />
-            <YStack flex={1}>
-              <H4>{title}</H4>
-              <Paragraph theme="alt2" size="$2">
-                {subtitle}
-              </Paragraph>
-            </YStack>
-            <Paragraph theme="alt2">›</Paragraph>
-          </XStack>
-        ))}
+  const pressFor = (entry: MoreEntry): (() => void) | undefined => {
+    if (entry.action === 'check-updates') return checking ? undefined : onCheckUpdates;
+    const route = entry.route;
+    return route ? () => router.push(route) : undefined;
+  };
 
-        <XStack
-          alignItems="center"
-          gap="$3"
-          padding="$3"
-          backgroundColor="$color2"
-          borderRadius="$4"
-          pressStyle={{ backgroundColor: '$color4' }}
-          accessibilityRole="button"
-          accessibilityLabel="Check for updates. Over-the-air app updates"
-          onPress={checking ? undefined : onCheckUpdates}
-        >
-          {checking ? <Spinner /> : <DownloadCloud size={22} color="#2bb673" />}
-          <YStack flex={1}>
-            <H4>Check for updates</H4>
-            <Paragraph theme="alt2" size="$2">
-              {checking ? 'Checking…' : 'Over-the-air app updates'}
+  return (
+    <Screen title={t('title')} subtitle={t('subtitle')}>
+      <Input
+        value={query}
+        onChangeText={setQuery}
+        placeholder={t('searchPlaceholder')}
+        autoCapitalize="none"
+        autoCorrect={false}
+        clearButtonMode="while-editing"
+        accessibilityLabel={t('searchA11y')}
+      />
+      {sections.length === 0 ? (
+        <Paragraph theme="alt2">{t('noMatch', { query: query.trim() })}</Paragraph>
+      ) : null}
+      {sections.map((section) => (
+        <YStack key={section.id} gap="$2" testID={`more-section-${section.id}`}>
+          <SectionHeader title={section.title} workshop={section.id === 'workshop'} />
+          {section.blurb ? (
+            <Paragraph theme="alt2" fontSize="$2">
+              {section.blurb}
             </Paragraph>
-          </YStack>
-          <Paragraph theme="alt2">›</Paragraph>
-        </XStack>
-      </YStack>
+          ) : null}
+          {/* Two columns on a tablet / landscape phone (plan 21). */}
+          <CardGrid testID={`more-grid-${section.id}`}>
+            {section.entries.map((entry) => (
+              <EntryRow
+                key={entryKey(entry)}
+                entry={entry}
+                busy={entry.action === 'check-updates' && checking}
+                onPress={pressFor(entry)}
+              />
+            ))}
+          </CardGrid>
+        </YStack>
+      ))}
     </Screen>
   );
 }

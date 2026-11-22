@@ -4,12 +4,14 @@
 
 import {
   DiagnosticSession,
+  describeUnlockFailure,
   startGuidedRoutine,
   stopGuidedRoutine,
   testerPresent,
   UdsError,
 } from '@/shared/obd-core';
 import type { GuidedRoutine, ExtendedPid } from '@/shared/vehicles';
+import { translate } from '@/shared/i18n';
 
 export interface InterlockCheck {
   ok: boolean;
@@ -37,17 +39,19 @@ export async function checkInterlocks(
   const speed = needSpeed ? ((await session.readValue('010D'))?.value ?? null) : null;
 
   if (il.requireEngineOff) {
-    if (rpm === null) failures.push('Cannot verify the engine is off — RPM is unreadable.');
-    else if (rpm > 0) failures.push(`Engine must be OFF (ignition on) — currently ${Math.round(rpm)} rpm.`);
+    if (rpm === null) failures.push(translate('routines:interlock.rpmUnreadable'));
+    else if (rpm > 0)
+      failures.push(translate('routines:interlock.engineOff', { rpm: Math.round(rpm) }));
   }
   if (il.requireIdle) {
-    if (rpm === null || rpm < 400) failures.push('Engine must be RUNNING at idle.');
-    else if (rpm > 1200) failures.push(`Engine must idle — currently ${Math.round(rpm)} rpm.`);
+    if (rpm === null || rpm < 400) failures.push(translate('routines:interlock.engineRunning'));
+    else if (rpm > 1200)
+      failures.push(translate('routines:interlock.engineIdle', { rpm: Math.round(rpm) }));
   }
   if (il.maxSpeedKmh !== undefined) {
-    if (speed === null) failures.push('Cannot verify the vehicle is stationary — speed is unreadable.');
+    if (speed === null) failures.push(translate('routines:interlock.speedUnreadable'));
     else if (speed > il.maxSpeedKmh) {
-      failures.push(`Vehicle must be stationary — currently ${Math.round(speed)} km/h.`);
+      failures.push(translate('routines:interlock.stationary', { speed: Math.round(speed) }));
     }
   }
   return { ok: failures.length === 0, failures };
@@ -70,15 +74,31 @@ export async function checkInterlocksDuringRun(
   }
 }
 
-export async function startRoutine(session: DiagnosticSession, routine: GuidedRoutine): Promise<void> {
+export interface StartRoutineOptions {
+  /** SecurityAccess routine from an installed plugin (plan 23) for a routine with `security`. */
+  seedToKey?: (seed: number[]) => number[];
+}
+
+/** Address the module and start the routine. With `security` and a resolved plugin routine the
+ *  module is unlocked first (`27`); with `security` and none the routine is still attempted
+ *  unlocked — routines are read-ish and the module decides (NRC 0x33 if it needed access, which
+ *  `describeRoutineFailure` explains). */
+export async function startRoutine(
+  session: DiagnosticSession,
+  routine: GuidedRoutine,
+  opts: StartRoutineOptions = {},
+): Promise<void> {
   await session.setHeader(routine.reqHeader);
   await session.setRxFilter(routine.rxFilter);
+  const seedToKey = opts.seedToKey ?? routine.security?.seedToKey;
   await startGuidedRoutine((cmd) => session.send(cmd), {
     service: routine.service,
     id: routine.id,
     controlData: routine.controlData,
     session: routine.session,
-    security: routine.security,
+    security: routine.security
+      ? { level: routine.security.level, ...(seedToKey ? { seedToKey } : {}) }
+      : undefined,
   });
 }
 
@@ -90,41 +110,33 @@ export function describeRoutineFailure(err: unknown, routine: GuidedRoutine): st
   if (err instanceof UdsError && err.nrc !== undefined) {
     switch (err.nrc) {
       case 0x33: // securityAccessDenied
-        return (
-          `The ${routine.module} refused this ${routine.kind === 'outputTest' ? 'output test' : 'basic setting'} ` +
-          'without security access (NRC 0x33). VAG basic settings usually need the ECU unlocked ' +
-          '(UDS 0x27 seed/key), and this app does not carry the seed→key algorithm for your ECU. ' +
-          'The routine cannot run until that algorithm is supplied for this profile.'
-        );
+        return translate('routines:failure.nrc33', {
+          module: routine.module,
+          kind: translate(
+            routine.kind === 'outputTest'
+              ? 'routines:kind.outputTest'
+              : 'routines:kind.basicSetting',
+          ),
+        });
       case 0x35: // invalidKey
-        return 'Security unlock was rejected (NRC 0x35 invalid key) — the seed→key algorithm is wrong for this ECU.';
+        return translate('routines:failure.nrc35');
       case 0x36: // exceedNumberOfAttempts
-        return 'Too many failed security-unlock attempts (NRC 0x36) — the module is locked out. Cycle the ignition and wait before retrying.';
       case 0x37: // requiredTimeDelayNotExpired
-        return 'The module is enforcing a security lockout delay (NRC 0x37). Wait a moment and retry.';
+        return describeUnlockFailure(err) ?? err.message;
       case 0x11: // serviceNotSupported
       case 0x12: // subFunctionNotSupported
       case 0x31: // requestOutOfRange
       case 0x7e: // subFunctionNotSupportedInActiveSession
       case 0x7f: // serviceNotSupportedInActiveSession
-        return (
-          `The ${routine.module} does not recognise this routine (id ${routine.id}, NRC 0x${err.nrc.toString(16)}). ` +
-          'This routine ID is unverified for your exact car — it needs confirming from a VCDS "Basic Settings" ' +
-          'session or a UDS capture on the real ECU before it will run.'
-        );
+        return translate('routines:failure.unknownId', {
+          module: routine.module,
+          id: routine.id,
+          nrc: err.nrc.toString(16),
+        });
       case 0x22: // conditionsNotCorrect
-        return (
-          `The ${routine.module} rejected the routine because conditions are not correct (NRC 0x22). ` +
-          'The engine usually must be warm and at a steady idle with no active faults. Clear stored faults, ' +
-          'let it reach operating temperature, and retry.'
-        );
+        return translate('routines:failure.nrc22', { module: routine.module });
       case 0x24: // requestSequenceError
-        return (
-          `The ${routine.module} rejected the routine as out of sequence (NRC 0x24) — a required step ` +
-          'is missing before it, most often a security-access unlock or a specific diagnostic ' +
-          'session. The exact start sequence for this routine is unverified for your car and needs ' +
-          'confirming from a VCDS session or a UDS capture.'
-        );
+        return translate('routines:failure.nrc24', { module: routine.module });
       default:
         return err.message;
     }
@@ -133,7 +145,10 @@ export function describeRoutineFailure(err: unknown, routine: GuidedRoutine): st
 }
 
 /** Stop + always restore default addressing (header AND rx filter), even when the stop fails. */
-export async function stopRoutine(session: DiagnosticSession, routine: GuidedRoutine): Promise<void> {
+export async function stopRoutine(
+  session: DiagnosticSession,
+  routine: GuidedRoutine,
+): Promise<void> {
   try {
     await stopGuidedRoutine((cmd) => session.send(cmd), {
       service: routine.service,

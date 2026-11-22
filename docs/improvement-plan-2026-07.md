@@ -23,12 +23,12 @@ pass still finds — most are about **lifecycle and wiring**, not the OBD engine
 
 Alerts, notifications, and trip sampling are hosted in screen-level hooks:
 
-| Engine | Hook | Only mounted in |
-|---|---|---|
-| Threshold alerts + OS alert notifications | `useAlerts` | `alerts/ui/AlertsScreen.tsx` |
+| Engine                                                             | Hook               | Only mounted in                            |
+| ------------------------------------------------------------------ | ------------------ | ------------------------------------------ |
+| Threshold alerts + OS alert notifications                          | `useAlerts`        | `alerts/ui/AlertsScreen.tsx`               |
 | Connection/diagnostic notifications + prefs sync (`setNotifPrefs`) | `useNotifications` | `notifications/ui/NotificationsScreen.tsx` |
-| Trip sample accumulation | `useTripRecorder` | `trip-recording/ui/TripScreen.tsx` |
-| Live polling (feeds all of the above) | `useLiveData` | `DashboardScreen`, `SensorReadingsScreen` |
+| Trip sample accumulation                                           | `useTripRecorder`  | `trip-recording/ui/TripScreen.tsx`         |
+| Live polling (feeds all of the above)                              | `useLiveData`      | `DashboardScreen`, `SensorReadingsScreen`  |
 
 Consequences on a fresh app start:
 
@@ -59,7 +59,7 @@ forever until the user manually disconnects/reconnects.
 
 `connectionService.connect()` catch block sets store status + logs, but never tears down the
 transport (`connectionService.ts:75-81`). The designed failure path — probe fails because the
-ignition is off — throws *after* the GATT link is up, the notify monitor is subscribed, and the
+ignition is off — throws _after_ the GATT link is up, the notify monitor is subscribed, and the
 client is attached. The session was never stored, so `disconnect()` can't reach it. Retrying
 creates a second `BleTransport` to the same device while the first GATT link + monitor leak.
 
@@ -68,7 +68,7 @@ creates a second `BleTransport` to the same device while the first GATT link + m
 With headers off, a functional-addressed request on a car where several ECUs answer (Mode 03,
 `0100` on engine+TCU petrol cars — the Punto profile is exactly this class) returns **one line
 per ECU**. `parseElmResponse` → `normalize()` collapses newlines and hex-parses the whole blob;
-`readDtcs()` strips only the *first* `43` service byte (`DiagnosticSession.ts:186-192`). The
+`readDtcs()` strips only the _first_ `43` service byte (`DiagnosticSession.ts:186-192`). The
 second ECU's `43` lands inside the DTC byte stream → phantom/garbled codes. Same class of bug as
 the sim-fidelity gaps fixed 2026-07-03; the simulator currently only ever answers as one ECU, so
 tests can't catch it.
@@ -119,9 +119,11 @@ tomorrow). No CI script ties `typecheck:app + lint + test` together.
 
 ### Hardening note (no action forced)
 
-`Elm327Client.exec()` clears `this.buffer` on entry, so a late reply from a *timed-out* command
+`Elm327Client.exec()` clears `this.buffer` on entry, so a late reply from a _timed-out_ command
 can still interleave into the next command's window. Rare in half-duplex practice; if it ever
 shows up on-car, the fix is to drain-until-prompt after a timeout before releasing the queue.
+**Resolved (plan 12, 2026-11):** the client now drains a late reply up to its `>` (≤ 300 ms) before
+the next command goes out — see `docs/features/connection.md` § "Drain-until-prompt after a timeout".
 
 ---
 
@@ -154,7 +156,7 @@ connect then successful retry works without app restart.
    - the single poll loop (move the loop out of `useLiveData`; the hook becomes a store
      subscription only),
    - alert evaluation (`AlertEngine`) fed by every snapshot,
-   - notification edge-detection fed by *real* state — `milOn`/`dtcCount` from the latest
+   - notification edge-detection fed by _real_ state — `milOn`/`dtcCount` from the latest
      fault-code read (`dtcStore`) instead of the hardcoded `false/0`,
    - trip sample accumulation while `tripStore.recording`,
    - `setNotifPrefs` sync at startup.
@@ -172,7 +174,7 @@ mounted after pressing start; exactly one poll sweep per interval regardless of 
 
 1. **Line-aware parse path (M)** — in `responseParser`, when the raw response contains multiple
    plain hex lines (and no ISO-TP segments), return per-line byte groups (`ParsedResponse.frames:
-   number[][]`, `bytes` staying the first/concatenated for back-compat).
+number[][]`, `bytes` staying the first/concatenated for back-compat).
 2. **Consume in `readDtcs` (S)** — strip the service byte and parse DTCs **per frame**, then
    merge + dedupe. Same treatment for `discoverSupportedPids` (first valid frame wins / OR the
    bitmaps).
@@ -188,7 +190,7 @@ single-ECU cars unchanged.
 1. **I/O log decoupling (M)** — make the adapter log a module-level ring buffer with a throttled
    (e.g. 4 Hz) store publish, and pause `withLog` rx-mirroring while `client.monitoring` (the
    sniffer already has the data). Kills the per-chunk array copies.
-2. **Trips persistence + file lifecycle (M)** — persist trip *headers* (not samples) via
+2. **Trips persistence + file lifecycle (M)** — persist trip _headers_ (not samples) via
    `persistStorage`; lazy-load samples from CSV on open; `removeTrip` deletes the CSV
    (`deleteAsync`, idempotent); add share/export via `expo-sharing` like the DTC report.
 3. **History bounds (S)** — cap entries (e.g. 200, oldest evicted — mirror `MAX_ERRORS`
@@ -204,10 +206,10 @@ deleting one removes its CSV; a 500-entry history no longer rewrites hundreds of
    `partialize`; hydrate on startup; one-time migration that moves any persisted plaintext key
    and rewrites the settings file.
 2. **Root ErrorBoundary (S)** — class component in `_layout.tsx`: logs via `logError({source:
-   'render'})`, renders a minimal "something broke — reload" screen.
+'render'})`, renders a minimal "something broke — reload" screen.
 3. **Lint everything (S)** — extend eslint to `src/**/*.{ts,tsx}` with `react` +
    `react-hooks` plugins; fix fallout; add `"ci": "npm run typecheck:app && npm run lint && npm
-   test"`.
+test"`.
 4. **(From roadmap, unchanged)** — KWP login UI, additional label packs, on-car validation
    checklists stay tracked in `vcds-parity-roadmap.md`.
 
@@ -248,7 +250,7 @@ Ideas spotted during review, none blocking. Ordered by value-for-effort.
 
 Builds on what the parity pass shipped (module scan, TP2.0, adaptations, routines, label packs).
 The still-open roadmap items (KWP login UI, more label packs, on-car validation) stay in
-[`vcds-parity-roadmap.md`](./vcds-parity-roadmap.md); these are the *new* parity ideas on top.
+[`vcds-parity-roadmap.md`](./vcds-parity-roadmap.md); these are the _new_ parity ideas on top.
 
 1. **VCDS-style Auto-Scan text report (S)** — render a module scan as the classic
    forum-pasteable text block (chassis, per-module address/name/part no/coding/faults with

@@ -8,20 +8,11 @@ export const passatB55: VehicleProfile = {
   year: 2004,
   engine: '1.9 TDI AVB-family (ECU 038 906 019 KC)',
   fuel: 'diesel',
+  make: 'vag',
   // Confirmed on the real car: ISO 9141-2 (5-baud init, 10.4 kbaud). The adapter still auto-detects.
   expectedProtocol: 'ISO_9141_2',
   vinPatterns: ['WVWZZZ3B'],
-  supportedPids: [
-    '0104',
-    '0105',
-    '010B',
-    '010C',
-    '010D',
-    '010F',
-    '0111',
-    '011F',
-    '0142',
-  ],
+  supportedPids: ['0104', '0105', '010B', '010C', '010D', '010F', '0111', '011F', '0142'],
   dtcModes: ['03', '07'],
   serviceReset: {
     // EXPERIMENTAL / illustrative KWP2000 (K-line) path. On a real B5.5 the reliable method is often
@@ -49,6 +40,32 @@ export const passatB55: VehicleProfile = {
     ],
     experimental: true,
   },
+  // ILLUSTRATIVE KWP2000 adaptation channel on the ENGINE ECU (plan 22) — a placeholder so the
+  // whole K-line login → backup → write → verify flow runs in the simulator. The local identifier,
+  // scaling and bounds are NOT confirmed on the car; a capture must confirm them first. Modules that
+  // speak KWP1281 (cluster, comfort, HVAC) are deliberately never declared: a generic ELM327 cannot
+  // reach them. No login code ships: the user enters it (code book).
+  adaptations: [
+    {
+      module: 'Engine ECU (KWP2000)',
+      address: '01',
+      reqHeader: '8101F1',
+      rxFilter: '',
+      did: '2A',
+      transport: 'kwp',
+      login: true,
+      session: 0x85,
+      name: 'Idle speed adaptation',
+      unit: 'rpm',
+      byteCount: 1,
+      scale: 10,
+      min: 800,
+      max: 1000,
+      defaultRaw: [0x55],
+      experimental: true,
+      sampleValue: [0x55], // 85 * 10 = 850 rpm
+    },
+  ],
   notes:
     'K-line (ISO 9141-2, confirmed on the car): slower and thinner than CAN. Mode 09 IS answered by ' +
     'this ECU — VIN (WVWZZZ3BZ4E342958) and Calibration ID (038906019KC 4896) read fine. VCDS ' +

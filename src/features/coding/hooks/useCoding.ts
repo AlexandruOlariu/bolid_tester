@@ -15,26 +15,30 @@ import {
   type CodingPresetState,
 } from '@/shared/obd-core';
 import type { CodingModule } from '@/shared/vehicles';
-import { findLabelPack, codingBitLabels } from '@/shared/labels';
+import { codingBitLabels } from '@/shared/labels';
+import { useLabelPackFinder } from '@/shared/state/labelPackStore';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { activeSeedKeyVehicleKeys, decideSecurity, resolveSeedKey } from '@/shared/security';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
+import {
+  scannedPartNumber,
+  useModuleScanStore,
+} from '@/features/module-scan/model/moduleScanStore';
 import { useCodingStore } from '../model/codingStore';
+import { translate } from '@/shared/i18n';
 
 /** SAFETY: read→backup→write→verify, gated on unlock + CAN. Never writes without a stored backup. */
 export function useCoding() {
   const session = useSessionStore((s) => s.session);
-  const profileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const unlocked = useCodingStore((s) => s.unlocked);
   const current = useCodingStore((s) => s.current);
   const setCurrent = useCodingStore((s) => s.setCurrent);
   const addBackup = useCodingStore((s) => s.addBackup);
   const setLastResult = useCodingStore((s) => s.setLastResult);
 
-  const profile = getVehicleProfile(profileId);
-  const available =
-    !!profile.codingModules?.length && isCan(session?.currentProtocol ?? 'UNKNOWN');
+  const available = !!profile.codingModules?.length && isCan(session?.currentProtocol ?? 'UNKNOWN');
   // Stable per-profile so the `[modules]`-keyed callbacks below (moduleForPreset) don't re-create on
   // every render — `?? []` would otherwise mint a fresh array each pass (react-hooks/exhaustive-deps).
   const modules = useMemo(() => profile.codingModules ?? [], [profile]);
@@ -46,12 +50,26 @@ export function useCoding() {
     [current],
   );
 
+  /** The part number the live module scan read from `mod` — what security-access plugin matching
+   *  uses (plan 23). Never the profile's `mod.partNumber`, which is illustrative: a plugin scoped
+   *  by part-number prefix must not match a module whose real part number is unknown. */
+  const scanResults = useModuleScanStore((s) => s.results);
+  const partNumberFor = useCallback(
+    (mod: CodingModule): string | undefined => scannedPartNumber(scanResults, mod.reqHeader),
+    [scanResults],
+  );
+
   /** Long-coding fields = the module's own schema merged additively with any label-pack coding-bit
    *  names resolved from its part number (the profile schema always wins on a conflict). */
-  const fieldsFor = useCallback((mod: CodingModule): CodingField[] => {
-    const pack = findLabelPack(mod.partNumber);
-    return mergeCodingLabels(mod.schema, codingBitLabels(pack, mod.codingDid));
-  }, []);
+  // The label-pack lookup re-resolves when the imported packs change (plan 13).
+  const findLabelPack = useLabelPackFinder();
+  const fieldsFor = useCallback(
+    (mod: CodingModule): CodingField[] => {
+      const pack = findLabelPack(mod.partNumber);
+      return mergeCodingLabels(mod.schema, codingBitLabels(pack, mod.codingDid));
+    },
+    [findLabelPack],
+  );
 
   const read = useCallback(
     async (mod: CodingModule) => {
@@ -63,7 +81,11 @@ export function useCoding() {
         if (bytes) setCurrent(mod.module, bytes);
         return bytes;
       } catch (e) {
-        logError({ source: 'coding/read', error: e, context: { module: mod.module, did: mod.codingDid } });
+        logError({
+          source: 'coding/read',
+          error: e,
+          context: { module: mod.module, did: mod.codingDid },
+        });
         return null;
       } finally {
         await session.resetAddressing();
@@ -79,7 +101,13 @@ export function useCoding() {
   };
 
   /** Set a masked field (e.g. a nibble) in place, immutably, and store it as the working value. */
-  const setField = (mod: CodingModule, bytes: number[], byte: number, mask: number, value: number) => {
+  const setField = (
+    mod: CodingModule,
+    bytes: number[],
+    byte: number,
+    mask: number,
+    value: number,
+  ) => {
     const cur = bytes[byte] ?? 0;
     const next = setByte(bytes, byte, (cur & ~mask) | (value & mask));
     setCurrent(mod.module, next);
@@ -89,7 +117,25 @@ export function useCoding() {
   const write = useCallback(
     async (mod: CodingModule, newData: number[]) => {
       if (!session || !unlocked) {
-        setLastResult('Locked — unlock coding first.');
+        setLastResult(translate('coding:locked'));
+        return false;
+      }
+      // SecurityAccess (plan 23): only with an installed plugin for this module; otherwise refuse
+      // before any bus traffic — never a made-up key (a wrong key burns one of few attempts).
+      const decision = decideSecurity(
+        mod.security,
+        mod.security
+          ? await resolveSeedKey({
+              reqHeader: mod.reqHeader,
+              level: mod.security.level,
+              // Read at write time from the live scan, never the profile's illustrative number.
+              partNumber: scannedPartNumber(useModuleScanStore.getState().results, mod.reqHeader),
+              vehicleKeys: activeSeedKeyVehicleKeys(),
+            })
+          : null,
+      );
+      if (decision.kind === 'refuse') {
+        setLastResult(decision.message);
         return false;
       }
       await session.setHeader(mod.reqHeader);
@@ -98,7 +144,7 @@ export function useCoding() {
         const res = await codeModule((cmd) => session.send(cmd), {
           did: mod.codingDid,
           newData,
-          security: mod.security ? { level: mod.security.level, seedToKey: (s) => s } : undefined,
+          security: decision.kind === 'unlock' ? decision.security : undefined,
         });
         addBackup({ module: mod.module, did: mod.codingDid, bytes: res.backup, at: Date.now() });
         if (res.verified) setCurrent(mod.module, newData);
@@ -110,11 +156,15 @@ export function useCoding() {
             context: { module: mod.module, did: mod.codingDid },
           });
         }
-        setLastResult(res.verified ? 'Write verified.' : 'Write sent but verification failed.');
+        setLastResult(res.verified ? translate('coding:verified') : translate('coding:unverified'));
         return res.verified;
       } catch (e) {
-        logError({ source: 'coding/write', error: e, context: { module: mod.module, did: mod.codingDid } });
-        setLastResult(`Failed: ${(e as Error).message}`);
+        logError({
+          source: 'coding/write',
+          error: e,
+          context: { module: mod.module, did: mod.codingDid },
+        });
+        setLastResult(translate('coding:failed', { error: (e as Error).message }));
         return false;
       } finally {
         await session.resetAddressing();
@@ -147,7 +197,7 @@ export function useCoding() {
       const mod = moduleForPreset(preset);
       if (!mod) return false;
       if (!session || !unlocked) {
-        setLastResult('Locked — unlock coding first.');
+        setLastResult(translate('coding:locked'));
         return false;
       }
       // Always start from the real, freshly-read coding so the tweak never overwrites unknown bits.
@@ -172,5 +222,6 @@ export function useCoding() {
     moduleForPreset,
     presetState,
     applyTweak,
+    partNumberFor,
   };
 }

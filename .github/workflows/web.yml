@@ -1,0 +1,54 @@
+name: Web (GitHub Pages)
+
+# Plan 28 — the browser build (docs/web.md). Exports the Expo web target as a static single-page
+# site and deploys it to GitHub Pages under /bolid_tester/ (app.json `experiments.baseUrl`) on every
+# push to main, or by hand. Web Bluetooth needs HTTPS, which Pages provides.
+# One-time owner setup: Settings → Pages → Build and deployment → Source: GitHub Actions.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time; a newer push supersedes a queued one, never a running one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      # --ignore-scripts: the web export needs no native build steps.
+      - run: npm install --legacy-peer-deps --ignore-scripts --no-audit --no-fund
+      # Never into dist/ (it holds local APKs, and is gitignored for that).
+      - name: Export the web build
+        run: npx expo export --platform web --output-dir web-build
+      # Pages runs Jekyll by default, which drops the `_expo/` folder (leading underscore).
+      - run: touch web-build/.nojekyll
+      # `output: single` emits only index.html; Pages answers a missing path with 404.html, so a
+      # reload or shared link on /bolid_tester/vehicle etc. must get the app, not GitHub's 404 page.
+      - run: cp web-build/index.html web-build/404.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web-build
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

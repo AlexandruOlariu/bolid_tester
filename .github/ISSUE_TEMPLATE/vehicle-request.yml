@@ -1,0 +1,59 @@
+name: Vehicle request
+description: Ask for a vehicle profile, or offer to help build one.
+title: 'Vehicle: '
+labels: ['vehicle', 'community-data']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The app already works with any OBD2 car through the generic profile. A dedicated profile
+        adds the car's live data list, extended (manufacturer) values, modules, known faults and an
+        on-car checklist. See docs/contributing/vehicle-profile.md if you want to add it yourself.
+  - type: input
+    id: car
+    attributes:
+      label: Car
+      description: Make, model, body, year.
+      placeholder: Skoda Octavia II 2010
+    validations:
+      required: true
+  - type: input
+    id: engine
+    attributes:
+      label: Engine and engine code
+      placeholder: 1.6 TDI, CAYC
+    validations:
+      required: true
+  - type: input
+    id: vin-prefix
+    attributes:
+      label: VIN prefix (first 8 characters only)
+      description: Never post the full VIN.
+      placeholder: TMBZZZ1Z
+    validations:
+      required: false
+  - type: input
+    id: protocol
+    attributes:
+      label: Protocol the adapter negotiated (Info screen), if you know it
+      placeholder: ISO 15765-4 CAN (11-bit, 500 kbps)
+    validations:
+      required: false
+  - type: textarea
+    id: wanted
+    attributes:
+      label: What you would like the profile to cover
+      description: Live values, modules, fault codes, service reset, DPF, coding …
+    validations:
+      required: true
+  - type: dropdown
+    id: evidence
+    attributes:
+      label: Can you record evidence on the car?
+      description: A replay fixture (Settings → Developer & simulator → Adapter log → Export as replay fixture) or a Bus sniffer capture (More → Bus sniffer).
+      options:
+        - Yes, I can record fixtures or captures
+        - Maybe, with instructions
+        - No
+    validations:
+      required: true

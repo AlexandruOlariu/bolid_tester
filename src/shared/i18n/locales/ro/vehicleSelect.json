@@ -1,0 +1,90 @@
+{
+  "title": "Vehicul",
+  "subtitle": "Alege o mașină sau folosește Auto / Generic pentru orice mașină OBD2",
+  "card": {
+    "edit": "Editează",
+    "export": "Exportă",
+    "delete": "Șterge",
+    "byHand": "adăugată manual",
+    "deleteTitle": "Ștergi această mașină?",
+    "deleteBody": "{{name}} este eliminată din garaj. Istoricul, scanările și călătoriile ei rămân pe acest telefon.",
+    "selected": "Selectată",
+    "notSelected": "Neselectată",
+    "selectHint": "Selectează această mașină.",
+    "pids_one": "{{count}} PID",
+    "pids_few": "{{count}} PID-uri",
+    "pids_other": "{{count}} de PID-uri",
+    "basedOn": "Bazată pe {{name}}",
+    "editA11y": "Editează {{name}}",
+    "exportA11y": "Exportă {{name}}",
+    "deleteA11y": "Șterge {{name}}"
+  },
+  "export": {
+    "saved": "Salvat {{file}}.",
+    "failed": "Profilul nu a putut fi exportat. Vezi Mai multe → Jurnal de erori pentru detalii."
+  },
+  "match": {
+    "garageA11y": "Mașina conectată este {{name}} din garajul tău. Treci la ea.",
+    "garage": "Mașina conectată este <b>{{name}}</b> din garajul tău — atinge pentru a trece la ea.",
+    "profileA11y": "VIN-ul mașinii conectate se potrivește cu {{name}}. Treci la acel profil.",
+    "profile": "VIN-ul mașinii conectate ({{vin}}) se potrivește cu <b>{{name}}</b> — atinge pentru a trece la acel profil."
+  },
+  "garage": {
+    "title": "Garajul meu",
+    "copy": "Mașinile adăugate aici sunt memorate pe acest telefon. Profilurile integrate sunt selectate și documentate.",
+    "relearn": "Reînvață de la mașina conectată",
+    "addFromCar": "Adaugă de la mașina conectată",
+    "addManually": "Adaugă manual",
+    "importA11y": "Importă un profil de mașină dintr-un fișier",
+    "import": "Importă profil",
+    "relearnNote": "Mașina conectată este deja în garaj ca {{name}} — reînvățarea îi actualizează protocolul și citirile suportate și îi păstrează numele și notițele.",
+    "connectFirst": "Conectează-te mai întâi la o mașină ca să o adaugi din conexiune — aplicația îi citește VIN-ul, protocolul și citirile suportate.",
+    "empty": "Nicio mașină în garaj încă."
+  },
+  "profiles": {
+    "title": "Profiluri integrate",
+    "experimental": "experimental",
+    "share": "Partajează ca profil de pornire",
+    "shareA11y": "Partajează {{name}} ca profil de pornire"
+  },
+  "editor": {
+    "editTitle": "Editează mașina",
+    "addTitle": "Adaugă o mașină",
+    "name": "Nume",
+    "namePlaceholder": "de ex. Dacia Logan 2015",
+    "nameA11y": "Numele mașinii",
+    "year": "An",
+    "yearPlaceholder": "de ex. 2015",
+    "yearA11y": "Anul modelului",
+    "fuel": "Combustibil",
+    "baseProfile": "Profil de bază",
+    "baseProfileHelp": "Tot ce aplicația nu învață de la mașină vine din acest profil integrat. Auto / Generic funcționează pentru orice mașină OBD2; un profil specific aduce și citirile și instrumentele experimentale ale acelei mașini — alege-l doar pentru exact acea mașină.",
+    "notes": "Notițe",
+    "notesPlaceholder": "Cod motor, particularități, orice vrei să reții",
+    "loginCodes": "Coduri de login",
+    "loginCodesHelp": "Coduri de login ale modulelor pe care ai ales să le reții pentru această mașină în ecranul Adaptări. Aplicația nu include niciunul.",
+    "noLoginCodes": "Niciun cod de login salvat pentru această mașină.",
+    "module": "Modul {{address}}",
+    "code": "Cod {{code}}",
+    "hideCodeA11y": "Ascunde codul de login pentru modulul {{address}}",
+    "showCodeA11y": "Arată codul de login pentru modulul {{address}}",
+    "hide": "Ascunde",
+    "show": "Arată",
+    "deleteCodeA11y": "Șterge codul de login pentru modulul {{address}}",
+    "save": "Salvează",
+    "shareGarage": "Partajează garajul ca JSON",
+    "shareGarageHelp": "Partajează toate mașinile din garaj ca fișier JSON. Importul unui fișier de garaj vine într-o versiune ulterioară.",
+    "shareDialog": "Partajează garajul"
+  },
+  "validate": {
+    "name": "Dă-i mașinii un nume, de ex. „Dacia Logan 2015”.",
+    "nameLong": "Numele poate avea cel mult {{max}} de caractere.",
+    "notesLong": "Notițele pot avea cel mult {{max}} de caractere.",
+    "year": "Anul trebuie să fie între {{min}} și {{max}} sau lăsat gol.",
+    "base": "Alege un profil de bază."
+  },
+  "notify": {
+    "recognised": "Mașină recunoscută"
+  },
+  "shareTitle": "Partajează {{name}}"
+}

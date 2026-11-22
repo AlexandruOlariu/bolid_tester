@@ -2,6 +2,7 @@
 import { DiagnosticSession } from './DiagnosticSession';
 import { MockTransport } from '../transport/MockTransport';
 import { buildScenario } from '../transport/scenarios';
+import { RecordingTransport } from '../transport/recordingTransport';
 
 describe('session extras against the simulator', () => {
   it('batches Mode 01 PIDs on the CAN Golf and matches serial results', async () => {
@@ -57,5 +58,52 @@ describe('session extras against the simulator', () => {
     const golf = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')));
     await golf.connect();
     expect(await golf.readMode05('01', '01')).toBeNull();
+  });
+
+  it('polls extended DIDs on the Golf: bytes per seeded DID, null for an unseeded one', async () => {
+    const golf = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')));
+    await golf.connect();
+    const raw = await golf.pollExtendedOnce(['1701', '170D', 'ABCD']);
+    expect(raw['1701']).toEqual([0x04, 0xb0]);
+    expect(raw['170D']).toEqual([0x7f, 0xce]);
+    expect(raw['ABCD']).toBeNull();
+  });
+
+  it('serves the Golf engine part number (22 F187) on the default header', async () => {
+    const golf = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')));
+    await golf.connect();
+    const bytes = await golf.readExtended('F187');
+    expect(String.fromCharCode(...(bytes ?? []))).toBe('03L906022LM');
+  });
+
+  it('sends 22 F187 at most once per session, even when it gets no answer', async () => {
+    // An engine ECU that does not answer F187 on the default header: the connect-time read and a
+    // later retry (EngineHost, on a profile switch) must share one request, not one timeout each.
+    const rec = new RecordingTransport(
+      new MockTransport(buildScenario('golf-plus-2009-20tdi', { extendedDids: {} })),
+    );
+    const golf = new DiagnosticSession(rec);
+    await golf.connect();
+    const f187Tx = () => rec.log.filter((e) => e.dir === 'tx' && /^22\s*F187/i.test(e.text.trim()));
+    expect(await golf.readPartNumber()).toBeNull();
+    expect(await Promise.all([golf.readPartNumber(), golf.readPartNumber()])).toEqual([null, null]);
+    expect(f187Tx()).toHaveLength(1);
+
+    // A fresh session (a new connection) reads it again.
+    const answered = new DiagnosticSession(
+      new MockTransport(buildScenario('golf-plus-2009-20tdi')),
+    );
+    await answered.connect();
+    expect(await answered.readPartNumber()).toBe('03L906022LM');
+    expect(await answered.readPartNumber()).toBe('03L906022LM');
+  });
+
+  it('sends no Mode 22 request off CAN (K-line Passat)', async () => {
+    const rec = new RecordingTransport(new MockTransport(buildScenario('passat-b55-19tdi')));
+    const passat = new DiagnosticSession(rec);
+    await passat.connect();
+    const before = rec.log.length;
+    expect(await passat.pollExtendedOnce(['1701'])).toEqual({ '1701': null });
+    expect(rec.log.length).toBe(before);
   });
 });

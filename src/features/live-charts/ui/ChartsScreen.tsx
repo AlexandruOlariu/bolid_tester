@@ -1,47 +1,40 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { PanResponder, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { PanResponder, View, type LayoutChangeEvent } from 'react-native';
 import { YStack, XStack, Paragraph, H4, Button, Text } from 'tamagui';
 import Svg, { Polyline, Line, Circle } from 'react-native-svg';
-import { Screen } from '@/shared/ui';
+import {
+  Screen,
+  useLayoutClass,
+  isTwoPane,
+  usePalette,
+  type PaletteColors,
+  HIT_SLOP,
+} from '@/shared/ui';
 import { HintCard } from '@/features/onboarding';
-import { Point } from '@/shared/obd-core';
-import { useChartsStore, ChartPanel } from '../model/chartsStore';
+import { isCan } from '@/shared/obd-core';
+import { livePidFilter } from '@/shared/vehicles';
+import { useSessionStore } from '@/shared/state/sessionStore';
+import { useActiveProfile } from '@/shared/state/activeProfile';
+import { useChartsStore, ChartPanel, MAX_PANEL_SERIES } from '../model/chartsStore';
+import { chartKeyOptions, panelLabels, type ChartKeyOption } from '../model/chartKeys';
 import { useChartSeries } from '../hooks/useChartSeries';
 import { useChartExport } from '../hooks/useChartExport';
+import {
+  DEFAULT_CHART_WIDTH,
+  chartHeight,
+  msPerPx,
+  toScreen,
+  type ScreenPoint,
+} from '../api/chartGeometry';
+import { useTranslation } from '@/shared/i18n';
+import { formatFixed, formatTime } from '@/shared/lib/format';
 
-const W = 320;
-const H = 120;
 const MIN_WINDOW = 10_000; //  10 s — most zoomed-in
 const MAX_WINDOW = 600_000; // 10 min — most zoomed-out
-const COLORS = ['#2bb673', '#4c9df3', '#d29922', '#f85149'];
+/** Series colours, from the theme (plan 20): each ≥ 3:1 on the chart background in both themes. */
+const seriesColours = (p: PaletteColors) => [p.accent, p.statusInfo, p.statusWarn, p.statusError];
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
-
-interface ScreenPoint {
-  x: number;
-  y: number;
-  t: number;
-  v: number;
-}
-
-/** Map a series to SVG screen coordinates, each PID independently normalized (matches the gauges'
- *  auto-scaling). Returns both the coords (for tap-inspect) and the polyline string. */
-function toScreen(pts: Point[]): { screen: ScreenPoint[]; polyline: string } {
-  if (pts.length < 1) return { screen: [], polyline: '' };
-  const ts = pts.map((p) => p.t);
-  const vs = pts.map((p) => p.v);
-  const tMin = Math.min(...ts);
-  const tSpan = Math.max(...ts) - tMin || 1;
-  const vMin = Math.min(...vs);
-  const vSpan = Math.max(...vs) - vMin || 1;
-  const screen = pts.map((p) => ({
-    x: ((p.t - tMin) / tSpan) * W,
-    y: H - ((p.v - vMin) / vSpan) * H,
-    t: p.t,
-    v: p.v,
-  }));
-  return { screen, polyline: screen.map((s) => `${s.x.toFixed(1)},${s.y.toFixed(1)}`).join(' ') };
-}
 
 interface Inspect {
   pid: string;
@@ -52,18 +45,33 @@ interface Inspect {
 }
 
 function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
+  const { t } = useTranslation('liveCharts');
+  const profile = useActiveProfile();
+  const palette = usePalette();
+  const removePanel = useChartsStore((s) => s.removePanel);
+  // Human labels for every key (Mode 01 name + unit, or `name (unit) · DID` for an extended key).
+  const labels = useMemo(() => panelLabels(pids, profile.extendedPids ?? []), [pids, profile]);
   const [windowMs, setWindowMs] = useState(initialWindowMs);
   const [panOffsetMs, setPanOffsetMs] = useState(0);
   const [inspect, setInspect] = useState<Inspect | null>(null);
   const { series, stats, oldestOffsetMs } = useChartSeries(pids, windowMs, 120, panOffsetMs);
   const { shareCsv, busy } = useChartExport();
+  // Plan 21: the plot fills the panel — measured with onLayout, 320 until the first layout.
+  const [width, setWidth] = useState(DEFAULT_CHART_WIDTH);
+  const height = chartHeight(width);
+  const onPlotLayout = useCallback((e: LayoutChangeEvent) => {
+    const measured = Math.round(e.nativeEvent.layout.width);
+    if (measured > 0) setWidth(measured);
+  }, []);
 
   // Live refs so the (memoized) PanResponder handlers never read stale gesture inputs.
   const windowRef = useRef(windowMs);
   const panRef = useRef(panOffsetMs);
   const oldestRef = useRef(oldestOffsetMs);
   const screenRef = useRef<{ pid: string; pts: ScreenPoint[] }[]>([]);
+  const widthRef = useRef(width);
   windowRef.current = windowMs;
+  widthRef.current = width;
   panRef.current = panOffsetMs;
   oldestRef.current = oldestOffsetMs;
 
@@ -118,13 +126,17 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
             startWindow.current = windowRef.current;
             return;
           }
-          const next = clamp((startWindow.current * startDist.current) / (dist || 1), MIN_WINDOW, MAX_WINDOW);
+          const next = clamp(
+            (startWindow.current * startDist.current) / (dist || 1),
+            MIN_WINDOW,
+            MAX_WINDOW,
+          );
           emit(() => setWindowMs(next));
         } else {
           // One-finger drag → pan the window's end back/forward in time.
-          const msPerPx = windowRef.current / W;
+          const rate = msPerPx(windowRef.current, widthRef.current);
           const maxOffset = Math.max(0, oldestRef.current - windowRef.current);
-          const next = clamp(startPan.current + g.dx * msPerPx, 0, maxOffset);
+          const next = clamp(startPan.current + g.dx * rate, 0, maxOffset);
           emit(() => setPanOffsetMs(next));
         }
       },
@@ -139,9 +151,10 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
   ).current;
 
   // Rebuild the screen-space geometry each render for both drawing and tap-inspect.
+  const colours = seriesColours(palette);
   const plotted = pids.map((pid, i) => {
-    const { screen, polyline } = toScreen(series[pid] ?? []);
-    return { pid, color: COLORS[i % COLORS.length], screen, polyline };
+    const { screen, polyline } = toScreen(series[pid] ?? [], width, height);
+    return { pid, color: colours[i % colours.length], screen, polyline };
   });
   screenRef.current = plotted.map((p) => ({ pid: p.pid, pts: p.screen }));
 
@@ -150,25 +163,49 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
   return (
     <YStack gap="$1" backgroundColor="$color2" padding="$3" borderRadius="$4">
       <XStack justifyContent="space-between" alignItems="center">
-        <H4>{pids.join(', ')}</H4>
+        <H4 flexShrink={1}>{pids.map((k) => labels[k]).join(' / ')}</H4>
         <Text theme="alt2" fontSize="$2">
-          {Math.round(windowMs / 1000)}s{panned ? ' · panned' : ''}
+          {Math.round(windowMs / 1000)}s{panned ? ` · ${t('panned')}` : ''}
         </Text>
       </XStack>
 
       <View
+        testID={`chart-plot-${id}`}
+        onLayout={onPlotLayout}
         {...responder.panHandlers}
-        accessibilityLabel={`Chart for ${pids.join(', ')}. Pinch to zoom, drag to pan, tap to inspect a sample.`}
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={t('plotA11y', { series: pids.map((k) => labels[k]).join(', ') })}
       >
-        <Svg width={W} height={H}>
-          <Line x1={0} y1={H} x2={W} y2={H} stroke="#30363D" strokeWidth={1} />
+        <Svg width={width} height={height}>
+          <Line
+            x1={0}
+            y1={height}
+            x2={width}
+            y2={height}
+            stroke={palette.borderColor}
+            strokeWidth={1}
+          />
           {plotted.map((p) => (
-            <Polyline key={p.pid} points={p.polyline} fill="none" stroke={p.color} strokeWidth={2} />
+            <Polyline
+              key={p.pid}
+              points={p.polyline}
+              fill="none"
+              stroke={p.color}
+              strokeWidth={2}
+            />
           ))}
           {inspect ? (
             <>
-              <Line x1={inspect.x} y1={0} x2={inspect.x} y2={H} stroke="#8B949E" strokeWidth={1} />
-              <Circle cx={inspect.x} cy={inspect.y} r={4} fill="#E6EDF3" />
+              <Line
+                x1={inspect.x}
+                y1={0}
+                x2={inspect.x}
+                y2={height}
+                stroke={palette.muted}
+                strokeWidth={1}
+              />
+              <Circle cx={inspect.x} cy={inspect.y} r={4} fill={palette.color} />
             </>
           ) : null}
         </Svg>
@@ -176,8 +213,8 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
 
       {inspect ? (
         <Paragraph theme="alt2" size="$2">
-          {inspect.pid} @ {new Date(inspect.t).toLocaleTimeString()}:{' '}
-          <Text fontWeight="700">{inspect.v.toFixed(1)}</Text>
+          {labels[inspect.pid] ?? inspect.pid} @ {formatTime(inspect.t, true)}:{' '}
+          <Text fontWeight="700">{formatFixed(inspect.v, 1)}</Text>
         </Paragraph>
       ) : null}
 
@@ -185,29 +222,99 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
         const s = stats[pid];
         return (
           <Paragraph key={pid} theme="alt2" size="$2">
-            {pid}: {s ? `now ${s.current.toFixed(1)} · min ${s.min.toFixed(1)} · max ${s.max.toFixed(1)}` : 'no data'}
+            {labels[pid]}:{' '}
+            {s
+              ? t('stats', {
+                  now: formatFixed(s.current, 1),
+                  min: formatFixed(s.min, 1),
+                  max: formatFixed(s.max, 1),
+                })
+              : t('noData')}
           </Paragraph>
         );
       })}
 
-      <XStack gap="$2" marginTop="$1">
+      <XStack gap="$2" marginTop="$1" flexWrap="wrap">
         {panned ? (
-          <Button size="$2" theme="alt2" onPress={() => setPanOffsetMs(0)}>
-            Back to live
+          <Button size="$3" hitSlop={HIT_SLOP} theme="alt2" onPress={() => setPanOffsetMs(0)}>
+            {t('backToLive')}
           </Button>
         ) : null}
         {inspect ? (
-          <Button size="$2" theme="alt2" onPress={() => setInspect(null)}>
-            Clear
+          <Button size="$3" hitSlop={HIT_SLOP} theme="alt2" onPress={() => setInspect(null)}>
+            {t('clear')}
           </Button>
         ) : null}
         <Button
-          size="$2"
+          size="$3"
+          hitSlop={HIT_SLOP}
           theme="blue"
           disabled={busy}
-          onPress={() => shareCsv(`chart-${id}`, series)}
+          onPress={() => shareCsv(`chart-${id}`, series, labels)}
         >
-          Share window (CSV)
+          {t('share')}
+        </Button>
+        <Button size="$3" hitSlop={HIT_SLOP} theme="red" onPress={() => removePanel(id)}>
+          {t('remove')}
+        </Button>
+      </XStack>
+    </YStack>
+  );
+}
+
+/** Pick up to MAX_PANEL_SERIES keys for a new panel. */
+function PanelPicker({
+  options,
+  onAdd,
+  onCancel,
+}: {
+  options: ChartKeyOption[];
+  onAdd: (keys: string[]) => void;
+  onCancel: () => void;
+}) {
+  const { t } = useTranslation('liveCharts');
+  const [picked, setPicked] = useState<string[]>([]);
+  const toggle = (key: string) =>
+    setPicked((prev) =>
+      prev.includes(key)
+        ? prev.filter((k) => k !== key)
+        : prev.length >= MAX_PANEL_SERIES
+          ? prev
+          : [...prev, key],
+    );
+  return (
+    <YStack gap="$2" backgroundColor="$color2" padding="$3" borderRadius="$4">
+      <H4>{t('picker.title')}</H4>
+      <Paragraph theme="alt2" size="$2">
+        {t('picker.help', { max: MAX_PANEL_SERIES, count: picked.length })}
+        {options.some((o) => o.extended) ? ` ${t('picker.experimental')}` : ''}
+      </Paragraph>
+      {options.length === 0 ? <Paragraph theme="alt2">{t('picker.connect')}</Paragraph> : null}
+      <XStack flexWrap="wrap" gap="$2">
+        {options.map((o) => {
+          const on = picked.includes(o.key);
+          return (
+            <Button
+              key={o.key}
+              size="$3"
+              hitSlop={HIT_SLOP}
+              theme={on ? 'blue' : o.extended ? 'yellow' : 'alt2'}
+              onPress={() => toggle(o.key)}
+              role="checkbox"
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: on, selected: on }}
+            >
+              {o.label}
+            </Button>
+          );
+        })}
+      </XStack>
+      <XStack gap="$2">
+        <Button flex={1} theme="green" disabled={picked.length === 0} onPress={() => onAdd(picked)}>
+          {t('addPanel')}
+        </Button>
+        <Button flex={1} theme="alt2" onPress={onCancel}>
+          {t('common:actions.cancel')}
         </Button>
       </XStack>
     </YStack>
@@ -215,16 +322,68 @@ function Panel({ id, pids, windowMs: initialWindowMs }: ChartPanel) {
 }
 
 export function ChartsScreen() {
+  const { t } = useTranslation('liveCharts');
   const panels = useChartsStore((s) => s.panels);
+  const addPanel = useChartsStore((s) => s.addPanel);
+  const session = useSessionStore((s) => s.session);
+  const info = useSessionStore((s) => s.info);
+  const profile = useActiveProfile();
+  const [picking, setPicking] = useState(false);
+  const twoPane = isTwoPane(useLayoutClass());
+
+  // Mode 01 PIDs the car reports (∩ the profile's list), plus — on CAN with a profile that
+  // declares DIDs — its extended `22:<DID>` keys.
+  const options = useMemo(
+    () =>
+      session
+        ? chartKeyOptions(
+            session.effectivePids(livePidFilter(profile)),
+            profile.extendedPids ?? [],
+            !!info && isCan(info.protocol),
+          )
+        : [],
+    [session, info, profile],
+  );
+
   return (
-    <Screen title="Charts" subtitle="Live parameters over time">
-      <HintCard id="charts-gestures" title="Explore the chart">
-        Pinch to zoom the time window (10 s–10 min), drag left/right to pan through history, and tap a
-        line to read the exact value and time. Use “Share window (CSV)” to send the data out.
+    <Screen title={t('title')} subtitle={t('subtitle')} wide={twoPane}>
+      <HintCard id="charts-gestures" title={t('hint.title')}>
+        {t('hint.body')}
       </HintCard>
-      {panels.map((p) => (
-        <Panel key={p.id} id={p.id} pids={p.pids} windowMs={p.windowMs} />
-      ))}
+      {/* Plan 21: two panels per row on a tablet / landscape phone (each plot stretches to its
+          half), stacked on a portrait phone. One element tree for both, so rotating keeps every
+          panel mounted with its zoom, pan and inspect state; only the styles change. */}
+      <XStack
+        testID={twoPane ? 'chart-panels-grid' : 'chart-panels'}
+        flexDirection={twoPane ? 'row' : 'column'}
+        flexWrap={twoPane ? 'wrap' : 'nowrap'}
+        justifyContent="space-between"
+        rowGap={12}
+      >
+        {panels.map((p) => (
+          <YStack
+            key={p.id}
+            flexBasis={twoPane ? '49%' : 'auto'}
+            maxWidth={twoPane ? '49%' : '100%'}
+          >
+            <Panel id={p.id} pids={p.pids} windowMs={p.windowMs} />
+          </YStack>
+        ))}
+      </XStack>
+      {picking ? (
+        <PanelPicker
+          options={options}
+          onAdd={(keys) => {
+            addPanel(keys);
+            setPicking(false);
+          }}
+          onCancel={() => setPicking(false)}
+        />
+      ) : (
+        <Button theme="blue" onPress={() => setPicking(true)}>
+          {t('addPanel')}
+        </Button>
+      )}
     </Screen>
   );
 }

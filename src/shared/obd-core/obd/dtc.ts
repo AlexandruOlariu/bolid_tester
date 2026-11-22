@@ -1,5 +1,7 @@
 /** Diagnostic Trouble Code (DTC) encoding/decoding. See docs/obd2-reference.md. */
 
+import { describeDtc, type DtcMake } from './dtcDatabase';
+
 export interface Dtc {
   code: string; // e.g. 'P0299'
   description: string;
@@ -62,44 +64,12 @@ export function parseDtcBytes(dataAfterService: number[]): string[] {
   return codes;
 }
 
-/** A small dictionary of common generic codes; unknown codes get a range-based label. */
-const DTC_DICTIONARY: Record<string, string> = {
-  P0101: 'Mass air flow (MAF) circuit range/performance',
-  P0113: 'Intake air temperature sensor circuit high',
-  P0121: 'Throttle/pedal position sensor/switch A circuit range/performance',
-  P0128: 'Coolant thermostat (below regulating temperature)',
-  P0131: 'O2 sensor circuit low voltage (B1S1)',
-  P0133: 'O2 sensor circuit slow response (B1S1)',
-  P0171: 'System too lean (Bank 1)',
-  P0172: 'System too rich (Bank 1)',
-  P0234: 'Turbocharger overboost condition',
-  P0299: 'Turbocharger/supercharger underboost',
-  P0300: 'Random/multiple cylinder misfire detected',
-  P0301: 'Cylinder 1 misfire detected',
-  P0401: 'Exhaust gas recirculation (EGR) flow insufficient',
-  P0402: 'Exhaust gas recirculation (EGR) flow excessive',
-  P0420: 'Catalyst system efficiency below threshold (Bank 1)',
-  P0500: 'Vehicle speed sensor malfunction',
-  P0606: 'ECM/PCM processor fault',
-  P2002: 'Diesel particulate filter efficiency below threshold (Bank 1)',
-  P2015: 'Intake manifold runner position sensor/switch circuit range/performance (Bank 1)',
-  P2183: 'Engine coolant temperature (ECT) sensor 2 circuit range/performance',
-  U0100: 'Lost communication with ECM/PCM',
-};
+/** Descriptions come from the DTC database (`./dtcDatabase`, plan 05): `describeDtc(code, make?)`
+ *  and the richer `lookupDtc(code, make?)` (system, subsystem, severity, manufacturer flag). */
+export * from './dtcDatabase';
 
-const SYSTEM_NAME: Record<string, string> = {
-  P: 'Powertrain',
-  C: 'Chassis',
-  B: 'Body',
-  U: 'Network',
-};
-
-export function describeDtc(code: string): string {
-  if (DTC_DICTIONARY[code]) return DTC_DICTIONARY[code];
-  const system = SYSTEM_NAME[code[0]] ?? 'Unknown';
-  return `${system} code ${code} (generic — no local description)`;
-}
-
-export function toDtc(code: string): Dtc {
-  return { code, description: describeDtc(code) };
+/** A decoded code with its display description. `make` selects the manufacturer table for
+ *  manufacturer-specific codes (P1xxx etc.); generic codes ignore it. */
+export function toDtc(code: string, make?: DtcMake): Dtc {
+  return { code, description: describeDtc(code, make) };
 }

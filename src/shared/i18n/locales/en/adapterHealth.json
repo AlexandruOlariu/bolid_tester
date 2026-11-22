@@ -1,0 +1,31 @@
+{
+  "title": "Adapter health",
+  "notConnected": "Connect to a car (or the simulator) to test the adapter. This times a burst of commands and grades your ELM327.",
+  "subtitle": "Firmware, voltage, protocol & latency — is my clone junk?",
+  "running": "Running…",
+  "runAgain": "Run again",
+  "run": "Run health check (~5 s)",
+  "grade": {
+    "good": "GOOD",
+    "ok": "OK",
+    "poor": "POOR"
+  },
+  "clone": "clone suspected",
+  "community": "Community: {{summary}}",
+  "noCommunity": "No community reports for this adapter yet — share the JSON to add one.",
+  "firmware": "Firmware",
+  "voltage": "Voltage",
+  "protocol": "Protocol",
+  "minLatency": "Min latency",
+  "medianLatency": "Median latency",
+  "maxLatency": "Max latency",
+  "answered": "{{done}}/{{total}} 0100 commands answered",
+  "shareText": "Share as text",
+  "shareJson": "Share JSON (for the compatibility matrix)",
+  "phase": {
+    "firmware": "Reading firmware (ATI)…",
+    "voltage": "Reading voltage (ATRV)…",
+    "protocol": "Detecting protocol (ATDPN)…",
+    "timing": "Timing 0100 ({{n}}/{{total}})…"
+  }
+}

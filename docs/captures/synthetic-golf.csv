@@ -1,0 +1,36 @@
+# bolid-tester bus capture (csv)
+# vehicle: golf-plus-2009-20tdi
+# protocol: ISO 15765-4 CAN (11 bit, 500 kbaud)
+# adapter: synthetic (unit test)
+# started: 2026-11-20T10:00:00.000Z
+# note: Synthetic: V157 Group 121 ON then OFF, a refused routine, a TP2.0 channel
+# lines: 25 (frames 24, unparsed 1)
+# dropped: 0
+# t_ms = milliseconds since started
+t_ms,id,dlc,bytes
+900,5D0,6,05 AA BB CC DD EE
+1000,7E0,8,02 10 03 55 55 55 55 55
+1012,7E8,3,02 50 03
+1100,7E0,4,03 22 F1 87
+1110,7E8,8,10 14 62 F1 87 30 33 4C
+1111,7E0,3,30 00 00
+1112,7E8,8,21 39 30 36 30 32 32 4C
+1113,7E8,8,22 4D 20 20 20 20 20 20
+2000,7E0,5,04 31 01 03 01
+2030,7E8,5,04 71 01 03 01
+4000,7E0,5,04 31 02 03 01
+4025,7E8,5,04 71 02 03 01
+5000,7E0,5,04 31 01 02 01
+5020,7E8,4,03 7F 31 33
+6000,200,7,01 C0 00 10 00 03 01
+6010,201,7,00 D0 00 03 40 07 01
+6020,740,6,A0 0F 8A FF 32 FF
+6025,300,6,A1 0F 8A FF 4A FF
+7000,740,1,A3
+7002,300,6,A1 0F 8A FF 4A FF
+8000,740,1,A3
+8002,300,6,A1 0F 8A FF 4A FF
+9000,740,1,A3
+9002,300,6,A1 0F 8A FF 4A FF
+# raw: 1 line(s) that did not parse as frames
+# 1500	BUFFER FULL

@@ -1,0 +1,81 @@
+name: E2E (Maestro)
+
+# The Maestro smoke flow (.maestro/simulator-smoke.yaml) on an Android emulator: simulator connect →
+# read faults → clear. Slow (build + emulator boot), so it runs nightly and on demand only — never on
+# push — and is not a required check. See docs/testing.md → "End-to-end".
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 2 * * *' # nightly, 02:30 UTC
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  maestro-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      # Full install (scripts enabled) so Expo config plugins are available to prebuild.
+      - run: npm install --legacy-peer-deps --no-audit --no-fund
+      # android/ is gitignored, so prebuild regenerates the native project from app.json.
+      - name: Generate native Android project
+        run: npx expo prebuild --platform android --no-install
+      - name: Set up Gradle (with caching)
+        uses: gradle/actions/setup-gradle@v4
+      # A release-variant APK embeds the JS bundle, so the flow runs without a Metro dev server (the
+      # debug variant is an expo-dev-client build that needs one). Signed with prebuild's debug key.
+      - name: Build APK (embedded bundle)
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=x86_64
+        env:
+          # The Sentry Expo plugin (plan 31) adds a source-map upload to every release build; this
+          # test build has no Sentry token or DSN, so the upload is switched off (docs/release.md).
+          SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+      - name: Locate APK
+        id: apk
+        run: |
+          src=$(find android/app/build/outputs/apk/release -name '*.apk' | head -n1)
+          if [ -z "$src" ]; then echo "No APK produced" >&2; exit 1; fi
+          echo "path=$src" >> "$GITHUB_OUTPUT"
+      - name: Install Maestro
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+      # Hardware acceleration for the emulator on GitHub's Linux runners.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run Maestro smoke flow on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            adb install -r "${{ steps.apk.outputs.path }}"
+            maestro test .maestro/simulator-smoke.yaml --format junit --output maestro-report.xml
+      - name: Upload Maestro report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-report
+          path: |
+            maestro-report.xml
+            ~/.maestro/tests/
+          if-no-files-found: ignore

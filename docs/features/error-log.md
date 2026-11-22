@@ -5,13 +5,14 @@ be reviewed and **exported to fix later**. File-backed (expo-file-system) like h
 it survives app restarts. Reachable from the **More** tab (`/error-log`).
 
 ## What gets recorded
+
 - **Caught feature errors** — wired into the existing `catch` blocks via `logError(...)`:
   `connection` (connect failures, incl. the chosen adapter source), `fault-codes` (DTC read
   failures), `ai-diagnose` (gather/analyse failures), `battery-health`, `coding/read`,
   `coding/write`, `dpf`, `extended-pids`, `inspection`, `live-data`, `performance-tests`,
-  `sensor-readings`, `sensor-tests`, `service-reset`, `trip-recording`, `settings/ai-test`
+  `live-data/sensors` (Live → All sensors), `sensor-tests`, `service-reset`, `trip-recording`, `settings/ai-test`
   (AI server connection test), and the `alerts` / `notifications` watcher effects. Each call keeps
-  the feature's own user-facing error handling and *additionally* records the error in the zone.
+  the feature's own user-facing error handling and _additionally_ records the error in the zone.
 - **Shared-service failures** — the cross-cutting services that every feature leans on log on behalf
   of their callers, so no feature can fail silently through them:
   - `persist` — a failed file read/write/delete in `shared/state/persistStorage` (silent data loss
@@ -19,7 +20,7 @@ it survives app restarts. Reachable from the **More** tab (`/error-log`).
     with `context: { store, op }`. The error-log store's own file (`bolid.errors`) is deliberately
     **excluded** to avoid an infinite log→write→log loop.
   - `notifications` / `notifications/schedule` / `notifications/permission` — a notification that
-    fails to deliver when expo-notifications *is* present. A simply-absent module (tests / web)
+    fails to deliver when expo-notifications _is_ present. A simply-absent module (tests / web)
     stays a silent no-op and is **not** logged.
 - **Uncaught errors** — `installGlobalErrorHandlers()` (called once at app start in
   `app/_layout.tsx`) chains React Native's `ErrorUtils` global handler and the web
@@ -37,16 +38,23 @@ logError({ source: 'my-feature', error: e, severity: 'warning', context: { id } 
 ```
 
 ## UI
+
 - **ErrorLogScreen** — newest-first list with a **severity filter** (All / Fatal / Errors /
   Warnings, each with a count). Each card is colour-coded by severity, shows the source, timestamp
   and message, and expands to reveal **context** and the **stack trace**. Per-error delete, a
   confirmed **Clear all**, and **Export** (shares the currently filtered set).
+- **Report** (top of the screen, plan 32) opens **More → Report a problem**
+  ([feedback](./feedback.md)), which bundles this log — redacted — with the adapter log, the app and
+  device info, the active vehicle and the last module scan, plus the user's description.
 - **Export** writes a file to the document directory and opens the OS share sheet (expo-sharing),
-  in either **Markdown** (human-readable report) or **JSON** (full records). Both native modules are
-  loaded with dependency-tolerant dynamic imports, so the build/tests don't require them and the
-  feature degrades to a no-op where sharing is unavailable (web/tests).
+  in either **Markdown** (human-readable report) or **JSON** (full records); in the browser the
+  file is downloaded instead (`saveTextFile` in `shared/lib/saveFile.ts`, plan 28 —
+  [web](../web.md)). The native modules are loaded with dependency-tolerant dynamic imports (the
+  legacy `expo-file-system` entry point, which has the document directory on this SDK), so the
+  build/tests don't require them.
 
 ## model
+
 - `shared/lib/errorLog.ts` — the **pure core** (unit-tested, under lint/typecheck scope):
   the `LoggedError` record, `normalizeError` (unknown thrown value → message + stack),
   `buildLoggedError`, and the `formatErrorsForExport` (Markdown) / `errorsToJson` renderers.
@@ -59,14 +67,39 @@ logError({ source: 'my-feature', error: e, severity: 'warning', context: { id } 
   `persistStorage` receives `logError` by injection (`setPersistLogger`) rather than importing it, to
   avoid a module-init cycle.
 
+## Relationship to the problem report
+
+The error log is the complete, unredacted local record and its **Export** shares it as is. The
+problem report ([feedback](./feedback.md)) is the one-tap way to send it to the maintainer: the same
+errors, with VINs masked, URLs and device ids scrubbed and secret context keys (`apiKey`, tokens)
+dropped, next to the adapter log and the device info the error log lacks. The root render-error
+boundary's fallback ("Something broke") says "Try again, or report it from More > Report a
+problem".
+
+## Relationship to crash reports (plan 31)
+
+The error log is the **complete local record** and is always on. Opt-in crash reports
+([settings → Privacy](./settings.md#privacy-crash-reports-plan-31)) are a **scrubbed subset** sent
+only after the user turns them on in a build that carries a crash-service address: `logError`
+writes the entry first, then hands `error` / `fatal` entries to `captureError`
+(`src/shared/telemetry/crashReporting.ts`), whose gate decides whether anything leaves the phone.
+Warnings are never sent; the dedup window stays in `logError` only; `global` and
+`unhandledRejection` entries are not forwarded because the crash SDK's own handlers capture those
+errors (and native crashes) once it is initialised. `installGlobalErrorHandlers` keeps its 150 ms
+deferral of the fatal handler.
+
 ## Retention
+
 - **Capped at `MAX_ERRORS` (500)** — newest kept, oldest dropped, so the persisted file can't grow
   unbounded. Entries accumulate (newest first) until the cap or **Clear all**.
 
 ## Acceptance
+
 - A connect failure, a fault-code read failure, or an AI-diagnose failure each add one entry with the
   matching `source`, alongside the feature's existing error message.
 - An uncaught error / unhandled rejection is captured as a `global` / `unhandledRejection` entry.
 - Entries persist across app restarts and render under the correct severity filter.
 - Export produces a Markdown or JSON file and opens the share sheet; Clear all empties the list and
   the persisted file.
+- With crash reports off (the default), no build or DSN, `logError` sends nothing anywhere
+  (`crashReporting.test.ts`).

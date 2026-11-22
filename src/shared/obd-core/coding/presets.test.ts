@@ -2,8 +2,10 @@ import {
   applyPreset,
   revertPreset,
   detectPresetState,
+  compareCodingSnapshots,
   CodingPreset,
 } from './presets';
+import { getVehicleProfile } from '../../vehicles';
 
 // Mirrors the shipped Golf Plus BCM coding (reqHeader 70E, DID F1A0, [01 00 10 00]).
 const drl: CodingPreset = {
@@ -76,5 +78,48 @@ describe('detectPresetState', () => {
     expect(detectPresetState([0x01, 0x00], combo)).toBe('unknown'); // first on, second off
     expect(detectPresetState([0x01, 0x01], combo)).toBe('on');
     expect(detectPresetState([0x00, 0x00], combo)).toBe('off');
+  });
+});
+
+describe('compareCodingSnapshots (plan 25)', () => {
+  const golfPresets = getVehicleProfile('golf-plus-2009-20tdi').codingPresets ?? [];
+  const matchOf = (r: { presetId: string; matches: string }[], id: string) =>
+    r.find((x) => x.presetId === id)?.matches;
+
+  it('finds the DRL preset for a byte-0-bit-0 change, in both directions', () => {
+    const off = [0x00, 0x00, 0x10, 0x00];
+    const on = [0x01, 0x00, 0x10, 0x00];
+    const r = compareCodingSnapshots(off, on, golfPresets);
+    expect(matchOf(r, 'golf-drl')).toBe('on');
+    expect(r.filter((x) => x.matches !== 'none').map((x) => x.presetId)).toEqual(['golf-drl']);
+    expect(matchOf(compareCodingSnapshots(on, off, golfPresets), 'golf-drl')).toBe('off');
+  });
+
+  it('finds none for an unrelated byte, no change, or a change that spills outside the fields', () => {
+    const base = [0x01, 0x00, 0x10, 0x00];
+    const unrelated = compareCodingSnapshots(base, [0x01, 0x00, 0x10, 0x80], golfPresets);
+    expect(unrelated.every((x) => x.matches === 'none')).toBe(true);
+    expect(compareCodingSnapshots(base, base, golfPresets).every((x) => x.matches === 'none')).toBe(
+      true,
+    );
+    // DRL bit + a bit in byte 3: DRL alone does not explain it.
+    expect(
+      matchOf(
+        compareCodingSnapshots([0x00, 0, 0x10, 0], [0x01, 0, 0x10, 0x01], golfPresets),
+        'golf-drl',
+      ),
+    ).toBe('none');
+  });
+
+  it('a nibble preset matches only its exact on / off value', () => {
+    expect(
+      matchOf(compareCodingSnapshots([1, 0, 0x10, 0], [1, 0, 0x13, 0], [blink]), 'blink'),
+    ).toBe('on');
+    expect(
+      matchOf(compareCodingSnapshots([1, 0, 0x13, 0], [1, 0, 0x10, 0], [blink]), 'blink'),
+    ).toBe('off');
+    expect(
+      matchOf(compareCodingSnapshots([1, 0, 0x10, 0], [1, 0, 0x15, 0], [blink]), 'blink'),
+    ).toBe('none');
   });
 });

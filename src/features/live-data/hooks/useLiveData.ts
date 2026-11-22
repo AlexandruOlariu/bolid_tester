@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useSessionStore } from '@/shared/state/sessionStore';
-import { getVehicleProfile } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
-import { useLiveDataStore } from '../model/liveDataStore';
+import { livePidFilter } from '@/shared/vehicles';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
+import { useLiveDataStore } from '@/shared/state/liveDataStore';
 
 // Unique subscriber id per hook instance so two mounted screens don't clobber each other's
 // registration (and releasing one never releases the other).
@@ -18,7 +18,7 @@ let nextRegId = 0;
  *  to register the effective PID set (the default for every other screen). */
 export function useLiveData(pids?: string[]) {
   const session = useSessionStore((s) => s.session);
-  const selectedId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const values = useLiveDataStore((s) => s.values);
   const polling = useLiveDataStore((s) => s.polling);
   const acquire = useLiveDataStore((s) => s.acquire);
@@ -32,11 +32,10 @@ export function useLiveData(pids?: string[]) {
     if (pidKey !== null) {
       wanted = pidKey.length > 0 ? pidKey.split(',') : [];
     } else {
-      const profile = getVehicleProfile(selectedId);
-      wanted = session.effectivePids(profile.id === 'generic' ? undefined : profile.supportedPids);
+      wanted = session.effectivePids(livePidFilter(profile));
     }
     return acquire(idRef.current, wanted);
-  }, [session, selectedId, acquire, pidKey]);
+  }, [session, profile, acquire, pidKey]);
 
   return { values, polling };
 }

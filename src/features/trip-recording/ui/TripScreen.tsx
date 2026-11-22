@@ -1,67 +1,63 @@
-import React, { useState } from 'react';
-import { YStack, XStack, Paragraph, H4, Button, Spinner } from 'tamagui';
-import { Screen } from '@/shared/ui';
-import type { TripSample } from '@/shared/obd-core';
-import { useSettingsStore } from '@/shared/state/settingsStore';
-import { convert } from '@/shared/lib/units';
-import { useTripStore } from '../model/tripStore';
-import { useTripRecorder, stopRecording, loadTripSamples, deleteTrip, shareTrip } from '../hooks/useTripRecorder';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'expo-router';
+import { YStack, XStack, Paragraph, H4, Button } from 'tamagui';
+import { Screen, SegmentedControl, HIT_SLOP } from '@/shared/ui';
+import { useGarageStore } from '@/shared/state/garageStore';
+import { isUserVehicleId, vehicleLabel } from '@/shared/vehicles';
+import { resolveProfile } from '@/shared/vehicles/resolve';
+import { tripCarKey, tripCars, UNKNOWN_TRIP_CAR, useTripStore } from '../model/tripStore';
+import { useTripRecorder, stopRecording, deleteTrip, shareTrip } from '../hooks/useTripRecorder';
 import { startTrackCapture } from '../api/trackRecorder';
+import { useTranslation } from '@/shared/i18n';
+import { formatDateTime, formatFixed } from '@/shared/lib/format';
 
 export function TripScreen() {
+  const { t } = useTranslation('tripRecording');
   useTripRecorder();
+  const router = useRouter();
   const recording = useTripStore((s) => s.recording);
   const start = useTripStore((s) => s.start);
   const samples = useTripStore((s) => s.samples);
   const trips = useTripStore((s) => s.trips);
-  const units = useSettingsStore((s) => s.units);
+  const garage = useGarageStore((s) => s.vehicles);
+  // Per-car filter (plan 06): one chip per car that has trips, plus "All cars".
+  const [carKey, setCarKey] = useState<string>('all');
+  const cars = useMemo(
+    () =>
+      tripCars(trips).map((c) => ({
+        ...c,
+        label:
+          c.key === UNKNOWN_TRIP_CAR
+            ? t('list.unknownCar')
+            : isUserVehicleId(c.key) && !garage.some((v) => v.id === c.key)
+              ? t('list.removedCar')
+              : vehicleLabel(resolveProfile(c.key, garage)),
+      })),
+    [trips, garage, t],
+  );
+  // The chips only show with two or more cars. A filter whose car has no trips left (its last trip
+  // was deleted) or that has no chip row any more falls back to "All cars", so the list never
+  // sticks on an empty, unclearable filter.
+  const activeKey =
+    carKey !== 'all' && cars.length > 1 && cars.some((c) => c.key === carKey) ? carKey : 'all';
+  // Drop the stale choice too, so the filter does not spring back when that car records again.
+  useEffect(() => {
+    if (carKey !== activeKey) setCarKey('all');
+  }, [carKey, activeKey]);
+  const shown = activeKey === 'all' ? trips : trips.filter((t) => tripCarKey(t) === activeKey);
 
-  // Display-time unit conversion: obd-core keeps canonical metric (km, km/h); we only relabel/convert
-  // when rendering, per the user's units setting. See shared/lib/units.ts.
-  const fmtDistance = (km: number) => {
-    const m = convert(km, 'km', units);
-    return `${(m.value ?? km).toFixed(2)} ${m.unit}`;
-  };
-  const fmtSpeed = (kmh: number) => {
-    const m = convert(kmh, 'km/h', units);
-    return `${(m.value ?? kmh).toFixed(1)} ${m.unit}`;
-  };
-
-  // The opened trip's samples are lazy-loaded from its CSV on demand (they are not held in the store).
-  const [openId, setOpenId] = useState<string | null>(null);
-  const [openSamples, setOpenSamples] = useState<TripSample[] | null>(null);
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-
-  const open = async (id: string) => {
-    if (openId === id) {
-      setOpenId(null);
-      setOpenSamples(null);
-      return;
-    }
-    const summary = trips.find((t) => t.header.id === id);
-    if (!summary) return;
-    setLoadingId(id);
-    const loaded = await loadTripSamples(summary.header);
-    setLoadingId(null);
-    setOpenId(id);
-    setOpenSamples(loaded);
-  };
-
-  const remove = async (id: string) => {
-    if (openId === id) {
-      setOpenId(null);
-      setOpenSamples(null);
-    }
-    await deleteTrip(id);
-  };
+  // Metric only (plan 07 decision): km with two decimals.
+  const fmtDistance = (km: number) => `${formatFixed(km, 2)} km`;
 
   return (
-    <Screen title="Trips" subtitle="Record live data and export it">
+    <Screen title={t('title')} subtitle={t('subtitle')}>
       <XStack gap="$2" alignItems="center">
-        <Paragraph flex={1}>{recording ? `Recording… ${samples.length} samples` : 'Not recording'}</Paragraph>
+        <Paragraph flex={1}>
+          {recording ? t('recording', { count: samples.length }) : t('notRecording')}
+        </Paragraph>
         {recording ? (
           <Button theme="red" onPress={() => void stopRecording()}>
-            Stop
+            {t('stop')}
           </Button>
         ) : (
           <Button
@@ -73,58 +69,60 @@ export function TripScreen() {
               void startTrackCapture();
             }}
           >
-            Record
+            {t('record')}
           </Button>
         )}
       </XStack>
 
       <YStack gap="$2">
-        <H4>Saved trips</H4>
-        {trips.length === 0 ? <Paragraph theme="alt2">No trips yet.</Paragraph> : null}
-        {trips.map(({ header, stats, markerCount }) => (
-          <YStack key={header.id} gap="$2" borderColor="$borderColor" borderWidth={1} borderRadius="$3" padding="$2">
+        <H4>{t('list.title')}</H4>
+        {trips.length === 0 ? <Paragraph theme="alt2">{t('list.empty')}</Paragraph> : null}
+        {cars.length > 1 ? (
+          <SegmentedControl
+            label={t('list.filterA11y')}
+            options={[
+              { value: 'all', label: t('list.allCars', { count: trips.length }) },
+              ...cars.map((c) => ({ value: c.key, label: `${c.label} (${c.count})` })),
+            ]}
+            value={activeKey}
+            onChange={setCarKey}
+          />
+        ) : null}
+        {shown.map(({ header, stats, markerCount }) => (
+          <YStack
+            key={header.id}
+            gap="$2"
+            borderColor="$borderColor"
+            borderWidth={1}
+            borderRadius="$3"
+            padding="$2"
+          >
             <Paragraph>
-              {new Date(header.startedAt).toLocaleString()} · {(stats.durationMs / 1000).toFixed(0)} s ·{' '}
-              {stats.sampleCount} samples
+              {formatDateTime(header.startedAt)} · {formatFixed(stats.durationMs / 1000, 0)} s ·{' '}
+              {t('list.samples', { count: stats.sampleCount })}
               {stats.distanceKm != null ? ` · ${fmtDistance(stats.distanceKm)}` : ''}
-              {markerCount > 0 ? ` · ${markerCount} marker${markerCount === 1 ? '' : 's'}` : ''}
+              {markerCount > 0 ? ` · ${t('list.markers', { count: markerCount })}` : ''}
             </Paragraph>
             <XStack gap="$2" alignItems="center">
-              <Button size="$2" onPress={() => void open(header.id)} disabled={loadingId === header.id}>
-                {openId === header.id ? 'Close' : 'Open'}
+              <Button
+                size="$3"
+                hitSlop={HIT_SLOP}
+                onPress={() => router.push({ pathname: '/trip-detail', params: { id: header.id } })}
+              >
+                {t('list.open')}
               </Button>
-              <Button size="$2" onPress={() => void shareTrip(header)}>
-                Share CSV
+              <Button size="$3" hitSlop={HIT_SLOP} onPress={() => void shareTrip(header)}>
+                {t('shareCsv')}
               </Button>
-              <Button size="$2" theme="red" onPress={() => void remove(header.id)}>
-                Delete
+              <Button
+                size="$3"
+                hitSlop={HIT_SLOP}
+                theme="red"
+                onPress={() => void deleteTrip(header.id)}
+              >
+                {t('list.delete')}
               </Button>
-              {loadingId === header.id ? <Spinner size="small" /> : null}
             </XStack>
-            {openId === header.id && openSamples != null ? (
-              <YStack gap="$1">
-                <Paragraph theme="alt2" fontSize="$2">
-                  {openSamples.length === 0
-                    ? 'No samples on file for this trip.'
-                    : `Loaded ${openSamples.length} sample${openSamples.length === 1 ? '' : 's'} from CSV.`}
-                </Paragraph>
-                {stats.gps ? (
-                  <>
-                    <Paragraph theme="alt2" fontSize="$2">
-                      GPS distance {fmtDistance(stats.gps.distanceKm)} · {stats.gps.points} fix
-                      {stats.gps.points === 1 ? '' : 'es'}
-                    </Paragraph>
-                    {stats.gps.obdAvgSpeedKmh != null && stats.gps.avgSpeedKmh != null ? (
-                      <Paragraph theme="alt2" fontSize="$2">
-                        Avg speed OBD {fmtSpeed(stats.gps.obdAvgSpeedKmh)} vs GPS{' '}
-                        {fmtSpeed(stats.gps.avgSpeedKmh)}
-                        {stats.gps.speedDeltaKmh != null ? ` (Δ ${fmtSpeed(stats.gps.speedDeltaKmh)})` : ''}
-                      </Paragraph>
-                    ) : null}
-                  </>
-                ) : null}
-              </YStack>
-            ) : null}
           </YStack>
         ))}
       </YStack>

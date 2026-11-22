@@ -28,7 +28,10 @@ module.exports = {
   rules: {
     // TypeScript already checks these; keep the net practical for an app-wide sweep.
     '@typescript-eslint/no-explicit-any': 'off',
-    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': [
+      'warn',
+      { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+    ],
     // `no-undef` is redundant (and noisy) under TypeScript — the compiler resolves every identifier,
     // and this rule false-positives on RN/DOM globals (fetch, AbortController, requestAnimationFrame…).
     'no-undef': 'off',
@@ -46,5 +49,16 @@ module.exports = {
     // stale/missing deps are a warning (fix real bugs, silence documented false positives inline).
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
+
+    // react-native-web's Alert.alert is an empty stub, so a confirm routed through it silently does
+    // nothing in the browser build (plan 28). `appAlert` (shared/ui) shows an in-app dialog there.
+    'no-restricted-properties': [
+      'error',
+      {
+        object: 'Alert',
+        property: 'alert',
+        message: "Use appAlert from '@/shared/ui' — Alert.alert is a no-op on the web.",
+      },
+    ],
   },
 };

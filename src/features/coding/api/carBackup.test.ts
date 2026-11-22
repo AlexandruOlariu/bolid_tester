@@ -1,4 +1,5 @@
 import {
+  backupVehicleMismatch,
   buildCarBackup,
   diffBackupModule,
   summarizeCarBackup,
@@ -26,7 +27,9 @@ describe('buildCarBackup', () => {
           address: '01',
           name: 'Engine (EDC17)',
           partNumber: '03L906022LM',
-          adaptations: [{ did: '3001', name: 'Idle speed offset', unit: 'rpm', raw: [0x03, 0x52], value: 850 }],
+          adaptations: [
+            { did: '3001', name: 'Idle speed offset', unit: 'rpm', raw: [0x03, 0x52], value: 850 },
+          ],
         },
       ],
     });
@@ -34,7 +37,11 @@ describe('buildCarBackup', () => {
     expect(snap.id).toBe('fixed-id');
     expect(snap.ts).toBe(1700000000000);
     expect(snap.vehicle.vin).toBe('WVWZZZ1KZ9W903398');
-    expect(snap.modules[0].coding).toEqual({ did: 'F1A0', bytes: [0x01, 0x00, 0x10, 0x00], hex: '01 00 10 00' });
+    expect(snap.modules[0].coding).toEqual({
+      did: 'F1A0',
+      bytes: [0x01, 0x00, 0x10, 0x00],
+      hex: '01 00 10 00',
+    });
     expect(snap.modules[0].adaptations).toEqual([]);
     expect(snap.modules[1].coding).toBeNull();
     expect(snap.modules[1].adaptations[0].value).toBe(850);
@@ -52,7 +59,14 @@ describe('buildCarBackup', () => {
     const snap = buildCarBackup({
       vehicle,
       protocol: 'CAN',
-      modules: [{ reqHeader: '70E', name: 'BCM', coding: { did: 'F1A0', bytes }, adaptations: [{ did: '3001', name: 'x', raw, value: 1 }] }],
+      modules: [
+        {
+          reqHeader: '70E',
+          name: 'BCM',
+          coding: { did: 'F1A0', bytes },
+          adaptations: [{ did: '3001', name: 'x', raw, value: 1 }],
+        },
+      ],
     });
     bytes[0] = 0xff;
     raw[0] = 0xff;
@@ -97,12 +111,42 @@ describe('summarizeCarBackup', () => {
       protocol: 'CAN',
       modules: [
         { reqHeader: '70E', name: 'BCM', coding: { did: 'F1A0', bytes: [0x01] } },
-        { reqHeader: '7E0', name: 'Engine', adaptations: [
-          { did: '3001', name: 'a', raw: [0x00], value: 0 },
-          { did: '3002', name: 'b', raw: [0x00], value: 0 },
-        ] },
+        {
+          reqHeader: '7E0',
+          name: 'Engine',
+          adaptations: [
+            { did: '3001', name: 'a', raw: [0x00], value: 0 },
+            { did: '3002', name: 'b', raw: [0x00], value: 0 },
+          ],
+        },
       ],
     });
     expect(summarizeCarBackup(snap)).toEqual({ modules: 2, codedModules: 1, adaptations: 2 });
+  });
+});
+
+describe('backupVehicleMismatch', () => {
+  const live = { profileId: 'golf-plus-2009-20tdi', vin: 'WVWZZZ1KZ9W903398' };
+
+  it('allows the same profile and VIN (case / whitespace-insensitive)', () => {
+    expect(backupVehicleMismatch(vehicle, live)).toBeNull();
+    expect(backupVehicleMismatch(vehicle, { ...live, vin: ' wvwzzz1kz9w903398 ' })).toBeNull();
+  });
+
+  it('does not block on an unknown VIN on either side', () => {
+    expect(backupVehicleMismatch({ ...vehicle, vin: null }, live)).toBeNull();
+    expect(backupVehicleMismatch(vehicle, { ...live, vin: null })).toBeNull();
+  });
+
+  it('blocks a different VIN on the same profile', () => {
+    expect(backupVehicleMismatch(vehicle, { ...live, vin: 'WVWZZZ1KZAW000001' })).toBe(
+      'This backup was taken from VIN …03398, but the connected car reports VIN …00001 — restore is blocked.',
+    );
+  });
+
+  it('blocks a backup taken under another profile or garage car', () => {
+    expect(backupVehicleMismatch(vehicle, { ...live, profileId: 'user:abc' })).toMatch(
+      /taken from VW Golf Plus, not the car selected now — restore is blocked/,
+    );
   });
 });

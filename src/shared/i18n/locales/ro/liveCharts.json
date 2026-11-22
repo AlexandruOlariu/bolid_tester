@@ -1,0 +1,23 @@
+{
+  "title": "Grafice",
+  "subtitle": "Parametri live în timp",
+  "panned": "derulat",
+  "plotA11y": "Grafic pentru {{series}}. Ciupește pentru zoom, trage pentru derulare, atinge pentru a inspecta un eșantion.",
+  "stats": "acum {{now}} · min {{min}} · max {{max}}",
+  "noData": "fără date",
+  "backToLive": "Înapoi la live",
+  "clear": "Golește",
+  "share": "Partajează fereastra (CSV)",
+  "remove": "Elimină",
+  "addPanel": "Adaugă panou",
+  "picker": {
+    "title": "Panou nou",
+    "help": "Alege până la {{max}} valori de afișat împreună ({{count}} alese).",
+    "experimental": "Valorile producătorului (cu număr DID) sunt experimentale.",
+    "connect": "Conectează-te la o mașină pentru a vedea valorile pe care le raportează."
+  },
+  "hint": {
+    "title": "Explorează graficul",
+    "body": "Ciupește pentru a mări fereastra de timp (10 s–10 min), trage stânga/dreapta pentru a derula istoricul și atinge o linie pentru a citi valoarea și ora exacte. Folosește „Partajează fereastra (CSV)” pentru a trimite datele."
+  }
+}

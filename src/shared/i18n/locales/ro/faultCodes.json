@@ -1,0 +1,98 @@
+{
+  "title": "Coduri de eroare",
+  "notConnected": "Neconectat.",
+  "row": {
+    "a11y": "{{code}}: {{description}}. Deschide detaliile",
+    "hideGuide": "Ascunde ghidul",
+    "guide": "Ghid"
+  },
+  "section": {
+    "none": "Niciunul",
+    "stored": "Memorate",
+    "pending": "În așteptare",
+    "permanent": "Permanente"
+  },
+  "readiness": {
+    "title": "Monitoare readiness (pregătire ITP)",
+    "milOn": "Martor motor (MIL) APRINS",
+    "milOff": "Martor motor (MIL) stins",
+    "milOnA11y": "aprins",
+    "milOffA11y": "stins",
+    "a11y_one": "Readiness. Martor motor (MIL) {{mil}}. {{complete}} din {{total}} monitoare complete. {{count}} cod de eroare memorat.",
+    "a11y_few": "Readiness. Martor motor (MIL) {{mil}}. {{complete}} din {{total}} monitoare complete. {{count}} coduri de eroare memorate.",
+    "a11y_other": "Readiness. Martor motor (MIL) {{mil}}. {{complete}} din {{total}} monitoare complete. {{count}} de coduri de eroare memorate.",
+    "notReadyA11y": "Nepregătite: {{names}}.",
+    "summary_one": "{{complete}}/{{total}} monitoare complete · aprindere {{ignition}} · {{count}} DTC",
+    "summary_few": "{{complete}}/{{total}} monitoare complete · aprindere {{ignition}} · {{count}} DTC-uri",
+    "summary_other": "{{complete}}/{{total}} monitoare complete · aprindere {{ignition}} · {{count}} de DTC-uri",
+    "notReady": "Nepregătite: {{names}}",
+    "ignitionType": {
+      "spark": "prin scânteie",
+      "compression": "prin compresie"
+    }
+  },
+  "coach": {
+    "title": "Asistent ciclu de rulare",
+    "notReady_one": "{{count}} monitor nepregătit",
+    "notReady_few": "{{count}} monitoare nepregătite",
+    "notReady_other": "{{count}} de monitoare nepregătite",
+    "allReady": "Toate monitoarele sunt pregătite",
+    "help": "Se verifică readiness la fiecare 30 s cât timp ești conectat. Vei primi o notificare pe măsură ce fiecare monitor se completează și încă una când toate sunt pregătite.",
+    "complete": "Toate monitoarele readiness sunt complete."
+  },
+  "freezeFrame": {
+    "title": "Freeze frame (instantaneu la eroare)",
+    "captured": "Capturat când s-a setat {{code}}",
+    "aCode": "un cod"
+  },
+  "export": {
+    "unavailable": "Export indisponibil",
+    "noSharing": "Partajarea nu este disponibilă pe acest dispozitiv.",
+    "shareDialog": "Partajează raportul de diagnoză",
+    "shareUnavailable": "Partajare indisponibilă",
+    "dialog": "Exportă codurile de eroare"
+  },
+  "clear": {
+    "title": "Ștergi codurile de eroare?",
+    "body": "Se șterg codurile memorate și se resetează monitoarele readiness. Codurile vor reapărea dacă defectul persistă.",
+    "confirm": "Șterge"
+  },
+  "actions": {
+    "reread": "Recitește",
+    "clear": "Șterge codurile",
+    "export": "Exportă raportul",
+    "share": "Partajează raportul",
+    "fullReport": "Raport complet"
+  },
+  "detail": {
+    "severityA11y": "Gravitate: {{label}}",
+    "severity": {
+      "high": {
+        "label": "Ridicată",
+        "hint": "Poate deteriora motorul sau catalizatorul ori poate afecta siguranța. Verifică înainte de un drum lung."
+      },
+      "moderate": {
+        "label": "Moderată",
+        "hint": "Necesită atenție curând (emisii, un modul de control sau o conexiune pierdută între module)."
+      },
+      "info": {
+        "label": "Info",
+        "hint": "O eroare înregistrată cu o semnificație cunoscută. Verific-o, dar rareori este urgentă în sine."
+      },
+      "unknown": {
+        "label": "Necunoscută",
+        "hint": "Nu există o descriere locală pentru acest cod. Folosește căutarea pe web sau explicația AI."
+      }
+    },
+    "manufacturerSpecific": "Specific producătorului",
+    "explainAi": "Explică cu AI",
+    "searchWeb": "Caută pe web",
+    "share": "Partajează",
+    "footer": "Descrierile urmează SAE J2012. Cauzele și remediile diferă de la o mașină la alta; folosește ghidul și freeze frame înainte de a înlocui piese."
+  },
+  "guide": {
+    "relatedData": "Date asociate",
+    "openRoutine": "Deschide rutina",
+    "noFreezeFrame": "Niciun freeze frame capturat pentru acest cod."
+  }
+}

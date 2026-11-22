@@ -1,0 +1,19 @@
+{
+  "title": "Notificări",
+  "subtitle": "Locale, pe dispozitiv — fără cont",
+  "enabled": "Notificări activate.",
+  "denied": "Notificările sunt dezactivate pentru Bolid Tester. Telefonul nu va mai întreba — activează-le din setările sistemului.",
+  "openSettings": "Deschide setările",
+  "deniedWeb": "Notificările sunt blocate sau indisponibile în acest browser. Permite-le din setările site-ului pentru această pagină. Pe iPhone, adaugă mai întâi Bolid Tester pe ecranul principal.",
+  "enable": "Activează notificările",
+  "categories": "Categorii",
+  "category": {
+    "alert": "Alerte la praguri",
+    "connection": "Evenimente de conexiune",
+    "diagnostic": "Evenimente de diagnoză (martor motor, coduri noi)",
+    "trip": "Călătorie înregistrată",
+    "maintenance": "Mementouri de întreținere"
+  },
+  "reminders": "Mementouri de întreținere",
+  "noReminders": "Niciunul încă. Mementourile cu dată funcționează și cu aplicația închisă; cele după kilometraj folosesc valorile introduse de tine (kilometrajul nu este un PID OBD2 standard)."
+}

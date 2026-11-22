@@ -1,0 +1,23 @@
+{
+  "title": "Bus sniffer",
+  "notConnected": "Not connected.",
+  "subtitle": "Raw adapter monitor (ATMA) — live polling pauses while sniffing",
+  "note": "Note (saved in the capture file)",
+  "notePlaceholder": "What is happening? e.g. VCDS Group 121 basic settings, engine idle",
+  "noteA11y": "Capture note",
+  "unavailableTitle": "Bus monitoring is not available over this adapter link.",
+  "unavailableBody": "Classic Bluetooth adapters hand over each reply only when the adapter’s “>” prompt arrives, and the bus monitor streams without one. Use a Bluetooth LE or Wi-Fi adapter to sniff the bus; every other screen works over this adapter.",
+  "stop_one": "Stop ({{count}} frame)",
+  "stop_other": "Stop ({{count}} frames)",
+  "start": "Start monitoring",
+  "reconnect": "Not connected — reconnect to start a new run.",
+  "counts": "captured {{captured}} · dropped {{dropped}}",
+  "droppedNote": "(the oldest lines were discarded to keep memory bounded)",
+  "shareCsv": "Share CSV",
+  "shareRaw": "Share raw",
+  "stopToShare": "Stop the monitor to share the capture.",
+  "shareHelp": "CSV has one row per frame (time since start, CAN id, byte count, bytes); raw is every adapter line exactly as printed. The file carries the car, adapter and note as they were at Start.",
+  "saved": "Saved: {{file}}",
+  "count": "count",
+  "help": "Streams every frame the adapter hears (headers on). On K-line cars you will mostly see the periodic keep-alives; on CAN this is the live bus grouped by arbitration id. Every line is kept (up to 20 000) so the run can be shared after Stop."
+}

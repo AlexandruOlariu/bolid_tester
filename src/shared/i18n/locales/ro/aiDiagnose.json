@@ -1,0 +1,56 @@
+{
+  "title": "Diagnoză (AI)",
+  "subtitle": "Verificarea stării mașinii dintr-o atingere",
+  "notConnected": "Neconectat. Asociază adaptorul în fila Conectare (sau treci la Simulator din Setări) pentru a rula o diagnoză.",
+  "runFull": "Rulează diagnoza completă",
+  "rerun": "Rulează din nou diagnoza",
+  "run": "Rulează diagnoza",
+  "working": "Se lucrează…",
+  "intro": "Atinge „Rulează diagnoza” pentru a citi codurile de eroare, monitoarele readiness și datele live ale mașinii și a primi un raport de stare pe înțeles.",
+  "clearCodes": "Șterge codurile de eroare",
+  "clear": {
+    "title": "Ștergi codurile de eroare?",
+    "body": "Se șterg codurile memorate/în așteptare și se resetează monitoarele readiness. Codurile vor reapărea dacă defectul persistă.",
+    "confirm": "Șterge"
+  },
+  "overall": {
+    "ok": "Pare în stare bună",
+    "attention": "Necesită atenție",
+    "urgent": "Urgent"
+  },
+  "source": {
+    "ai": "Analiză AI",
+    "rules": "Analiză pe dispozitiv, bazată pe reguli"
+  },
+  "severity": {
+    "ok": "OK",
+    "info": "INFO",
+    "warn": "ATENȚIE",
+    "critical": "CRITIC"
+  },
+  "knownCheck": "Verificare cunoscută pentru această mașină: {{note}}",
+  "likelyCauses": "Cauze probabile: {{causes}}.",
+  "findings": "Constatări ({{count}})",
+  "noIssues": "Nu a fost semnalată nicio problemă anume.",
+  "actions": "Acțiuni recomandate",
+  "focus": {
+    "title": "Concentrat pe codul de eroare {{code}}",
+    "help": "Raportul explică mai întâi acest cod: ce înseamnă, cauzele probabile și ce trebuie verificat."
+  },
+  "followUp": {
+    "title": "Întreabă despre acest raport",
+    "clearA11y": "Șterge conversația",
+    "clear": "Șterge",
+    "needsProvider": "Întrebările suplimentare necesită un furnizor AI. Acest raport provine din regulile de pe dispozitiv; configurează un furnizor în Setări → Asistent AI și rulează din nou diagnoza.",
+    "asking": "Se întreabă AI-ul…",
+    "placeholder": "Pune o întrebare despre acest raport",
+    "inputA11y": "Întrebare suplimentară",
+    "sendA11y": "Trimite întrebarea"
+  },
+  "msg": {
+    "connectFirst": "Conectează-te mai întâi la un vehicul (fila Conectare).",
+    "gathering": "Se citesc codurile de eroare, monitoarele readiness și datele live…",
+    "analyzing": "Se trimit datele modelului AI pentru analiză…"
+  },
+  "unknownVehicle": "Vehicul necunoscut"
+}

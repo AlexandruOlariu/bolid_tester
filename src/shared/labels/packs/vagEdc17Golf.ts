@@ -18,6 +18,28 @@ export const vagEdc17Golf: LabelPack = {
     '1708': { name: 'EGR valve position', unit: '%' },
     '1709': { name: 'Injection quantity', unit: 'mg/str' },
   },
+  // ILLUSTRATIVE measuring groups over the profile's experimental 1701–170D DIDs, VCDS-style
+  // (number → up to four values). The numbers echo familiar EDC17 groups, but which DIDs answer and
+  // what VCDS groups them as is unconfirmed — prune to real ones after a capture (plan 25).
+  measuringGroups: {
+    '120': {
+      name: 'EGR and injection',
+      dids: ['1708', '1709', '170A', '170B'],
+      description:
+        'EGR valve position, injection quantity and the cylinder 1–2 injector corrections.',
+    },
+    '075': {
+      name: 'Diesel particulate filter',
+      dids: ['1701', '1702', '1704', '1705'],
+      description:
+        'Soot mass, soot load, distance since the last regeneration, regeneration count.',
+    },
+    '099': {
+      name: 'Temperatures',
+      dids: ['1706', '1707'],
+      description: 'Exhaust gas temperature before the DPF and engine oil temperature.',
+    },
+  },
   adaptations: {
     '3001': {
       name: 'Idle speed offset',

@@ -2,27 +2,37 @@
   "expo": {
     "name": "Bolid Tester",
     "slug": "bolid-tester",
+    "description": "Generic OBD2 / EOBD diagnostics for any car over an ELM327 Bluetooth LE, Wi-Fi or classic Bluetooth adapter: live data, fault codes, readiness, VIN, trips and reports. Local-first: no account, no tracking.",
+    "githubUrl": "https://github.com/AlexandruOlariu/bolid_tester",
     "version": "0.1.0",
     "orientation": "default",
     "scheme": "bolidtester",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/TODO-eas-project-id",
       "fallbackToCacheTimeout": 0,
-      "_comment": "EAS Update / OTA. Replace the placeholder URL with your project's `https://u.expo.dev/<projectId>` (run `eas update:configure` on the dev machine, which also fills the `extra.eas.projectId`). Until then expo-updates reports isEnabled=false and 'Check for updates' is a safe no-op."
+      "checkAutomatically": "ON_ERROR_RECOVERY",
+      "requestHeaders": {
+        "expo-channel-name": "production"
+      },
+      "_comment": "EAS Update / OTA (docs/release.md). The owner runs `eas init` + `eas update:configure` once, which replaces the placeholder URL with `https://u.expo.dev/<projectId>` and fills `extra.eas.projectId`. checkAutomatically ON_ERROR_RECOVERY: the app never checks silently at launch, only when the user taps More > Check for updates or when it restarts after crashing during start-up (docs/privacy-policy.md, store/compliance/). The channel header is for the Gradle-built CI APK; EAS Build overrides it per eas.json profile."
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bolidtester.app",
       "infoPlist": {
         "NSBluetoothAlwaysUsageDescription": "Bolid Tester connects to your OBD2 Bluetooth adapter to read vehicle diagnostics.",
-        "NSBluetoothPeripheralUsageDescription": "Bolid Tester connects to your OBD2 Bluetooth adapter to read vehicle diagnostics."
-      }
+        "NSBluetoothPeripheralUsageDescription": "Bolid Tester connects to your OBD2 Bluetooth adapter to read vehicle diagnostics.",
+        "NSLocalNetworkUsageDescription": "Bolid Tester connects to a Wi-Fi OBD2 adapter on your local network.",
+        "NSLocationWhenInUseUsageDescription": "Bolid Tester records a GPS track alongside OBD2 data while you record a trip.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "buildNumber": "1",
+      "_comment": "iOS (plan 09, docs/phase2-mobile-app.md#ios): BLE needs no MFi, so the Vgate connects over CoreBluetooth with no pairing in Settings. buildNumber is only the seed: eas.json sets appVersionSource remote and the production profile auto-increments it on EAS. Location is when-in-use only (trip GPS track); the expo-location plugin below removes the Always / motion strings. ITSAppUsesNonExemptEncryption false: the app uses only the OS HTTPS stack (exempt), so TestFlight skips the export-compliance question."
     },
     "android": {
       "package": "com.bolidtester.app",
@@ -34,7 +44,21 @@
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "com.google.android.c2dm.permission.RECEIVE"
       ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/icon.png",
+      "_comment": "Web target (plan 28, docs/web.md): a static single-page export (`npx expo export --platform web --output-dir web-build`, never dist/) deployed to GitHub Pages by .github/workflows/web.yml. `single` emits one index.html with expo-router routing client-side; the workflow copies it to 404.html so GitHub Pages answers deep URLs (e.g. /bolid_tester/settings) with the app."
     },
     "plugins": [
       "expo-router",
@@ -54,11 +78,42 @@
           "neverForLocation": true
         }
       ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Bolid Tester records a GPS track alongside OBD2 data while you record a trip.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "motionUsagePermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#2bb673"
+        }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "project": "bolid-tester",
+          "url": "https://de.sentry.io/"
+        }
+      ],
+      "expo-localization",
       "./plugins/ios-scene-lifecycle",
       "expo-sharing",
       "expo-secure-store",
-      "expo-status-bar"
+      "expo-status-bar",
+      "./plugins/withGradleMemory",
+      "./plugins/withReleaseSigning"
     ],
+    "experiments": {
+      "baseUrl": "/bolid_tester",
+      "_comment": "GitHub project pages serve the site under /bolid_tester/ (plan 28). Native builds ignore baseUrl."
+    },
     "_comment": "Phase 2 scaffolding. The native build (Expo prebuild / EAS) is done on a developer machine; not exercised in the cloud container."
   }
 }

@@ -2,6 +2,10 @@
 
 import { ProtocolId } from '../obd-core/obd/protocols';
 import type { CodingPreset } from '../obd-core/coding/presets';
+import type { DtcMake } from '../obd-core/obd/dtcDatabase';
+import type { Confirmation } from '../obd-core/confirmation';
+
+export type { Confirmation } from '../obd-core/confirmation';
 
 export type Fuel = 'diesel' | 'petrol' | 'lpg' | 'hybrid' | 'other';
 export type DtcMode = '03' | '07' | '0A';
@@ -28,6 +32,9 @@ export interface ExtendedPid {
   /** Bytes the simulator returns for this DID (after `62 <did>`). */
   sampleResponse: number[];
   decode: (data: number[]) => number;
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** A standardized Mode 06 monitor we surface for this car. sampleResponse is the full response
@@ -50,6 +57,9 @@ export interface ModuleSensor {
   experimental: true;
   sampleResponse: number[]; // bytes the simulator returns after 62 <did>
   decode: (data: number[]) => number;
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** An EXPERIMENTAL codeable module. Ships DISABLED; see docs/features/coding.md for the safety
@@ -62,11 +72,16 @@ export interface CodingModule {
   byteCount: number;
   schema: { byte: number; bit?: number; mask?: number; name: string }[];
   sampleCoding: number[]; // simulator's stored coding
+  /** SecurityAccess the module needs before a write. Written only with an installed
+   *  security-access plugin for it (plan 23); otherwise the write is refused. */
   security?: { level: number };
   /** Optional module part number (F187) so the long-coding helper can resolve a matching label pack
    *  for extra bit names. Illustrative if set — confirm on the real car. */
   partNumber?: string;
   experimental: true;
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** An EXPERIMENTAL service-interval ("oil service / SRI") reset descriptor for a module (usually the
@@ -84,10 +99,10 @@ export interface ServiceReset {
   routineId?: string;
   /** For method 'adaptation': DIDs whose service values are written back to default. */
   adaptations?: { did: string; defaultBytes: number[] }[];
-  /** SecurityAccess this reset needs. `level` alone documents the requirement; the ECU is only
-   *  actually unlocked when `seedToKey` is also supplied (the algorithm is per-ECU and not shipped
-   *  by default). Without it the reset is attempted unlocked and a real module that needs access
-   *  answers NRC 0x33 — the UI explains that. */
+  /** SecurityAccess this reset needs. The module is unlocked with an installed security-access
+   *  plugin (plan 23); without one the reset is refused before any bus traffic (the screen leads
+   *  with the manual procedure). `seedToKey` exists for tests and fakes only — no registry profile
+   *  sets it (`noSeedKeys.test.ts`). */
   security?: { level: number; seedToKey?: (seed: number[]) => number[] };
   /** Manual fallback steps (e.g. dash-stalk SRI reset) shown to the user. Surfaced always, and
    *  especially when the adapter cannot reach the target module (generic ELM327 K-line clusters). */
@@ -98,17 +113,51 @@ export interface ServiceReset {
    *  an explicit "try anyway". The simulator still answers, so the flow stays testable. */
   obdUnreachable?: string;
   experimental: true;
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
+}
+
+/** A login code for a pre-UDS (KWP2000) VAG module — the five-digit number VCDS asks for in its
+ *  "Login – 11" screen (plan 22). The app ships none: profiles only ever carry codes documented
+ *  from the owner's own VCDS logs, and the code book holds what the user entered. */
+export interface LoginCodeEntry {
+  /** VAG module address as VCDS shows it ('17' cluster, '46' comfort, '01' engine). */
+  address: string;
+  /** 0–65535. */
+  code: number;
+  /** Workshop code, 0–99999; default 0. */
+  wsc?: number;
+  /** What the code is for, e.g. 'Idle speed adaptation'. */
+  purpose: string;
+  /** Where it came from; profiles only ever carry codes documented from the owner's own VCDS logs. */
+  source: 'owner-vcds-log' | 'user-entered' | 'documented';
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** An EXPERIMENTAL adaptation channel (VCDS-style "adaptation"): a small numeric module value
- *  read via UDS 22 and written via 2E, with backup + verify. Bounds are on the DISPLAY value
- *  (raw*scale+offset). Channels with `security` are read-only unless the profile supplies a
- *  seed/key algorithm. See docs/features/adaptations.md. */
+ *  with backup + verify. UDS channels (the default) read via 22 and write via 2E over CAN; KWP
+ *  channels (`transport: 'kwp'`, K-line KWP2000) read via 21 and write via 3B, optionally after a
+ *  `2B` login. Bounds are on the DISPLAY value (raw*scale+offset). Channels with `security` are
+ *  read-only unless an installed security-access plugin unlocks their module (plan 23). See
+ *  docs/features/adaptations.md. */
 export interface AdaptationChannel {
   module: string;
+  /** VAG module address as VCDS shows it ('01' engine, '17' cluster) — the code-book key for
+   *  `login` channels. */
+  address?: string;
   reqHeader: string;
   rxFilter: string;
+  /** UDS: the 2-byte DID (4 hex). KWP: the 1-byte local identifier (2 hex). */
   did: string;
+  /** 'uds' (CAN, 22 / 2E; the default) or 'kwp' (K-line KWP2000, 21 / 3B). */
+  transport?: 'uds' | 'kwp';
+  /** KWP only: a `2B` login is required before writing (the code comes from the code book). */
+  login?: boolean;
+  /** KWP only: diagnostic session byte entered before a read or write (default 0x85). */
+  session?: number;
   name: string;
   unit?: string;
   byteCount: number;
@@ -122,6 +171,9 @@ export interface AdaptationChannel {
   experimental: true;
   /** Simulator seed (mutable in the sim via 2E, like coding). */
   sampleValue: number[];
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** An EXPERIMENTAL guided routine: a UDS output test (2F) or basic setting (31) with explicit
@@ -151,10 +203,10 @@ export interface GuidedRoutine {
     requireIdle?: boolean;
     maxSpeedKmh?: number;
   };
-  /** SecurityAccess this routine needs. `level` alone documents the requirement; the ECU is only
-   *  actually unlocked when `seedToKey` is also supplied (the algorithm is per-ECU and not shipped
-   *  by default). Without it the routine is attempted unlocked and a real module that needs access
-   *  answers NRC 0x33 — the UI explains that. */
+  /** SecurityAccess this routine needs. The module is unlocked with an installed security-access
+   *  plugin (plan 23); without one the routine is attempted unlocked and a real module that needs
+   *  access answers NRC 0x33 — the UI explains that. `seedToKey` exists for tests and fakes only —
+   *  no registry profile sets it (`noSeedKeys.test.ts`). */
   security?: { level: number; seedToKey?: (seed: number[]) => number[] };
   /** Set when the routine is KNOWN not to be executable over the app's current transport on the real
    *  car (e.g. it is a VCDS measuring-block "Basic Settings" that rides on VW TP2.0 / KWP, which a
@@ -164,6 +216,9 @@ export interface GuidedRoutine {
    *  demoable. */
   unavailableReason?: string;
   experimental: true;
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** A diagnosable control module for the per-module scan ("auto-scan"). UDS modules are addressed
@@ -190,6 +245,9 @@ export interface DiagModule {
    *  5-digit code as a number (decimal of the 2-byte DTC, e.g. 928 → 00928); `status` the KWP
    *  status byte. Illustrative, like the UDS sampleDtcs. */
   tp20SampleDtcs?: { code: number; status?: number }[];
+  /** Evidence this item was checked on the real car (plan 25) — drives the verification badge.
+   *  `fixture`, when set, must be a committed fixture or capture (vehicle-docs-sync test). */
+  confirmed?: Confirmation;
 }
 
 /** A fault this exact car is known to report, taken from real diagnostic history (VCDS / OBD2
@@ -210,10 +268,16 @@ export interface KnownFault {
 
 export interface VehicleProfile {
   id: string;
+  /** Set only on a garage car's runtime profile (plan 06): the registry profile it inherits from.
+   *  Per-car curated data keyed by registry id (fault guides) follows it. */
+  baseProfileId?: string;
   name: string;
   year: number;
   engine: string;
   fuel: Fuel;
+  /** Manufacturer DTC table for P1xxx-style codes (`lookupDtc(code, make)`): 'vag' for VW group
+   *  cars, 'fiat' for Fiat / FGA. Omitted (generic) when the make has no table. */
+  make?: DtcMake;
   /** Hint only — the adapter still auto-detects the real protocol. */
   expectedProtocol: ProtocolId;
   /** VIN prefixes that identify this car/family (e.g. 'WVWZZZ1K'). Drives the connect-time
@@ -241,8 +305,12 @@ export interface VehicleProfile {
   modules?: DiagModule[];
   /** Addresses the (simulated) gateway reports installed — drives the TP2.0 scan. */
   gatewayInstallList?: number[];
-  /** Experimental, CAN-only adaptation channels. See docs/features/adaptations.md. */
+  /** Experimental adaptation channels (UDS over CAN, or KWP over K-line). See
+   *  docs/features/adaptations.md. */
   adaptations?: AdaptationChannel[];
+  /** Module login codes documented from the owner's own VCDS logs (plan 22). Never shipped
+   *  otherwise; the user's own codes live in the code book (garage / login book). */
+  loginCodes?: LoginCodeEntry[];
   /** Experimental, CAN-only guided routines (output tests / basic settings). */
   routines?: GuidedRoutine[];
   notes: string;

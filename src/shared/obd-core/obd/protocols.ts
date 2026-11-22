@@ -49,7 +49,10 @@ export const PROTOCOL_LABELS: Record<ProtocolId, string> = {
  * auto-detected (e.g. `A6`), so we strip a leading `A` and read the trailing digit/letter.
  */
 export function protocolFromElmNumber(raw: string): ProtocolId {
-  const token = raw.trim().toUpperCase().replace(/[^0-9A]/g, '');
+  const token = raw
+    .trim()
+    .toUpperCase()
+    .replace(/[^0-9A]/g, '');
   const key = token.replace(/^A(?=.)/, '').slice(-1);
   return ELM_NUMBER_TO_PROTOCOL[key] ?? 'UNKNOWN';
 }
@@ -62,6 +65,13 @@ export function elmNumberFromProtocol(id: ProtocolId): string {
 
 export function isCan(id: ProtocolId): boolean {
   return id.startsWith('ISO_15765') || id === 'SAE_J1939';
+}
+
+/** 11-bit ISO 15765-4 CAN — the only CAN flavour with a functional header to restore to (`7DF`),
+ *  so the only one where module-addressed work (e.g. Discover modules) can leave the link as it
+ *  found it. 29-bit CAN and J1939 are excluded. */
+export function isCan11(id: ProtocolId): boolean {
+  return id === 'ISO_15765_4_CAN_11_500' || id === 'ISO_15765_4_CAN_11_250';
 }
 
 export function isKLine(id: ProtocolId): boolean {

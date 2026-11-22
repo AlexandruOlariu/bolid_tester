@@ -11,6 +11,7 @@ import {
   haversineKm,
   trackDistanceKm,
   trackAverageSpeedKmh,
+  obdDistanceKmFromSamples,
 } from './trip';
 
 function makeTrip(): Trip {
@@ -19,7 +20,14 @@ function makeTrip(): Trip {
     samples.push({ t: 1000 + i * 1000, values: { '010C': 800 + i, '010D': i * 10 } });
   }
   return {
-    header: { id: 't1', startedAt: 1000, endedAt: 10000, profileId: 'generic', vin: null, protocol: 'CAN' },
+    header: {
+      id: 't1',
+      startedAt: 1000,
+      endedAt: 10000,
+      profileId: 'generic',
+      vin: null,
+      protocol: 'CAN',
+    },
     samples,
     markers: [{ t: 3000, kind: 'dtc', label: 'P0299' }],
   };
@@ -63,7 +71,14 @@ describe('trip helpers', () => {
 
   it('decodes empty cells to null and a header-only document to no samples', () => {
     const trip: Trip = {
-      header: { id: 'n', startedAt: 0, endedAt: 1, profileId: 'generic', vin: null, protocol: 'CAN' },
+      header: {
+        id: 'n',
+        startedAt: 0,
+        endedAt: 1,
+        profileId: 'generic',
+        vin: null,
+        protocol: 'CAN',
+      },
       samples: [
         { t: 1000, values: { '010C': 10, '010D': null } },
         { t: 2000, values: { '010C': null, '010D': 20 } },
@@ -134,7 +149,14 @@ describe('fuel stats in tripStats', () => {
       { t: 3_600_000, values: { '015E': 6, '010D': 60 } },
     ];
     return {
-      header: { id: 'f', startedAt: 0, endedAt: 3_600_000, profileId: 'generic', vin: null, protocol: 'CAN' },
+      header: {
+        id: 'f',
+        startedAt: 0,
+        endedAt: 3_600_000,
+        profileId: 'generic',
+        vin: null,
+        protocol: 'CAN',
+      },
       samples,
       markers: [],
     };
@@ -152,5 +174,19 @@ describe('fuel stats in tripStats', () => {
 
   it('is omitted when the samples carry no fuel PID even with a fuel type', () => {
     expect(tripStats(makeTrip(), 'petrol').fuel).toBeUndefined();
+  });
+});
+
+describe('obdDistanceKmFromSamples', () => {
+  it('equals tripStats().distanceKm on the fixture (the GPS-vs-OBD check reuses it)', () => {
+    const t = makeTrip();
+    // 0..90 km/h over 9 s, trapezoidal: 10/3.6 m/s mean steps → 112.5 m.
+    expect(obdDistanceKmFromSamples(t.samples)).toBeCloseTo(0.1125, 9);
+    expect(obdDistanceKmFromSamples(t.samples)).toBe(tripStats(t).distanceKm);
+  });
+
+  it('is null when no sample carries the speed PID, and 0 for a single sample', () => {
+    expect(obdDistanceKmFromSamples([{ t: 0, values: { '010C': 800 } }])).toBeNull();
+    expect(obdDistanceKmFromSamples([{ t: 0, values: { '010D': 50 } }])).toBe(0);
   });
 });

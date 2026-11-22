@@ -60,7 +60,8 @@ export function nrcName(nrc: number): string | null {
  *  usually lands in the SAME response, after the echoes. Strip every leading echo. */
 export function stripResponsePending(req: number, res: number[]): number[] {
   let out = res;
-  while (out.length >= 3 && out[0] === 0x7f && out[1] === req && out[2] === 0x78) out = out.slice(3);
+  while (out.length >= 3 && out[0] === 0x7f && out[1] === req && out[2] === 0x78)
+    out = out.slice(3);
   return out;
 }
 
@@ -93,6 +94,23 @@ export function checkNegative(req: number, res: number[] | null): number[] {
   return cleaned;
 }
 
+/** The shared lockout texts for an unlock that the module refused (SecurityAccess `27` or a KWP
+ *  login `2B`): NRC 0x36 exceedNumberOfAttempts and 0x37 requiredTimeDelayNotExpired. Routines,
+ *  service reset and adaptations all say the same thing. Null for any other error. */
+export function describeUnlockFailure(err: unknown): string | null {
+  if (!(err instanceof UdsError)) return null;
+  if (err.nrc === 0x36) {
+    return (
+      'Too many failed security-unlock attempts (NRC 0x36) — the module is locked out. Cycle ' +
+      'the ignition and wait before retrying.'
+    );
+  }
+  if (err.nrc === 0x37) {
+    return 'The module is enforcing a security lockout delay (NRC 0x37). Wait a moment and retry.';
+  }
+  return null;
+}
+
 /** 0x10 DiagnosticSessionControl — enter the given session (default 0x03 extended). */
 export async function enterSession(send: UdsSend, session = 0x03): Promise<void> {
   const res = await send('10' + hex([session]));
@@ -119,7 +137,9 @@ export async function writeDataByIdentifier(
   checkNegative(0x2e, await send('2E' + did + hex(data)));
 }
 
-/** 0x27 SecurityAccess seed/key. `seedToKey` is profile-supplied; none ship by default.
+/** 0x27 SecurityAccess seed/key. `seedToKey` comes from a security-access plugin the owner
+ *  installed (plan 23, `seedKeyDsl`); the app ships none and callers refuse a write instead of
+ *  calling this without one.
  *  NRC 0x37 (requiredTimeDelayNotExpired) — the post-boot / post-failed-attempt lockout most VAG
  *  modules enforce — is retried once after `retryDelayMs`. NRC 0x36 (exceedNumberOfAttempts) is
  *  NOT retried: hammering a locked module only extends the lockout. */
@@ -163,16 +183,19 @@ export interface CodeModuleResult {
 
 /** The full guarded flow: read current (backup) → extended session → optional security → write →
  *  re-read & verify. Throws UdsError on any failure (caller keeps the backup for restore). */
-export async function codeModule(send: UdsSend, opts: CodeModuleOptions): Promise<CodeModuleResult> {
+export async function codeModule(
+  send: UdsSend,
+  opts: CodeModuleOptions,
+): Promise<CodeModuleResult> {
   const backup = await readDataByIdentifier(send, opts.did);
   await enterSession(send, opts.session ?? 0x03);
   if (opts.security) await securityAccess(send, opts.security.level, opts.security.seedToKey);
   await writeDataByIdentifier(send, opts.did, opts.newData);
   const after = await readDataByIdentifier(send, opts.did);
-  const verified = after.length === opts.newData.length && after.every((b, i) => b === opts.newData[i]);
+  const verified =
+    after.length === opts.newData.length && after.every((b, i) => b === opts.newData[i]);
   return { backup, written: after, verified };
 }
-
 
 /** 0x31 RoutineControl. `sub` is 0x01 start / 0x02 stop / 0x03 requestResults. Returns the response
  *  bytes (positive 0x71 ...). */
@@ -207,7 +230,6 @@ export interface ServiceResetResult {
   backups: { did: string; bytes: number[] }[];
   ok: boolean;
 }
-
 
 /** KWP2000 (ISO 14230) StartRoutineByLocalIdentifier: `31 <lid>` -> positive `71`. */
 export async function kwpStartRoutine(send: UdsSend, lid: string): Promise<number[]> {

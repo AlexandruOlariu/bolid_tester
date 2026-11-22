@@ -1,0 +1,17 @@
+{
+  "title": "DPF / regen",
+  "unavailable": "The DPF monitor needs a diesel profile with DPF PIDs on a CAN (UDS) link. It is hidden for petrol cars and K-line cars (no Mode 22). Select the Golf TDI (or another diesel CAN profile) to use it.",
+  "allConfirmed": "All DIDs confirmed on this car",
+  "experimental": "⚠ Experimental Mode 22 reads — confirm values on the car.",
+  "status": {
+    "ok": "Filter healthy",
+    "filling": "Soot building (normal)",
+    "regen-due": "Regeneration due",
+    "regenerating": "Regenerating now",
+    "high": "Soot load high",
+    "unknown": "No reading"
+  },
+  "soot": "Soot load {{pct}}%",
+  "reading": "Reading…",
+  "refresh": "Refresh"
+}

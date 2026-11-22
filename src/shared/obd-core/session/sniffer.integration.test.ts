@@ -1,9 +1,13 @@
 /** Integration: ATMA sniffer against the simulator — start, stream, stop, and confirm normal
- *  commands still work afterwards (queue released, headers restored). */
+ *  commands still work afterwards (queue released, headers restored); a capture taken during the
+ *  run formats into a CSV with one row per frame (plan 03). */
 import { DiagnosticSession } from './DiagnosticSession';
 import { MockTransport } from '../transport/MockTransport';
 import { buildScenario } from '../transport/scenarios';
-import { CanFrameAggregator } from '../obd/canMonitor';
+import { CanFrameAggregator, formatCaptureCsv } from '../obd/canMonitor';
+import { CaptureBuffer } from '../obd/captureBuffer';
+import { MONITOR_UNAVAILABLE_MESSAGE, type Transport } from '../transport/Transport';
+import { bytesToString } from '../../lib/bytes';
 
 describe('CAN sniffer against the simulator', () => {
   it('streams frames during ATMA and resumes commands after stop', async () => {
@@ -17,7 +21,9 @@ describe('CAN sniffer against the simulator', () => {
       agg.add(line);
     });
     expect(session.sniffing).toBe(true);
-    await new Promise((r) => setTimeout(r, 200));
+    // Stream until a few frames arrived (a fixed 200 ms window saw only 3 under a loaded full run).
+    const deadline = Date.now() + 3000;
+    while (lines <= 3 && Date.now() < deadline) await new Promise((r) => setTimeout(r, 50));
     await session.stopSniffer();
     expect(session.sniffing).toBe(false);
 
@@ -29,5 +35,104 @@ describe('CAN sniffer against the simulator', () => {
     // Channel is usable again.
     const v = await session.readValue('010C');
     expect(v?.value).toBeCloseTo(820, 0);
+  });
+
+  it('the Golf stream carries ~30 frames across 4 ids (tester session + TP2.0 setup)', () => {
+    const frames = buildScenario('golf-plus-2009-20tdi').monitorFrames ?? [];
+    expect(frames.length).toBeGreaterThanOrEqual(30);
+    const ids = new Set(frames.map((f) => f.split(' ')[0]));
+    expect([...ids].sort()).toEqual(['200', '201', '7E0', '7E8']);
+  });
+
+  it('start -> 20 lines -> stop: the CSV has the header lines and 20 data rows', async () => {
+    const session = new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')));
+    const info = await session.connect();
+
+    const startedAt = Date.now();
+    const buffer = new CaptureBuffer();
+    let stopping: Promise<void> | null = null;
+    let reached!: () => void;
+    const twenty = new Promise<void>((r) => (reached = r));
+    await session.startSniffer((line) => {
+      if (stopping) return;
+      buffer.push(line, Date.now());
+      if (buffer.size === 20) {
+        // Any byte interrupts ATMA synchronously in the simulator, so the stream ends at 20.
+        stopping = session.stopSniffer();
+        reached();
+      }
+    });
+    await twenty;
+    await stopping;
+    expect(session.sniffing).toBe(false);
+
+    const csv = formatCaptureCsv(
+      {
+        vehicleId: 'golf-plus-2009-20tdi',
+        protocol: info.protocol,
+        adapter: info.version,
+        startedAt,
+        note: 'sim run',
+        dropped: buffer.dropped,
+      },
+      buffer.lines(),
+    );
+    const rows = csv.trimEnd().split('\n');
+    expect(rows).toContain('# vehicle: golf-plus-2009-20tdi');
+    expect(rows).toContain('# note: sim run');
+    expect(rows).toContain(`# protocol: ${info.protocol}`);
+    const col = rows.indexOf('t_ms,id,dlc,bytes');
+    const data = rows.slice(col + 1).filter((r) => !r.startsWith('#'));
+    expect(data).toHaveLength(20);
+    expect(data[0]).toMatch(/^\d+,200,7,01 C0 00 10 00 03 01$/);
+    // t_ms is relative and non-decreasing.
+    const ts = data.map((r) => Number(r.split(',')[0]));
+    expect(ts).toEqual([...ts].sort((a, b) => a - b));
+    expect(ts[ts.length - 1]).toBeLessThan(60_000);
+  });
+
+  describe('transport capabilities (plan 27)', () => {
+    it('a transport without `capabilities` (the simulator, BLE, TCP) allows monitoring', async () => {
+      const mock = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+      expect((mock as Transport).capabilities).toBeUndefined();
+      const session = new DiagnosticSession(mock);
+      expect(session.canMonitor).toBe(true);
+    });
+
+    it('a transport declaring monitor: false refuses the sniffer before sending anything', async () => {
+      const mock = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+      const sent: string[] = [];
+      // The simulator, re-declared as a prompt-framed link (like SPP).
+      const framed: Transport = {
+        get status() {
+          return mock.status;
+        },
+        capabilities: { monitor: false },
+        connect: () => mock.connect(),
+        disconnect: () => mock.disconnect(),
+        write: (b) => {
+          sent.push(bytesToString(b).trim());
+          return mock.write(b);
+        },
+        onData: (l) => mock.onData(l),
+        onStatusChange: (l) => mock.onStatusChange(l),
+      };
+      const session = new DiagnosticSession(framed);
+      await session.connect();
+      expect(session.canMonitor).toBe(false);
+      const before = sent.length;
+      await expect(session.startSniffer(() => undefined)).rejects.toThrow(
+        MONITOR_UNAVAILABLE_MESSAGE,
+      );
+      // The client-level guard holds too (TP2.0 raw CAN uses monitor mode directly).
+      await expect(session.client.startMonitor(() => undefined)).rejects.toThrow(
+        MONITOR_UNAVAILABLE_MESSAGE,
+      );
+      expect(sent).toHaveLength(before);
+      expect(session.sniffing).toBe(false);
+      // The queue was never held: normal commands still work.
+      const v = await session.readValue('010C');
+      expect(v?.value).toBeCloseTo(820, 0);
+    });
   });
 });

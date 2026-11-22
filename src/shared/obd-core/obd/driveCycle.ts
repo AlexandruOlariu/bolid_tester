@@ -23,9 +23,11 @@ export const DRIVE_CYCLE_DISCLAIMER =
 
 // A cold start (engine off long enough that coolant ≈ intake air, typically several hours / overnight)
 // resets most non-continuous monitors' preconditions, so nearly every pattern begins there.
-const COLD_START = 'Start cold — engine off for several hours (ideally overnight) so it warms from ambient.';
+const COLD_START =
+  'Start cold — engine off for several hours (ideally overnight) so it warms from ambient.';
 const WARM_UP = 'Let the engine reach normal operating temperature (a few minutes of driving).';
-const STEADY_CRUISE = 'Hold a steady 80 km/h (50 mph) for ~5 minutes on light throttle — no hard acceleration.';
+const STEADY_CRUISE =
+  'Hold a steady 80 km/h for ~5 minutes on light throttle — no hard acceleration.';
 
 /** The standard monitors, keyed by the exact name ./readiness emits (both spark and compression
  *  ignition variants, so the coach works on petrol and diesel cars alike). */
@@ -51,7 +53,12 @@ export const DRIVE_CYCLE_PATTERNS: Record<string, DriveCyclePattern> = {
   Catalyst: {
     monitor: 'Catalyst',
     summary: 'Needs a warm engine and a sustained steady-speed cruise.',
-    steps: [COLD_START, WARM_UP, STEADY_CRUISE, 'Add a few gentle decelerations (foot off throttle) while rolling.'],
+    steps: [
+      COLD_START,
+      WARM_UP,
+      STEADY_CRUISE,
+      'Add a few gentle decelerations (foot off throttle) while rolling.',
+    ],
   },
   'Heated catalyst': {
     monitor: 'Heated catalyst',
@@ -81,7 +88,12 @@ export const DRIVE_CYCLE_PATTERNS: Record<string, DriveCyclePattern> = {
   'Oxygen sensor': {
     monitor: 'Oxygen sensor',
     summary: 'Needs closed-loop operation at a steady speed.',
-    steps: [COLD_START, WARM_UP, STEADY_CRUISE, 'Include some light acceleration and deceleration.'],
+    steps: [
+      COLD_START,
+      WARM_UP,
+      STEADY_CRUISE,
+      'Include some light acceleration and deceleration.',
+    ],
   },
   'Oxygen sensor heater': {
     monitor: 'Oxygen sensor heater',
@@ -91,7 +103,12 @@ export const DRIVE_CYCLE_PATTERNS: Record<string, DriveCyclePattern> = {
   'EGR system': {
     monitor: 'EGR system',
     summary: 'Needs a warm engine, steady cruise and a few gentle decelerations.',
-    steps: [COLD_START, WARM_UP, STEADY_CRUISE, 'Lift off the throttle a few times while cruising to let EGR flow.'],
+    steps: [
+      COLD_START,
+      WARM_UP,
+      STEADY_CRUISE,
+      'Lift off the throttle a few times while cruising to let EGR flow.',
+    ],
   },
 
   // --- Compression-ignition (diesel) non-continuous monitors. ---
@@ -121,13 +138,22 @@ export const DRIVE_CYCLE_PATTERNS: Record<string, DriveCyclePattern> = {
   },
   'PM filter': {
     monitor: 'PM filter',
-    summary: 'Needs a warm engine and a sustained higher-speed drive (which also helps a DPF regen).',
-    steps: [WARM_UP, 'Drive at a steady 90–110 km/h for 15–20 minutes to keep exhaust temperature up.'],
+    summary:
+      'Needs a warm engine and a sustained higher-speed drive (which also helps a DPF regen).',
+    steps: [
+      WARM_UP,
+      'Drive at a steady 90–110 km/h for 15–20 minutes to keep exhaust temperature up.',
+    ],
   },
   'EGR/VVT system': {
     monitor: 'EGR/VVT system',
     summary: 'Needs a warm engine, steady cruise and gentle decelerations.',
-    steps: [COLD_START, WARM_UP, STEADY_CRUISE, 'Lift off the throttle a few times while cruising.'],
+    steps: [
+      COLD_START,
+      WARM_UP,
+      STEADY_CRUISE,
+      'Lift off the throttle a few times while cruising.',
+    ],
   },
 };
 

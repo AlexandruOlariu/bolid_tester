@@ -1,4 +1,4 @@
-import { computePollPids, enabledRulePids } from './pollPids';
+import { computePollPids, enabledRulePids, planSweep } from './pollPids';
 import type { AlertRule } from '@/shared/obd-core';
 
 const rule = (id: string, pid: string, enabled?: boolean): AlertRule => ({
@@ -36,12 +36,37 @@ describe('computePollPids', () => {
   });
 
   it('still polls alert PIDs with no screen mounted (alerts run app-wide)', () => {
-    expect(computePollPids({ registrations: {}, alertPids: ['0105'], tripPids: [] })).toEqual(['0105']);
+    expect(computePollPids({ registrations: {}, alertPids: ['0105'], tripPids: [] })).toEqual([
+      '0105',
+    ]);
   });
 
   it('polls the trip PID set while recording even with no screen or alerts', () => {
     expect(
       computePollPids({ registrations: {}, alertPids: [], tripPids: ['010C', '010D'] }),
     ).toEqual(['010C', '010D']);
+  });
+});
+
+describe('mixed Mode 01 / extended keys', () => {
+  it('computePollPids keeps extended keys in the union, de-duplicated', () => {
+    const keys = computePollPids({
+      registrations: { chart: ['22:1701', '010C'], extended: ['22:1701', '22:1702'] },
+      alertPids: ['22:1706', '010C'],
+      tripPids: ['010C', '010D'],
+    });
+    expect(keys).toEqual(['22:1701', '010C', '22:1702', '22:1706', '010D']);
+  });
+
+  it('planSweep splits the union and keeps only declared DIDs on CAN', () => {
+    expect(planSweep(['22:1701', '010C', '22:9999', '010C'], ['1701', '1702'], true)).toEqual({
+      pids: ['010C'],
+      dids: ['1701'],
+    });
+  });
+
+  it('planSweep drops every DID off CAN or for a profile without DIDs (stale chart panel)', () => {
+    expect(planSweep(['22:1701', '010C'], ['1701'], false)).toEqual({ pids: ['010C'], dids: [] });
+    expect(planSweep(['22:1701', '010C'], [], true)).toEqual({ pids: ['010C'], dids: [] });
   });
 });

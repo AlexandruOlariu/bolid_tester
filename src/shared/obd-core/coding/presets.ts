@@ -5,6 +5,7 @@
  *  docs/features/coding.md (tweaks). */
 
 import { setByte } from './coding';
+import type { Confirmation } from '../confirmation';
 
 /** One field edit inside a preset. `onValue`/`offValue` are the target bits **in place** within the
  *  byte (masked), so a bit uses mask `1<<bit` with on=that bit set, and a nibble uses e.g. mask
@@ -35,6 +36,9 @@ export interface CodingPreset {
   edits: CodingPresetEdit[];
   /** Always true — presets ship only when the change can be reverted to `offValue`. */
   reversible: true;
+  /** Evidence the bit positions were checked on the real car (plan 25), e.g. a before/after BCM
+   *  coding read around a VCDS toggle explained by `compareCodingSnapshots`. */
+  confirmed?: Confirmation;
 }
 
 function editMask(edit: CodingPresetEdit): number {
@@ -77,4 +81,35 @@ export function detectPresetState(bytes: number[], preset: CodingPreset): Coding
   if (allOn) return 'on';
   if (allOff) return 'off';
   return 'unknown';
+}
+
+export type SnapshotMatch = 'on' | 'off' | 'none';
+
+/** Which shipped preset explains the difference between two coding reads taken around a VCDS
+ *  toggle (plan 25 — the tool for confirming tweak bit positions from the owner's own before /
+ *  after reads). A preset matches only when (1) something changed, (2) EVERY changed bit lies
+ *  inside the preset's edit masks, (3) at least one of its fields changed, and (4) the after-read
+ *  is fully that preset's `on` (→ 'on') or `off` (→ 'off') state. Anything else is 'none' — a bit
+ *  outside the preset's fields means its positions are wrong (or the toggle did more), which is
+ *  exactly what a confirmation must catch. */
+export function compareCodingSnapshots(
+  before: number[],
+  after: number[],
+  presets: CodingPreset[],
+): { presetId: string; matches: SnapshotMatch }[] {
+  const len = Math.max(before.length, after.length);
+  const diff: number[] = [];
+  for (let i = 0; i < len; i++) diff.push(((before[i] ?? 0) ^ (after[i] ?? 0)) & 0xff);
+  const changed = diff.some((d) => d !== 0);
+  return presets.map((preset) => {
+    const masks: number[] = new Array(len).fill(0);
+    for (const edit of preset.edits) {
+      if (edit.byte < len) masks[edit.byte] |= editMask(edit);
+    }
+    const covered = diff.every((d, i) => (d & ~masks[i] & 0xff) === 0);
+    const touched = diff.some((d, i) => (d & masks[i]) !== 0);
+    if (!changed || !covered || !touched) return { presetId: preset.id, matches: 'none' };
+    const state = detectPresetState(after, preset);
+    return { presetId: preset.id, matches: state === 'unknown' ? 'none' : state };
+  });
 }

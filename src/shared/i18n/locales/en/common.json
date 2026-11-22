@@ -1,0 +1,155 @@
+{
+  "nav": {
+    "connect": "Connect",
+    "vehicle": "Vehicle",
+    "live": "Live",
+    "faults": "Faults",
+    "info": "Info",
+    "settings": "Settings",
+    "more": "More",
+    "extended": "Extended PIDs",
+    "aiDiagnose": "Diagnose (AI)",
+    "history": "History",
+    "report": "Vehicle report",
+    "charts": "Charts",
+    "performance": "Performance",
+    "trips": "Trips",
+    "tripDetail": "Trip",
+    "alerts": "Alerts",
+    "sensors": "Sensor tests",
+    "coding": "Coding",
+    "notifications": "Notifications",
+    "serviceReset": "Service reset",
+    "dpf": "DPF / regen",
+    "inspection": "Used-car inspection",
+    "battery": "Battery & charging",
+    "vinDecode": "VIN decoder",
+    "maintenance": "Maintenance log",
+    "errorLog": "Error log",
+    "feedback": "Report a problem",
+    "backup": "Backup & restore",
+    "moduleScan": "Module scan",
+    "adaptations": "Adaptations",
+    "routines": "Routines & output tests",
+    "sniffer": "Bus sniffer",
+    "adapterHealth": "Adapter health",
+    "licenses": "Licences"
+  },
+  "actions": {
+    "ok": "OK",
+    "cancel": "Cancel",
+    "close": "Close",
+    "done": "Done",
+    "retry": "Retry",
+    "dismiss": "Dismiss",
+    "import": "Import",
+    "replace": "Replace",
+    "keepBoth": "Keep both"
+  },
+  "connState": {
+    "disconnected": "Disconnected",
+    "connecting": "Connecting…",
+    "initializing": "Initializing…",
+    "connected": "Connected",
+    "error": "Error",
+    "a11y": "Connection status: {{status}}"
+  },
+  "splash": {
+    "subtitle": "OBD2 diagnostics",
+    "loading": "Loading your saved data"
+  },
+  "errorBoundary": {
+    "title": "Something broke",
+    "body": "A screen hit an unexpected error. Your saved data is safe and the error was logged. Try again, or report it from More > Report a problem."
+  },
+  "gauge": {
+    "noReading": "no reading"
+  },
+  "valueCard": {
+    "stale": "(stale)"
+  },
+  "unlock": {
+    "none": "No unlock needed",
+    "unlockable": "Unlockable · {{plugin}}",
+    "plugin": "plugin",
+    "locked": "Locked · needs security access",
+    "a11y": "Security access: {{text}}"
+  },
+  "verification": {
+    "standard": "Standard OBD2",
+    "confirmed": "Confirmed {{on}} ({{source}})",
+    "unverified": "Illustrative — not yet confirmed on this car",
+    "a11y": "Verification: {{text}}",
+    "source": {
+      "sniffer-capture": "sniffer capture",
+      "on-car": "on the car",
+      "vcds-log": "VCDS log"
+    }
+  },
+  "fuel": {
+    "diesel": "Diesel",
+    "petrol": "Petrol",
+    "lpg": "LPG",
+    "hybrid": "Hybrid",
+    "other": "Other"
+  },
+  "importPreview": {
+    "cantImport": "Can't import this file",
+    "andMore_one": "…and {{count}} more.",
+    "andMore_other": "…and {{count}} more.",
+    "nothingChanged": "Nothing was changed.",
+    "imported": "Imported",
+    "packsFull": "You already have 100 imported label packs. Delete one in Settings → Data first.",
+    "profileTitle": "Import car profile",
+    "name": "Name",
+    "year": "Year",
+    "fuel": "Fuel",
+    "basedOn": "Based on",
+    "vinEnding": "VIN ending",
+    "learned": "Learned",
+    "learnedValue_one": "{{count}} reading · {{protocol}}",
+    "learnedValue_other": "{{count}} readings · {{protocol}}",
+    "notLearned": "Not learned yet — connect to the car to learn it",
+    "modules": "Modules",
+    "modulesDiscovered_one": "{{count}} discovered",
+    "modulesDiscovered_other": "{{count}} discovered",
+    "includesPacks_one": "Includes {{count}} label pack: {{modules}}.",
+    "includesPacks_other": "Includes {{count}} label packs: {{modules}}.",
+    "packsKept": "Already on this phone (kept as they are): {{modules}}.",
+    "packsOverCap": "Not imported — the phone already holds 100 label packs: {{modules}}.",
+    "baseUnknown": "The base profile \"{{id}}\" is not in this version of the app; the car will use Auto / Generic.",
+    "conflictVin": "{{name}} in your garage has the same VIN. Replace it with this profile, or keep both?",
+    "conflictName": "Your garage already has a car named {{name}}. Replace it with this profile, or keep both?",
+    "loginCodesNote": "Login codes are never part of a profile file; a replaced car keeps its own.",
+    "packTitle": "Import label pack",
+    "module": "Module",
+    "id": "Id",
+    "partNumbers": "Part numbers",
+    "names": "Names",
+    "namesValue": "{{measurements}} measurements · {{codingBits}} coding bits · {{adaptations}} adaptations · {{measuringGroups}} measuring groups",
+    "author": "Author",
+    "licence": "Licence",
+    "source": "Source",
+    "checkedOnCar": "Checked on a car",
+    "checkedYes": "Yes, {{on}}",
+    "checkedNo": "No — names are unconfirmed",
+    "packReplace": "You already imported a pack with the id {{id}}. Replace it, or keep both (the copy gets a new id)?",
+    "noPicker": "Importing needs the file picker, which this build of the app does not include."
+  },
+  "share": {
+    "adapterHealthJson": "Adapter health report (JSON)",
+    "adapterHealth": "Adapter health",
+    "busCapture": "Share bus capture",
+    "carBackup": "Export car backup",
+    "errorLog": "Export error log",
+    "measuringLog": "Export measuring log",
+    "problemReport": "Share problem report",
+    "vehicleReport": "Share vehicle report",
+    "chartWindow": "Share chart window (CSV)",
+    "scanReport": "Share auto-scan report",
+    "replayFixture": "Share replay fixture"
+  },
+  "toast": {
+    "notOnWebYet": "Not available on web yet — saving or opening this file needs the Android app."
+  }
+}

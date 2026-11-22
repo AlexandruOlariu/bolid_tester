@@ -6,14 +6,25 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "customConditions": ["react-native"],
-    "types": ["node", "react", "react-native"],
+    "types": ["node", "react", "react-native", "jest"],
     "allowJs": true,
     "noEmit": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "noUnusedLocals": false
+    "noUnusedLocals": false,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@test/*": ["./test/*"]
+    }
   },
-  "//": "Full-app typecheck: `npm run typecheck:app`. Bundler resolution + react-native condition for RN deps.",
-  "include": ["src/**/*.ts", "src/**/*.tsx", "tamagui.config.ts"],
+  "//": "Full-app typecheck: `npm run typecheck:app`. Bundler resolution + react-native condition for RN deps. Also covers the component tests (`*.test.tsx`), their helpers in test/ and jest.setup.ui.ts (hence the `jest` types and the `@test/*` alias); the core `*.test.ts` files are checked by tsconfig.json.",
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "tamagui.config.ts",
+    "test/**/*.ts",
+    "test/**/*.tsx",
+    "jest.setup.ui.ts"
+  ],
   "exclude": ["node_modules", "**/*.test.ts"]
 }

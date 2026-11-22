@@ -1,0 +1,19 @@
+{
+  "title": "Notifications",
+  "subtitle": "Local, on-device — no account required",
+  "enabled": "Notifications enabled.",
+  "denied": "Notifications are turned off for Bolid Tester. The phone will not ask again — turn them on in the system settings.",
+  "openSettings": "Open settings",
+  "deniedWeb": "Notifications are blocked or not available in this browser. Allow them in the browser’s site settings for this page. On iPhone, add Bolid Tester to the Home Screen first.",
+  "enable": "Enable notifications",
+  "categories": "Categories",
+  "category": {
+    "alert": "Threshold alerts",
+    "connection": "Connection events",
+    "diagnostic": "Diagnostic events (MIL, new codes)",
+    "trip": "Trip recorded",
+    "maintenance": "Maintenance reminders"
+  },
+  "reminders": "Maintenance reminders",
+  "noReminders": "None yet. Date reminders fire even with the app closed; mileage uses values you enter (odometer isn’t a standard OBD2 PID)."
+}

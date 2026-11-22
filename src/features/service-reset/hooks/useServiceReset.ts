@@ -1,19 +1,25 @@
 import { useCallback } from 'react';
-import { serviceReset, isCan, isKLine, isModuleUnreachableError } from '@/shared/obd-core';
+import {
+  serviceReset,
+  describeUnlockFailure,
+  isCan,
+  isKLine,
+  isModuleUnreachableError,
+} from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { getVehicleProfile } from '@/shared/vehicles';
-import { useVehicleStore } from '@/features/vehicle-select/model/vehicleStore';
+import { activeSeedKeyVehicleKeys, decideSecurity, resolveSeedKey } from '@/shared/security';
+import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
 import { useServiceResetStore } from '../model/serviceResetStore';
+import { translate } from '@/shared/i18n';
 
 /** Run the profile's service-interval reset (cluster UDS routine/adaptation). CAN-only, gated. */
 export function useServiceReset() {
   const session = useSessionStore((s) => s.session);
-  const profileId = useVehicleStore((s) => s.selectedProfileId);
+  const profile = useActiveProfile();
   const setRunning = useServiceResetStore((s) => s.setRunning);
   const setLastResult = useServiceResetStore((s) => s.setLastResult);
 
-  const profile = getVehicleProfile(profileId);
   const descriptor = profile.serviceReset;
   const proto = session?.currentProtocol ?? 'UNKNOWN';
   // UDS descriptors need CAN; KWP descriptors need a K-line link.
@@ -26,7 +32,30 @@ export function useServiceReset() {
 
   const run = useCallback(async () => {
     if (!session || !descriptor) {
-      setLastResult('Service reset is unavailable for this car / protocol.');
+      setLastResult(translate('serviceReset:msg.unavailable'));
+      return false;
+    }
+    // SecurityAccess (plan 23): a `seedToKey` on the descriptor (tests / fakes only — no registry
+    // profile sets one), else an installed plugin for the module; otherwise refuse before any bus
+    // traffic. The screen leads with the manual procedure, which needs no unlock.
+    const security = descriptor.security;
+    const decision = decideSecurity(
+      security,
+      security
+        ? security.seedToKey
+          ? { entry: null, seedToKey: security.seedToKey }
+          : await resolveSeedKey({
+              reqHeader: descriptor.reqHeader,
+              level: security.level,
+              vehicleKeys: activeSeedKeyVehicleKeys(),
+            })
+        : null,
+    );
+    if (decision.kind === 'refuse') {
+      const manual = descriptor.manualProcedure?.length
+        ? ` ${translate('serviceReset:msg.useManual')}`
+        : '';
+      setLastResult(decision.message + manual);
       return false;
     }
     setRunning(true);
@@ -41,14 +70,7 @@ export function useServiceReset() {
         method: descriptor.method,
         routineId: descriptor.routineId,
         adaptations: descriptor.adaptations,
-        security: descriptor.security
-          ? {
-              level: descriptor.security.level,
-              // Use the profile's real seed→key algorithm when it ships one; never override a
-              // supplied algorithm with the identity fallback (which can't actually unlock a module).
-              seedToKey: descriptor.security.seedToKey ?? ((s) => s),
-            }
-          : undefined,
+        security: decision.kind === 'unlock' ? decision.security : undefined,
       });
       if (!res.ok) {
         logError({
@@ -58,7 +80,9 @@ export function useServiceReset() {
           context: { transport, module: descriptor.module, method: descriptor.method },
         });
       }
-      setLastResult(res.ok ? 'Service interval reset — confirm on the cluster.' : 'Reset did not complete.');
+      setLastResult(
+        res.ok ? translate('serviceReset:msg.done') : translate('serviceReset:msg.incomplete'),
+      );
       return res.ok;
     } catch (e) {
       const msg = (e as Error).message;
@@ -73,15 +97,14 @@ export function useServiceReset() {
         context: { transport, module: descriptor.module, moduleUnreachable },
       });
       const manualHint = descriptor.manualProcedure?.length
-        ? ' Use the manual procedure below instead.'
+        ? ` ${translate('serviceReset:msg.useManual')}`
         : '';
       setLastResult(
         moduleUnreachable
-          ? `${descriptor.module} did not respond (${msg}). ` +
-              (descriptor.obdUnreachable ??
-                'The adapter could not reach this module over the current link.') +
+          ? `${translate('serviceReset:msg.noResponse', { module: descriptor.module, error: msg })} ` +
+              (descriptor.obdUnreachable ?? translate('serviceReset:msg.unreachable')) +
               manualHint
-          : `Failed: ${msg}`,
+          : (describeUnlockFailure(e) ?? translate('serviceReset:msg.failed', { error: msg })),
       );
       return false;
     } finally {

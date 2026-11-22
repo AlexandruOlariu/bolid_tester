@@ -2,8 +2,9 @@
  *  the tests. See docs/simulator.md. */
 
 import { SimScenario } from './MockTransport';
-import { getVehicleProfile } from '../../vehicles';
+import { getVehicleProfile, type VehicleProfile } from '../../vehicles';
 import { isKLine, ProtocolId } from '../obd/protocols';
+import { asciiToBytes } from '../../lib/bytes';
 
 const SAMPLE_VINS: Record<string, string> = {
   generic: '1HGBH41JXMN109186',
@@ -35,13 +36,101 @@ const SAMPLE_CALIDS: Record<string, string> = {
   'passat-b55-19tdi': '038906019KC 4896',
 };
 
-export function buildScenario(profileId: string, overrides: Partial<SimScenario> = {}): SimScenario {
+/** Simulator-only KWP login placeholders (plan 22), per profile: ATSH header -> the code the
+ *  SIMULATED module accepts, so the login sheet can be walked end to end in the in-app simulator.
+ *  `12345` is a demo value, not a login code for any real module — the app ships no login codes
+ *  (the code book holds only what the owner enters). A code the profile documents from the
+ *  owner's VCDS logs (`loginCodes`) replaces it. */
+const SIM_KWP_LOGINS: Record<string, NonNullable<SimScenario['kwpLogins']>> = {
+  'passat-b55-19tdi': { '8101F1': { code: 12345 } },
+};
+
+const normAddress = (address: string) => address.trim().toUpperCase();
+
+/** The login codes the simulated KWP modules accept, per ATSH header: the simulator-only
+ *  placeholder for `profileId`, replaced on every KWP channel's header by a code the profile
+ *  documents (`loginCodes`) for that channel's module address. Addresses match the way the app's
+ *  code book resolves them (`loginCodeFor`: trimmed, case-insensitive), so a code the app would
+ *  send is the code the simulator accepts. Empty when the profile has no KWP channel. */
+export function kwpLoginSeeds(
+  profileId: string,
+  profile: Pick<VehicleProfile, 'adaptations' | 'loginCodes'>,
+): NonNullable<SimScenario['kwpLogins']> {
+  const kwpChannels = (profile.adaptations ?? []).filter((a) => a.transport === 'kwp');
+  if (!kwpChannels.length) return {};
+  const seeds: NonNullable<SimScenario['kwpLogins']> = { ...(SIM_KWP_LOGINS[profileId] ?? {}) };
+  for (const entry of profile.loginCodes ?? []) {
+    const address = normAddress(entry.address);
+    for (const ch of kwpChannels) {
+      if (!ch.address || normAddress(ch.address) !== address) continue;
+      seeds[ch.reqHeader] = {
+        code: entry.code,
+        ...(entry.wsc !== undefined ? { wsc: entry.wsc } : {}),
+      };
+    }
+  }
+  return seeds;
+}
+
+/** Per-profile `ATMA` streams (played cyclically, one line per 30 ms). The Golf Plus (PQ35) OBD
+ *  port sits behind the gateway, so a sniff there sees diagnostic traffic, not the powertrain bus:
+ *  a VW TP2.0 channel setup to the engine (`200` -> `201`) and a tester session on `7E0` -> `7E8`
+ *  (Mode 01 reads + tester-present). ~30 frames across 4 ids, so a saved capture in the simulator
+ *  has real content to analyse (plan 03). Illustrative, not a recording. */
+const SIM_MONITOR_FRAMES: Record<string, string[]> = {
+  'golf-plus-2009-20tdi': [
+    '200 01 C0 00 10 00 03 01',
+    '201 00 D0 00 03 40 07 01',
+    '7E0 02 10 03',
+    '7E8 06 50 03 00 32 01 F4',
+    '7E0 02 01 0C',
+    '7E8 04 41 0C 0C D0',
+    '7E0 02 01 0D',
+    '7E8 03 41 0D 00',
+    '7E0 02 01 05',
+    '7E8 03 41 05 7B',
+    '7E0 02 3E 80',
+    '7E0 02 01 0C',
+    '7E8 04 41 0C 0C E4',
+    '7E0 02 01 0B',
+    '7E8 03 41 0B 64',
+    '7E0 02 01 10',
+    '7E8 04 41 10 01 2C',
+    '7E0 02 01 0C',
+    '7E8 04 41 0C 0C C8',
+    '7E0 02 01 0D',
+    '7E8 03 41 0D 00',
+    '7E0 02 3E 80',
+    '7E0 02 01 05',
+    '7E8 03 41 05 7C',
+    '7E0 02 01 0C',
+    '7E8 04 41 0C 0C DA',
+    '7E0 02 01 11',
+    '7E8 03 41 11 26',
+    '200 01 C0 00 10 00 03 01',
+    '201 00 D0 00 03 40 07 01',
+  ],
+};
+
+export function buildScenario(
+  profileId: string,
+  overrides: Partial<SimScenario> = {},
+): SimScenario {
   const profile = getVehicleProfile(profileId);
   const protocol: ProtocolId =
     profile.expectedProtocol === 'AUTO' ? 'ISO_15765_4_CAN_11_500' : profile.expectedProtocol;
   const kline = isKLine(protocol);
+  // Every profile DID from its sampleResponse, plus the engine ECU's part number (`22 F187`, ASCII,
+  // from the engine module's sampleIdent) on the default header, so the label pack — and its
+  // measuring groups — resolve in the simulator (plan 14). Only for profiles that declare DIDs.
+  const engineIdent = (profile.modules ?? []).find(
+    (m) => m.transport === 'uds' && (m.address === '01' || m.reqHeader === '7E0'),
+  )?.sampleIdent;
   const extendedDids = profile.extendedPids?.length
-    ? Object.fromEntries(profile.extendedPids.map((e) => [e.did, e.sampleResponse]))
+    ? {
+        ...(engineIdent?.F187 ? { F187: asciiToBytes(engineIdent.F187) } : {}),
+        ...Object.fromEntries(profile.extendedPids.map((e) => [e.did, e.sampleResponse])),
+      }
     : undefined;
   const mode06 = profile.mode06Tests?.length
     ? Object.fromEntries(profile.mode06Tests.map((m) => [m.mid, m.sampleResponse]))
@@ -52,16 +141,32 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
         return acc;
       }, {})
     : undefined;
-  const adaptationSeeds = profile.adaptations?.length
-    ? profile.adaptations.reduce<Record<string, Record<string, number[]>>>((acc, a) => {
+  const udsChannels = (profile.adaptations ?? []).filter((a) => (a.transport ?? 'uds') === 'uds');
+  const adaptationSeeds = udsChannels.length
+    ? udsChannels.reduce<Record<string, Record<string, number[]>>>((acc, a) => {
         (acc[a.reqHeader] ??= {})[a.did] = a.sampleValue.slice();
         return acc;
       }, {})
     : undefined;
+  // KWP adaptation channels (plan 22): local identifiers per header, the login-gated lids, and the
+  // login codes the simulated module accepts: the simulator-only placeholder, replaced by any code
+  // the PROFILE documents (none ship). Tests pass `kwpLogins` explicitly to pin their own.
+  const kwpChannels = (profile.adaptations ?? []).filter((a) => a.transport === 'kwp');
+  const kwpLocals = kwpChannels.length
+    ? kwpChannels.reduce<Record<string, Record<string, number[]>>>((acc, a) => {
+        (acc[a.reqHeader] ??= {})[a.did] = a.sampleValue.slice();
+        return acc;
+      }, {})
+    : undefined;
+  const kwpLoginRequired = kwpChannels.filter((a) => a.login).map((a) => a.did);
+  const kwpLogins = kwpLoginSeeds(profileId, profile);
   const udsModules = (profile.modules ?? []).filter((m) => m.transport === 'uds' && m.reqHeader);
   const moduleDtcs = udsModules.length
     ? udsModules.reduce<NonNullable<SimScenario['moduleDtcs']>>((acc, m) => {
-        acc[m.reqHeader as string] = (m.sampleDtcs ?? []).map((d) => ({ bytes: [...d.bytes] as [number, number, number], status: d.status }));
+        acc[m.reqHeader as string] = (m.sampleDtcs ?? []).map((d) => ({
+          bytes: [...d.bytes] as [number, number, number],
+          status: d.status,
+        }));
         return acc;
       }, {})
     : undefined;
@@ -87,26 +192,60 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
 
   // IUPR seeds (CAN cars): plausible driven-car counters; diesel -> 090B, petrol -> 0908.
   const item = (n: number) => [Math.floor(n / 256), n % 256];
-  const iuprCompression = !kline && profile.fuel === 'diesel'
-    ? [0x10, ...item(1500), ...item(1800), ...item(300), ...item(400), ...item(250), ...item(400),
-       ...item(0), ...item(0), ...item(120), ...item(140), ...item(400), ...item(410),
-       ...item(390), ...item(400), ...item(380), ...item(400)]
-    : undefined;
-  const iuprSpark = !kline && profile.fuel !== 'diesel'
-    ? [0x10, ...item(900), ...item(1000), ...item(400), ...item(500), ...item(0), ...item(0),
-       ...item(420), ...item(500), ...item(0), ...item(0), ...item(380), ...item(500),
-       ...item(0), ...item(0), ...item(200), ...item(500)]
-    : undefined;
+  const iuprCompression =
+    !kline && profile.fuel === 'diesel'
+      ? [
+          0x10,
+          ...item(1500),
+          ...item(1800),
+          ...item(300),
+          ...item(400),
+          ...item(250),
+          ...item(400),
+          ...item(0),
+          ...item(0),
+          ...item(120),
+          ...item(140),
+          ...item(400),
+          ...item(410),
+          ...item(390),
+          ...item(400),
+          ...item(380),
+          ...item(400),
+        ]
+      : undefined;
+  const iuprSpark =
+    !kline && profile.fuel !== 'diesel'
+      ? [
+          0x10,
+          ...item(900),
+          ...item(1000),
+          ...item(400),
+          ...item(500),
+          ...item(0),
+          ...item(0),
+          ...item(420),
+          ...item(500),
+          ...item(0),
+          ...item(0),
+          ...item(380),
+          ...item(500),
+          ...item(0),
+          ...item(0),
+          ...item(200),
+          ...item(500),
+        ]
+      : undefined;
 
   const monitorFrames = kline
     ? ['48 6B 10 41 0C 0C D0 5A']
-    : [
+    : (SIM_MONITOR_FRAMES[profileId] ?? [
         '7E8 04 41 0C 0C D0',
         '1A0 08 12 34 56 78 9A BC DE F0',
         '2C3 04 00 11 22 33',
         '7E8 03 41 0D 00',
         '5D0 05 AA BB CC DD EE',
-      ];
+      ]);
 
   const base: SimScenario = {
     protocol,
@@ -126,8 +265,12 @@ export function buildScenario(profileId: string, overrides: Partial<SimScenario>
     moduleIdent,
     iuprSpark,
     iuprCompression,
+    ignition: profile.fuel === 'diesel' ? 'compression' : 'spark',
     monitorFrames,
     secondaryEcus: SIM_SECONDARY_ECUS[profileId],
+    kwpLocals,
+    kwpLogins: Object.keys(kwpLogins).length ? kwpLogins : undefined,
+    kwpLoginRequired: kwpLoginRequired.length ? kwpLoginRequired : undefined,
     latencyMs: kline ? 5 : 0,
     emitSearching: kline,
   };

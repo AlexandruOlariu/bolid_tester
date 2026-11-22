@@ -64,6 +64,16 @@ export const MAX_SCANS = 50;
 
 const SCANS_PERSIST_DEBOUNCE_MS = 500;
 
+/** Data version of `bolid.scans`. The store first shipped without one (zustand wrote 0); v1 has the
+ *  same shape and only makes the version explicit, so a backup (plan 18) can tell old from new. */
+export const SCANS_VERSION = 1;
+
+/** v0 (unversioned) → v1: same shape; anything that is not a scan list becomes an empty one. */
+export function migrateScans(persisted: unknown, _fromVersion: number): { scans: SavedScan[] } {
+  const p = (persisted ?? {}) as { scans?: unknown };
+  return { scans: Array.isArray(p.scans) ? (p.scans as SavedScan[]) : [] };
+}
+
 function newId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -137,6 +147,9 @@ export const useScanHistoryStore = create<ScanHistoryState>()(
     }),
     {
       name: 'bolid.scans',
+      version: SCANS_VERSION,
+      migrate: (persisted, version) =>
+        migrateScans(persisted, version) as unknown as ScanHistoryState,
       storage: createJSONStorage(() =>
         debouncedStorage(fileStateStorage, SCANS_PERSIST_DEBOUNCE_MS),
       ),

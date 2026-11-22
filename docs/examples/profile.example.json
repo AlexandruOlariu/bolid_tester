@@ -1,0 +1,16 @@
+{
+  "schema": "bolid.profile.v1",
+  "exportedAt": "2026-11-09T10:00:00.000Z",
+  "app": { "name": "bolid-tester", "version": "0.1.0" },
+  "payload": {
+    "vehicle": {
+      "name": "VW Golf Plus 2009 2.0 TDI 81 kW",
+      "year": 2009,
+      "fuel": "diesel",
+      "make": "vag",
+      "baseProfileId": "golf-plus-2009-20tdi",
+      "notes": "Starting profile shared from the built-in Golf Plus. Connect to your car to learn its VIN, protocol and supported readings.",
+      "sourceId": "golf-plus-2009-20tdi"
+    }
+  }
+}

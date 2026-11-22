@@ -1,59 +1,62 @@
 import React from 'react';
-import { YStack, XStack, Paragraph, H4, Switch, Button } from 'tamagui';
-import { Screen } from '@/shared/ui';
-import { requestNotificationPermission } from '@/shared/notify';
+import { YStack, Paragraph, H4, Button } from 'tamagui';
+import { Screen, LabeledSwitch } from '@/shared/ui';
 import { useNotificationsStore } from '../model/notificationsStore';
 import { useNotifications } from '../hooks/useNotifications';
+import { useNotificationPermission } from '../hooks/useNotificationPermission';
 import type { NotifCategory } from '@/shared/obd-core';
+import { useTranslation } from '@/shared/i18n';
 
-const CATEGORIES: { key: NotifCategory; label: string }[] = [
-  { key: 'alert', label: 'Threshold alerts' },
-  { key: 'connection', label: 'Connection events' },
-  { key: 'diagnostic', label: 'Diagnostic events (MIL, new codes)' },
-  { key: 'trip', label: 'Trip recorded' },
-  { key: 'maintenance', label: 'Maintenance reminders' },
-];
+/** The categories, in order; labels are `notifications:category.<key>` (plan 11). */
+const CATEGORIES: NotifCategory[] = ['alert', 'connection', 'diagnostic', 'trip', 'maintenance'];
 
 export function NotificationsScreen() {
+  const { t } = useTranslation('notifications');
   useNotifications();
   const prefs = useNotificationsStore((s) => s.prefs);
-  const permission = useNotificationsStore((s) => s.permission);
-  const setPermission = useNotificationsStore((s) => s.setPermission);
+  const { permission, request, canOpenSettings, openSettings } = useNotificationPermission();
   const toggleCategory = useNotificationsStore((s) => s.toggleCategory);
   const reminders = useNotificationsStore((s) => s.reminders);
 
   return (
-    <Screen title="Notifications" subtitle="Local, on-device — no account required">
-      {permission !== 'granted' ? (
-        <Button
-          theme="green"
-          onPress={async () => setPermission((await requestNotificationPermission()) ? 'granted' : 'denied')}
-        >
-          Enable notifications
-        </Button>
+    <Screen title={t('title')} subtitle={t('subtitle')}>
+      {permission === 'granted' ? (
+        <Paragraph theme="alt2">{t('enabled')}</Paragraph>
+      ) : permission === 'denied' ? (
+        canOpenSettings ? (
+          <YStack gap="$2" testID="notifications-denied">
+            <Paragraph theme="alt2">{t('denied')}</Paragraph>
+            <Button theme="green" onPress={openSettings}>
+              {t('openSettings')}
+            </Button>
+          </YStack>
+        ) : (
+          <Paragraph theme="alt2" testID="notifications-denied-web">
+            {t('deniedWeb')}
+          </Paragraph>
+        )
       ) : (
-        <Paragraph theme="alt2">Notifications enabled.</Paragraph>
+        <Button theme="green" onPress={() => void request()}>
+          {t('enable')}
+        </Button>
       )}
 
       <YStack gap="$2">
-        <H4>Categories</H4>
-        {CATEGORIES.map((c) => (
-          <XStack key={c.key} justifyContent="space-between" alignItems="center">
-            <Paragraph flex={1}>{c.label}</Paragraph>
-            <Switch checked={prefs.categories[c.key]} onCheckedChange={() => toggleCategory(c.key)}>
-              <Switch.Thumb />
-            </Switch>
-          </XStack>
+        <H4>{t('categories')}</H4>
+        {CATEGORIES.map((key) => (
+          <LabeledSwitch
+            key={key}
+            label={t(`category.${key}`)}
+            checked={prefs.categories[key]}
+            onCheckedChange={() => toggleCategory(key)}
+          />
         ))}
       </YStack>
 
       <YStack gap="$1">
-        <H4>Maintenance reminders</H4>
+        <H4>{t('reminders')}</H4>
         {reminders.length === 0 ? (
-          <Paragraph theme="alt2">
-            None yet. Date reminders fire even with the app closed; mileage uses values you enter
-            (odometer isn’t a standard OBD2 PID).
-          </Paragraph>
+          <Paragraph theme="alt2">{t('noReminders')}</Paragraph>
         ) : (
           reminders.map((r) => <Paragraph key={r.id}>{r.title}</Paragraph>)
         )}

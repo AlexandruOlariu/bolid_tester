@@ -1,5 +1,40 @@
 [
   [
+    "concept:accessibility",
+    "doc:accessibility",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "lib:contrast",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "screen:_layout",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "ui:LabeledSwitch",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "ui:SegmentedControl",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "ui:usePalette",
+    "relates"
+  ],
+  [
+    "concept:accessibility",
+    "ui:useReducedMotion",
+    "relates"
+  ],
+  [
     "concept:adaptation-channels",
     "concept:ecu-coding",
     "relates"
@@ -26,6 +61,11 @@
   ],
   [
     "concept:ai-diagnose-flow",
+    "core:analysis/aiProviders",
+    "relates"
+  ],
+  [
+    "concept:ai-diagnose-flow",
     "doc:features/ai-diagnose",
     "relates"
   ],
@@ -37,6 +77,16 @@
   [
     "concept:ai-diagnose-flow",
     "service:ai",
+    "relates"
+  ],
+  [
+    "concept:app-backup-restore",
+    "concept:state-architecture",
+    "relates"
+  ],
+  [
+    "concept:app-backup-restore",
+    "feature:backup",
     "relates"
   ],
   [
@@ -95,6 +145,61 @@
     "relates"
   ],
   [
+    "concept:capture-analyzer",
+    "concept:coding-tweaks-backup",
+    "relates"
+  ],
+  [
+    "concept:capture-analyzer",
+    "concept:guided-routines",
+    "relates"
+  ],
+  [
+    "concept:capture-analyzer",
+    "concept:module-scan",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "concept:connection-lifecycle",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "core:transport/Transport",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "core:transport/testing/bridge",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "doc:plans/27-bluetooth-spp-transport",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "feature:can-sniffer",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "feature:connection",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "transport:SppTransport",
+    "relates"
+  ],
+  [
+    "concept:classic-bluetooth-spp",
+    "transport:adapterNames",
+    "relates"
+  ],
+  [
     "concept:coding-tweaks-backup",
     "concept:adaptation-channels",
     "relates"
@@ -107,6 +212,16 @@
   [
     "concept:coding-tweaks-backup",
     "feature:coding",
+    "relates"
+  ],
+  [
+    "concept:confirmation-evidence",
+    "concept:capture-analyzer",
+    "relates"
+  ],
+  [
+    "concept:confirmation-evidence",
+    "concept:vehicle-profiles",
     "relates"
   ],
   [
@@ -222,6 +337,31 @@
   [
     "concept:dpf-regen",
     "feature:dpf",
+    "relates"
+  ],
+  [
+    "concept:dtc-database",
+    "concept:dtc-faults",
+    "relates"
+  ],
+  [
+    "concept:dtc-database",
+    "core:obd/dtcDatabase/index",
+    "relates"
+  ],
+  [
+    "concept:dtc-database",
+    "core:obd/dtcDatabase/manufacturer/vag",
+    "relates"
+  ],
+  [
+    "concept:dtc-database",
+    "core:uds/vagDtcs",
+    "relates"
+  ],
+  [
+    "concept:dtc-database",
+    "doc:features/fault-codes",
     "relates"
   ],
   [
@@ -355,6 +495,31 @@
     "relates"
   ],
   [
+    "concept:exchange-files",
+    "concept:adaptation-channels",
+    "relates"
+  ],
+  [
+    "concept:exchange-files",
+    "concept:garage-learned-profiles",
+    "relates"
+  ],
+  [
+    "concept:exchange-files",
+    "feature:settings",
+    "relates"
+  ],
+  [
+    "concept:exchange-files",
+    "feature:vehicle-select",
+    "relates"
+  ],
+  [
+    "concept:exchange-files",
+    "store:garageStore",
+    "relates"
+  ],
+  [
     "concept:extended-pids-mode22",
     "concept:ecu-coding",
     "relates"
@@ -400,6 +565,26 @@
     "relates"
   ],
   [
+    "concept:gps-obd-check",
+    "concept:trip-recording",
+    "relates"
+  ],
+  [
+    "concept:gps-obd-check",
+    "core:analysis/track",
+    "relates"
+  ],
+  [
+    "concept:gps-obd-check",
+    "doc:features/trip-recording",
+    "relates"
+  ],
+  [
+    "concept:gps-obd-check",
+    "feature:trip-recording",
+    "relates"
+  ],
+  [
     "concept:guided-routines",
     "concept:dpf-regen",
     "relates"
@@ -407,6 +592,21 @@
   [
     "concept:iupr-inspection",
     "concept:vehicle-profiles",
+    "relates"
+  ],
+  [
+    "concept:kwp-login-code-book",
+    "concept:adaptation-channels",
+    "relates"
+  ],
+  [
+    "concept:kwp-login-code-book",
+    "concept:mock-simulator",
+    "relates"
+  ],
+  [
+    "concept:kwp-login-code-book",
+    "feature:adaptations",
     "relates"
   ],
   [
@@ -440,6 +640,31 @@
     "relates"
   ],
   [
+    "concept:live-value-keys",
+    "concept:extended-pids-mode22",
+    "relates"
+  ],
+  [
+    "concept:live-value-keys",
+    "core:obd/liveKeys",
+    "relates"
+  ],
+  [
+    "concept:live-value-keys",
+    "feature:engine-host",
+    "relates"
+  ],
+  [
+    "concept:live-value-keys",
+    "feature:extended-pids",
+    "relates"
+  ],
+  [
+    "concept:live-value-keys",
+    "feature:live-charts",
+    "relates"
+  ],
+  [
     "concept:maintenance-log",
     "concept:notifications-layer",
     "relates"
@@ -457,6 +682,21 @@
   [
     "concept:maintenance-log",
     "feature:maintenance",
+    "relates"
+  ],
+  [
+    "concept:metric-only",
+    "doc:features/settings",
+    "relates"
+  ],
+  [
+    "concept:metric-only",
+    "feature:live-data",
+    "relates"
+  ],
+  [
+    "concept:metric-only",
+    "feature:settings",
     "relates"
   ],
   [
@@ -575,6 +815,36 @@
     "relates"
   ],
   [
+    "concept:per-car-timeline",
+    "concept:diagnostic-history",
+    "relates"
+  ],
+  [
+    "concept:per-car-timeline",
+    "concept:maintenance-log",
+    "relates"
+  ],
+  [
+    "concept:per-car-timeline",
+    "concept:scan-history-diff",
+    "relates"
+  ],
+  [
+    "concept:per-car-timeline",
+    "concept:trip-recording",
+    "relates"
+  ],
+  [
+    "concept:per-car-timeline",
+    "doc:features/history",
+    "relates"
+  ],
+  [
+    "concept:per-car-timeline",
+    "feature:history",
+    "relates"
+  ],
+  [
     "concept:performance-tests",
     "concept:live-data-charts",
     "relates"
@@ -610,6 +880,36 @@
     "relates"
   ],
   [
+    "concept:replay-fixtures",
+    "concept:app-settings",
+    "relates"
+  ],
+  [
+    "concept:replay-fixtures",
+    "core:transport/fixtureCheck",
+    "relates"
+  ],
+  [
+    "concept:replay-fixtures",
+    "core:transport/logReplay",
+    "relates"
+  ],
+  [
+    "concept:replay-fixtures",
+    "core:transport/recordingTransport",
+    "relates"
+  ],
+  [
+    "concept:replay-fixtures",
+    "core:transport/simFixtures",
+    "relates"
+  ],
+  [
+    "concept:replay-fixtures",
+    "feature:settings",
+    "relates"
+  ],
+  [
     "concept:scan-history-diff",
     "concept:module-scan",
     "relates"
@@ -617,6 +917,41 @@
   [
     "concept:scan-history-diff",
     "feature:module-scan",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "concept:exchange-files",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "concept:mock-simulator",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "feature:adaptations",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "feature:coding",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "feature:routines",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "feature:service-reset",
+    "relates"
+  ],
+  [
+    "concept:security-access-plugins",
+    "feature:settings",
     "relates"
   ],
   [
@@ -641,7 +976,7 @@
   ],
   [
     "concept:sensor-monitoring",
-    "feature:sensor-readings",
+    "feature:live-data",
     "relates"
   ],
   [
@@ -920,8 +1255,68 @@
     "relates"
   ],
   [
+    "concept:web-bluetooth",
+    "concept:connection-lifecycle",
+    "relates"
+  ],
+  [
+    "concept:web-bluetooth",
+    "core:transport/testing/bridge",
+    "relates"
+  ],
+  [
+    "concept:web-bluetooth",
+    "doc:plans/28-web-bluetooth-pwa",
+    "relates"
+  ],
+  [
+    "concept:web-bluetooth",
+    "feature:connection",
+    "relates"
+  ],
+  [
+    "concept:web-bluetooth",
+    "store:persistStorage",
+    "relates"
+  ],
+  [
+    "concept:wifi-adapter",
+    "concept:connection-lifecycle",
+    "relates"
+  ],
+  [
+    "concept:wifi-adapter",
+    "core:transport/testing/bridge",
+    "relates"
+  ],
+  [
+    "concept:wifi-adapter",
+    "doc:plans/26-wifi-tcp-transport",
+    "relates"
+  ],
+  [
+    "concept:wifi-adapter",
+    "feature:connection",
+    "relates"
+  ],
+  [
+    "concept:wifi-adapter",
+    "transport:TcpTransport",
+    "relates"
+  ],
+  [
+    "concept:wifi-adapter",
+    "transport:endpoint",
+    "relates"
+  ],
+  [
     "core:analysis/aiDiagnosis",
     "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "core:analysis/aiDiagnosis",
+    "core:obd/dtcDatabase/index",
     "imports"
   ],
   [
@@ -940,6 +1335,11 @@
     "imports"
   ],
   [
+    "core:analysis/aiProviders",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
     "core:analysis/alerts",
     "doc:features/alerts",
     "named"
@@ -947,6 +1347,16 @@
   [
     "core:analysis/battery",
     "doc:features/battery-health",
+    "named"
+  ],
+  [
+    "core:analysis/captureAnalyzer",
+    "doc:plans/03-sniffer-capture",
+    "named"
+  ],
+  [
+    "core:analysis/captureAnalyzer",
+    "doc:plans/25-post-capture-confirmation",
     "named"
   ],
   [
@@ -985,13 +1395,18 @@
     "named"
   ],
   [
+    "core:analysis/track",
+    "core:analysis/trip",
+    "imports"
+  ],
+  [
     "core:analysis/trip",
     "core:analysis/fuelEconomy",
     "imports"
   ],
   [
-    "core:analysis/trip",
-    "doc:features/trip-recording",
+    "core:coding/adaptationValue",
+    "doc:plans/24-adaptation-restore",
     "named"
   ],
   [
@@ -1005,9 +1420,44 @@
     "imports"
   ],
   [
+    "core:coding/kwpLogin",
+    "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "core:coding/kwpLogin",
+    "doc:plans/22-kwp-login-code-book",
+    "named"
+  ],
+  [
+    "core:coding/kwpLogin",
+    "vehicle:loginBook",
+    "named"
+  ],
+  [
     "core:coding/presets",
     "core:coding/coding",
     "imports"
+  ],
+  [
+    "core:coding/presets",
+    "core:confirmation",
+    "imports"
+  ],
+  [
+    "core:coding/presets",
+    "doc:plans/19-ai-provider-presets",
+    "named"
+  ],
+  [
+    "core:coding/seedKeyDsl",
+    "doc:plans/23-security-access-plugins",
+    "named"
+  ],
+  [
+    "core:confirmation",
+    "doc:plans/25-post-capture-confirmation",
+    "named"
   ],
   [
     "core:elm327/Elm327Client",
@@ -1026,13 +1476,8 @@
   ],
   [
     "core:elm327/Elm327Client",
-    "doc:obd2-reference",
-    "named"
-  ],
-  [
-    "core:elm327/Elm327Client",
-    "doc:simulator",
-    "named"
+    "core:transport/redact",
+    "imports"
   ],
   [
     "core:elm327/Elm327Client",
@@ -1046,22 +1491,147 @@
   ],
   [
     "core:elm327/responseParser",
-    "doc:obd2-reference",
-    "named"
-  ],
-  [
-    "core:elm327/responseParser",
-    "doc:simulator",
-    "named"
-  ],
-  [
-    "core:elm327/responseParser",
     "lib:hex",
     "imports"
   ],
   [
     "core:obd/canMonitor",
+    "core:obd/captureBuffer",
+    "imports"
+  ],
+  [
+    "core:obd/canMonitor",
     "doc:features/dpf",
+    "named"
+  ],
+  [
+    "core:obd/captureBuffer",
+    "core:obd/canMonitor",
+    "imports"
+  ],
+  [
+    "core:obd/captureBuffer",
+    "doc:plans/03-sniffer-capture",
+    "named"
+  ],
+  [
+    "core:obd/captureBuffer",
+    "doc:plans/25-post-capture-confirmation",
+    "named"
+  ],
+  [
+    "core:obd/dtc",
+    "core:obd/dtcDatabase/index",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p0",
+    "core:obd/dtcDatabase/generic/p0-part1",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p0",
+    "core:obd/dtcDatabase/generic/p0-part2",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p0",
+    "core:obd/dtcDatabase/generic/p0-part3",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p0",
+    "core:obd/dtcDatabase/generic/p0-part4",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p2",
+    "core:obd/dtcDatabase/generic/p2-part1",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/generic/p2",
+    "core:obd/dtcDatabase/generic/p2-part2",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/b0",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/c0",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/p0",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/p2",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/p3",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/generic/u0",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/manufacturer/fiat",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/index",
+    "core:obd/dtcDatabase/manufacturer/vag",
+    "imports"
+  ],
+  [
+    "core:obd/dtcDatabase/manufacturer/fiat",
+    "doc:vehicles/fiat-punto-2008-12",
+    "named"
+  ],
+  [
+    "core:obd/dtcDatabase/manufacturer/fiat",
+    "vehicle:fiat-punto-2008-12",
+    "named"
+  ],
+  [
+    "core:obd/dtcDatabase/manufacturer/vag",
+    "core:obd/dtcDatabase/manufacturer/vag-p1",
+    "imports"
+  ],
+  [
+    "core:obd/liveKeys",
+    "core:obd/pids",
+    "imports"
+  ],
+  [
+    "core:obd/mode05",
+    "doc:plans/05-dtc-database",
+    "named"
+  ],
+  [
+    "core:obd/mode05",
+    "doc:plans/14-mode22-charts-measuring-groups",
+    "named"
+  ],
+  [
+    "core:obd/mode06",
+    "doc:plans/06-garage-learned-profiles",
+    "named"
+  ],
+  [
+    "core:obd/mode06",
+    "doc:plans/14-mode22-charts-measuring-groups",
     "named"
   ],
   [
@@ -1091,12 +1661,22 @@
   ],
   [
     "core:public-api",
+    "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:analysis/alerts",
     "imports"
   ],
   [
     "core:public-api",
     "core:analysis/battery",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:analysis/captureAnalyzer",
     "imports"
   ],
   [
@@ -1136,6 +1716,11 @@
   ],
   [
     "core:public-api",
+    "core:analysis/track",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:analysis/trip",
     "imports"
   ],
@@ -1156,12 +1741,27 @@
   ],
   [
     "core:public-api",
+    "core:coding/kwpLogin",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:coding/presets",
     "imports"
   ],
   [
     "core:public-api",
+    "core:coding/seedKeyDsl",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:confirmation",
     "imports"
   ],
   [
@@ -1181,6 +1781,11 @@
   ],
   [
     "core:public-api",
+    "core:obd/captureBuffer",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:obd/driveCycle",
     "imports"
   ],
@@ -1192,6 +1797,11 @@
   [
     "core:public-api",
     "core:obd/iupr",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:obd/liveKeys",
     "imports"
   ],
   [
@@ -1286,7 +1896,22 @@
   ],
   [
     "core:public-api",
+    "core:transport/recordingTransport",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:transport/redact",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:transport/scenarios",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:uds/discoverModules",
     "imports"
   ],
   [
@@ -1307,6 +1932,11 @@
   [
     "core:public-api",
     "core:uds/vagDtcs",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:uds/vagHeaders",
     "imports"
   ],
   [
@@ -1380,6 +2010,11 @@
     "imports"
   ],
   [
+    "core:tp20/elmRawCan",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
     "core:tp20/fakeTp20Bus",
     "core:tp20/tp20",
     "imports"
@@ -1388,6 +2023,26 @@
     "core:tp20/fakeTp20Bus",
     "core:tp20/tp20Scan",
     "imports"
+  ],
+  [
+    "core:tp20/fakeTp20Bus",
+    "doc:features/can-sniffer",
+    "named"
+  ],
+  [
+    "core:tp20/fakeTp20Bus",
+    "doc:plans/03-sniffer-capture",
+    "named"
+  ],
+  [
+    "core:tp20/fakeTp20Bus",
+    "transport:fakeSocket",
+    "named"
+  ],
+  [
+    "core:tp20/fakeTp20Bus",
+    "transport:fakeSppModule",
+    "named"
   ],
   [
     "core:tp20/fakeTp20Bus",
@@ -1440,12 +2095,82 @@
     "imports"
   ],
   [
+    "core:transport/fixtureCheck",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "core:transport/fixtureCheck",
+    "core:transport/logReplay",
+    "imports"
+  ],
+  [
+    "core:transport/fixtureCheck",
+    "doc:plans/02-on-car-validation",
+    "named"
+  ],
+  [
+    "core:transport/fixtureCheck",
+    "doc:plans/17-trip-detail-map",
+    "named"
+  ],
+  [
+    "core:transport/fixtureFiles",
+    "core:transport/logReplay",
+    "imports"
+  ],
+  [
+    "core:transport/fixtureFiles",
+    "doc:exchange-formats",
+    "named"
+  ],
+  [
+    "core:transport/fixtureFiles",
+    "doc:plans/02-on-car-validation",
+    "named"
+  ],
+  [
     "core:transport/logReplay",
     "core:transport/Transport",
     "imports"
   ],
   [
     "core:transport/logReplay",
+    "lib:bytes",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
+    "core:elm327/Elm327Client",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
+    "core:transport/logReplay",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
+    "core:transport/redact",
+    "imports"
+  ],
+  [
+    "core:transport/recordingTransport",
+    "doc:features/trip-recording",
+    "named"
+  ],
+  [
+    "core:transport/recordingTransport",
     "lib:bytes",
     "imports"
   ],
@@ -1461,7 +2186,87 @@
   ],
   [
     "core:transport/scenarios",
+    "lib:bytes",
+    "imports"
+  ],
+  [
+    "core:transport/scenarios",
     "vehicle:registry",
+    "imports"
+  ],
+  [
+    "core:transport/scenarios",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:obd/pids",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:transport/MockTransport",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:transport/logReplay",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:transport/recordingTransport",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "core:transport/scenarios",
+    "imports"
+  ],
+  [
+    "core:transport/simFixtures",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "core:transport/testing/bridge",
+    "core:transport/MockTransport",
+    "imports"
+  ],
+  [
+    "core:transport/testing/bridge",
+    "doc:testing",
+    "named"
+  ],
+  [
+    "core:uds/discoverModules",
+    "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "core:uds/discoverModules",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "core:uds/discoverModules",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "core:uds/discoverModules",
+    "core:uds/udsModule",
+    "imports"
+  ],
+  [
+    "core:uds/discoverModules",
+    "core:uds/vagHeaders",
     "imports"
   ],
   [
@@ -1485,6 +2290,11 @@
     "named"
   ],
   [
+    "core:uds/testerPresent",
+    "doc:privacy-policy",
+    "named"
+  ],
+  [
     "core:uds/udsModule",
     "core:coding/udsCoding",
     "imports"
@@ -1495,8 +2305,8 @@
     "imports"
   ],
   [
-    "core:uds/udsModule",
     "core:uds/vagDtcs",
+    "core:obd/dtcDatabase/manufacturer/vag",
     "imports"
   ],
   [
@@ -1525,6 +2335,11 @@
     "documents"
   ],
   [
+    "doc:features/backup",
+    "feature:backup",
+    "documents"
+  ],
+  [
     "doc:features/battery-health",
     "feature:adapter-health",
     "documents"
@@ -1532,6 +2347,11 @@
   [
     "doc:features/battery-health",
     "feature:battery-health",
+    "documents"
+  ],
+  [
+    "doc:features/can-sniffer",
+    "feature:can-sniffer",
     "documents"
   ],
   [
@@ -1550,6 +2370,11 @@
     "documents"
   ],
   [
+    "doc:features/engine-host",
+    "feature:engine-host",
+    "documents"
+  ],
+  [
     "doc:features/error-log",
     "feature:error-log",
     "documents"
@@ -1562,6 +2387,11 @@
   [
     "doc:features/fault-codes",
     "feature:fault-codes",
+    "documents"
+  ],
+  [
+    "doc:features/feedback",
+    "feature:feedback",
     "documents"
   ],
   [
@@ -1605,8 +2435,18 @@
     "documents"
   ],
   [
+    "doc:features/more",
+    "feature:more",
+    "documents"
+  ],
+  [
     "doc:features/notifications",
     "feature:notifications",
+    "documents"
+  ],
+  [
+    "doc:features/onboarding",
+    "feature:onboarding",
     "documents"
   ],
   [
@@ -1620,6 +2460,11 @@
     "documents"
   ],
   [
+    "doc:features/report",
+    "feature:report",
+    "documents"
+  ],
+  [
     "doc:features/routines",
     "feature:routines",
     "documents"
@@ -1627,11 +2472,6 @@
   [
     "doc:features/sensor-tests",
     "feature:performance-tests",
-    "documents"
-  ],
-  [
-    "doc:features/sensor-tests",
-    "feature:sensor-readings",
     "documents"
   ],
   [
@@ -1701,6 +2541,11 @@
   ],
   [
     "feature:adaptations",
+    "core:coding/kwpLogin",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
     "core:coding/udsCoding",
     "imports"
   ],
@@ -1731,7 +2576,32 @@
   ],
   [
     "feature:adaptations",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "store:labelPackStore",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "store:persistStorage",
     "imports"
   ],
   [
@@ -1741,12 +2611,17 @@
   ],
   [
     "feature:adaptations",
-    "vehicle:registry",
+    "vehicle:loginBook",
     "imports"
   ],
   [
     "feature:adaptations",
     "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -1756,7 +2631,32 @@
   ],
   [
     "feature:adapter-health",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "store:linkStore",
     "imports"
   ],
   [
@@ -1765,8 +2665,28 @@
     "imports"
   ],
   [
+    "feature:adapter-health",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
     "feature:ai-diagnose",
     "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:obd/dtcDatabase/index",
     "imports"
   ],
   [
@@ -1781,12 +2701,27 @@
   ],
   [
     "feature:ai-diagnose",
+    "feature:fault-codes",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
     "feature:vehicle-select",
     "imports"
   ],
   [
     "feature:ai-diagnose",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
     "service:ai",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "store:activeProfile",
     "imports"
   ],
   [
@@ -1811,12 +2746,22 @@
   ],
   [
     "feature:ai-diagnose",
+    "vehicle:faultGuides",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
     "vehicle:registry",
     "imports"
   ],
   [
     "feature:ai-diagnose",
     "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -1830,6 +2775,171 @@
     "named"
   ],
   [
+    "feature:alerts",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:alerts",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "core:analysis/maintenance",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:adaptations",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:adapter-health",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:ai-diagnose",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:alerts",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:battery-health",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:coding",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:connection",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:dpf",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:inspection",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:live-data",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:maintenance",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:module-scan",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:notifications",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "feature:trip-recording",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "lib:backup",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:adapterLog",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:dtcStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:labelPackStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:onboardingStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:seedKeyStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:toastStore",
+    "imports"
+  ],
+  [
+    "feature:backup",
+    "store:vehicleStore",
+    "imports"
+  ],
+  [
     "feature:battery-health",
     "core:analysis/battery",
     "imports"
@@ -1841,7 +2951,22 @@
   ],
   [
     "feature:battery-health",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:battery-health",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:battery-health",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:battery-health",
+    "store:historyStore",
     "imports"
   ],
   [
@@ -1852,6 +2977,36 @@
   [
     "feature:can-sniffer",
     "core:obd/canMonitor",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "core:obd/captureBuffer",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "lib:saveFile",
     "imports"
   ],
   [
@@ -1906,7 +3061,22 @@
   ],
   [
     "feature:coding",
+    "feature:module-scan",
+    "imports"
+  ],
+  [
+    "feature:coding",
     "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "lib:saveFile",
     "imports"
   ],
   [
@@ -1917,6 +3087,11 @@
   [
     "feature:coding",
     "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "store:labelPackStore",
     "imports"
   ],
   [
@@ -1941,6 +3116,16 @@
   ],
   [
     "feature:connection",
+    "core:elm327/Elm327Client",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:connection",
     "core:session/DiagnosticSession",
     "imports"
   ],
@@ -1952,6 +3137,11 @@
   [
     "feature:connection",
     "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "core:transport/recordingTransport",
     "imports"
   ],
   [
@@ -1971,7 +3161,7 @@
   ],
   [
     "feature:connection",
-    "lib:bytes",
+    "store:activeProfile",
     "imports"
   ],
   [
@@ -1986,6 +3176,16 @@
   ],
   [
     "feature:connection",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "store:linkStore",
+    "imports"
+  ],
+  [
+    "feature:connection",
     "store:sessionStore",
     "imports"
   ],
@@ -1996,7 +3196,27 @@
   ],
   [
     "feature:connection",
+    "store:toastStore",
+    "imports"
+  ],
+  [
+    "feature:connection",
     "transport:BleTransport",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "transport:SppTransport",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "transport:TcpTransport",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "transport:endpoint",
     "imports"
   ],
   [
@@ -2007,6 +3227,11 @@
   [
     "feature:connection",
     "transport:permissions",
+    "imports"
+  ],
+  [
+    "feature:connection",
+    "vehicle:resolve",
     "imports"
   ],
   [
@@ -2041,7 +3266,7 @@
   ],
   [
     "feature:dpf",
-    "vehicle:registry",
+    "vehicle:confirmation",
     "imports"
   ],
   [
@@ -2056,6 +3281,21 @@
   ],
   [
     "feature:engine-host",
+    "core:elm327/Elm327Client",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "core:obd/liveKeys",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
     "core:obd/readiness",
     "imports"
   ],
@@ -2066,17 +3306,17 @@
   ],
   [
     "feature:engine-host",
+    "doc:features/engine-host",
+    "named"
+  ],
+  [
+    "feature:engine-host",
     "feature:alerts",
     "imports"
   ],
   [
     "feature:engine-host",
     "feature:fault-codes",
-    "imports"
-  ],
-  [
-    "feature:engine-host",
-    "feature:live-data",
     "imports"
   ],
   [
@@ -2101,7 +3341,22 @@
   ],
   [
     "feature:engine-host",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "store:dtcStore",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "store:liveDataStore",
     "imports"
   ],
   [
@@ -2116,7 +3371,12 @@
   ],
   [
     "feature:engine-host",
-    "vehicle:registry",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:engine-host",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -2126,7 +3386,22 @@
   ],
   [
     "feature:error-log",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:error-log",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:error-log",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
+    "core:obd/liveKeys",
     "imports"
   ],
   [
@@ -2146,17 +3421,32 @@
   ],
   [
     "feature:extended-pids",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
     "doc:features/extended-pids",
     "named"
   ],
   [
     "feature:extended-pids",
-    "feature:vehicle-select",
+    "lib:hex",
     "imports"
   ],
   [
     "feature:extended-pids",
-    "lib:hex",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
+    "store:chartsStore",
     "imports"
   ],
   [
@@ -2166,12 +3456,22 @@
   ],
   [
     "feature:extended-pids",
+    "store:labelPackStore",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
+    "store:liveDataStore",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
     "store:sessionStore",
     "imports"
   ],
   [
     "feature:extended-pids",
-    "vehicle:registry",
+    "store:settingsStore",
     "imports"
   ],
   [
@@ -2201,6 +3501,11 @@
   ],
   [
     "feature:fault-codes",
+    "doc:contributing/dtc-texts",
+    "named"
+  ],
+  [
+    "feature:fault-codes",
     "doc:features/fault-codes",
     "named"
   ],
@@ -2212,6 +3517,16 @@
   [
     "feature:fault-codes",
     "lib:dtcReport",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "store:dtcStore",
     "imports"
   ],
   [
@@ -2240,8 +3555,78 @@
     "imports"
   ],
   [
+    "feature:fault-codes",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "lib:feedbackBundle",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:adapterLog",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:feedback",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
     "feature:history",
     "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "core:analysis/maintenance",
     "imports"
   ],
   [
@@ -2251,7 +3636,32 @@
   ],
   [
     "feature:history",
+    "feature:ai-diagnose",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "feature:coding",
+    "imports"
+  ],
+  [
+    "feature:history",
     "feature:fault-codes",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "feature:maintenance",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "feature:module-scan",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "feature:trip-recording",
     "imports"
   ],
   [
@@ -2261,7 +3671,57 @@
   ],
   [
     "feature:history",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "lib:timeline",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "lib:vehicleReport",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:history",
     "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "store:toastStore",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "vehicle:resolve",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -2281,7 +3741,17 @@
   ],
   [
     "feature:inspection",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:inspection",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:inspection",
+    "store:historyStore",
     "imports"
   ],
   [
@@ -2296,17 +3766,12 @@
   ],
   [
     "feature:live-charts",
-    "doc:features/live-charts",
-    "named"
+    "core:obd/liveKeys",
+    "imports"
   ],
   [
     "feature:live-charts",
-    "doc:features/live-data",
-    "named"
-  ],
-  [
-    "feature:live-charts",
-    "feature:live-data",
+    "core:obd/protocols",
     "imports"
   ],
   [
@@ -2316,7 +3781,42 @@
   ],
   [
     "feature:live-charts",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "store:chartsStore",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "store:liveDataStore",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -2326,12 +3826,17 @@
   ],
   [
     "feature:live-data",
-    "core:session/DiagnosticSession",
+    "core:obd/liveKeys",
     "imports"
   ],
   [
     "feature:live-data",
-    "doc:features/live-charts",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "doc:contributing/README",
     "named"
   ],
   [
@@ -2346,7 +3851,22 @@
   ],
   [
     "feature:live-data",
-    "lib:units",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "store:liveDataStore",
     "imports"
   ],
   [
@@ -2361,12 +3881,12 @@
   ],
   [
     "feature:live-data",
-    "store:settingsStore",
+    "vehicle:types",
     "imports"
   ],
   [
     "feature:live-data",
-    "vehicle:registry",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -2381,12 +3901,47 @@
   ],
   [
     "feature:maintenance",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
     "store:persistStorage",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "store:vehicleStore",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
     "feature:module-scan",
     "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:obd/dtcDatabase/manufacturer/vag",
     "imports"
   ],
   [
@@ -2421,12 +3976,22 @@
   ],
   [
     "feature:module-scan",
+    "core:uds/discoverModules",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
     "core:uds/testerPresent",
     "imports"
   ],
   [
     "feature:module-scan",
     "core:uds/udsModule",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:uds/vagHeaders",
     "imports"
   ],
   [
@@ -2441,7 +4006,22 @@
   ],
   [
     "feature:module-scan",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "store:garageStore",
     "imports"
   ],
   [
@@ -2475,6 +4055,21 @@
     "imports"
   ],
   [
+    "feature:module-scan",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "feature:more",
+    "doc:features/more",
+    "named"
+  ],
+  [
+    "feature:more",
+    "doc:plans/07-information-architecture",
+    "named"
+  ],
+  [
     "feature:more",
     "store:errorLogStore",
     "imports"
@@ -2490,8 +4085,38 @@
     "imports"
   ],
   [
-    "feature:onboarding",
+    "feature:notifications",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:notifications",
     "store:persistStorage",
+    "imports"
+  ],
+  [
+    "feature:onboarding",
+    "doc:features/onboarding",
+    "named"
+  ],
+  [
+    "feature:onboarding",
+    "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:onboarding",
+    "store:dtcStore",
+    "imports"
+  ],
+  [
+    "feature:onboarding",
+    "store:onboardingStore",
+    "imports"
+  ],
+  [
+    "feature:onboarding",
+    "store:sessionStore",
     "imports"
   ],
   [
@@ -2506,12 +4131,147 @@
   ],
   [
     "feature:performance-tests",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:performance-tests",
     "store:errorLogStore",
     "imports"
   ],
   [
     "feature:performance-tests",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:analysis/battery",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:analysis/inspection",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:analysis/maintenance",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:obd/dtcDatabase/manufacturer/vag",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:obd/vinDecode",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "feature:ai-diagnose",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "feature:battery-health",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "feature:inspection",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "feature:maintenance",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "feature:module-scan",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "lib:dtcReport",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "lib:vehicleReport",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:dtcStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "store:toastStore",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:report",
+    "vehicle:types",
     "imports"
   ],
   [
@@ -2556,47 +4316,12 @@
   ],
   [
     "feature:routines",
-    "vehicle:registry",
-    "imports"
-  ],
-  [
-    "feature:routines",
     "vehicle:types",
     "imports"
   ],
   [
-    "feature:sensor-readings",
-    "core:obd/protocols",
-    "imports"
-  ],
-  [
-    "feature:sensor-readings",
-    "doc:features/sensor-tests",
-    "named"
-  ],
-  [
-    "feature:sensor-readings",
-    "feature:live-data",
-    "imports"
-  ],
-  [
-    "feature:sensor-readings",
-    "feature:vehicle-select",
-    "imports"
-  ],
-  [
-    "feature:sensor-readings",
-    "store:errorLogStore",
-    "imports"
-  ],
-  [
-    "feature:sensor-readings",
-    "store:sessionStore",
-    "imports"
-  ],
-  [
-    "feature:sensor-readings",
-    "vehicle:registry",
+    "feature:sensor-tests",
+    "core:confirmation",
     "imports"
   ],
   [
@@ -2626,17 +4351,17 @@
   ],
   [
     "feature:sensor-tests",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:sensor-tests",
     "store:errorLogStore",
     "imports"
   ],
   [
     "feature:sensor-tests",
     "store:sessionStore",
-    "imports"
-  ],
-  [
-    "feature:sensor-tests",
-    "vehicle:registry",
     "imports"
   ],
   [
@@ -2666,17 +4391,27 @@
   ],
   [
     "feature:service-reset",
-    "store:sessionStore",
-    "imports"
+    "store:exchangeService",
+    "named"
   ],
   [
     "feature:service-reset",
-    "vehicle:registry",
+    "store:sessionStore",
     "imports"
   ],
   [
     "feature:settings",
     "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "core:coding/seedKeyDsl",
     "imports"
   ],
   [
@@ -2691,7 +4426,42 @@
   ],
   [
     "feature:settings",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "lib:i18nResolve",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "lib:storeLinks",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "service:ai",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "store:activeProfile",
     "imports"
   ],
   [
@@ -2706,6 +4476,31 @@
   ],
   [
     "feature:settings",
+    "store:exchangeService",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "store:labelPackStore",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "store:onboardingStore",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "store:seedKeyStore",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "store:sessionStore",
     "imports"
   ],
@@ -2716,13 +4511,58 @@
   ],
   [
     "feature:settings",
+    "store:vehicleStore",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "telemetry:crashReporting",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "transport:endpoint",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "ui:ImportPreviewSheet",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "ui:useExchangeImport",
+    "imports"
+  ],
+  [
+    "feature:settings",
     "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "vehicle:resolve",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "core:analysis/track",
     "imports"
   ],
   [
     "feature:trip-recording",
     "core:analysis/trip",
     "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "core:transport/recordingTransport",
+    "named"
   ],
   [
     "feature:trip-recording",
@@ -2736,7 +4576,12 @@
   ],
   [
     "feature:trip-recording",
-    "lib:units",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "lib:webRuntime",
     "imports"
   ],
   [
@@ -2751,6 +4596,16 @@
   ],
   [
     "feature:trip-recording",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "store:liveDataStore",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
     "store:persistStorage",
     "imports"
   ],
@@ -2765,6 +4620,26 @@
     "imports"
   ],
   [
+    "feature:trip-recording",
+    "store:toastStore",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "vehicle:resolve",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
     "feature:vehicle-info",
     "core:obd/protocols",
     "imports"
@@ -2776,7 +4651,22 @@
   ],
   [
     "feature:vehicle-info",
+    "lib:appInfo",
+    "named"
+  ],
+  [
+    "feature:vehicle-info",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "feature:vehicle-info",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "core:coding/kwpLogin",
     "imports"
   ],
   [
@@ -2791,7 +4681,37 @@
   ],
   [
     "feature:vehicle-select",
-    "store:persistStorage",
+    "lib:saveFile",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "service:notify",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "store:exchangeService",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "store:garageStore",
     "imports"
   ],
   [
@@ -2801,7 +4721,47 @@
   ],
   [
     "feature:vehicle-select",
+    "store:settingsStore",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "store:vehicleStore",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "ui:ImportPreviewSheet",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "ui:useExchangeImport",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "vehicle:loginBook",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
     "vehicle:registry",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "vehicle:resolve",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:vehicle-select",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -2825,9 +4785,264 @@
     "imports"
   ],
   [
+    "lib:appInfo",
+    "doc:features/vehicle-info",
+    "named"
+  ],
+  [
+    "lib:contribChecks",
+    "vehicle:validatedOn",
+    "imports"
+  ],
+  [
     "lib:dtcReport",
     "core:obd/dtc",
     "imports"
+  ],
+  [
+    "lib:dtcReport",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "lib:dtcReport",
+    "core:obd/readiness",
+    "imports"
+  ],
+  [
+    "lib:dtcReport",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "lib:dtcReport",
+    "lib:reportHtml",
+    "imports"
+  ],
+  [
+    "lib:export",
+    "doc:plans/13-profile-labelpack-import-export",
+    "named"
+  ],
+  [
+    "lib:export",
+    "doc:plans/18-backup-restore",
+    "named"
+  ],
+  [
+    "lib:export",
+    "lib:schemas",
+    "imports"
+  ],
+  [
+    "lib:export",
+    "lib:types",
+    "imports"
+  ],
+  [
+    "lib:export",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "lib:export",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "lib:feedbackBundle",
+    "doc:plans/32-feedback-log-bundle",
+    "named"
+  ],
+  [
+    "lib:feedbackBundle",
+    "lib:errorLog",
+    "imports"
+  ],
+  [
+    "lib:feedbackBundle",
+    "lib:scrub",
+    "imports"
+  ],
+  [
+    "lib:i18nParity",
+    "doc:vcds-parity-roadmap",
+    "named"
+  ],
+  [
+    "lib:i18nResolve",
+    "vehicle:resolve",
+    "named"
+  ],
+  [
+    "lib:import",
+    "doc:plans/13-profile-labelpack-import-export",
+    "named"
+  ],
+  [
+    "lib:import",
+    "lib:backup",
+    "imports"
+  ],
+  [
+    "lib:import",
+    "lib:export",
+    "imports"
+  ],
+  [
+    "lib:import",
+    "lib:schemas",
+    "imports"
+  ],
+  [
+    "lib:import",
+    "lib:types",
+    "imports"
+  ],
+  [
+    "lib:import",
+    "lib:validate",
+    "imports"
+  ],
+  [
+    "lib:import",
+    "ui:ImportPreviewSheet",
+    "named"
+  ],
+  [
+    "lib:import",
+    "ui:useExchangeImport",
+    "named"
+  ],
+  [
+    "lib:import",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "lib:reportHtml",
+    "doc:plans/15-unified-vehicle-report",
+    "named"
+  ],
+  [
+    "lib:saveFile",
+    "doc:plans/03-sniffer-capture",
+    "named"
+  ],
+  [
+    "lib:saveFile",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "core:confirmation",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "core:obd/dtcDatabase/index",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "lib:types",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "lib:validate",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "lib:schemas",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "lib:seedKey",
+    "core:coding/seedKeyDsl",
+    "imports"
+  ],
+  [
+    "lib:seedKey",
+    "doc:plans/23-security-access-plugins",
+    "named"
+  ],
+  [
+    "lib:seedKey",
+    "lib:backup",
+    "imports"
+  ],
+  [
+    "lib:seedKey",
+    "lib:validate",
+    "imports"
+  ],
+  [
+    "lib:timeline",
+    "doc:plans/16-per-car-timeline",
+    "named"
+  ],
+  [
+    "lib:types",
+    "core:confirmation",
+    "imports"
+  ],
+  [
+    "lib:types",
+    "vehicle:types",
+    "named"
+  ],
+  [
+    "lib:types",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "lib:vehicleReport",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "lib:vehicleReport",
+    "lib:dtcReport",
+    "imports"
+  ],
+  [
+    "lib:vehicleReport",
+    "lib:reportHtml",
+    "imports"
+  ],
+  [
+    "lib:webRuntime",
+    "doc:plans/28-web-bluetooth-pwa",
+    "named"
+  ],
+  [
+    "lib:webRuntime",
+    "doc:web",
+    "named"
+  ],
+  [
+    "screen:_layout",
+    "doc:plans/21-tablet-layout",
+    "named"
+  ],
+  [
+    "screen:_layout",
+    "feature:connection",
+    "serves"
   ],
   [
     "screen:_layout",
@@ -2846,8 +5061,23 @@
   ],
   [
     "screen:_layout",
+    "telemetry:useCrashReporting",
+    "imports"
+  ],
+  [
+    "screen:_layout",
     "ui:AppSplash",
     "imports"
+  ],
+  [
+    "screen:_layout",
+    "ui:layoutClass",
+    "named"
+  ],
+  [
+    "screen:_layout",
+    "ui:useLayoutClass",
+    "named"
   ],
   [
     "screen:adaptations",
@@ -2895,6 +5125,11 @@
     "serves"
   ],
   [
+    "screen:backup",
+    "feature:backup",
+    "serves"
+  ],
+  [
     "screen:battery",
     "core:analysis/battery",
     "named"
@@ -2908,11 +5143,6 @@
     "screen:battery",
     "feature:battery-health",
     "serves"
-  ],
-  [
-    "screen:charts",
-    "doc:features/live-charts",
-    "named"
   ],
   [
     "screen:charts",
@@ -2965,6 +5195,16 @@
     "serves"
   ],
   [
+    "screen:feedback",
+    "feature:feedback",
+    "serves"
+  ],
+  [
+    "screen:feedback",
+    "feature:module-scan",
+    "serves"
+  ],
+  [
     "screen:history",
     "doc:features/history",
     "named"
@@ -2995,6 +5235,11 @@
     "serves"
   ],
   [
+    "screen:info",
+    "lib:appInfo",
+    "named"
+  ],
+  [
     "screen:inspection",
     "core:analysis/inspection",
     "named"
@@ -3007,6 +5252,16 @@
   [
     "screen:inspection",
     "feature:inspection",
+    "serves"
+  ],
+  [
+    "screen:licenses",
+    "doc:third-party-licenses",
+    "named"
+  ],
+  [
+    "screen:licenses",
+    "feature:settings",
     "serves"
   ],
   [
@@ -3041,6 +5296,16 @@
   ],
   [
     "screen:more",
+    "doc:features/more",
+    "named"
+  ],
+  [
+    "screen:more",
+    "doc:plans/07-information-architecture",
+    "named"
+  ],
+  [
+    "screen:more",
     "feature:more",
     "serves"
   ],
@@ -3065,6 +5330,11 @@
     "serves"
   ],
   [
+    "screen:report",
+    "feature:report",
+    "serves"
+  ],
+  [
     "screen:routines",
     "doc:features/routines",
     "named"
@@ -3073,21 +5343,6 @@
     "screen:routines",
     "feature:routines",
     "serves"
-  ],
-  [
-    "screen:sensor-readings",
-    "doc:features/sensor-tests",
-    "named"
-  ],
-  [
-    "screen:sensor-readings",
-    "feature:sensor-readings",
-    "serves"
-  ],
-  [
-    "screen:sensor-readings",
-    "feature:sensor-tests",
-    "named"
   ],
   [
     "screen:sensors",
@@ -3105,6 +5360,16 @@
     "serves"
   ],
   [
+    "screen:service-reset",
+    "store:exchangeService",
+    "named"
+  ],
+  [
+    "screen:settings",
+    "feature:backup",
+    "serves"
+  ],
+  [
     "screen:settings",
     "feature:settings",
     "serves"
@@ -3112,6 +5377,21 @@
   [
     "screen:sniffer",
     "feature:can-sniffer",
+    "serves"
+  ],
+  [
+    "screen:trip-detail",
+    "doc:plans/05-dtc-database",
+    "named"
+  ],
+  [
+    "screen:trip-detail",
+    "doc:plans/17-trip-detail-map",
+    "named"
+  ],
+  [
+    "screen:trip-detail",
+    "feature:trip-recording",
     "serves"
   ],
   [
@@ -3146,6 +5426,11 @@
   ],
   [
     "service:ai",
+    "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "service:ai",
     "doc:features/ai-diagnose",
     "named"
   ],
@@ -3160,6 +5445,71 @@
     "imports"
   ],
   [
+    "store:activeProfile",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "store:historyStore",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "store:vehicleStore",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "vehicle:resolve",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "store:activeProfile",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "store:dtcStore",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "store:dtcStore",
+    "core:obd/readiness",
+    "imports"
+  ],
+  [
+    "store:dtcStore",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "store:dtcStore",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "store:dtcStore",
+    "store:historyStore",
+    "imports"
+  ],
+  [
     "store:errorLogStore",
     "lib:errorLog",
     "imports"
@@ -3170,8 +5520,98 @@
     "imports"
   ],
   [
+    "store:errorLogStore",
+    "telemetry:crashReporting",
+    "imports"
+  ],
+  [
     "store:eventLog",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "doc:exchange-formats",
+    "named"
+  ],
+  [
+    "store:exchangeService",
+    "doc:features/service-reset",
+    "named"
+  ],
+  [
+    "store:exchangeService",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "lib:validate",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "store:labelPackStore",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "store:toastStore",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "store:exchangeService",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "store:garageStore",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "store:garageStore",
+    "doc:plans/06-garage-learned-profiles",
+    "named"
+  ],
+  [
+    "store:garageStore",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "store:garageStore",
+    "vehicle:loginBook",
+    "imports"
+  ],
+  [
+    "store:garageStore",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -3191,6 +5631,56 @@
   ],
   [
     "store:historyStore",
+    "lib:vehicleReport",
+    "imports"
+  ],
+  [
+    "store:historyStore",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "store:labelPackStore",
+    "doc:contributing/label-pack",
+    "named"
+  ],
+  [
+    "store:labelPackStore",
+    "doc:exchange-formats",
+    "named"
+  ],
+  [
+    "store:labelPackStore",
+    "lib:validate",
+    "imports"
+  ],
+  [
+    "store:labelPackStore",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "store:liveDataStore",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "store:liveDataStore",
+    "doc:contributing/README",
+    "named"
+  ],
+  [
+    "store:liveDataStore",
+    "doc:features/live-data",
+    "named"
+  ],
+  [
+    "store:onboardingStore",
+    "doc:features/onboarding",
+    "named"
+  ],
+  [
+    "store:onboardingStore",
     "store:persistStorage",
     "imports"
   ],
@@ -3201,7 +5691,42 @@
   ],
   [
     "store:secureApiKey",
+    "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "store:secureApiKey",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "store:secureApiKey",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "store:seedKeyStore",
+    "core:coding/seedKeyDsl",
+    "imports"
+  ],
+  [
+    "store:seedKeyStore",
+    "doc:plans/23-security-access-plugins",
+    "named"
+  ],
+  [
+    "store:seedKeyStore",
+    "lib:seedKey",
+    "imports"
+  ],
+  [
+    "store:seedKeyStore",
+    "lib:validate",
+    "imports"
+  ],
+  [
+    "store:seedKeyStore",
+    "store:persistStorage",
     "imports"
   ],
   [
@@ -3216,6 +5741,16 @@
   ],
   [
     "store:settingsStore",
+    "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "store:settingsStore",
+    "lib:i18nResolve",
+    "imports"
+  ],
+  [
+    "store:settingsStore",
     "store:errorLogStore",
     "imports"
   ],
@@ -3227,6 +5762,61 @@
   [
     "store:settingsStore",
     "store:secureApiKey",
+    "imports"
+  ],
+  [
+    "store:settingsStore",
+    "transport:endpoint",
+    "imports"
+  ],
+  [
+    "store:vehicleStore",
+    "store:persistStorage",
+    "imports"
+  ],
+  [
+    "telemetry:crashReporting",
+    "doc:plans/31-opt-in-crash-reporting",
+    "named"
+  ],
+  [
+    "telemetry:crashReporting",
+    "lib:appInfo",
+    "imports"
+  ],
+  [
+    "telemetry:crashReporting",
+    "lib:errorLog",
+    "imports"
+  ],
+  [
+    "telemetry:crashReporting",
+    "lib:scrub",
+    "imports"
+  ],
+  [
+    "telemetry:useCrashReporting",
+    "doc:plans/31-opt-in-crash-reporting",
+    "named"
+  ],
+  [
+    "telemetry:useCrashReporting",
+    "store:garageStore",
+    "imports"
+  ],
+  [
+    "telemetry:useCrashReporting",
+    "store:sessionStore",
+    "imports"
+  ],
+  [
+    "telemetry:useCrashReporting",
+    "store:settingsStore",
+    "imports"
+  ],
+  [
+    "telemetry:useCrashReporting",
+    "telemetry:crashReporting",
     "imports"
   ],
   [
@@ -3246,7 +5836,97 @@
   ],
   [
     "transport:BleTransport",
+    "doc:plans/12-ble-robustness",
+    "named"
+  ],
+  [
+    "transport:BleTransport",
     "lib:base64",
+    "imports"
+  ],
+  [
+    "transport:SppTransport",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "transport:SppTransport",
+    "doc:plans/27-bluetooth-spp-transport",
+    "named"
+  ],
+  [
+    "transport:SppTransport",
+    "lib:bytes",
+    "imports"
+  ],
+  [
+    "transport:SppTransport",
+    "transport:adapterNames",
+    "imports"
+  ],
+  [
+    "transport:TcpTransport",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "transport:TcpTransport",
+    "doc:plans/26-wifi-tcp-transport",
+    "named"
+  ],
+  [
+    "transport:TcpTransport",
+    "lib:bytes",
+    "imports"
+  ],
+  [
+    "transport:TcpTransport",
+    "transport:endpoint",
+    "imports"
+  ],
+  [
+    "transport:fakeSocket",
+    "core:transport/testing/bridge",
+    "imports"
+  ],
+  [
+    "transport:fakeSocket",
+    "transport:TcpTransport",
+    "imports"
+  ],
+  [
+    "transport:fakeSppModule",
+    "core:transport/testing/bridge",
+    "imports"
+  ],
+  [
+    "transport:fakeSppModule",
+    "doc:plans/27-bluetooth-spp-transport",
+    "named"
+  ],
+  [
+    "transport:fakeSppModule",
+    "lib:bytes",
+    "imports"
+  ],
+  [
+    "transport:fakeSppModule",
+    "transport:SppTransport",
+    "imports"
+  ],
+  [
+    "transport:manager",
+    "transport:adapterNames",
+    "imports"
+  ],
+  [
+    "ui:AlertDialog",
+    "store:dialogStore",
+    "imports"
+  ],
+  [
+    "ui:AlertDialog",
+    "ui:SegmentedControl",
     "imports"
   ],
   [
@@ -3257,6 +5937,11 @@
   [
     "ui:AppSplash",
     "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "ui:AppSplash",
+    "store:garageStore",
     "imports"
   ],
   [
@@ -3275,8 +5960,78 @@
     "imports"
   ],
   [
+    "ui:AppSplash",
+    "ui:useReducedMotion",
+    "imports"
+  ],
+  [
+    "ui:CardGrid",
+    "ui:layoutClass",
+    "imports"
+  ],
+  [
+    "ui:CardGrid",
+    "ui:useLayoutClass",
+    "imports"
+  ],
+  [
+    "ui:Gauge",
+    "ui:usePalette",
+    "imports"
+  ],
+  [
+    "ui:ImportPreviewSheet",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "ui:ImportPreviewSheet",
+    "doc:plans/05-dtc-database",
+    "named"
+  ],
+  [
+    "ui:ImportPreviewSheet",
+    "doc:plans/13-profile-labelpack-import-export",
+    "named"
+  ],
+  [
+    "ui:ImportPreviewSheet",
+    "store:exchangeService",
+    "imports"
+  ],
+  [
+    "ui:ImportPreviewSheet",
+    "ui:useExchangeImport",
+    "imports"
+  ],
+  [
+    "ui:ImportPreviewSheet",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "ui:LabeledSwitch",
+    "ui:SegmentedControl",
+    "imports"
+  ],
+  [
     "ui:RootErrorBoundary",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "ui:Screen",
+    "ui:layoutClass",
+    "imports"
+  ],
+  [
+    "ui:Screen",
+    "ui:useLayoutClass",
+    "imports"
+  ],
+  [
+    "ui:Screen",
+    "ui:usePalette",
     "imports"
   ],
   [
@@ -3290,6 +6045,96 @@
     "imports"
   ],
   [
+    "ui:Toast",
+    "store:toastStore",
+    "imports"
+  ],
+  [
+    "ui:Toast",
+    "ui:SegmentedControl",
+    "imports"
+  ],
+  [
+    "ui:ValueCard",
+    "lib:format",
+    "imports"
+  ],
+  [
+    "ui:VerificationBadge",
+    "vehicle:confirmation",
+    "imports"
+  ],
+  [
+    "ui:appAlert",
+    "store:dialogStore",
+    "imports"
+  ],
+  [
+    "ui:layoutClass",
+    "doc:plans/21-tablet-layout",
+    "named"
+  ],
+  [
+    "ui:useExchangeImport",
+    "doc:exchange-formats",
+    "named"
+  ],
+  [
+    "ui:useExchangeImport",
+    "doc:plans/13-profile-labelpack-import-export",
+    "named"
+  ],
+  [
+    "ui:useExchangeImport",
+    "lib:webRuntime",
+    "imports"
+  ],
+  [
+    "ui:useExchangeImport",
+    "store:exchangeService",
+    "imports"
+  ],
+  [
+    "ui:useLayoutClass",
+    "doc:plans/21-tablet-layout",
+    "named"
+  ],
+  [
+    "ui:useLayoutClass",
+    "ui:layoutClass",
+    "imports"
+  ],
+  [
+    "ui:useReducedMotion",
+    "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "vehicle:confirmation",
+    "core:confirmation",
+    "imports"
+  ],
+  [
+    "vehicle:confirmation",
+    "doc:plans/25-post-capture-confirmation",
+    "named"
+  ],
+  [
+    "vehicle:confirmation",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "vehicle:faultGuides",
+    "doc:contributing/README",
+    "named"
+  ],
+  [
+    "vehicle:faultGuides",
+    "doc:contributing/dtc-texts",
+    "named"
+  ],
+  [
     "vehicle:faultGuides",
     "doc:features/fault-codes",
     "named"
@@ -3297,6 +6142,11 @@
   [
     "vehicle:fiat-punto-2008-12",
     "doc:improvement-plan-2026-07",
+    "named"
+  ],
+  [
+    "vehicle:fiat-punto-2008-12",
+    "doc:plans/12-ble-robustness",
     "named"
   ],
   [
@@ -3330,6 +6180,21 @@
     "imports"
   ],
   [
+    "vehicle:loginBook",
+    "doc:plans/22-kwp-login-code-book",
+    "named"
+  ],
+  [
+    "vehicle:loginBook",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "vehicle:passat-b55-19tdi",
+    "doc:plans/19-ai-provider-presets",
+    "named"
+  ],
+  [
     "vehicle:passat-b55-19tdi",
     "doc:vehicles/golf-plus-2009-20tdi",
     "named"
@@ -3351,6 +6216,11 @@
   ],
   [
     "vehicle:registry",
+    "vehicle:confirmation",
+    "imports"
+  ],
+  [
+    "vehicle:registry",
     "vehicle:fiat-punto-2008-12",
     "imports"
   ],
@@ -3366,6 +6236,11 @@
   ],
   [
     "vehicle:registry",
+    "vehicle:loginBook",
+    "imports"
+  ],
+  [
+    "vehicle:registry",
     "vehicle:passat-b55-19tdi",
     "imports"
   ],
@@ -3376,7 +6251,32 @@
   ],
   [
     "vehicle:registry",
+    "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "vehicle:registry",
     "vehicle:vinSuggest",
+    "imports"
+  ],
+  [
+    "vehicle:resolve",
+    "core:transport/MockTransport",
+    "imports"
+  ],
+  [
+    "vehicle:resolve",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "vehicle:resolve",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "vehicle:resolve",
+    "vehicle:userVehicle",
     "imports"
   ],
   [
@@ -3386,8 +6286,53 @@
   ],
   [
     "vehicle:types",
+    "core:confirmation",
+    "imports"
+  ],
+  [
+    "vehicle:types",
+    "core:obd/dtcDatabase/index",
+    "imports"
+  ],
+  [
+    "vehicle:types",
     "core:obd/protocols",
     "imports"
+  ],
+  [
+    "vehicle:userVehicle",
+    "core:obd/dtcDatabase/index",
+    "imports"
+  ],
+  [
+    "vehicle:userVehicle",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "vehicle:userVehicle",
+    "core:obd/vinDecode",
+    "imports"
+  ],
+  [
+    "vehicle:userVehicle",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "vehicle:userVehicle",
+    "doc:plans/23-security-access-plugins",
+    "named"
+  ],
+  [
+    "vehicle:userVehicle",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "vehicle:validatedOn",
+    "doc:plans/02-on-car-validation",
+    "named"
   ],
   [
     "vehicle:vinSuggest",

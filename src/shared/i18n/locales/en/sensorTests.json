@@ -1,0 +1,16 @@
+{
+  "title": "Sensor tests",
+  "subtitle": "Mode 06 monitors + experimental module sensors",
+  "run": "Run tests",
+  "mode06": "Mode 06 (powertrain)",
+  "mode06Row": "MID {{mid}} · {{value}} {{unit}} (min {{min}} / max {{max}}) · {{result}}",
+  "pass": "PASS",
+  "fail": "FAIL",
+  "mode05": "Mode 05 (O2 sensors, pre-CAN)",
+  "sensor": "sensor {{n}}",
+  "raw": "raw {{raw}}",
+  "noMode05": "No Mode 05 results yet — run tests (many ECUs do not support it).",
+  "modules": "Modules (experimental)",
+  "modulesHelp": "CAN-only, per-car addressing. Trust a value only once its badge says it was confirmed on this car.",
+  "noModules": "No experimental module sensors for this car / protocol."
+}

@@ -131,18 +131,24 @@ export interface TripStats {
   gps?: TripGpsStats;
 }
 
-/** Distance integrated from the speed PID (010D, km/h), in km, or null when the PID is absent. */
-function obdDistanceKm(trip: Trip): number | null {
-  if (!tripPids(trip).includes('010D')) return null;
+/** Distance integrated from the speed PID (010D, km/h) over the samples (trapezoidal, in km), or
+ *  null when no sample carries the PID. Exported so the GPS-vs-OBD check (`analysis/track.ts`
+ *  `gpsVsObd`) reuses the exact integration behind `tripStats().distanceKm`. */
+export function obdDistanceKmFromSamples(samples: TripSample[]): number | null {
+  if (!samples.some((s) => '010D' in s.values)) return null;
   let meters = 0;
-  for (let i = 1; i < trip.samples.length; i++) {
-    const a = trip.samples[i - 1].values['010D'];
-    const b = trip.samples[i].values['010D'];
+  for (let i = 1; i < samples.length; i++) {
+    const a = samples[i - 1].values['010D'];
+    const b = samples[i].values['010D'];
     if (a == null || b == null) continue;
-    const dt = (trip.samples[i].t - trip.samples[i - 1].t) / 1000;
-    meters += (((a + b) / 2) / 3.6) * dt;
+    const dt = (samples[i].t - samples[i - 1].t) / 1000;
+    meters += ((a + b) / 2 / 3.6) * dt;
   }
   return meters / 1000;
+}
+
+function obdDistanceKm(trip: Trip): number | null {
+  return obdDistanceKmFromSamples(trip.samples);
 }
 
 /** Trip stats. `fuel` is optional and additive: pass the vehicle's fuel type to also compute fuel

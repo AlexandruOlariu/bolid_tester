@@ -4,14 +4,16 @@ import { YStack, XStack, Button, Paragraph, Text, Spinner } from 'tamagui';
 import { BluetoothOff } from 'lucide-react-native';
 import { enableBluetooth } from '@/shared/transports/ble/manager';
 import type { BluetoothState } from '../hooks/useBluetoothState';
+import { usePalette, HIT_SLOP } from '@/shared/ui';
 import { Panel } from '../styles/connection.styles';
-
-const ACCENT = '#E3B341'; // amber, matching the connecting/initializing status color
+import { useTranslation } from '@/shared/i18n';
 
 /** Banner shown on the Connect screen when the phone's Bluetooth radio isn't ready. Guides the user
  *  to fix it — with a one-tap "Turn on Bluetooth" (Android) or "Open settings" action where the OS
  *  allows it. Renders nothing while ready or still settling. */
 export function BluetoothPrompt({ bt }: { bt: BluetoothState }) {
+  const { t } = useTranslation('connection');
+  const palette = usePalette();
   const [busy, setBusy] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
 
@@ -24,7 +26,7 @@ export function BluetoothPrompt({ bt }: { bt: BluetoothState }) {
     setBusy(false);
     // On success the onStateChange subscription flips `bt.ready` and this banner unmounts itself.
     if (!ok) {
-      setHint('Couldn’t turn Bluetooth on automatically — open Quick Settings and enable it.');
+      setHint(t('prompt.turnOnFailed'));
     }
   };
 
@@ -33,46 +35,42 @@ export function BluetoothPrompt({ bt }: { bt: BluetoothState }) {
   let action: React.ReactNode = null;
 
   if (bt.unsupported) {
-    title = 'Bluetooth LE not available';
-    body =
-      'This device doesn’t support Bluetooth Low Energy, so a wireless OBD2 adapter can’t be used. ' +
-      'You can still use the built-in simulator (Settings).';
+    title = t('prompt.unsupportedTitle');
+    body = t('prompt.unsupportedBody');
   } else if (bt.unauthorized) {
-    title = 'Bluetooth permission needed';
-    body =
-      Platform.OS === 'ios'
-        ? 'Allow Bluetooth for Bolid Tester in Settings, then return here.'
-        : 'Allow “Nearby devices” for Bolid Tester in system settings, then return here.';
+    title = t('prompt.permissionTitle');
+    body = Platform.OS === 'ios' ? t('prompt.permissionIos') : t('prompt.permissionAndroid');
     action = (
-      <Button size="$3" theme="yellow" onPress={() => Linking.openSettings()}>
-        Open settings
+      <Button size="$3" hitSlop={HIT_SLOP} theme="yellow" onPress={() => Linking.openSettings()}>
+        {t('prompt.openSettings')}
       </Button>
     );
   } else {
     // poweredOff
-    title = 'Bluetooth is off';
+    title = t('prompt.offTitle');
     if (Platform.OS === 'android') {
-      body = 'Turn Bluetooth on to scan for your OBD2 adapter.';
+      body = t('prompt.offAndroid');
       action = (
         <Button
           size="$3"
+          hitSlop={HIT_SLOP}
           theme="yellow"
           disabled={busy}
           icon={busy ? () => <Spinner /> : undefined}
           onPress={turnOn}
         >
-          {busy ? 'Turning on…' : 'Turn on Bluetooth'}
+          {busy ? t('prompt.turningOn') : t('prompt.turnOn')}
         </Button>
       );
     } else {
-      body = 'Open Control Center and turn Bluetooth on to scan for your OBD2 adapter.';
+      body = t('prompt.offIos');
     }
   }
 
   return (
-    <Panel backgroundColor="$yellow2" borderColor={ACCENT}>
+    <Panel backgroundColor="$yellow2" borderColor={palette.statusWarn}>
       <XStack gap="$3" alignItems="flex-start">
-        <BluetoothOff size={24} color={ACCENT} />
+        <BluetoothOff size={24} color={palette.statusWarn} />
         <YStack flex={1} gap="$2">
           <Text fontWeight="800" fontSize="$4" color="$yellow11">
             {title}
