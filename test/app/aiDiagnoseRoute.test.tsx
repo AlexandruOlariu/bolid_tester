@@ -5,10 +5,51 @@
 import {
   CORE_AGENT_CONTRIBUTION,
   DRIVER_INSTRUCTIONS,
+  availableSkills,
   buildAgentRegistry,
   parseSkillFile,
+  type AvailabilityContext,
 } from '@/shared/obd-core';
+import { getVehicleProfile } from '@/shared/vehicles';
 import { AGENT_CONTRIBUTIONS } from '@/app/ai-diagnose';
+
+/** The 21 capability skills of the spec's catalog (plan 34b): one per app feature the agent reads. */
+const CAPABILITY_SKILLS = [
+  'fault_codes',
+  'module_scan',
+  'live_data',
+  'record_live',
+  'sensor_tests',
+  'extended_data',
+  'adaptations_read',
+  'coding_read',
+  'dpf',
+  'battery',
+  'used_car_check',
+  'vehicle_identity',
+  'adapter_health',
+  'trips',
+  'performance_history',
+  'fuel_economy',
+  'maintenance',
+  'history',
+  'alerts_history',
+  'app_errors',
+  'bus_listen',
+];
+
+/** A car connected on its expected protocol (CAN 11/500 when the profile says AUTO), with no PID
+ *  bitmap read yet: what the agent sees for a profile before any discovery. */
+function availability(profileId: string): AvailabilityContext {
+  const profile = getVehicleProfile(profileId);
+  return {
+    profile,
+    protocol:
+      profile.expectedProtocol === 'AUTO' ? 'ISO_15765_4_CAN_11_500' : profile.expectedProtocol,
+    supportedPids: profile.supportedPids,
+    canMonitor: false,
+  };
+}
 
 describe('AI diagnose route', () => {
   it('the route registers the first capability skills without conflicts', () => {
@@ -34,5 +75,28 @@ describe('AI diagnose route', () => {
       procedure: 'battery_capture',
     });
     expect(reg.skills.get('live_data')).toMatchObject({ kind: 'capability', tools: ['read_live'] });
+  });
+
+  it('registers all 21 capability skills, each a capability', () => {
+    const reg = buildAgentRegistry([CORE_AGENT_CONTRIBUTION, ...AGENT_CONTRIBUTIONS]);
+    for (const n of CAPABILITY_SKILLS) expect(reg.skills.get(n)?.kind).toBe('capability');
+  });
+
+  it.each([
+    ['golf-plus-2009-20tdi', ['module_scan', 'dpf', 'extended_data']],
+    ['passat-b55-19tdi', ['adaptations_read']],
+    ['fiat-punto-2008-12', ['fault_codes', 'live_data']],
+  ])('%s offers %j', (id, names) => {
+    const offered = availableSkills(
+      buildAgentRegistry([CORE_AGENT_CONTRIBUTION, ...AGENT_CONTRIBUTIONS]),
+      availability(id),
+    ).map((s) => s.name);
+    expect(offered).toEqual(expect.arrayContaining(names));
+  });
+
+  it('no capability tool is a write', () => {
+    const reg = buildAgentRegistry([CORE_AGENT_CONTRIBUTION, ...AGENT_CONTRIBUTIONS]);
+    for (const name of reg.tools.keys())
+      expect(name).not.toMatch(/clear|write|reset|code_module|routine|regen/);
   });
 });

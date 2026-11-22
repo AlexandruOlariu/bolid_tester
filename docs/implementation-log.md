@@ -5,6 +5,40 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## AI agent capability skills (plan 34b) (2026-11-23)
+
+- **Why:** after 34a the agent could read only codes, live PIDs and the battery. Now every app
+  feature it can read contributes a capability skill, so a symptom can be followed into the
+  modules, the extended DIDs, the DPF, the car's own recorded trips or its service history — still
+  strictly read-only (spec `docs/superpowers/specs/2026-11-22-ai-agent-diagnose-design.md`).
+- **Skills (21, the spec's catalog):** `fault_codes` (now with `lookup_guide`), `module_scan`
+  (`scan_modules`: CAN UDS modules, never `15` / `25`; TP2.0 modules only from the last saved scan,
+  with its date), `live_data`, `record_live`, `sensor_tests` (`read_mode06`, the guided
+  `wiggle_test`), `extended_data`, `adaptations_read`, `coding_read` (current values only, no
+  session change), `dpf`, `battery`, `used_car_check`, `vehicle_identity`, `adapter_health`,
+  `trips`, `fuel_economy`, `performance_history`, `maintenance`, `history` (`read_history`,
+  `history_compare`), `alerts_history`, `app_errors` and `bus_listen` (`listen_bus`, a passive
+  `ATMA` window of at most 10 s through `ReadOnlySession.listenBus`). The owner, tools and per-car
+  availability are tabled in [ai-diagnose](./features/ai-diagnose.md#capability-skills-plan-34b).
+- **Shared:** `parseSkillFileOrThrow` (obd-core `skillFile.ts`) replaces the per-feature
+  `skillOrThrow`; `liveSampling.ts` shares the PID sampling of `read_live` and `record_live`. The
+  screens and the agent use the same extracted reads (`readDpf`, `runInspection`,
+  `readCodingReadOnly`, `readChannelReadOnly`).
+- **Rules every tool follows:** only the read-only facade (no `useSessionStore` in any
+  `agent/` folder, no write service, no SecurityAccess or KWP login, no mileage DID); values from
+  unconfirmed profile items say `unconfirmed` and set the flag that caps a finding at `info`;
+  digests are clamped to 1600 characters with "… (N more)"; store-backed tools answer in one line
+  on an empty store and only for the active car (garage-aware). Tool labels and findings en + ro.
+- **Tests:** a contribution test per feature (`src/features/*/agent/agentTools.test.ts`);
+  `test/app/aiDiagnoseRoute.test.tsx` checks that all 21 skills are registered as capabilities,
+  that the Golf is offered `module_scan` / `dpf` / `extended_data`, the Passat `adaptations_read`
+  and the Punto `fault_codes` / `live_data`, and that no registered tool name looks like a write.
+- **Open (owner, on the car):** compare `scan_modules` with a VCDS auto-scan on the Golf; check
+  which adaptation / coding channels answer in the default session on the Passat and the Golf;
+  compare the Adaptations screen's KWP session (`0x85`) with a VCDS log before any channel write;
+  run `listen_bus` for 10 s on the Vgate and record the frame count in
+  [can-sniffer](./features/can-sniffer.md).
+
 ## AI agent core (plan 34a) (2026-11-22)
 
 - **Why:** the one-shot AI diagnosis read the car once and asked the model for a verdict. Now a

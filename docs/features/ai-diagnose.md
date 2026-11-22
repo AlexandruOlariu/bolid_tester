@@ -147,6 +147,48 @@ symptom run with the code.
   (exercise **Stop** or the step budget). `mock:invalid` never sends JSON (the rule report after
   three invalid replies).
 
+### Capability skills (plan 34b)
+
+Every feature the agent can read contributes one capability skill (21 in all, the spec's catalog);
+`test/app/aiDiagnoseRoute.test.tsx` checks that all 21 are registered as `capability` skills, what
+the three built-in cars are offered and that no registered tool name looks like a write. A skill
+is offered when its `requires` hold and every tool it names is available on the connected car
+(`availableSkills`). The car columns are the built-in profiles on their expected protocol (Golf
+and Punto on CAN, Passat on K-line); _adapter_ = only when the adapter can monitor the bus.
+
+| Skill                 | Owner                                           | Tools                                           |  Golf   |  Punto  | Passat |
+| --------------------- | ----------------------------------------------- | ----------------------------------------------- | :-----: | :-----: | :----: |
+| `fault_codes`         | [fault-codes](./fault-codes.md)                 | `read_dtcs`, `read_dtcs_detail`, `lookup_guide` |   yes   |   yes   |  yes   |
+| `module_scan`         | [module-scan](./module-scan.md)                 | `scan_modules`                                  |   yes   |    —    |   —    |
+| `live_data`           | [live-data](./live-data.md)                     | `read_live` (core)                              |   yes   |   yes   |  yes   |
+| `record_live`         | [live-charts](./live-charts.md)                 | `record_live`                                   |   yes   |   yes   |  yes   |
+| `sensor_tests`        | [sensor-tests](./sensor-tests.md)               | `read_mode06`, `wiggle_test`                    |   yes   |    —    |   —    |
+| `extended_data`       | [extended-pids](./extended-pids.md)             | `read_extended`                                 |   yes   |    —    |   —    |
+| `adaptations_read`    | [adaptations](./adaptations.md)                 | `read_adaptations`                              |   yes   |    —    |  yes   |
+| `coding_read`         | [coding](./coding.md)                           | `read_coding`                                   |   yes   |    —    |   —    |
+| `dpf`                 | [dpf](./dpf.md)                                 | `read_dpf`                                      |   yes   |    —    |   —    |
+| `battery`             | [battery-health](./battery-health.md)           | `run_skill` (`battery_capture`), `ask_driver`   |   yes   |   yes   |  yes   |
+| `used_car_check`      | [used-car-inspection](./used-car-inspection.md) | `read_inspection`                               |   yes   |   yes   |  yes   |
+| `vehicle_identity`    | [vehicle-info](./vehicle-info.md)               | `read_identity`                                 |   yes   |   yes   |  yes   |
+| `adapter_health`      | [adapter-health](./adapter-health.md)           | `check_adapter`                                 |   yes   |   yes   |  yes   |
+| `trips`               | [trip-recording](./trip-recording.md)           | `list_trips`, `read_trip`                       |   yes   |   yes   |  yes   |
+| `fuel_economy`        | [trip-recording](./trip-recording.md)           | `read_fuel_economy`, `list_trips`               |   yes   |   yes   |  yes   |
+| `performance_history` | [performance-tests](./performance-tests.md)     | `read_performance_history`                      |   yes   |   yes   |  yes   |
+| `maintenance`         | [maintenance-log](./maintenance-log.md)         | `read_maintenance`                              |   yes   |   yes   |  yes   |
+| `history`             | [history](./history.md)                         | `read_history`, `history_compare`               |   yes   |   yes   |  yes   |
+| `alerts_history`      | [alerts](./alerts.md)                           | `read_alerts`                                   |   yes   |   yes   |  yes   |
+| `app_errors`          | [error-log](./error-log.md)                     | `read_app_errors`                               |   yes   |   yes   |  yes   |
+| `bus_listen`          | [can-sniffer](./can-sniffer.md)                 | `listen_bus`                                    | adapter | adapter |   —    |
+
+Why a cell is empty: `module_scan`, `extended_data`, `dpf` and `coding_read` need CAN and the
+profile's modules / extended DIDs / coding modules (the Punto declares none, the Passat is K-line;
+TP2.0-only modules reach the agent only from the last saved scan, with its date); `sensor_tests` needs the profile's
+Mode 06 tests or a Mode 05 sweep (non-diesel K-line), which neither the Punto nor the diesel Passat
+has; `adaptations_read` needs the profile's adaptation channels; `bus_listen` needs CAN and a
+monitor-capable adapter. Store-backed skills (trips, fuel economy, performance, maintenance,
+history, alerts, app errors) are always offered and answer "none recorded" in one line on an empty
+store, for the active car only.
+
 ## Settings (Settings → AI assistant)
 
 - **Enabled** toggle.
