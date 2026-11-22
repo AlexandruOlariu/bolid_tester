@@ -173,7 +173,7 @@ centred column capped at `CONTENT_MAX_WIDTH` (1100 dp) on medium / expanded — 
 passes `wide` (Live, Charts and the bus sniffer lay out their own columns). Its `ScrollView` sets
 `automaticallyAdjustKeyboardInsets` so a focused input (Settings → Server URL on a phone in
 landscape) scrolls above the keyboard on iOS. That prop is iOS-only; on Android the app runs
-edge-to-edge (Expo 56 / RN 0.85, no `android.softwareKeyboardLayoutMode` in `app.json`) and whether
+edge-to-edge (Expo 57 / RN 0.86, no `android.softwareKeyboardLayoutMode` in `app.json`) and whether
 the default `adjustResize` still shrinks the window there is **unverified** — a device check (see
 the plan 21 entry in the implementation log). Foldables, multi-window
 and a web target are out of scope.

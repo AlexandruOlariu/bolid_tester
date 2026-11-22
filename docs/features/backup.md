@@ -174,7 +174,7 @@ state }`, secrets blanked) and, for history / module scans / maintenance, **CSV*
 `expo-document-picker` (both optional) with variable specifiers; every service function takes them
 as a parameter, so `api/backupService.test.ts` runs the whole flow in the core project against the
 real stores and an in-memory file system, and the UI test hands the same doubles to the screen.
-`expo-document-picker` (`~56.0.4`) is a native module: an installed build older than plan 18 has no
+`expo-document-picker` (`~57.0.3`) is a native module: an installed build older than plan 18 has no
 picker until the next native build — **Choose a backup file…** then says so, and restoring from the
 list still works.
 

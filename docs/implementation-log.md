@@ -5,6 +5,40 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Merge of main's Expo SDK 57 upgrade; Play permission cleanup (2026-11-22)
+
+- **Merge:** `origin/main` (Expo SDK 57 / React Native 0.86.3, the iOS 27 UIScene config plugin,
+  its Mac + iPhone verification) merged into this branch. Kept both sides: main's SDK 57 versions
+  plus every dependency the roadmap added; `app.json` registers `./plugins/ios-scene-lifecycle` and
+  main's `expo-sharing` / `expo-secure-store` / `expo-status-bar` plugins beside this branch's
+  plugins (release signing last); the `core` Jest project now also scans `plugins/`, so the scene
+  plugin's 7 tests run in `npm test`.
+- **Dependencies realigned:** `npx expo install --fix` moved `@expo/metro-runtime`,
+  `expo-document-picker`, `expo-localization`, `expo-print` and `jest-expo` from 56 to 57 (and expo
+  57.0.33 with its patch bumps); `@react-native/jest-preset` 0.86.3; `expo-constants` added (a
+  required peer of `expo-router`, flagged by `expo-doctor`); `newArchEnabled` dropped from
+  `app.json` (gone from the SDK 57 schema). The other native libraries' peer ranges accept RN 0.86
+  (`@sentry/react-native` 7.11, `react-native-tcp-socket` 6.4.3, `react-native-bluetooth-classic`
+  1.73.0-rc.17, `react-native-ble-plx` 3.5.1). Remaining `expo-doctor` warnings: the `_comment`
+  keys in `app.json` (schema) and "untested on New Architecture" for Bluetooth Classic and the TCP
+  socket (unchanged from before). `npx expo install --check`: up to date.
+- **Release tooling:** the signing-plugin fixture was regenerated from an SDK 57 prebuild (the only
+  change is the `sentry.gradle` line); `release.md` records SDK 57's Android levels from RN 0.86's
+  version catalog: target / compile 36, min 24.
+- **Permissions:** `android.blockedPermissions` removes `SYSTEM_ALERT_WINDOW`, `READ_` /
+  `WRITE_EXTERNAL_STORAGE`, `USE_BIOMETRIC`, `USE_FINGERPRINT` and
+  `com.google.android.c2dm.permission.RECEIVE`, which libraries merge in and the app never uses (no
+  `requireAuthentication`, no push token). The list is in
+  [play-data-safety.md](../store/compliance/play-data-safety.md#permissions-removed-from-the-apk)
+  and asserted by `storeConfig.test.ts`.
+- **CI:** `npm run ci` green, **2229 tests / 241 suites**.
+- **Native build:** on this Windows machine the SDK 57 `assembleRelease` ran out of Gradle metaspace
+  under the template's `-XX:MaxMetaspaceSize=512m` (KSP in `expo-updates`); with 4 GB heap and
+  1.5 GB metaspace it got past that point. The release APK, its permission dump and the Maestro
+  smoke on the emulator are **still to do** on SDK 57.
+
+---
+
 ## On-device run: Maestro smoke, store screenshots, plan 20 manual check (2026-11-22)
 
 First run of the end-to-end layer on a real Android target: AVD `Sere_API36` (Android 16, x86_64,
