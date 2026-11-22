@@ -84,7 +84,10 @@ export default function RootLayout() {
             {/* `screenLayout` wraps every route (hidden ones included) below its header, so the amber
                 "Simulator mode" strip shows on every screen without clashing with the status bar.
                 It lives here, not inside `Screen`, so no route can miss it. */}
+            {/* Android back returns to the screen you came from (e.g. More → Backup → back to More),
+                not to the first tab, which is the tab navigator's default. */}
             <Tabs
+              backBehavior="history"
               screenLayout={({ children }) => (
                 <View style={{ flex: 1 }}>
                   <SimulatorBanner />
