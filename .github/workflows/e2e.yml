@@ -69,9 +69,15 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
+          # A freshly booted CI emulator often shows "System UI / Pixel Launcher isn't responding"
+          # over the app: hide error dialogs, let the system settle, close stray dialogs, and retry
+          # the flow once (each line runs as its own shell command).
           script: |
+            adb shell settings put global hide_error_dialogs 1
+            sleep 45
+            adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS
             adb install -r "${{ steps.apk.outputs.path }}"
-            maestro test .maestro/simulator-smoke.yaml --format junit --output maestro-report.xml
+            maestro test .maestro/simulator-smoke.yaml --format junit --output maestro-report.xml || { echo "Smoke flow failed once; retrying after closing system dialogs"; adb shell am broadcast -a android.intent.action.CLOSE_SYSTEM_DIALOGS; sleep 10; maestro test .maestro/simulator-smoke.yaml --format junit --output maestro-report.xml; }
       - name: Upload Maestro report
         if: always()
         uses: actions/upload-artifact@v4

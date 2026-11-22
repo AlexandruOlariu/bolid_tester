@@ -8,6 +8,10 @@ name: Simulator smoke — connect, read faults, clear
 ---
 - launchApp:
     clearState: true
+# A slow emulator may show an "… isn't responding" system dialog over the app; keep waiting.
+- tapOn:
+    text: 'Wait'
+    optional: true
 # Android 13+ may ask for the notification permission on first launch; dismiss it if it shows.
 - tapOn:
     text: '(?i)(allow|don.t allow)'
