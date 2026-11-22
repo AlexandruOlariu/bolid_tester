@@ -152,6 +152,30 @@ guessed decodes drive an urgent verdict.
   A skill declares which `ask_driver` steps it needs, its maximum adapter time, and its own rule
   output, so it is useful even with AI off.
 
+### Skills are how the model learns what it can do (owner, 2026-11-22)
+
+The owner's intent for "skills": **they tell the LLM what it can use**. So every skill is first a
+**document for the model**, and only optionally a procedure:
+
+- **Skill file** (bundled in the app, one per skill, versioned format `bolid.skill.v1`): `name`,
+  one-line `description` ("use when…"), the **tools it uses**, step-by-step **instructions** for the
+  model (what to read, in what order, which driver step to ask for), **how to interpret** the
+  results (normal ranges, typical patterns, what each pattern points to), and optional
+  `procedure` = the id of a deterministic app routine that runs the whole thing in one call.
+- **Progressive disclosure** (as Claude's own skills work), so a small model's context stays small:
+  1. The system prompt lists only the **skill index**: name + one-line description of every skill
+     available on *this* car (availability is checked by the app), plus the tool names.
+  2. The model calls `open_skill(name)` to read the full instructions of the one it picked.
+  3. It then follows them with the fine tools, **or** calls `run_skill(name)` when the skill has a
+     procedure, which returns the computed findings in one step.
+- A strong model can ignore skills and use the fine tools freely; a weak one can lean on
+  `run_skill`. Same loop, same tools for every model.
+- Skills also carry the **domain knowledge** a small model lacks (e.g. "on a VAG diesel, MAP minus
+  baro at idle near 0 kPa is normal; > 30 kPa at idle points to a stuck VNT"), written and reviewed
+  by us, per profile where it matters.
+- The format is versioned so skills could later be imported like label packs / contributed by the
+  community (plan 33); importing is **not** in this phase.
+
 ### Safety and limits
 
 - Read-only registry; no tool can reach a write path (enforced by the registry type: tools receive a
@@ -209,6 +233,18 @@ The trail (each step: tool, the model's one-line "why", the digest) is collapsib
 run in History. Today `AiHistoryEntry` stores only the report, so this is **new storage**: the AI
 history record gains the trail (bounded size; older records without one still open).
 
+### Send to Claude / ChatGPT (no dependencies)
+
+Consumer subscriptions cannot be used by the app directly (Anthropic forbids third-party use of
+Claude subscription logins since 2026; OpenAI's "Sign in with ChatGPT" is a partner programme). So,
+alongside the agent: a **Send to Claude / ChatGPT** button on the report builds a complete
+plain-text package (vehicle, codes with descriptions, triage, every skill finding and the trail
+digests, plus a short instruction header) and opens the **system share sheet**, so the user can
+paste it into the official Claude or ChatGPT app and use their own subscription. Not agentic (that
+model cannot request new reads), works with any subscription, needs no account or key. The VIN is
+left out unless the user turns it on in the share preview. "Sign in with ChatGPT" as a provider is
+a possible later step, only if OpenAI accepts the app.
+
 ## Testing
 
 - obd-core: the loop as a pure state machine (fake model + fake tools): budgets, invalid-action
@@ -224,6 +260,8 @@ history record gains the trail (bounded size; older records without one still op
 - Approach 3 (hybrid). Read-only first; writes with per-step confirmation are a later phase.
 - Tool/skill layer lives in the app; the owner will use a small, self-hosted, OpenAI-compatible model.
 - No model tiers: every model gets every tool; answer quality is the configured model's.
+- Skills exist to tell the LLM what it can use.
+- No third-party dependencies: a share-to-Claude/ChatGPT button instead of subscription logins.
 
 ## Calls made by Claude (owner can change)
 
@@ -238,6 +276,9 @@ history record gains the trail (bounded size; older records without one still op
 - Driver waiting time is outside the 4-minute cap (3-minute timeout per driver step).
 - Privacy policy and the AI page updated to list what the agent sends.
 - Prompts in English; the report in the app's language.
+- Skills are model-facing documents (`bolid.skill.v1`) with progressive disclosure (`open_skill`,
+  `run_skill`); bundled only in this phase.
+- Send to Claude / ChatGPT via the share sheet; VIN off by default in the shared text.
 - Clear codes is not an agent tool, even with confirmation, in this phase.
 - `ask_driver` is stationary-only and limited to a fixed instruction list.
 - The seven first skills above; budget 12 steps, 4 min wall time.
