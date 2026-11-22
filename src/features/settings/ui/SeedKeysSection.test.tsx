@@ -1,4 +1,4 @@
-/** Settings → Data → Security access plugins (plan 23): import the fixture plugin through the
+/** Settings → Security access plugins (plan 23): import the fixture plugin through the
  *  picker (preview → Install), Test in simulator reports pass, a plugin over the limits is refused
  *  with the reason and nothing is installed, Delete asks first. The modules are faked at
  *  `loadSeedKeyModules` (in-memory file system). The plugin is a TEST VECTOR (seed XOR 0xFFFF),

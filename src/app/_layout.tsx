@@ -246,6 +246,31 @@ export default function RootLayout() {
               <Tabs.Screen name="error-log" options={{ href: null, title: t('nav.errorLog') }} />
               <Tabs.Screen name="feedback" options={{ href: null, title: t('nav.feedback') }} />
               <Tabs.Screen name="licenses" options={{ href: null, title: t('nav.licenses') }} />
+              {/* The Settings pages, opened from the rows on the Settings hub. */}
+              <Tabs.Screen
+                name="settings-ai"
+                options={{ href: null, title: t('nav.settingsAi') }}
+              />
+              <Tabs.Screen
+                name="settings-privacy"
+                options={{ href: null, title: t('nav.settingsPrivacy') }}
+              />
+              <Tabs.Screen
+                name="settings-label-packs"
+                options={{ href: null, title: t('nav.settingsLabelPacks') }}
+              />
+              <Tabs.Screen
+                name="settings-plugins"
+                options={{ href: null, title: t('nav.settingsPlugins') }}
+              />
+              <Tabs.Screen
+                name="settings-developer"
+                options={{ href: null, title: t('nav.settingsDeveloper') }}
+              />
+              <Tabs.Screen
+                name="settings-about"
+                options={{ href: null, title: t('nav.settingsAbout') }}
+              />
               <Tabs.Screen name="backup" options={{ href: null, title: t('nav.backup') }} />
               <Tabs.Screen
                 name="module-scan"

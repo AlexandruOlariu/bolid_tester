@@ -33,7 +33,13 @@
     "routines": "Routines & output tests",
     "sniffer": "Bus sniffer",
     "adapterHealth": "Adapter health",
-    "licenses": "Licences"
+    "licenses": "Licences",
+    "settingsAi": "AI assistant",
+    "settingsPrivacy": "Privacy",
+    "settingsLabelPacks": "Label packs",
+    "settingsPlugins": "Security access plugins",
+    "settingsDeveloper": "Developer & simulator",
+    "settingsAbout": "About"
   },
   "actions": {
     "ok": "OK",
@@ -99,7 +105,7 @@
     "andMore_other": "…and {{count}} more.",
     "nothingChanged": "Nothing was changed.",
     "imported": "Imported",
-    "packsFull": "You already have 100 imported label packs. Delete one in Settings → Data first.",
+    "packsFull": "You already have 100 imported label packs. Delete one in Settings → Label packs first.",
     "profileTitle": "Import car profile",
     "name": "Name",
     "year": "Year",

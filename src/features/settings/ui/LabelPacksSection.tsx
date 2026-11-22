@@ -71,7 +71,7 @@ function PackRow({
   );
 }
 
-/** Settings → Data → **Label packs** (plan 13): import a `bolid.labelpack.v1` file, the imported
+/** Settings → **Label packs** (plan 13, its own page): import a `bolid.labelpack.v1` file, the imported
  *  packs (Export / Delete) and the bundled ones (Export as template). Imported packs take
  *  precedence over bundled ones for the part numbers both match. */
 export function LabelPacksSection() {
@@ -98,9 +98,6 @@ export function LabelPacksSection() {
 
   return (
     <YStack gap="$2" testID="label-packs-section">
-      <Text fontWeight="700" fontSize="$3">
-        {t('packs.title')}
-      </Text>
       <Paragraph fontSize="$2">{t('packs.help')}</Paragraph>
       <Button
         size="$3"

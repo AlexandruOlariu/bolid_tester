@@ -33,7 +33,13 @@
     "routines": "Rutine și teste de actuatori",
     "sniffer": "Monitor magistrală (sniffer)",
     "adapterHealth": "Starea adaptorului",
-    "licenses": "Licențe"
+    "licenses": "Licențe",
+    "settingsAi": "Asistent AI",
+    "settingsPrivacy": "Confidențialitate",
+    "settingsLabelPacks": "Pachete de etichete",
+    "settingsPlugins": "Pluginuri de securitate",
+    "settingsDeveloper": "Dezvoltator și simulator",
+    "settingsAbout": "Despre"
   },
   "actions": {
     "ok": "OK",
@@ -100,7 +106,7 @@
     "andMore_other": "…și încă {{count}}.",
     "nothingChanged": "Nu s-a modificat nimic.",
     "imported": "Importat",
-    "packsFull": "Ai deja 100 de pachete de etichete importate. Șterge unul din Setări → Date mai întâi.",
+    "packsFull": "Ai deja 100 de pachete de etichete importate. Șterge unul din Setări → Pachete de etichete mai întâi.",
     "profileTitle": "Importă profilul mașinii",
     "name": "Nume",
     "year": "An",

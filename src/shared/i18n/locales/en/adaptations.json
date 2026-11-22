@@ -16,7 +16,7 @@
     "forgetA11y": "Forget login code",
     "forget": "Forget",
     "read": "Read",
-    "readOnly": "Read-only until a security-access plugin for this module is installed (Settings → Data).",
+    "readOnly": "Read-only until a security-access plugin for this module is installed (Settings → Security access plugins).",
     "newValue": "new value",
     "newValueA11y": "New value for {{name}}",
     "write": "Write",

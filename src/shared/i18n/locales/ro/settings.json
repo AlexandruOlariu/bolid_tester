@@ -7,11 +7,31 @@
   "milliseconds_one": "{{count}} milisecundă",
   "milliseconds_few": "{{count}} milisecunde",
   "milliseconds_other": "{{count}} de milisecunde",
+  "hub": {
+    "ai": "Asistent AI",
+    "aiOff": "Dezactivat",
+    "aiOn": "Activat · {{provider}}",
+    "crashOff": "Rapoarte de blocare dezactivate",
+    "crashOn": "Rapoarte de blocare activate",
+    "crashUnavailable": "Rapoarte de blocare indisponibile în această versiune",
+    "backupStatus": "Fă backup, restaurează sau exportă datele",
+    "packsStatus": "Incluse: {{bundled}} · importate: {{imported}}",
+    "pluginsNone": "Niciunul instalat",
+    "pluginsInstalled": "Instalate: {{n}}",
+    "source": {
+      "ble": "Bluetooth LE",
+      "wifi": "Adaptor Wi-Fi",
+      "spp": "Bluetooth clasic",
+      "mock": "Simulator"
+    },
+    "version": "v{{version}}",
+    "versionBuild": "v{{version}} ({{build}})"
+  },
   "general": {
     "title": "General",
-    "themeSystem": "sistem",
-    "themeLight": "luminoasă",
-    "themeDark": "întunecată",
+    "themeSystem": "Sistem",
+    "themeLight": "Luminoasă",
+    "themeDark": "Întunecată",
     "themeSystemA11y": "Sistem",
     "themeLightA11y": "Luminoasă",
     "themeDarkA11y": "Întunecată",
@@ -23,13 +43,11 @@
   "connection": {
     "title": "Conexiune",
     "autoReconnect": "Reconectare automată",
-    "autoReconnectLabel": "Reîncearcă ultimul adaptor după o legătură pierdută",
-    "autoReconnectHelp": "Activată implicit; se oprește după 3 deconectări într-un minut. Când conexiunea cade neașteptat, se reconectează la același dispozitiv cu pauze crescătoare (2 s, 5 s, 10 s — până la 3 încercări). Se anulează imediat ce te deconectezi sau te conectezi manual.",
+    "autoReconnectLabel": "Reîncearcă ultimul adaptor după o legătură pierdută.",
     "poll": "Interval de citire",
-    "pollHelp": "Cât de des sunt citite valorile live. O mașină lentă cu K-line își impune propriul ritm.",
+    "pollHelp": "Cât de des sunt citite valorile live.",
     "byVin": "Recunoaște-mi mașinile după VIN",
-    "byVinLabel": "Selectează o mașină din garaj când se conectează VIN-ul ei",
-    "byVinHelp": "Activată implicit. Când VIN-ul (numărul de identificare al vehiculului) mașinii conectate se potrivește cu o mașină adăugată dintr-o conexiune, acea mașină devine vehiculul activ. Profilurile integrate sunt doar sugerate în ecranul Vehicul."
+    "byVinLabel": "Alege automat mașina din garaj după VIN-ul citit la conectare."
   },
   "privacy": {
     "title": "Confidențialitate",
@@ -46,6 +64,7 @@
     "title": "Asistent AI (diagnoză automată)",
     "enabled": "Activat",
     "enabledA11y": "Asistent AI activat",
+    "offHelp": "Când este activat, Diagnoză (AI) cere unui model AI ales de tine — pe calculatorul tău sau în cloud — să explice defectele mașinii.",
     "connecting": "Se conectează…",
     "noModels": "Conectat, dar serverul nu listează niciun model. Încarcă mai întâi un model pe server.",
     "connected_one": "Conectat ✓ — {{count}} model: {{models}}",
@@ -93,14 +112,10 @@
   },
   "notifications": {
     "title": "Notificări",
-    "row": "Setări notificări",
     "rowHelp": "Alerte, mementouri și modul liniștit"
   },
   "data": {
-    "title": "Date",
-    "help": "Păstrează o copie a garajului, istoricului, scanărilor, călătoriilor și jurnalului de întreținere sau mută-le pe un telefon nou. Nimic nu ajunge în cloud; tu alegi unde merge fișierul.",
-    "backup": "Backup și restaurare",
-    "export": "Exportă datele…"
+    "backup": "Backup și restaurare"
   },
   "about": {
     "title": "Despre",
@@ -146,7 +161,7 @@
     "confirmBody": "Se șterge tot ce păstrează aplicația pe acest telefon: setări, garaj, istoric, scanări, călătorii, jurnal de întreținere, reguli de alertă, backupuri de codare, fișiere de backup, pachete de etichete, pluginuri de acces de securitate, coduri de login, chei AI și copiile fișierelor exportate păstrate de aplicație. Copiile deja partajate sau salvate în altă parte rămân.",
     "continue": "Continuă",
     "confirm2Title": "Ștergi toate datele aplicației?",
-    "confirm2Body": "Acțiunea nu poate fi anulată. Fă mai întâi un backup (Setări → Date) dacă s-ar putea să ai nevoie de ele.",
+    "confirm2Body": "Acțiunea nu poate fi anulată. Fă mai întâi un backup (Setări → Backup și restaurare) dacă s-ar putea să ai nevoie de ele.",
     "everything": "Resetează tot",
     "title": "Sfaturi și datele aplicației",
     "showHints": "Arată din nou sfaturile",
@@ -165,9 +180,6 @@
   },
   "dev": {
     "title": "Dezvoltator și simulator",
-    "hide": "Ascunde",
-    "show": "Arată",
-    "summary": "Sursa adaptorului și simulatorul, jurnalul adaptorului și fixture-uri de reluare, previzualizarea pachetului de feedback, raport de blocare de test, arată din nou sfaturile, resetează toate datele aplicației.",
     "adapterSource": "Sursa adaptorului",
     "source": {
       "ble": "Adaptor real (Bluetooth)",

@@ -32,11 +32,28 @@ const HIDDEN_ROUTES = [
   '/routines',
   '/sniffer',
   '/adapter-health',
+  '/settings-ai',
+  '/settings-privacy',
+  '/settings-label-packs',
+  '/settings-plugins',
+  '/settings-developer',
+  '/settings-about',
 ];
 
 /** Hidden routes reached from somewhere else than More: Info opens Extended PIDs, a trip row on
- *  Trips opens its detail screen, Settings → About opens Licences (plan 30). */
-const REACHED_ELSEWHERE = ['/extended', '/trip-detail', '/licenses'];
+ *  Trips opens its detail screen, Settings → About opens Licences (plan 30), and the Settings hub
+ *  opens its pages (plan 07). */
+const REACHED_ELSEWHERE = [
+  '/extended',
+  '/trip-detail',
+  '/licenses',
+  '/settings-ai',
+  '/settings-privacy',
+  '/settings-label-packs',
+  '/settings-plugins',
+  '/settings-developer',
+  '/settings-about',
+];
 
 const allEntries = (): MoreEntry[] => MORE_SECTIONS.flatMap((s) => s.entries);
 const titles = (sections: typeof MORE_SECTIONS) =>
@@ -53,7 +70,7 @@ describe('MORE_SECTIONS', () => {
     ]);
   });
 
-  it('puts every hidden route in exactly one section, except the two reached elsewhere', () => {
+  it('puts every hidden route in exactly one section, except those reached elsewhere', () => {
     const routes = allEntries()
       .map((e) => e.route)
       .filter((r): r is string => r !== null);

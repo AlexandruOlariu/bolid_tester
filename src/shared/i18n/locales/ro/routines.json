@@ -32,7 +32,7 @@
     "stationary": "Vehiculul trebuie să stea pe loc — acum {{speed}} km/h."
   },
   "failure": {
-    "nrc33": "{{module}} a refuzat această {{kind}} fără acces de securitate (NRC 0x33). Setările de bază VAG necesită de obicei deblocarea ECU-ului (UDS 0x27 seed/key), iar aplicația nu include rutine seed→key. Rutina nu poate rula până nu instalezi un plugin de acces de securitate pentru acest modul (Setări → Date → Pluginuri de acces de securitate).",
+    "nrc33": "{{module}} a refuzat această {{kind}} fără acces de securitate (NRC 0x33). Setările de bază VAG necesită de obicei deblocarea ECU-ului (UDS 0x27 seed/key), iar aplicația nu include rutine seed→key. Rutina nu poate rula până nu instalezi un plugin de acces de securitate pentru acest modul (Setări → Pluginuri de acces de securitate).",
     "nrc35": "Deblocarea de securitate a fost respinsă (NRC 0x35 cheie invalidă) — rutina seed→key a pluginului instalat este greșită pentru acest ECU. Fiecare cheie greșită contează la blocarea modulului.",
     "unknownId": "{{module}} nu recunoaște această rutină (id {{id}}, NRC 0x{{nrc}}). ID-ul rutinei nu este verificat pentru exact mașina ta — trebuie confirmat dintr-o sesiune VCDS „Setări de bază” sau dintr-o captură UDS pe ECU-ul real înainte să ruleze.",
     "nrc22": "{{module}} a respins rutina deoarece condițiile nu sunt corecte (NRC 0x22). De obicei motorul trebuie să fie cald, la ralanti stabil și fără erori active. Șterge erorile memorate, lasă motorul să ajungă la temperatura de funcționare și reîncearcă.",

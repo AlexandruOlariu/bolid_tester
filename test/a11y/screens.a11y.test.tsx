@@ -2,7 +2,7 @@
  *  src/app is rendered — a new route is picked up automatically — once disconnected and once on the
  *  simulator, and `a11yProblems` (test/a11y.ts) must find nothing: every pressable named, every text
  *  input labelled, every switch / radio with a checked state. Some controls only exist after a tap
- *  (Live → Customize, Settings → Developer & simulator) or with data (an error-log entry), so those
+ *  (Live → Customize, Settings → Developer & simulator → Custom…) or with data (an error-log entry), so those
  *  states get their own cases. */
 import fs from 'fs';
 import path from 'path';
@@ -77,9 +77,8 @@ describe('controls that appear after a tap or with data', () => {
     expect(problems()).toEqual([]);
   });
 
-  it('Settings → Developer & simulator (open, simulator source)', async () => {
-    await renderRoute('settings');
-    fireEvent.press(screen.getByText('Developer & simulator'));
+  it('Settings → Developer & simulator (simulator source, custom codes)', async () => {
+    await renderRoute('settings-developer');
     fireEvent.press(screen.getByText('Simulator (no car)'));
     fireEvent.press(screen.getByText('Custom…'));
     expect(problems()).toEqual([]);

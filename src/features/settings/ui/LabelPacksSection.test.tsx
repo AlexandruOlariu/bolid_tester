@@ -1,4 +1,4 @@
-/** Settings → Data → Label packs (plan 13): import a pack file, list it with Export / Delete, and
+/** Settings → Label packs (plan 13): import a pack file, list it with Export / Delete, and
  *  the bundled packs with Export as template. The native file I/O is covered in
  *  shared/state/exchangeService.test.ts; here the modules are faked at `loadExchangeModules`. */
 import React from 'react';

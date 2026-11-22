@@ -100,7 +100,7 @@ function PluginRow({
   );
 }
 
-/** Settings → Data → **Security access plugins** (plan 23): import a `bolid.seedkey.v1` file you
+/** Settings → **Security access plugins** (plan 23, its own page): import a `bolid.seedkey.v1` file you
  *  made for your own car (validated and compiled first; a file over the limits is refused with
  *  the reason), see what is installed, run one through the simulator, delete one. The app ships
  *  no seed→key routines and never fetches or derives one. */
@@ -200,9 +200,6 @@ export function SeedKeysSection() {
 
   return (
     <YStack gap="$2" testID="seed-keys-section">
-      <Text fontWeight="700" fontSize="$3">
-        {t('seed.title')}
-      </Text>
       <Paragraph fontSize="$2">{t('seed.help')}</Paragraph>
       <Paragraph theme="alt2" fontSize="$1">
         {t('seed.help2')}

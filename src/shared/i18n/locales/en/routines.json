@@ -32,7 +32,7 @@
     "stationary": "Vehicle must be stationary — currently {{speed}} km/h."
   },
   "failure": {
-    "nrc33": "The {{module}} refused this {{kind}} without security access (NRC 0x33). VAG basic settings usually need the ECU unlocked (UDS 0x27 seed/key), and the app ships no seed→key routines. The routine cannot run until you install a security-access plugin for this module (Settings → Data → Security access plugins).",
+    "nrc33": "The {{module}} refused this {{kind}} without security access (NRC 0x33). VAG basic settings usually need the ECU unlocked (UDS 0x27 seed/key), and the app ships no seed→key routines. The routine cannot run until you install a security-access plugin for this module (Settings → Security access plugins).",
     "nrc35": "Security unlock was rejected (NRC 0x35 invalid key) — the installed plugin’s seed→key routine is wrong for this ECU. Each wrong key counts toward the module’s lockout.",
     "unknownId": "The {{module}} does not recognise this routine (id {{id}}, NRC 0x{{nrc}}). This routine ID is unverified for your exact car — it needs confirming from a VCDS \"Basic Settings\" session or a UDS capture on the real ECU before it will run.",
     "nrc22": "The {{module}} rejected the routine because conditions are not correct (NRC 0x22). The engine usually must be warm and at a steady idle with no active faults. Clear stored faults, let it reach operating temperature, and retry.",

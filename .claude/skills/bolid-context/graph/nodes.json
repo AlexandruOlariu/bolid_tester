@@ -96,14 +96,17 @@
   },
   "concept:app-settings": {
     "path": null,
-    "summary": "Settings in sections (plan 07): General, Connection, AI, Notifications, Data, a collapsed Developer & simulator section (adapter source, simulator, a\u2026",
+    "summary": "Settings is a short hub (plan 07, redesigned 2026-11-22): General (theme, language) and Connection inline, then SettingsRow rows with a status line t\u2026",
     "tokens": [
+      "about",
       "app",
       "config",
       "developer",
+      "hub",
       "io",
       "options",
       "preferences",
+      "privacy",
       "reset",
       "settings",
       "simulator",
@@ -3552,14 +3555,18 @@
   },
   "feature:settings": {
     "path": "src/features/settings",
-    "summary": "User preferences first, then the developer and simulator controls in their own collapsed section.",
+    "summary": "A short hub: the everyday preferences inline, everything else one tap away on its own page.",
     "tests": [
       "src/features/settings/api/replayFixtureFile.test.ts",
       "src/features/settings/model/licenses.test.ts",
       "src/features/settings/model/privacyPolicy.test.ts",
       "src/features/settings/model/replayExport.test.ts",
+      "src/features/settings/ui/AboutSettingsScreen.test.tsx",
+      "src/features/settings/ui/AiSettingsScreen.test.tsx",
+      "src/features/settings/ui/DeveloperSettingsScreen.test.tsx",
       "src/features/settings/ui/LabelPacksSection.test.tsx",
       "src/features/settings/ui/LicensesScreen.test.tsx",
+      "src/features/settings/ui/PrivacySettingsScreen.test.tsx",
       "src/features/settings/ui/SeedKeysSection.test.tsx",
       "src/features/settings/ui/SettingsScreen.test.tsx"
     ],
@@ -4152,8 +4159,63 @@
   },
   "screen:settings": {
     "path": "src/app/settings.tsx",
-    "summary": "The route composes Settings with the backup slice's **Reset all app data** (plan 07): no feature imports the backup slice, so the app layer hands Set\u2026",
+    "summary": "Route screen 'settings' (expo-router).",
     "tokens": [
+      "settings"
+    ],
+    "type": "screen"
+  },
+  "screen:settings-about": {
+    "path": "src/app/settings-about.tsx",
+    "summary": "Route screen 'settings about' (expo-router).",
+    "tokens": [
+      "about",
+      "settings"
+    ],
+    "type": "screen"
+  },
+  "screen:settings-ai": {
+    "path": "src/app/settings-ai.tsx",
+    "summary": "Route screen 'settings ai' (expo-router).",
+    "tokens": [
+      "ai",
+      "settings"
+    ],
+    "type": "screen"
+  },
+  "screen:settings-developer": {
+    "path": "src/app/settings-developer.tsx",
+    "summary": "The route composes Settings \u2192 Developer & simulator with the backup slice's **Reset all app data** (plan 07): no feature imports the backup slice, so\u2026",
+    "tokens": [
+      "developer",
+      "settings"
+    ],
+    "type": "screen"
+  },
+  "screen:settings-label-packs": {
+    "path": "src/app/settings-label-packs.tsx",
+    "summary": "Route screen 'settings label packs' (expo-router).",
+    "tokens": [
+      "label",
+      "packs",
+      "settings"
+    ],
+    "type": "screen"
+  },
+  "screen:settings-plugins": {
+    "path": "src/app/settings-plugins.tsx",
+    "summary": "Route screen 'settings plugins' (expo-router).",
+    "tokens": [
+      "plugins",
+      "settings"
+    ],
+    "type": "screen"
+  },
+  "screen:settings-privacy": {
+    "path": "src/app/settings-privacy.tsx",
+    "summary": "Route screen 'settings privacy' (expo-router).",
+    "tokens": [
+      "privacy",
       "settings"
     ],
     "type": "screen"

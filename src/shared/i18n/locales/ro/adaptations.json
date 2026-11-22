@@ -16,7 +16,7 @@
     "forgetA11y": "Uită codul de login",
     "forget": "Uită",
     "read": "Citește",
-    "readOnly": "Doar citire până la instalarea unui plugin de acces de securitate pentru acest modul (Setări → Date).",
+    "readOnly": "Doar citire până la instalarea unui plugin de acces de securitate pentru acest modul (Setări → Pluginuri de acces de securitate).",
     "newValue": "valoare nouă",
     "newValueA11y": "Valoare nouă pentru {{name}}",
     "write": "Scrie",

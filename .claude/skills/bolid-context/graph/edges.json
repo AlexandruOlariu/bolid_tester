@@ -5366,11 +5366,51 @@
   ],
   [
     "screen:settings",
+    "feature:settings",
+    "serves"
+  ],
+  [
+    "screen:settings-about",
+    "feature:settings",
+    "serves"
+  ],
+  [
+    "screen:settings-ai",
+    "feature:settings",
+    "serves"
+  ],
+  [
+    "screen:settings-developer",
     "feature:backup",
     "serves"
   ],
   [
-    "screen:settings",
+    "screen:settings-developer",
+    "feature:settings",
+    "serves"
+  ],
+  [
+    "screen:settings-label-packs",
+    "feature:settings",
+    "serves"
+  ],
+  [
+    "screen:settings-plugins",
+    "doc:plans/23-security-access-plugins",
+    "named"
+  ],
+  [
+    "screen:settings-plugins",
+    "feature:settings",
+    "serves"
+  ],
+  [
+    "screen:settings-privacy",
+    "doc:privacy-policy",
+    "named"
+  ],
+  [
+    "screen:settings-privacy",
     "feature:settings",
     "serves"
   ],
@@ -6318,11 +6358,6 @@
     "vehicle:userVehicle",
     "core:session/DiagnosticSession",
     "imports"
-  ],
-  [
-    "vehicle:userVehicle",
-    "doc:plans/23-security-access-plugins",
-    "named"
   ],
   [
     "vehicle:userVehicle",
