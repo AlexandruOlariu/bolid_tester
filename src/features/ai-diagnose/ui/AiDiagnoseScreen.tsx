@@ -5,7 +5,13 @@ import { Stethoscope, Eraser, RefreshCw, Activity, MessageCircle, Send } from 'l
 import { Screen, appAlert, SectionTitle, HIT_SLOP, usePalette } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { describeDtc, followUpSuggestions } from '@/shared/obd-core';
-import type { AiChatMessage, AiReport, AiAction, DtcMake } from '@/shared/obd-core';
+import type {
+  AgentContribution,
+  AiChatMessage,
+  AiReport,
+  AiAction,
+  DtcMake,
+} from '@/shared/obd-core';
 import { ACTION_ICON, OverallBanner, FindingCard } from './AiReportView';
 import { useAiDiagnose } from '../hooks/useAiDiagnose';
 import { useTranslation } from '@/shared/i18n';
@@ -252,7 +258,9 @@ function FocusCard({ code, make }: { code: string; make?: DtcMake }) {
   );
 }
 
-export function AiDiagnoseScreen() {
+/** `contributions`: the agent tools and skills the app layer composes (`src/app/ai-diagnose.tsx`);
+ *  the agent run uses them from plan 34a Task 11. */
+export function AiDiagnoseScreen(_props: { contributions?: AgentContribution[] }) {
   const { t } = useTranslation('aiDiagnose');
   const status = useSessionStore((s) => s.status);
   const {

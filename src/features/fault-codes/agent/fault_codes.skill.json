@@ -1,0 +1,21 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "fault_codes",
+  "kind": "capability",
+  "description": "Use when you need the fault codes, the check-engine light (MIL), the readiness monitors, or the details and freeze frame of one code.",
+  "tools": ["read_dtcs", "read_dtcs_detail"],
+  "instructions": [
+    "Triage already read the codes once. Call read_dtcs again only to re-check the stored, pending and permanent codes, the MIL state or the readiness monitors.",
+    "For each code that matters to the symptom, call read_dtcs_detail with that code, e.g. {\"code\":\"P0401\"}: description, system, VAG number, status now, freeze frame and this car's guide note.",
+    "Use the freeze frame (rpm, load, coolant, speed, MAP when the code set) to choose the live values to read next."
+  ],
+  "interpret": [
+    "Stored (confirmed, mode 03): the ECU saw the fault on enough drive cycles to confirm it; an emissions fault usually turns the MIL on.",
+    "Pending (mode 07): seen once but not confirmed yet; intermittent or just starting. It becomes stored if it repeats and clears itself after several clean drive cycles.",
+    "Permanent (mode 0A): emissions codes a scan tool cannot erase; they clear only after the ECU's own monitor passes again. A permanent code without the stored one means it was cleared but not re-tested yet.",
+    "MIL on: the ECU asks for service now. MIL off with stored codes: a non-emissions or history fault, rarely urgent on its own.",
+    "Readiness: monitors not complete are normal for a while after codes were cleared or the battery was disconnected; many incomplete monitors and no codes suggest a recent clear.",
+    "The VAG 5-digit number is the same fault as the P code (its two bytes in decimal); use it to match VCDS logs.",
+    "The guide note lists this car's known causes; confirm them with live data before naming a part."
+  ]
+}

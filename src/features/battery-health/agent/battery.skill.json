@@ -1,0 +1,20 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "battery",
+  "kind": "capability",
+  "description": "Use when you need the battery's state of charge, its cranking dip on a restart or whether the alternator charges.",
+  "tools": ["run_skill", "ask_driver"],
+  "driverSteps": ["restart_engine"],
+  "procedure": "battery_capture",
+  "instructions": [
+    "Call run_skill with {\"name\":\"battery\"}. It samples the adapter voltage, asks the driver to restart the engine (restart_engine, stationary only) and returns the resting voltage, the cranking dip, the charging voltage and a verdict in one step.",
+    "If the driver could not restart, the cranking dip is not measured: judge the resting or charging voltage alone and say the dip is unknown.",
+    "Do not repeat the capture in the same run; read the result already gathered."
+  ],
+  "interpret": [
+    "Resting voltage (engine off, a few minutes after driving): about 12.6 V is fully charged; under 12.2 V the battery is discharged.",
+    "Cranking dip: the lowest voltage while the starter turns. Under 9.6 V the battery is weak (or the cable / starter draws too much).",
+    "Charging voltage (engine running): 13.5-14.5 V is normal. Under 13.5 V the alternator does not charge enough; over 14.5 V it overcharges.",
+    "A weak battery explains slow cranking, hard starts and random module or communication codes after a start; check it before chasing those codes."
+  ]
+}

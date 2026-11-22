@@ -94,5 +94,10 @@
     "relatedData": "Date asociate",
     "openRoutine": "Deschide rutina",
     "noFreezeFrame": "Niciun freeze frame capturat pentru acest cod."
+  },
+  "agent": {
+    "tool": {
+      "read_dtcs_detail": "Detalii cod de eroare — {{code}}"
+    }
   }
 }

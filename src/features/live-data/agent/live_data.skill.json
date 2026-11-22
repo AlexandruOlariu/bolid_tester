@@ -1,0 +1,21 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "live_data",
+  "kind": "capability",
+  "description": "Use when you need the current value of an engine sensor (a Mode 01 PID), read once or sampled for a few seconds for min / avg / max.",
+  "tools": ["read_live"],
+  "instructions": [
+    "Call read_live with up to 8 Mode 01 PIDs, e.g. {\"pids\":[\"010C\",\"0105\"]}.",
+    "Which PIDs exist on this car comes from the tool's \"Not supported on this car\" line: do not ask for those PIDs again, choose another way to check.",
+    "seconds 0 (or left out) reads once. seconds > 0 (up to 15) samples every 0.5 s and gives min / avg / max: use it to judge whether a value is steady, swinging or drifting.",
+    "Read the values the symptom points at, e.g. rpm 010C, coolant 0105, load 0104, MAP 010B, MAF 0110, speed 010D, module voltage 0142, fuel trims 0106 / 0107."
+  ],
+  "interpret": [
+    "One reading is one moment: sample a few seconds before calling a value unstable.",
+    "Warm engine coolant: about 80-105 °C. Under 70 °C after a long drive points to a thermostat stuck open; over 110 °C is overheating.",
+    "Warm idle: usually 700-900 rpm. A min-max swing over about 100 rpm while sampling points to an unstable idle.",
+    "MAP (010B) at idle: close to barometric pressure (about 100 kPa) on a diesel, about 25-45 kPa on a petrol engine.",
+    "Fuel trims (0106 / 0107) within ±10 % are normal; beyond +20 % points to lean (air leak, low fuel delivery), beyond -20 % to rich.",
+    "Module voltage (0142) with the engine running: 13.5-14.5 V means the alternator charges; under 13 V it does not."
+  ]
+}

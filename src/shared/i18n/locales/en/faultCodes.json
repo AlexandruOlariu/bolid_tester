@@ -91,5 +91,10 @@
     "relatedData": "Related data",
     "openRoutine": "Open routine",
     "noFreezeFrame": "No freeze frame captured for this code."
+  },
+  "agent": {
+    "tool": {
+      "read_dtcs_detail": "Fault code details — {{code}}"
+    }
   }
 }
