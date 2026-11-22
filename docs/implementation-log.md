@@ -31,11 +31,24 @@ other docs; this file is the "what we did" history.)
   `requireAuthentication`, no push token). The list is in
   [play-data-safety.md](../store/compliance/play-data-safety.md#permissions-removed-from-the-apk)
   and asserted by `storeConfig.test.ts`.
-- **CI:** `npm run ci` green, **2229 tests / 241 suites**.
-- **Native build:** on this Windows machine the SDK 57 `assembleRelease` ran out of Gradle metaspace
-  under the template's `-XX:MaxMetaspaceSize=512m` (KSP in `expo-updates`); with 4 GB heap and
-  1.5 GB metaspace it got past that point. The release APK, its permission dump and the Maestro
-  smoke on the emulator are **still to do** on SDK 57.
+- **CI:** `npm run ci` green, **2234 tests / 242 suites**.
+- **Gradle memory:** SDK 57's `assembleRelease` ran out of metaspace under the template's
+  `-Xmx2048m -XX:MaxMetaspaceSize=512m` (`:expo-updates:kspReleaseKotlin`, `OutOfMemoryError:
+Metaspace`, then a hung daemon). The new config plugin `plugins/withGradleMemory.js` (registered
+  before the signing plugin, 5 unit tests) rewrites `org.gradle.jvmargs` in the generated
+  `gradle.properties` to `-Xmx4096m -XX:MaxMetaspaceSize=1536m -XX:+HeapDumpOnOutOfMemoryError
+-Dfile.encoding=UTF-8`, for local, CI and EAS builds ([release.md](./release.md#signing)).
+- **Release APK on SDK 57:** `expo prebuild --clean` + `assembleRelease bundleRelease`, BUILD
+  SUCCESSFUL in 5 m 42 s with only the plugin's settings. `apksigner verify --print-certs`: `CN=Alex
+Olariu, O=Bolid Tester, C=RO`; `aapt2 dump badging`: `versionCode 1`, `versionName 0.1.0`,
+  target / compile SDK 36. `aapt2 dump permissions`: none of the six blocked permissions; what
+  remains is Bluetooth, location, `INTERNET`, network state, `VIBRATE`, `WAKE_LOCK`,
+  `RECEIVE_BOOT_COMPLETED`, `POST_NOTIFICATIONS`, the install-referrer binding and launcher-badge
+  permissions.
+- **On the emulator** (AVD `Sere_API36`, Android 16): `.maestro/simulator-smoke.yaml` passed twice
+  in a row; the dashboard, faults and charts deep links render (simulator banner, gauges, readiness
+  "compression ignition", chart cards); logcat has no `FATAL` / app `AndroidRuntime` crash and no
+  `ReactNativeJS` error.
 
 ---
 
