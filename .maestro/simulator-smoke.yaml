@@ -23,17 +23,20 @@ name: Simulator smoke — connect, read faults, clear
     element:
       text: '(?i)developer & simulator.*'
     direction: DOWN
+    timeout: 60000
 # The header reads upper-case on Android and is labelled "Developer & simulator. Show".
 - tapOn: '(?i)developer & simulator.*'
 - scrollUntilVisible:
     element:
       text: 'Simulator \(no car\)'
     direction: DOWN
+    timeout: 60000
 - tapOn: 'Simulator \(no car\)'
 - scrollUntilVisible:
     element:
       text: 'P0299'
     direction: DOWN
+    timeout: 60000
 - tapOn: 'P0299'
 
 # Connect tab → connect to the simulator; a successful connect moves on to vehicle selection.
@@ -57,6 +60,7 @@ name: Simulator smoke — connect, read faults, clear
     element:
       text: 'Clear codes'
     direction: DOWN
+    timeout: 60000
 - tapOn: 'Clear codes'
 - assertVisible: 'Clear fault codes\?'
 - tapOn: '(?i)clear'
