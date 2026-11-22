@@ -30,10 +30,35 @@ async function sessionFor(
 
 describe('runInspection', () => {
   it('runInspection flags recently cleared codes on a fresh Golf', async () => {
-    const { session: golfSession } = await sessionFor();
-    expect((await runInspection(createReadOnlySession(golfSession), null)).verdict).toMatch(
-      /pass|caution|fail/,
-    );
+    // A Golf whose codes were just cleared: no codes, every supported monitor back to "not ready",
+    // and 12 km since the clear. The simulator always reports complete monitors and 1234 km on
+    // 0131, so those two reads are overridden on top of the real read-only facade.
+    const { session: golfSession } = await sessionFor({
+      storedDtcs: [],
+      pendingDtcs: [],
+      permanentDtcs: [],
+    });
+    const ro = createReadOnlySession(golfSession);
+    const fresh = {
+      ...ro,
+      readReadiness: async () => {
+        const r = await ro.readReadiness();
+        return r && { ...r, monitors: r.monitors.map((m) => ({ ...m, complete: !m.supported })) };
+      },
+      readValue: async (pid: string) => {
+        const v = await ro.readValue(pid);
+        return pid === '0131'
+          ? { pid, name: 'Distance since codes cleared', unit: 'km', value: 12, ts: v?.ts ?? 0 }
+          : v;
+      },
+    };
+    const report = await runInspection(fresh, null);
+    expect(report.verdict).toBe('caution');
+    expect(report.checks.find((c) => c.id === 'recently-cleared')).toMatchObject({
+      status: 'warn',
+      detail: expect.stringContaining('12 km since codes were cleared'),
+    });
+    expect(report.checks.some((c) => c.id === 'readiness')).toBe(false);
   });
 
   it('fails the simulated Golf on its stored codes, through the read-only facade', async () => {
