@@ -136,6 +136,10 @@ coach helps finish them:
   the pure `diffReadiness(prev, next)` helper.
 - Coach mode ends on manual toggle-off or on disconnect.
 
+## AI agent
+
+- `agent/agentTools.ts` contributes the `fault_codes` skill and the `read_dtcs_detail` tool (one code's description, status, freeze frame and guide note) to the [AI agent](./ai-diagnose.md#agent).
+
 ## hooks
 
 - `useDtcs()` — read stored/pending/permanent; expose loading/error.

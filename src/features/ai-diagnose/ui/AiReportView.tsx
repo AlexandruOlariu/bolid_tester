@@ -1,4 +1,5 @@
-/** The read-only parts of an AI diagnosis report — the verdict banner and the finding cards — and
+/** The read-only parts of an AI diagnosis report — the verdict banner, the finding cards (with the
+ *  agent steps each finding rests on, plan 34a) and the uncited-findings notice — and
  *  `AiReportView`, which renders a whole saved report without the run / clear / follow-up controls.
  *  The Diagnose (AI) screen composes the banner and cards with its live actions; the History
  *  timeline (plan 16) re-opens a saved run's report with `AiReportView` (exported through the
@@ -94,7 +95,8 @@ export function FindingCard({
   onNavigate?: () => void;
 }) {
   const { t } = useTranslation('aiDiagnose');
-  const color = usePalette()[SEV_TONE[finding.severity]];
+  const palette = usePalette();
+  const color = palette[SEV_TONE[finding.severity]];
   const guides = findingGuides(profileId, finding.codes);
   return (
     <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor={color} gap="$1">
@@ -106,6 +108,21 @@ export function FindingCard({
           {t(`severity.${finding.severity}`)}
         </Text>
       </XStack>
+      {finding.unconfirmed ? (
+        <Text
+          alignSelf="flex-start"
+          fontSize="$1"
+          fontWeight="700"
+          color={palette.muted}
+          borderColor={palette.muted}
+          borderWidth={1}
+          borderRadius="$10"
+          paddingHorizontal="$2"
+          paddingVertical="$1"
+        >
+          {t('agent.unconfirmedTag')}
+        </Text>
+      ) : null}
       {finding.detail ? (
         <Paragraph theme="alt2" fontSize="$3">
           {finding.detail}
@@ -148,6 +165,24 @@ export function FindingCard({
           {t('likelyCauses', { causes: finding.likelyCauses.join('; ') })}
         </Paragraph>
       ) : null}
+      {finding.steps && finding.steps.length > 0 ? (
+        <Paragraph theme="alt2" fontSize="$1" marginTop="$1">
+          {t('agent.basedOn', { steps: finding.steps.join(', ') })}
+        </Paragraph>
+      ) : null}
+    </Card>
+  );
+}
+
+/** The agent's final report left out findings that cited no usable step (plan 34a). */
+export function UncitedNotice({ report }: { report: AiReport }) {
+  const { t } = useTranslation('aiDiagnose');
+  if (!report.uncitedDropped) return null;
+  return (
+    <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="$statusInfo">
+      <Paragraph fontSize="$2">
+        {t('agent.uncitedDropped', { count: report.uncitedDropped })}
+      </Paragraph>
     </Card>
   );
 }
@@ -182,6 +217,7 @@ export function AiReportView({
   return (
     <YStack gap="$3">
       <OverallBanner report={report} />
+      <UncitedNotice report={report} />
       {report.findings.length > 0 ? (
         <YStack gap="$2">
           <SectionTitle>{t('findings', { count: report.findings.length })}</SectionTitle>

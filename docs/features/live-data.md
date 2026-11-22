@@ -106,6 +106,10 @@ only while the segment is selected:
   **Refresh**) or leaving the view supersedes it, and the superseded read sends no further DID
   request and never sets state.
 
+## AI agent
+
+- `agent/agentTools.ts` contributes the `live_data` skill (how to use the core `read_live` tool: up to 8 PIDs, once or sampled up to 15 s) to the [AI agent](./ai-diagnose.md#agent).
+
 ## hooks
 
 - `useLiveData(pids?)` (`hooks/useLiveData.ts`) — subscribes to the shared live snapshot

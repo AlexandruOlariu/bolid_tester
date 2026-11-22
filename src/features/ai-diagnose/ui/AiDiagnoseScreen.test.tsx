@@ -1,17 +1,24 @@
-/** AI Diagnose with the development mock server (`mock://ai`, plan 19): the simulator Golf with
- *  injected codes, an AI-sourced report whose findings carry the Golf fault guides (note + deep-link
- *  buttons), and the bounded follow-up conversation. No network: the dispatcher serves the canned
- *  mock client in this (development) test build. */
+/** AI Diagnose with the development mock server (`mock://ai`, plans 19 and 34a): the simulator Golf
+ *  with injected codes, the agent run's trail (Check everything, Investigate a symptom, Stop, the
+ *  driver prompt), an AI-sourced report whose findings cite their steps and carry the Golf fault
+ *  guides (note + deep-link buttons), Clear codes and the bounded follow-up conversation. No
+ *  network: the dispatcher serves the scripted mock client in this (development) test build. */
 import React from 'react';
+import { Alert, type AlertButton } from 'react-native';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { connectSimulator } from '@test/simulator';
 import { mockPush, setMockSearchParams } from '@test/mocks/router';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useVehicleStore } from '@/shared/state/vehicleStore';
+import { faultCodesAgentTools } from '@/features/fault-codes';
+import { liveDataAgentTools } from '@/features/live-data';
+import { batteryHealthAgentTools } from '@/features/battery-health';
 import { useAiDiagnoseStore } from '../model/aiDiagnoseStore';
 import * as diagnoseService from '../api/diagnoseService';
+import * as agentService from '../api/agentService';
 import { AiDiagnoseScreen } from './AiDiagnoseScreen';
+import { AiReportView } from './AiReportView';
 
 const GOLF = 'golf-plus-2009-20tdi';
 
@@ -23,9 +30,23 @@ function useMockAi() {
 
 async function runDiagnosis() {
   await act(async () => {
-    fireEvent.press(screen.getByText('Run diagnosis'));
+    fireEvent.press(screen.getByText('Check everything'));
   });
   return screen.findByText(/Mock AI report/);
+}
+
+/** Press the report's red Clear action, then "Clear" in the confirmation alert. */
+async function confirmClear() {
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons?: AlertButton[]) => {
+    void buttons?.find((b) => b.style === 'destructive')?.onPress?.();
+  });
+  try {
+    await act(async () => {
+      fireEvent.press(screen.getByText('Clear fault codes'));
+    });
+  } finally {
+    alert.mockRestore();
+  }
 }
 
 /** Press a suggestion chip (the chips render above the bubbles, which may repeat the text). */
@@ -173,7 +194,7 @@ describe('AiDiagnoseScreen with the on-device report', () => {
     useVehicleStore.setState({ selectedProfileId: GOLF });
     renderWithProviders(<AiDiagnoseScreen />);
     await act(async () => {
-      fireEvent.press(screen.getByText('Run diagnosis'));
+      fireEvent.press(screen.getByText('Check everything'));
     });
     expect(await screen.findByText('On-device rule-based analysis')).toBeTruthy();
     expect(screen.getByText(/Follow-up questions need an AI provider/)).toBeTruthy();
@@ -181,5 +202,151 @@ describe('AiDiagnoseScreen with the on-device report', () => {
     expect(screen.queryByText('What should I check first?')).toBeNull();
     // The local finding for the code still cites the Golf guide.
     expect(screen.getByText(/Known check for this car: EGR flow\/position fault/)).toBeTruthy();
+  });
+});
+
+describe('AiDiagnoseScreen agent run with mock://ai', () => {
+  beforeEach(() => {
+    useVehicleStore.setState({ selectedProfileId: GOLF });
+  });
+
+  it('Check everything with mock://ai shows the trail and a cited report', async () => {
+    useMockAi();
+    await connectSimulator({ vehicleId: GOLF, injectedDtcs: ['P0401'] });
+    renderWithProviders(
+      <AiDiagnoseScreen
+        contributions={[faultCodesAgentTools, liveDataAgentTools, batteryHealthAgentTools]}
+      />,
+    );
+    await act(async () => {
+      fireEvent.press(screen.getByText('Check everything'));
+    });
+    expect(await screen.findByText(/Mock AI report/)).toBeTruthy();
+    expect(screen.getByText(/Triage — 1 code, battery 12.3 V/)).toBeTruthy();
+    expect(screen.getAllByText(/Based on: steps 1/).length).toBeGreaterThan(0);
+  });
+
+  it("after the run the trail shows each step's data and collapses", async () => {
+    useMockAi();
+    await connectSimulator({ vehicleId: GOLF, injectedDtcs: ['P0401'] });
+    renderWithProviders(<AiDiagnoseScreen />);
+    await runDiagnosis();
+    expect(screen.getAllByTestId('agent-step')).toHaveLength(2);
+    expect(screen.getByText('Check the idle readings.')).toBeTruthy();
+    fireEvent.press(screen.getAllByText('Show data')[0]);
+    expect(screen.getByText('Hide data')).toBeTruthy();
+    expect(screen.queryByText('Stop')).toBeNull();
+    fireEvent.press(screen.getByText('Investigation · 2 steps'));
+    expect(screen.queryAllByTestId('agent-step')).toHaveLength(0);
+  });
+
+  it('Investigate is disabled until a symptom is typed', async () => {
+    useMockAi();
+    await connectSimulator();
+    renderWithProviders(<AiDiagnoseScreen />);
+    expect(screen.getByRole('button', { name: 'Investigate' })).toBeDisabled();
+    fireEvent.changeText(screen.getByPlaceholderText(/pulls weak/), 'rough idle');
+    expect(screen.getByRole('button', { name: 'Investigate' })).toBeEnabled();
+  });
+
+  it('Stop ends a looping run with the rule report and a notice', async () => {
+    useMockAi();
+    await connectSimulator();
+    renderWithProviders(<AiDiagnoseScreen />);
+    fireEvent.changeText(screen.getByPlaceholderText(/pulls weak/), 'mock:loop');
+    await act(async () => {
+      fireEvent.press(screen.getByText('Investigate'));
+    });
+    await act(async () => {
+      fireEvent.press(await screen.findByText('Stop'));
+    });
+    expect(await screen.findByText('On-device rule-based analysis')).toBeTruthy();
+    expect(screen.getByText(/stopped/i)).toBeTruthy();
+  });
+
+  it("a battery symptom asks the driver to restart; Can't still finishes", async () => {
+    useMockAi();
+    await connectSimulator();
+    renderWithProviders(<AiDiagnoseScreen contributions={[batteryHealthAgentTools]} />);
+    fireEvent.changeText(screen.getByPlaceholderText(/pulls weak/), 'battery dies overnight');
+    await act(async () => {
+      fireEvent.press(screen.getByText('Investigate'));
+    });
+    // battery_capture samples the resting voltage for 2 s before it opens the prompt
+    expect(
+      await screen.findByText(
+        'Switch the engine off, then start it again.',
+        {},
+        { timeout: 5_000 },
+      ),
+    ).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByText("Can't"));
+    });
+    // battery_capture samples real time (2 s before, 4 s after the answer)
+    expect(await screen.findByText(/Mock AI report/, {}, { timeout: 10_000 })).toBeTruthy();
+  }, 20_000);
+
+  it('pressing Check everything twice starts one run', async () => {
+    useMockAi();
+    await connectSimulator();
+    renderWithProviders(<AiDiagnoseScreen />);
+    const spy = jest.spyOn(agentService, 'startAgentRun');
+    await act(async () => {
+      fireEvent.press(screen.getByText('Check everything'));
+      fireEvent.press(screen.getByText('Check everything'));
+    });
+    expect(spy).toHaveBeenCalledTimes(1);
+    // Let the one run finish before the test's session is closed.
+    expect(await screen.findByText(/Mock AI report/)).toBeTruthy();
+    spy.mockRestore();
+  });
+
+  it('Clear codes re-runs triage only', async () => {
+    useMockAi();
+    await connectSimulator({ injectedDtcs: ['P0401'] });
+    renderWithProviders(<AiDiagnoseScreen />);
+    await act(async () => {
+      fireEvent.press(screen.getByText('Check everything'));
+    });
+    await screen.findByText(/Mock AI report/);
+    await confirmClear(); // presses the red action, then "Clear" in the appAlert
+    expect(await screen.findByText(/Codes cleared/)).toBeTruthy();
+    expect(useAiDiagnoseStore.getState().trail.map((s) => s.kind)).toEqual(['triage']);
+  });
+});
+
+describe('AiReportView citations', () => {
+  it('shows the cited steps, the unconfirmed tag and the uncited-findings notice', () => {
+    renderWithProviders(
+      <AiReportView
+        profileId={GOLF}
+        ranAt={null}
+        report={{
+          overall: 'attention',
+          summary: 'Agent report',
+          source: 'ai',
+          disclaimer: 'Disclaimer',
+          actions: [],
+          uncitedDropped: 2,
+          findings: [
+            { title: 'Boost low', severity: 'warn', detail: '', steps: [2, 3] },
+            {
+              title: 'Maybe a sensor',
+              severity: 'info',
+              detail: '',
+              steps: [4],
+              unconfirmed: true,
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText('Based on: steps 2, 3')).toBeTruthy();
+    expect(screen.getByText('Based on: steps 4')).toBeTruthy();
+    expect(screen.getAllByText('Unconfirmed data')).toHaveLength(1);
+    expect(
+      screen.getByText('2 findings the AI did not back with a step of this run were left out.'),
+    ).toBeTruthy();
   });
 });

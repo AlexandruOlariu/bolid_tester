@@ -5,6 +5,42 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## AI agent core (plan 34a) (2026-11-22)
+
+- **Why:** the one-shot AI diagnosis read the car once and asked the model for a verdict. Now a
+  read-only agent can follow a symptom: it reads what it needs one step at a time, asks the
+  stationary driver for a step when a check needs it, and cites the steps behind every finding
+  (spec `docs/superpowers/specs/2026-11-22-ai-agent-diagnose-design.md`).
+- **Core (`src/shared/obd-core/agent/`):** the read-only session facade (read-request allowlist,
+  no SecurityAccess, no programming session, never the airbag `15` / immobilizer `25` modules, every
+  addressed read inside `exclusive`); the tool types and the flat action schema; `bolid.skill.v1`
+  skill files and the tool / skill registry; the fixed driver instructions, the core read tools
+  (`read_live`, `read_dtcs`), the `battery_capture` procedure and triage; the prompts (symptom
+  clamped to 300 characters and JSON-quoted, the last 3 digests in full, the 8k-token target); the
+  cited final report and the on-device rule report; the budgeted loop (12 steps, 4 min model +
+  adapter time, 2 min adapter time, 3 invalid replies, 3 min per driver step outside the budget).
+- **AI client:** per-call JSON schema with the `json_schema` → `json_object` → plain fallback
+  ladder and an abortable chat. `mock://ai` plays scripted agent conversations (default, battery,
+  `mock:loop`, `mock:invalid`).
+- **Features:** fault-codes (`fault_codes` skill, `read_dtcs_detail`), live-data (`live_data`) and
+  battery-health (`battery`, `battery_capture`) contribute skills; `src/app/ai-diagnose.tsx`
+  composes them.
+- **Screen:** **What's wrong?** with **Investigate** and **Check everything** (replaces **Run
+  diagnosis**); the trail ("Investigating · step n of 12", **Stop**, a row per step with its "why"
+  and **Show data**, collapsible after the run); the driver prompt (**Done** / **Can't**, "The car
+  must stay stationary."); findings show "Based on: steps …" and an **Unconfirmed data** chip, and
+  the report notes dropped uncited findings. Re-run repeats the last request; Clear codes re-reads
+  with triage only; follow-ups read the trail. Any model failure, budget end, Stop or disconnect
+  ends in the rule report with a notice. en + ro.
+- **Tests:** unit tests per core module; `agentService.test.ts` / `driverGate.test.ts`;
+  `AiDiagnoseScreen.test.tsx` (trail and cited report, Investigate gating, Stop, the battery
+  restart prompt with **Can't**, one run on a double tap, Clear codes → triage only, citations in
+  `AiReportView`).
+- **Open (owner, on the car):** check that the self-hosted model accepts the action schema
+  (Settings → Error log, note the mode in `docs/features/ai-diagnose.md` → Agent), and the first
+  real run on the Golf (restart prompt only while stationary, triage voltage against the cluster,
+  step count and wall time).
+
 ## Settings becomes a short hub (2026-11-22)
 
 - **Why:** the owner found Settings busy — one page about five phone screens tall. Now it is a hub

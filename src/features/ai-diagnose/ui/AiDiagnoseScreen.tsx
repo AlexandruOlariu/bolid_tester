@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useIsFocused, useLocalSearchParams, useNavigation } from 'expo-router';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Input } from 'tamagui';
-import { Stethoscope, Eraser, RefreshCw, Activity, MessageCircle, Send } from 'lucide-react-native';
+import { Eraser, RefreshCw, Activity, MessageCircle, Send } from 'lucide-react-native';
 import { Screen, appAlert, SectionTitle, HIT_SLOP, usePalette } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { describeDtc, followUpSuggestions } from '@/shared/obd-core';
@@ -12,7 +12,10 @@ import type {
   AiAction,
   DtcMake,
 } from '@/shared/obd-core';
-import { ACTION_ICON, OverallBanner, FindingCard } from './AiReportView';
+import { ACTION_ICON, OverallBanner, FindingCard, UncitedNotice } from './AiReportView';
+import { AgentStartCard } from './AgentStartCard';
+import { AgentTrail } from './AgentTrail';
+import { DriverPrompt } from './DriverPrompt';
 import { useAiDiagnose } from '../hooks/useAiDiagnose';
 import { useTranslation } from '@/shared/i18n';
 import { formatTime } from '@/shared/lib/format';
@@ -37,7 +40,8 @@ function Bubble({ message }: { message: AiChatMessage }) {
 }
 
 /** "Ask about this report" (plan 19): suggestion chips, a free-text question and the conversation
- *  as alternating bubbles. Disabled for an on-device (rule-based) report. */
+ *  as alternating bubbles; the answers read the run's trail (plan 34a). Disabled for an on-device
+ *  (rule-based) report. */
 function FollowUpCard({
   report,
   focusCode,
@@ -219,6 +223,8 @@ function ReportView({
         </Card>
       ) : null}
 
+      <UncitedNotice report={report} />
+
       {report.findings.length > 0 ? (
         <YStack gap="$2">
           <SectionTitle>{t('findings', { count: report.findings.length })}</SectionTitle>
@@ -261,7 +267,11 @@ function FocusCard({ code, make }: { code: string; make?: DtcMake }) {
 /** No feature contributions: the agent runs with the core tools only. */
 const NO_CONTRIBUTIONS: AgentContribution[] = [];
 
-/** `contributions`: the agent tools and skills the app layer composes (`src/app/ai-diagnose.tsx`). */
+/** The AI diagnose screen (plans 11, 19, 34a): describe a symptom and **Investigate**, or **Check
+ *  everything**; the agent run's trail with **Stop** and the driver prompt; then the cited report
+ *  with Re-run (the last request again), Clear codes (its confirmation, then a triage-only re-read)
+ *  and follow-up questions over the trail. `contributions`: the agent tools and skills the app
+ *  layer composes (`src/app/ai-diagnose.tsx`). */
 export function AiDiagnoseScreen({
   contributions = NO_CONTRIBUTIONS,
 }: {
@@ -277,6 +287,7 @@ export function AiDiagnoseScreen({
     error,
     ranAt,
     focusCode,
+    request,
     make,
     guideProfileId,
     busy,
@@ -287,10 +298,23 @@ export function AiDiagnoseScreen({
     askError,
     ask,
     clearConversation,
+    trail,
+    stepsUsed,
+    maxSteps,
+    driver,
+    investigate,
+    checkEverything,
+    rerun,
+    stop,
+    answerDriver,
   } = useAiDiagnose(contributions);
   const params = useLocalSearchParams<{ focus?: string | string[] }>();
   const rawFocus = Array.isArray(params.focus) ? params.focus[0] : params.focus;
   const focusParam = rawFocus?.trim().toUpperCase() || undefined;
+  // The triage-only re-read after Clear codes is not an agent run: no Stop, no step counter.
+  const [clearing, setClearing] = useState(false);
+  const connected = status === 'connected';
+  const running = busy && !clearing;
 
   // Arriving from "Explain with AI": run once for the focused code as soon as we are connected
   // AND this screen is in front, then consume the param. The screen is a (hidden) tab that stays
@@ -307,27 +331,30 @@ export function AiDiagnoseScreen({
       autoRanFor.current = null;
       return;
     }
-    if (!isFocused || status !== 'connected' || busy || autoRanFor.current === focusParam) return;
+    if (!isFocused || !connected || busy || autoRanFor.current === focusParam) return;
     autoRanFor.current = focusParam;
     void run({ focusCode: focusParam });
     navigation.setParams({ focus: undefined });
-  }, [focusParam, isFocused, status, busy, run, navigation]);
+  }, [focusParam, isFocused, connected, busy, run, navigation]);
 
   const shownFocus = focusParam ?? focusCode ?? undefined;
-  // The main button always runs a full diagnosis; Recheck repeats the report's own run (focused
-  // when the report was).
-  const runFull = () => void run();
-  const recheck = () => void run({ focusCode: focusCode ?? undefined });
 
   const confirmClear = () =>
     appAlert(t('clear.title'), t('clear.body'), [
       { text: t('common:actions.cancel'), style: 'cancel' },
-      { text: t('clear.confirm'), style: 'destructive', onPress: () => void clearCodes() },
+      {
+        text: t('clear.confirm'),
+        style: 'destructive',
+        onPress: () => {
+          setClearing(true);
+          void clearCodes().finally(() => setClearing(false));
+        },
+      },
     ]);
 
   return (
     <Screen title={t('title')} subtitle={t('subtitle')}>
-      {status !== 'connected' ? (
+      {!connected ? (
         <Card bordered padding="$3" borderLeftWidth={3} borderLeftColor="$statusWarn">
           <Paragraph fontSize="$3">{t('notConnected')}</Paragraph>
         </Card>
@@ -335,17 +362,27 @@ export function AiDiagnoseScreen({
 
       {shownFocus ? <FocusCard code={shownFocus} make={make} /> : null}
 
-      <Button
-        theme="green"
-        size="$5"
-        onPress={runFull}
-        disabled={busy || status !== 'connected'}
-        icon={busy ? () => <Spinner /> : <Stethoscope size={20} />}
-      >
-        {shownFocus ? t('runFull') : report ? t('rerun') : t('run')}
-      </Button>
+      <AgentStartCard
+        busy={busy}
+        connected={connected}
+        onInvestigate={(symptom) => void investigate(symptom)}
+        onCheckEverything={() => void checkEverything()}
+      />
 
-      {busy ? (
+      {running || trail.length > 0 ? (
+        <AgentTrail
+          trail={trail}
+          running={running}
+          stepsUsed={stepsUsed}
+          maxSteps={maxSteps}
+          onStop={stop}
+          collapsible={!running}
+        />
+      ) : null}
+
+      {running && driver ? <DriverPrompt id={driver} onAnswer={answerDriver} /> : null}
+
+      {busy && !driver ? (
         <XStack alignItems="center" gap="$3" paddingVertical="$2">
           <Spinner />
           <Paragraph theme="alt2">{progress ?? t('working')}</Paragraph>
@@ -359,28 +396,40 @@ export function AiDiagnoseScreen({
       ) : null}
 
       {report && !busy ? (
-        <ReportView
-          report={report}
-          notice={notice}
-          ranAt={ranAt}
-          profileId={guideProfileId}
-          onClear={confirmClear}
-          onRecheck={recheck}
-          followUp={
-            <FollowUpCard
-              report={report}
-              focusCode={focusCode}
-              conversation={conversation}
-              asking={asking}
-              askError={askError}
-              onAsk={(q) => void ask(q)}
-              onClear={clearConversation}
-            />
-          }
-        />
+        <>
+          {request ? (
+            <Button
+              onPress={() => void rerun()}
+              disabled={!connected}
+              accessibilityState={{ disabled: !connected }}
+              icon={<RefreshCw size={18} />}
+            >
+              {t('rerun')}
+            </Button>
+          ) : null}
+          <ReportView
+            report={report}
+            notice={notice}
+            ranAt={ranAt}
+            profileId={guideProfileId}
+            onClear={confirmClear}
+            onRecheck={() => void rerun()}
+            followUp={
+              <FollowUpCard
+                report={report}
+                focusCode={focusCode}
+                conversation={conversation}
+                asking={asking}
+                askError={askError}
+                onAsk={(q) => void ask(q)}
+                onClear={clearConversation}
+              />
+            }
+          />
+        </>
       ) : null}
 
-      {!report && !busy && status === 'connected' && phase === 'idle' ? (
+      {!report && !busy && connected && phase === 'idle' ? (
         <Paragraph theme="alt2" fontSize="$3">
           {t('intro')}
         </Paragraph>

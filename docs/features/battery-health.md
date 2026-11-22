@@ -24,6 +24,10 @@ with a plain _good / fair / weak_ verdict.
   prompted to optionally crank/start during the window), then shows resting V + SoC, cranking dip,
   charging V, the verdict, and the per-phase notes. A live voltage read is shown when connected.
 
+## AI agent
+
+- `agent/agentTools.ts` contributes the `battery` skill and its `battery_capture` procedure (resting voltage, restart prompt, cranking dip, charging voltage in one step) to the [AI agent](./ai-diagnose.md#agent).
+
 ## hooks
 
 - `useBatteryHealth()` — samples `session.client.voltage()` (`ATRV`) every ~200 ms for a short window,

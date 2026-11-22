@@ -25,15 +25,28 @@ Reachable from the **More** tab (`/ai-diagnose`). Every run is saved to [History
 ## UI
 
 - **AiDiagnoseScreen** —
-  - **Run diagnosis** / **Re-run** button (disabled until connected).
-  - Progress line while _gathering_ then _analysing_.
+  - **What's wrong?** card (`ui/AgentStartCard.tsx`): a symptom field (300 characters at most,
+    placeholder "e.g. pulls weak above 2000 rpm"), **Investigate** (disabled while the field is
+    blank, a run is going or no car is connected) and **Check everything** (the old **Run
+    diagnosis**). See [Agent](#agent).
+  - **Trail** (`ui/AgentTrail.tsx`): "Investigating · step n of 12" with **Stop** for the whole run,
+    one row per step (✓ ok, ⚠ error, ✕ the driver could not / refused), the model's one-line "why"
+    and the digest behind **Show data**; after the run its header collapses / expands the rows.
+  - **Driver prompt** (`ui/DriverPrompt.tsx`) while the run waits for the driver: the instruction,
+    "The car must stay stationary." and **Done** / **Can't**.
+  - Progress line while _reading the car_ then _asking the model_.
+  - **Re-run diagnosis** above the report repeats the last request (symptom or everything, focus
+    included).
   - **Overall banner**: `ok` (healthy) / `attention` / `urgent`, colour-coded, with a one-line
     summary and a chip showing whether it came from the **AI** or **on-device rules**.
   - **Findings** — one card per issue: severity (`ok/info/warn/critical`), detail, related DTC
     codes, the **known check for this car** under the codes when a curated fault guide matches (see
-    [Guide citations](#guide-citations)), and likely causes.
-  - **Recommended actions** — `clear_dtcs` (red, confirm → Mode 04 → re-run), `recheck` (re-run),
-    and advisory `inspect/monitor/service` cards.
+    [Guide citations](#guide-citations)), likely causes, "Based on: steps 2, 3" (the agent steps the
+    finding cites) and an **Unconfirmed data** chip when it rests only on unconfirmed data. When the
+    agent's final report dropped uncited findings, a notice above them says how many.
+  - **Recommended actions** — `clear_dtcs` (red, confirm → Mode 04 → a triage-only re-read with the
+    "Codes cleared" notice), `recheck` (re-run the last request), and advisory
+    `inspect/monitor/service` cards.
   - **Ask about this report** — suggestion chips, a question field + send button, the conversation
     as alternating bubbles (selectable text) and **Clear**. Disabled with a hint for an on-device
     report (see [Follow-up questions](#follow-up-questions)).
@@ -41,7 +54,8 @@ Reachable from the **More** tab (`/ai-diagnose`). Every run is saved to [History
 - **AiReportView** (`ui/AiReportView.tsx`, exported from the slice's `index.ts`, plan 16) — a saved
   report, read-only: the overall banner, the finding cards (with the car's fault guides), the
   recommended actions as a plain list (no Clear / Re-run buttons — the run is over) and the
-  disclaimer with the run time. The [History timeline](./history.md) opens it in a sheet when an AI
+  disclaimer with the run time (plus the uncited-findings notice and each finding's cited steps).
+  The [History timeline](./history.md) opens it in a sheet when an AI
   row is tapped, passing `onNavigate` (its close) so a fault guide's "Related data" / "Open
   routine" button closes the sheet before it navigates. The screen and the view share `OverallBanner`, `FindingCard` and the action icons
   from that file.
@@ -52,15 +66,16 @@ The fault-codes [detail sheet](./fault-codes.md#detail-sheet) opens `/ai-diagnos
 `AiDiagnoseScreen` reads the `focus` search param (`useLocalSearchParams<{ focus?: string }>()`),
 shows a **Focused on fault code …** card with the code's description (described with the selected
 profile's `make`, `useAiDiagnose().make`, so it matches the detail sheet) and, once connected
-**and while the screen is in front** (`useIsFocused()`), runs the diagnosis once for that code
-(`useAiDiagnose().run({ focusCode })` → `analyze(snapshot, onAnalyzing, { focusCode })`). The
+**and while the screen is in front** (`useIsFocused()`), starts an agent run seeded with that code
+as the symptom (`useAiDiagnose().run({ focusCode })` → `{ mode: 'symptom', symptom: code,
+focusCode: code }`). The
 screen is a hidden tab that stays mounted, so the focus gate stops a reconnect on another tab from
 starting the run in the background; the run waits until the user comes back. The param is then
 consumed on this route (`useNavigation().setParams({ focus: undefined })` — not the global
 `router.setParams`, which would act on whichever route is focused): this is what lets a later
 **Explain with AI** — even on the same code — run again. While a focus is
-shown the main button reads **Run full diagnosis** and runs unfocused; the report's **Re-run**
-repeats the report's own run (focused when it was).
+shown **Check everything** still runs unfocused; **Re-run** repeats the last run (focused when it
+was), and the focus question comes first among the follow-up suggestions.
 
 - **AI path:** `buildDiagnosisMessages(snapshot, { focusCode })` appends one user message: "Focus on
   fault code P0135: explain it in plain words, likely causes in order of probability, and what to
@@ -70,6 +85,66 @@ repeats the report's own run (focused when it was).
   (`describeDtc(code, snapshot.vehicle.make)` — `VehicleContext.make` is the profile's make).
 - The focused code is kept in `aiDiagnoseStore.focusCode`; the snapshot's DTC descriptions use the
   profile's `make` like the Faults screen.
+
+## Agent
+
+Plan 34a turns the one-shot diagnosis into a **read-only, multi-step agent**
+(`src/shared/obd-core/agent/`, spec
+[`2026-11-22-ai-agent-diagnose-design.md`](../superpowers/specs/2026-11-22-ai-agent-diagnose-design.md)).
+**Investigate** sends the typed symptom (clamped to `MAX_SYMPTOM_CHARS` = 300 and JSON-quoted in the
+prompt); **Check everything** asks the model to look over the whole car; **Explain with AI** seeds a
+symptom run with the code.
+
+- **Loop** (`loop.ts`, `runAgent`). Step 1 is always **triage** (`triage.ts`): DTCs per the
+  profile's modes, readiness, the freeze frame when codes are stored, one poll of the supported key
+  PIDs and the adapter voltage, plus every tool that asks to run at triage. Then the model answers
+  **one JSON action per turn** (`actionSchema.ts`, the flat action schema; the first balanced object
+  is used, and a reply with both `tool` and `final` is invalid). The app validates the arguments,
+  runs that one tool, skill or driver prompt and sends the digest back (≤ `MAX_DIGEST_CHARS` =
+  1600). The prompt (`prompt.ts`) keeps the last `FULL_DIGESTS` = 3 digests in full and older steps
+  as one-line app-written summaries, aiming at the 8k-token context target. The model is told to
+  write the report in the app's language (`currentLanguage()`).
+- **Budget** (`AGENT_BUDGET`): **12 steps** (triage included), **4 min** of model + adapter wall
+  time, **2 min** of adapter time, **3 invalid replies** in a row. Time waiting for the driver counts
+  toward none of them; each driver step times out after **3 min** (counted as "Can't").
+- **Tools** (all reads, behind `createReadOnlySession`: a read-request allowlist, no
+  SecurityAccess, no programming session, never the airbag `15` or immobilizer `25` modules).
+  Core: `read_live` (up to 8 Mode 01 PIDs, once or sampled up to 15 s for min / avg / max) and
+  `read_dtcs`; built in: `open_skill`, `run_skill`, `ask_driver`. Features add their own through
+  an `AgentContribution` (fault-codes adds `read_dtcs_detail`). **Clear codes** is not a tool: it
+  stays the report's button behind its confirmation.
+- **Skills** (`bolid.skill.v1` JSON files, `skillFile.ts`; the registry in `registry.ts`): a skill
+  is a model-facing document (when to use it, which tools, how to read the results). The model
+  reads one with `open_skill` and runs its on-device procedure in one step with `run_skill`. The
+  first three come from [fault-codes](./fault-codes.md) (`fault_codes`),
+  [live-data](./live-data.md) (`live_data`) and [battery-health](./battery-health.md) (`battery`,
+  procedure `battery_capture`: 2 s of resting voltage, the restart prompt, 4 s more for the crank
+  dip and the charging voltage). The app layer composes them in `src/app/ai-diagnose.tsx`
+  (`AGENT_CONTRIBUTIONS`), since features never import each other.
+- **Driver steps** (`driver.ts`, `DRIVER_INSTRUCTIONS`): a fixed list (start the engine, engine
+  off ignition on, restart, hold 2500 rpm, electrical load on / off). Asked only while the car is
+  stationary: refused unless `010D` reads exactly 0 km/h, aborted if the speed rises. The screen's
+  answer reaches the run through the driver gate (`api/driverGate.ts`).
+- **Stop** aborts the run at once (an open driver prompt settles as "Can't"); the run ends
+  `stopped`. A double tap, or a tap while a run is going, starts nothing.
+- **Cited report** (`report.ts`, `parseAgentFinal`): every finding cites step ids; a finding citing
+  no step, an unknown step or a failed / refused one is dropped and counted in `uncitedDropped`. A
+  finding resting only on unconfirmed data is capped at `info` and tagged `unconfirmed`.
+- **Fallbacks — never worse than before.** Any other ending (AI off or not configured, the step /
+  time / adapter budget, three invalid replies, Stop, an adapter disconnect, an AI error) ends in the
+  on-device rule report over everything gathered (`agentRuleReport`) with a notice
+  (`aiDiagnose:agent.end.<end>`). With the AI off, **Check everything** gives the rule report over
+  triage. An AI error or a disconnect is logged as an `ai-diagnose` warning.
+- **After the run**: Re-run repeats the request; Clear codes runs Mode 04, then a triage-only
+  re-read (`runTriageOnly`) with the "Codes cleared" notice; follow-up questions read the trail's
+  digests (`buildAgentFollowUpMessages`).
+- **Mock scripts** (`mock://ai`, development builds): with the agent schema the mock plays a
+  script picked from the symptom. The default (Check everything, focus runs, other symptoms) does one
+  idle `read_live`, then a final with one `warn` finding per code citing step 1 and an "idle
+  readings" finding citing step 2. A symptom with "battery" / "baterie" opens and runs the
+  `battery` skill (restart prompt), then a final citing steps 1 and 3. `mock:loop` reads rpm forever
+  (exercise **Stop** or the step budget). `mock:invalid` never sends JSON (the rule report after
+  three invalid replies).
 
 ## Settings (Settings → AI assistant)
 

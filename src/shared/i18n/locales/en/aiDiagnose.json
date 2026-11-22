@@ -2,11 +2,9 @@
   "title": "Diagnose (AI)",
   "subtitle": "One-tap health check of your car",
   "notConnected": "Not connected. Pair your adapter on the Connect tab (or switch to the Simulator in Settings) to run a diagnosis.",
-  "runFull": "Run full diagnosis",
   "rerun": "Re-run diagnosis",
-  "run": "Run diagnosis",
   "working": "Working…",
-  "intro": "Tap “Run diagnosis” to read your car’s fault codes, readiness and live data and get a plain-language health report.",
+  "intro": "Describe what’s wrong and tap “Investigate”, or tap “Check everything” to read your car’s fault codes, readiness and live data and get a plain-language health report.",
   "clearCodes": "Clear fault codes",
   "clear": {
     "title": "Clear fault codes?",
@@ -104,6 +102,31 @@
           "detail": "Resting {{resting}} V, cranking dip {{dip}} V, charging {{charging}} V. The engine restart was not captured, so the battery condition could not be judged."
         }
       }
-    }
+    },
+    "start": {
+      "title": "What's wrong?",
+      "placeholder": "e.g. pulls weak above 2000 rpm",
+      "investigate": "Investigate",
+      "checkEverything": "Check everything",
+      "inputA11y": "Describe what's wrong with the car"
+    },
+    "trail": {
+      "progress": "Investigating · step {{n}} of {{max}}",
+      "title_one": "Investigation · {{count}} step",
+      "title_other": "Investigation · {{count}} steps",
+      "stop": "Stop",
+      "stopA11y": "Stop the investigation",
+      "showData": "Show data",
+      "hideData": "Hide data"
+    },
+    "driverPrompt": {
+      "stationary": "The car must stay stationary.",
+      "done": "Done",
+      "cant": "Can't"
+    },
+    "basedOn": "Based on: steps {{steps}}",
+    "unconfirmedTag": "Unconfirmed data",
+    "uncitedDropped_one": "{{count}} finding the AI did not back with a step of this run was left out.",
+    "uncitedDropped_other": "{{count}} findings the AI did not back with a step of this run were left out."
   }
 }

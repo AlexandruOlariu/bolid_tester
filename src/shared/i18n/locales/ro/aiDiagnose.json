@@ -2,11 +2,9 @@
   "title": "Diagnoză (AI)",
   "subtitle": "Verificarea stării mașinii dintr-o atingere",
   "notConnected": "Neconectat. Asociază adaptorul în fila Conectare (sau treci la Simulator din Setări) pentru a rula o diagnoză.",
-  "runFull": "Rulează diagnoza completă",
   "rerun": "Rulează din nou diagnoza",
-  "run": "Rulează diagnoza",
   "working": "Se lucrează…",
-  "intro": "Atinge „Rulează diagnoza” pentru a citi codurile de eroare, monitoarele readiness și datele live ale mașinii și a primi un raport de stare pe înțeles.",
+  "intro": "Descrie ce nu merge și atinge „Investighează”, sau atinge „Verifică tot” pentru a citi codurile de eroare, monitoarele readiness și datele live ale mașinii și a primi un raport de stare pe înțeles.",
   "clearCodes": "Șterge codurile de eroare",
   "clear": {
     "title": "Ștergi codurile de eroare?",
@@ -105,6 +103,33 @@
           "detail": "În repaus {{resting}} V, scădere la pornire {{dip}} V, încărcare {{charging}} V. Repornirea motorului nu a fost surprinsă, așa că starea bateriei nu a putut fi apreciată."
         }
       }
-    }
+    },
+    "start": {
+      "title": "Ce nu merge?",
+      "placeholder": "ex. trage slab peste 2000 rpm",
+      "investigate": "Investighează",
+      "checkEverything": "Verifică tot",
+      "inputA11y": "Descrie ce nu merge la mașină"
+    },
+    "trail": {
+      "progress": "Investigație · pasul {{n}} din {{max}}",
+      "title_one": "Investigație · {{count}} pas",
+      "title_few": "Investigație · {{count}} pași",
+      "title_other": "Investigație · {{count}} de pași",
+      "stop": "Oprește",
+      "stopA11y": "Oprește investigația",
+      "showData": "Arată datele",
+      "hideData": "Ascunde datele"
+    },
+    "driverPrompt": {
+      "stationary": "Mașina trebuie să stea pe loc.",
+      "done": "Gata",
+      "cant": "Nu pot"
+    },
+    "basedOn": "Pe baza pașilor: {{steps}}",
+    "unconfirmedTag": "Date neconfirmate",
+    "uncitedDropped_one": "{{count}} constatare pe care AI-ul nu a susținut-o cu un pas al acestei rulări a fost omisă.",
+    "uncitedDropped_few": "{{count}} constatări pe care AI-ul nu le-a susținut cu un pas al acestei rulări au fost omise.",
+    "uncitedDropped_other": "{{count}} de constatări pe care AI-ul nu le-a susținut cu un pas al acestei rulări au fost omise."
   }
 }
