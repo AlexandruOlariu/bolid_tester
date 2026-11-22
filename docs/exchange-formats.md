@@ -165,7 +165,7 @@ and this document deliberately contains no routine — only the format. Code:
 `src/shared/obd-core/coding/seedKeyDsl.ts` (types, limits, interpreter),
 `src/shared/lib/exchange/seedKey.ts` (`seedKeyPluginV1`, `parseSeedKeyFile`),
 `src/shared/security/` (files, matching, the simulator check),
-`src/shared/state/seedKeyStore.ts` (the index). Imported in **Settings → Data → Security access
+`src/shared/state/seedKeyStore.ts` (the index). Imported in **Settings → Security access
 plugins**; the profile / label-pack importer refuses one with a pointer there. Not an envelope —
 one flat object (file limit 200 kB):
 

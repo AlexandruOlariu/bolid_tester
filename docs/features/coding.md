@@ -240,7 +240,7 @@ in profiles, not in docs; owners supply their own for their own vehicle.
 - **File format** — `bolid.seedkey.v1` (a name, a scope `applies: { reqHeader?, address?, level,
 partNumberPrefix? }`, `seedBytes` / `keyBytes` of 2 or 4, and a `program`), specified with the
   op reference in [exchange-formats.md](../exchange-formats.md#bolidseedkeyv1). Imported in
-  **Settings → Data → Security access plugins** (`settings/ui/SeedKeysSection.tsx`): pick → validate
+  **Settings → Security access plugins** (`settings/ui/SeedKeysSection.tsx`): pick → validate
   → preview (name, scope, widths, steps written / run, “Only for this car” switch) → **Install**;
   installed plugins are listed with **Test in simulator** and **Delete**.
 - **Sandbox** — the program is a bounded list of 32-bit accumulator operations interpreted by

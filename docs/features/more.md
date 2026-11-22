@@ -88,14 +88,18 @@ procedure are in [release.md](../release.md).
 
 ## Hidden routes and where they are reached
 
-`src/app/_layout.tsx` registers 26 hidden routes (`href: null`). 24 are More entries (above), each in
-exactly one section. The other two are reached elsewhere:
+`src/app/_layout.tsx` registers 33 hidden routes (`href: null`). 24 are More entries (above), each in
+exactly one section. The others are reached elsewhere:
 
 - `/extended` — **Extended PIDs (experimental)**, linked from the **Info** tab
   ([vehicle-info](./vehicle-info.md)) once a session is connected, and from a fault guide's
   **Related data** button (Faults row and DTC detail sheet) with `?dids=…`;
 - `/trip-detail` — a trip's detail screen, opened by **Open** on a Trips row
-  ([trip-recording](./trip-recording.md)).
+  ([trip-recording](./trip-recording.md));
+- `/licenses` — the third-party notices, Settings → About → **Licences**;
+- `/settings-ai`, `/settings-privacy`, `/settings-label-packs`, `/settings-plugins`,
+  `/settings-developer`, `/settings-about` — the Settings pages, opened by the rows on the Settings
+  hub ([settings](./settings.md)).
 
 `/vin-decode` is a More entry (Ownership) and is also linked from Info. `/feedback` (Tools) is also
 opened by the **Report** button on the Error log screen and, in preview mode, from Settings →
@@ -104,7 +108,8 @@ Developer & simulator → **Preview feedback bundle**.
 ## Acceptance
 
 - More shows five sections (Diagnose · Drive · Ownership · Workshop · Tools); every hidden route in
-  `_layout.tsx` is in exactly one of them except `/extended` (Info) and `/trip-detail` (Trips);
+  `_layout.tsx` is in exactly one of them except `/extended` (Info), `/trip-detail` (Trips),
+  `/licenses` and the six Settings pages (Settings);
   nothing hidden is orphaned (`model/sections.test.ts` checks its route list against the layout).
 - Typing `cod` filters to Coding (Workshop) only, `dpf` to DPF / regen (Ownership) only; Workshop
   rows carry the experimental chip.

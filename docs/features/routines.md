@@ -40,7 +40,7 @@ excluded.
 - **Security access (plan 23).** Each routine row shows an **unlock badge** (“No unlock needed” /
   “Unlockable · <plugin>” / “Locked · needs security access”). Unlike coding, a locked routine is
   **not refused**: routines are read-ish, so it is still attempted unlocked and the module decides;
-  the row says so, and an NRC `0x33` names the fix (install a plugin under Settings → Data). With a
+  the row says so, and an NRC `0x33` names the fix (install a plugin under Settings → Security access plugins). With a
   plugin the module is unlocked (`27`) after the session and before the start.
 - `describeRoutineFailure(err, routine)` — turns a start NRC into on-car guidance, because routine
   IDs and security requirements in the shipped profiles are **unverified placeholders**: `0x33` →

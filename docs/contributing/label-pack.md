@@ -62,6 +62,6 @@ the CSV under `docs/captures/`, and name it in the pull request
 ([captures/README.md](../captures/README.md)). Never copy names or groupings from VCDS `.lbl` /
 `.clb` files.
 
-A pack can also travel without a pull request: **Settings → Data → Label packs** imports a
+A pack can also travel without a pull request: **Settings → Label packs** imports a
 `bolid.labelpack.v1` JSON file ([exchange-formats.md](../exchange-formats.md)), and a bundled pack
 can be exported as a template to start from.

@@ -398,7 +398,7 @@ Classic Bluetooth adapter <MAC>: <library error>` (typically "read failed, socke
   (`DiagnosticSession` over `SppTransport` whose fake device re-chunks the simulated Golf **by `>`**
   through `bridgeToMock`: identify, `010C`, `readDtcs('03')`, sniffer refused), the SPP cases in
   `connectionService.test.ts`, `diagnoseFailure.test.ts`, `settingsStore.test.ts`,
-  `ConnectionScreen.test.tsx`, `SettingsScreen.test.tsx` and `SnifferScreen.test.tsx`.
+  `ConnectionScreen.test.tsx`, `DeveloperSettingsScreen.test.tsx` and `SnifferScreen.test.tsx`.
 - **Out of scope:** iOS classic Bluetooth, discovery / scanning of unpaired SPP devices, `ATMA`
   streaming over SPP. The installed library's Android source also accepts an empty `delimiter`
   (every read handed over as-is), which would allow `ATMA`; switching to it needs a real adapter
@@ -455,7 +455,8 @@ optionalServices: OBD_SERVICE_UUIDS })` — the four ELM327 services now live in
   reconnect without a chooser, no-service rejection, disconnect during connect, error texts),
   `WebBluetoothTransport.session.integration.test.ts` (`DiagnosticSession` over the bridged Golf:
   identify, `010C`, `readDtcs('03')`), the Web Bluetooth cases in `connectionService.test.ts`,
-  `ConnectionScreen.test.tsx`, `SettingsScreen.test.tsx` and `settingsStore.test.ts`.
+  `ConnectionScreen.test.tsx`, `DeveloperSettingsScreen.test.tsx`, `AiSettingsScreen.test.tsx` and
+  `settingsStore.test.ts`.
 - **On-car pending** (plan 28 § Deferred): the Vgate from Chrome on Android and on a laptop (chooser
   name, service UUID, latency grade), and whether it needs the 20-byte chunking.
 

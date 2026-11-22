@@ -111,7 +111,7 @@ in [exchange-formats.md](../exchange-formats.md).
 - **Share as starting profile** (built-in card) → `shareProfileSeedFile(profile)`: a seed with no
   learned identity on that profile as base.
 - **Import profile** → `useExchangeImport` (`shared/ui`) → file picker → strict validation →
-  `ImportPreviewSheet` (`shared/ui`; shared with Settings → Data): name, year, fuel, "Based on",
+  `ImportPreviewSheet` (`shared/ui`; shared with Settings → Label packs): name, year, fuel, "Based on",
   VIN ending, learned readings and protocol (or "Not learned yet — connect to the car to learn
   it"), discovered modules, embedded label packs. A car with the same learned VIN, else the same
   name, is a conflict: **Replace** (keeps the car's id, `createdAt` and code book;

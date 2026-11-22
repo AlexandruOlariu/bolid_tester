@@ -70,7 +70,7 @@ temperatures, `120` EGR / injection) are illustrative until a capture confirms t
 ### Imported packs and precedence (plan 13)
 
 Packs also travel as data: a `bolid.labelpack.v1` file ([exchange-formats.md](../exchange-formats.md))
-imported from Settings → Data → **Label packs** (or embedded in a profile file) lands in
+imported from Settings → **Label packs** (or embedded in a profile file) lands in
 `labelPackStore` (`shared/state`, persisted `bolid.labelPacks` v1, newest first, at most 100,
 re-validated entry by entry on load). The store pushes its list into the registry
 (`setUserLabelPacks`, on hydrate and on every change) so `shared/labels` stays free of zustand;
@@ -158,7 +158,7 @@ screen's manual procedure.
 Each channel row carries an **unlock badge** (`UnlockBadge`): “No unlock needed”, “Unlockable ·
 <plugin>” or “Locked · needs security access” — it replaced the old “Security-locked (read-only)”
 text. A locked channel shows “Read-only until a security-access plugin for this module is installed
-(Settings → Data)” and offers no write; once a matching plugin is installed (scope: the channel's
+(Settings → Security access plugins)” and offers no write; once a matching plugin is installed (scope: the channel's
 request header or VAG `address`, the level, optionally the module's scanned part number) the
 write and restore controls appear and the write unlocks the module first. See
 [coding → Security-access plugins](./coding.md#security-access-plugins-plan-23).

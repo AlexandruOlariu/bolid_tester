@@ -144,7 +144,8 @@ store, so `api/registry.ts` imports them all. That registry (`PERSISTED_STORES`)
 to update when a store gains `persist`** — `storeVersions.test.ts` fails when a `bolid.*` store is
 missing from it. The bundle format, validation, redaction and restore plan are pure, in
 `src/shared/lib/backup.ts`. No feature imports the backup slice: Settings' **Reset all app data**
-(plan 07, `resetAllAppData`) is handed in by the route `src/app/settings.tsx` as a prop.
+(plan 07, `resetAllAppData`) is handed in by the route `src/app/settings-developer.tsx` (Settings → Developer & simulator)
+as a prop.
 
 **History.** The fourth sanctioned composition point is `features/history`
 ([spec](./features/history.md), plan 16): the per-car timeline merges AI runs, fault-code checks

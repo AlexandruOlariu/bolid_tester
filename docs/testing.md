@@ -62,18 +62,20 @@ next to the screen (`src/features/<slug>/ui/<Screen>.test.tsx`). Tests that cann
 `src/app` (expo-router would treat a `*.test.tsx` there as a route) go under `test/`, e.g.
 `test/app/RootLayout.test.tsx`.
 
-| Suite                          | Covers                                                                                                                                                                                                                                                                 |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ConnectionScreen.test.tsx`    | simulator mode: **Connect to simulator** + first-run card; BLE: **Scan for adapters**; error panel; a real simulator connect reaches `connected` and moves on to `/vehicle`                                                                                            |
-| `VehicleSelectScreen.test.tsx` | the four built-in profiles; tapping the Golf selects it and opens `/dashboard`; the VIN suggestion card from the simulated Golf's VIN                                                                                                                                  |
-| `DashboardScreen.test.tsx`     | not connected: prompt; seeded `liveDataStore` values on the RPM / Speed / Coolant gauges (km/h, °C); **All sensors** segment; petrol preset on a new garage car                                                                                                        |
-| `FaultCodesScreen.test.tsx`    | two simulator-injected codes with descriptions, readiness / MIL; inline Guide toggle; **Clear codes**, confirm, empty re-read                                                                                                                                          |
-| `VehicleInfoScreen.test.tsx`   | VIN, protocol label, supported-PID count and adapter name from the simulator session                                                                                                                                                                                   |
-| `SensorGroups.test.tsx`        | Live → All sensors, simulated Golf: the five injection DIDs are read once on mount; later live-data updates send no further Mode 22 reads; a superseded read stops                                                                                                     |
-| `SettingsScreen.test.tsx`      | section order; **Developer & simulator** collapsed on open; adapter-source segment (and its simulator sections); switching back drops a live session; theme; fault preset; Show hints again; Reset all app data (two confirmations; hidden without the route's action) |
-| `MoreScreen.test.tsx`          | five sections, every entry a labelled button; only Workshop rows experimental; search `cod` leaves Coding; Error log opens `/error-log`; **Check for updates** without OTA                                                                                             |
-| `RootLayout.test.tsx`          | the seven tab titles in order; every `src/app` route file is registered (hidden ones with `href: null`)                                                                                                                                                                |
-| `SettingsRoute.test.tsx`       | the Settings route hands the backup slice's **Reset all app data** to the screen                                                                                                                                                                                       |
+| Suite                              | Covers                                                                                                                                                                                                          |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ConnectionScreen.test.tsx`        | simulator mode: **Connect to simulator** + first-run card; BLE: **Scan for adapters**; error panel; a real simulator connect reaches `connected` and moves on to `/vehicle`                                     |
+| `VehicleSelectScreen.test.tsx`     | the four built-in profiles; tapping the Golf selects it and opens `/dashboard`; the VIN suggestion card from the simulated Golf's VIN                                                                           |
+| `DashboardScreen.test.tsx`         | not connected: prompt; seeded `liveDataStore` values on the RPM / Speed / Coolant gauges (km/h, °C); **All sensors** segment; petrol preset on a new garage car                                                 |
+| `FaultCodesScreen.test.tsx`        | two simulator-injected codes with descriptions, readiness / MIL; inline Guide toggle; **Clear codes**, confirm, empty re-read                                                                                   |
+| `VehicleInfoScreen.test.tsx`       | VIN, protocol label, supported-PID count and adapter name from the simulator session                                                                                                                            |
+| `SensorGroups.test.tsx`            | Live → All sensors, simulated Golf: the five injection DIDs are read once on mount; later live-data updates send no further Mode 22 reads; a superseded read stops                                              |
+| `SettingsScreen.test.tsx`          | the hub: General, Connection, then the page rows in order with their status; each row opens its page; theme; poll / switches; Disconnect; Romanian                                                              |
+| `DeveloperSettingsScreen.test.tsx` | adapter-source segment (and its simulator sections); switching back drops a live session; fault preset; log export; Show hints again; Reset all app data (two confirmations; hidden without the route's action) |
+| `AiSettingsScreen.test.tsx`        | configuration hidden while AI is off; provider presets; Test connection / Detect model                                                                                                                          |
+| `MoreScreen.test.tsx`              | five sections, every entry a labelled button; only Workshop rows experimental; search `cod` leaves Coding; Error log opens `/error-log`; **Check for updates** without OTA                                      |
+| `RootLayout.test.tsx`              | the seven tab titles in order; every `src/app` route file is registered (hidden ones with `href: null`)                                                                                                         |
+| `SettingsDeveloperRoute.test.tsx`  | the Developer & simulator route hands the backup slice's **Reset all app data** to the page                                                                                                                     |
 
 **Helpers** (`test/`, imported as `@test/…`):
 
@@ -149,7 +151,7 @@ Notes:
 ## End-to-end
 
 A [Maestro](https://maestro.mobile.dev) smoke flow, `.maestro/simulator-smoke.yaml`, drives the app
-on an Android emulator from a fresh install: **Settings → Developer & simulator (expand) → Simulator (no car) → P0299 → Connect →
+on an Android emulator from a fresh install: **Settings → Developer & simulator (row → page) → Simulator (no car) → P0299 → Connect →
 Connect to simulator → Connected → Faults → P0299 → Clear codes → confirm → Stored (0)**. It uses the
 app's real labels; when a screen's copy changes, update the flow in the same change.
 

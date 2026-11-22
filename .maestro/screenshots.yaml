@@ -45,7 +45,8 @@ env:
 - waitForAnimationToEnd
 - takeScreenshot: ${OUT}/08-connect
 
-# 3. Settings → Developer & simulator → simulator, the Golf profile, P2183 + P2015 injected.
+# 3. Settings → Developer & simulator (hub row → its page) → simulator, the Golf profile, P2183 +
+#    P2015 injected.
 - tapOn: ${TAB_SETTINGS}
 - scrollUntilVisible:
     element:

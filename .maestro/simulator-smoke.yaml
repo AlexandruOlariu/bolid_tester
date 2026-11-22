@@ -21,15 +21,16 @@ name: Simulator smoke — connect, read faults, clear
     visible: 'Pair with your OBD2 Bluetooth adapter'
     timeout: 30000
 
-# Settings → Developer & simulator (collapsed by default, plan 07) → simulator with one injected fault.
+# Settings → Developer & simulator (a row on the Settings hub that opens its own page, plan 07) →
+# simulator with one injected fault.
 - tapOn: 'Settings'
 - scrollUntilVisible:
     element:
-      text: '(?i)developer & simulator.*'
+      text: 'Developer & simulator.*'
     direction: DOWN
     timeout: 60000
-# The header reads upper-case on Android and is labelled "Developer & simulator. Show".
-- tapOn: '(?i)developer & simulator.*'
+# The row is one button labelled "Developer & simulator. <adapter source>".
+- tapOn: 'Developer & simulator.*'
 - scrollUntilVisible:
     element:
       text: 'Simulator \(no car\)'

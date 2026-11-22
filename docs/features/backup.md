@@ -6,8 +6,7 @@ stores and the trip recordings; restoring from such a file validates it, snapsho
 first, writes the stores back through their own `persist` migrations and rehydrates them without a
 restart. No cloud, no account; the AI API keys are never in a backup.
 
-Reached from **Settings → Data** ("Backup & restore", "Export data…") and **More → Backup &
-restore**. Route `/backup` (`src/app/backup.tsx`, hidden tab).
+Reached from the **Settings → Backup & restore** row and **More → Backup & restore**. Route `/backup` (`src/app/backup.tsx`, hidden tab).
 
 ## The backup file
 
@@ -199,8 +198,8 @@ persisted store: `resetAllAppData()` clears the stores in `PERSISTED_STORES` **a
 `NOT_BACKED_UP`, the AI keys, the files they point at (`backups/`, `seedkeys/`, each
 `trip-<id>.csv`) and the exports' staging copies in the document directory (`isExportFile`), plus the in-memory result stores (inspection, battery, AI diagnosis, module
 scan, DPF, adapter health, fault codes) — the fresh-install state a restore is tested against.
-No feature imports it: the route `src/app/settings.tsx` hands it to the Settings screen as its
-`resetAppData` prop, and Settings calls `connectionService.resetForRestore()` first, the same
+No feature imports it: the route `src/app/settings-developer.tsx` hands it to Settings → Developer &
+simulator as its `resetAppData` prop, and that page calls `connectionService.resetForRestore()` first, the same
 teardown a restore uses. `resetAppData.test.ts`
 scans the source the way `storeVersions.test.ts` does and fails when a `bolid.*` store is missing
 from the reset. See [settings](./settings.md).

@@ -171,7 +171,7 @@ Text scales with the OS font size; nothing disables scaling globally.
   state or a name. `test/a11y/a11yWalker.test.tsx` proves each rule fires.
 - `test/a11y/screens.a11y.test.tsx` — renders **every route in `src/app`** (a new route is picked
   up automatically) disconnected and on the simulator with stored codes, plus the states that only
-  exist after a tap or with data (Live → Customize, Settings → Developer & simulator with the
+  exist after a tap or with data (Live → Customize, Settings → Developer & simulator (its own page) with the
   simulator source and custom DTCs, an error-log entry), and expects no problems. Removing the label
   from a dashboard icon button fails it.
 - `src/shared/ui/touchTargets.test.ts` — every Tamagui `Button` in `src/` is `$4`, or `$3` with

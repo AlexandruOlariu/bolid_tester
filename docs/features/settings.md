@@ -1,35 +1,66 @@
 # Feature: settings
 
-User preferences first, then the developer and simulator controls in their own collapsed section.
+A short hub: the everyday preferences inline, everything else one tap away on its own page.
 
 ## UI
 
-**SettingsScreen** (plan 07) shows, in this order:
+**SettingsScreen** (plan 07, route `/settings`) is a hub about one and a half phone screens tall:
 
-1. **General** — **Theme** (system / light / dark), **Language** (plan 11, see
+1. **General** — **Theme** (**System** / **Light** / **Dark**), **Language** (plan 11, see
    [Language](#language-plan-11)) and the line "Units are metric: km/h, °C, km, kPa and L/100 km."
    The app is **metric only** — no unit conversion layer and no unit setting (decision 2026-11-08);
    values show as obd-core decodes them.
-2. **Connection** — **Auto-reconnect**, **Poll interval** (250 / 500 / 1000 / 2000 ms; "How often
-   live values are read. A slow K-line car sets its own pace.") and **Recognise my cars by VIN**.
-3. **Privacy** — **Send anonymous crash reports** (plan 31), see [Privacy](#privacy-crash-reports-plan-31).
-4. **AI assistant (auto-diagnose)**.
-5. **Notifications** — one row, **Notification settings** ("Alerts, reminders and quiet mode"),
-   that opens `/notifications`, where the preferences live ([notifications](./notifications.md)).
-6. **Data** — backup & restore, label packs, security-access plugins.
-7. **Developer & simulator** — **collapsed on open**: the header (a button labelled
-   "Developer & simulator. Show" / "… Hide") shows **Show** and a one-line summary; pressing it
-   reveals, in one card: **Adapter source**, then (Wi-Fi only) **Wi-Fi adapter address**, (Classic
-   Bluetooth only) the pairing note, then
-   (simulator only) **Simulated vehicle**,
-   **Injected DTCs** and **Simulator test controls**, then the **Adapter log** with the replay-fixture
-   export, **Problem report** (**Preview feedback bundle**), **Crash reports** (**Send test crash
-   report**), and **Hints and app data** (**Show hints again**, **Reset all app data**). The simulator
-   banner (plan 01) stays the always-on indicator that the simulator is selected.
-8. **About** — version, build, Rate this app, privacy policy, Report a problem, Licences,
-   documentation link.
+2. **Connection** — **Auto-reconnect** ("Retry the last adapter after a dropped link."), **Poll
+   interval** (250 / 500 / 1000 / 2000 ms; "How often live values are read.") and **Recognise my
+   cars by VIN** ("Select a garage car when its VIN connects."): one switch or segment each with a
+   one-line hint. What they do in detail is under **User preferences** below.
+3. **The pages** — one card of rows (`ui/SettingsRow.tsx`: `SettingsRow` in a `SettingsRowGroup`),
+   each a title, a grey status line and a `›` chevron, announced as one button
+   "<title>. <status>" (`testID="settings-row-<page>"`):
+
+| Row                         | Status (examples)                                                    | Opens                   | Screen                              |
+| --------------------------- | -------------------------------------------------------------------- | ----------------------- | ----------------------------------- |
+| **AI assistant**            | "Off" · "On · Local server" (the provider)                           | `/settings-ai`          | `ui/AiSettingsScreen.tsx`           |
+| **Notifications**           | "Alerts, reminders and quiet mode"                                   | `/notifications`        | [notifications](./notifications.md) |
+| **Privacy**                 | "Crash reports off" / "… on" ("… unavailable in this build", no DSN) | `/settings-privacy`     | `ui/PrivacySettingsScreen.tsx`      |
+| **Backup & restore**        | "Back up, restore or export your data"                               | `/backup`               | [backup](./backup.md)               |
+| **Label packs**             | "2 bundled · 0 imported"                                             | `/settings-label-packs` | `ui/LabelPacksScreen.tsx`           |
+| **Security access plugins** | "None installed" · "2 installed"                                     | `/settings-plugins`     | `ui/SeedKeysScreen.tsx`             |
+| **Developer & simulator**   | the adapter source: "Bluetooth LE" · "Wi-Fi adapter" · "Simulator" … | `/settings-developer`   | `ui/DeveloperSettingsScreen.tsx`    |
+| **About**                   | "v0.9.1" (plus " (<build>)" when `app.json` carries one)             | `/settings-about`       | `ui/AboutSettingsScreen.tsx`        |
 
 Then **Disconnect** while a session is connected.
+
+The pages are routes in `src/app/` (thin files that re-export the screen) registered in
+`src/app/_layout.tsx` as hidden tabs (`href: null`), like every other screen that is not a tab, so
+no tab is highlighted while one is open. Android's back button on a page returns to the hub
+(`hooks/useBackToSettings.ts`: a `BackHandler` listener while the page is focused) instead of the
+tab navigator's default, its first route (Connect); on iOS the Settings tab is the way back.
+**Backup & restore** opens the backup screen directly (the old Data section's text and its two
+buttons only opened it too). Each page's title is its row's title (the AI page keeps "AI assistant
+(auto-diagnose)").
+
+**The pages:**
+
+- **AI assistant** — the **Enabled** switch. While it is off the page shows only that switch and
+  one line ("When on, Diagnose (AI) asks an AI model you choose — on your own computer or in the
+  cloud — to explain the car's faults.", `settings-ai-off`); on, the provider configuration below
+  it (see **User preferences**).
+- **Privacy** — **Send anonymous crash reports**, its full text and **Read the privacy policy**
+  (see [Privacy](#privacy-crash-reports-plan-31)).
+- **Label packs** and **Security access plugins** — `ui/LabelPacksSection.tsx` and
+  `ui/SeedKeysSection.tsx` under the page title (see **User preferences**).
+- **Developer & simulator** — everything at once, in one card (`testID="settings-developer"`):
+  **Adapter source**, then (Wi-Fi only) **Wi-Fi adapter address**, (Classic Bluetooth only) the
+  pairing note, then (simulator only) **Simulated vehicle**, **Injected DTCs** and **Simulator test
+  controls**, then the **Adapter log** with the replay-fixture export, **Problem report** (**Preview
+  feedback bundle**), **Crash reports** (**Send test crash report**), and **Hints and app data**
+  (**Show hints again**, **Reset all app data**). The route `src/app/settings-developer.tsx` hands
+  the page the backup slice's `resetAllAppData`. The simulator banner (plan 01) stays the always-on
+  indicator that the simulator is selected.
+- **About** — "Bolid Tester <version>", the build when there is one and the OTA note, then a list
+  of rows: **Rate this app** (`↗`), **Privacy policy** (expands the policy below the list, `▾` /
+  `▴`), **Report a problem**, **Licences** and **Documentation (GitHub)** (`↗`).
 
 **Controls (plan 20, [accessibility](../accessibility.md)).** Every single-choice row (theme, poll
 interval, AI provider, structured output, timeout, adapter source, simulated vehicle, injected
@@ -38,8 +69,8 @@ source", …) of `radio` options that report `selected` / `checked`, 36 dp with 
 terse options carry a spoken name (`15s` → "15 seconds", `250 ms` → "250 milliseconds", theme
 `light` → "Light"). Every on / off setting is a `LabeledSwitch` (visible label + a `switch` that
 reports `checked`): AI **Enabled** ("AI assistant enabled"), **Send anonymous crash reports**,
-**Auto-reconnect** and **Recognise my cars by VIN**. Section labels are headings; the inputs are
-labelled (**AI server URL**, **AI model**, **<provider> API key**, **Flow name**, **Wi-Fi adapter
+**Auto-reconnect** and **Recognise my cars by VIN**. Section labels and page titles are headings;
+the hub rows are buttons named "<title>. <status>"; the inputs are labelled (**AI server URL**, **AI model**, **<provider> API key**, **Flow name**, **Wi-Fi adapter
 host / port**, custom DTCs).
 
 The parts in detail:
@@ -113,7 +144,7 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
   an adapter I/O line. `useCrashReporting()` (mounted by `src/app/_layout.tsx`) wires the switch,
   the breadcrumbs and the known VINs.
 
-- **Developer & simulator** parts:
+- **Developer & simulator** page parts:
   - **Adapter source** toggle — **Real adapter (Bluetooth)** (default), **Wi-Fi adapter** (plan 26),
     **Classic Bluetooth** (plan 27; the segment exists **only on Android** — `Platform.OS ===
 'android'` — because iOS cannot open non-MFi classic accessories) or **Simulator (no car)**. The simulator is an explicit opt-in and, while it is on, an amber **simulator banner** stays visible on every screen
@@ -202,7 +233,7 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
     (the restore teardown: a connect still in flight is invalidated, so it cannot publish a session
     built for the old adapter source after the reset; a failing close is logged, not fatal) and runs
     `resetAllAppData()` (`features/backup/api/resetAppData.ts`). Settings does not import the
-    backup slice: the route `src/app/settings.tsx` passes it in as the screen's `resetAppData`
+    backup slice: the route `src/app/settings-developer.tsx` passes it in as the page's `resetAppData`
     prop (features never import each other), and without that prop the button is not shown. Every
     persisted store goes back to its initial state
     and its file is removed — `bolid.settings`, `bolid.garage`, `bolid.vehicle`, `bolid.loginBook`
@@ -224,15 +255,20 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
     named in the note and logged (`settings/reset`); the stores are reset anyway. `resetAppData.test.ts` scans the source for
     every `persist(` store named `bolid.*` and fails when one is missing from the reset.
 - **User preferences**:
-  - **Auto-reconnect** switch (Connection) — copy: "On by default; pauses after 3 drops in a minute", then the
-    backoff (2 s, 5 s, 10 s — up to 3 attempts) and that a manual disconnect / connect cancels it.
+  - **Auto-reconnect** switch (Connection, hint "Retry the last adapter after a dropped link.") — on
+    by default; pauses after 3 drops in a minute. When the connection drops unexpectedly it
+    reconnects to the same device with backoff (2 s, 5 s, 10 s — up to 3 attempts); a manual
+    disconnect / connect cancels it.
     See [connection](./connection.md#auto-reconnect-on-by-default-with-a-flap-guard).
-  - **Recognise my cars by VIN** switch (plan 06, Connection) — copy: "Select a garage car when its VIN
-    connects", "On by default. When the connected car's VIN (vehicle identification number) matches
-    a car you added from a connection, that car becomes the active vehicle. Built-in profiles are
-    only suggested on the Vehicle screen." See
+  - **Poll interval** (Connection, hint "How often live values are read.") — a slow K-line car sets
+    its own pace whatever is chosen.
+  - **Recognise my cars by VIN** switch (plan 06, Connection, hint "Select a garage car when its VIN
+    connects.") — on by default. When the connected car's VIN (vehicle identification number)
+    matches a car you added from a connection, that car becomes the active vehicle. Built-in
+    profiles are only suggested on the Vehicle screen. See
     [vehicle-select](./vehicle-select.md#vin-auto-select).
-  - **AI assistant (auto-diagnose)** (plan 19) — **Enabled**, then a **Provider** segment
+  - **AI assistant (auto-diagnose)** (plan 19, its own page) — **Enabled**, then (only while it is
+    on) a **Provider** segment
     (**Local server** · **OpenAI** · **Anthropic** · **Custom**) with the preset's one-line hint.
     Switching provider applies that preset once (`setAi({ provider })` →
     `applyProviderPreset`): Anthropic fills `https://api.anthropic.com`, `claude-sonnet-5-5` and
@@ -248,11 +284,10 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
   - **Metric only** — no unit conversion layer: every screen shows km/h, °C, km, kPa and L/100 km
     as decoded (the dead imperial path — a `units` field no control ever set, and its conversion
     module — was deleted in plan 07).
-  - **Data** (plan 18) — one line on keeping a copy or moving to a new phone ("Nothing goes to the
-    cloud"), with **Backup & restore** and **Export data…**, both opening `/backup`
-    ([backup](./backup.md): one file with every store and the trip recordings, restore with a
-    pre-restore snapshot, per-store JSON / CSV). The AI keys are never in a backup. Below them:
-    - **Label packs** (plan 13, `ui/LabelPacksSection.tsx`): the copy "Label packs name a
+  - **Backup & restore** (plan 18) — the hub row opens `/backup` ([backup](./backup.md): one file
+    with every store and the trip recordings, restore with a pre-restore snapshot, per-store JSON /
+    CSV). The AI keys are never in a backup.
+    - **Label packs** (plan 13, page `/settings-label-packs`, `ui/LabelPacksSection.tsx`): the copy "Label packs name a
       module's measurements, coding bits and adaptation channels by part number. Import one from a file;
       imported names take precedence over the bundled ones.", then **Import label pack** (file picker →
       the shared import preview, see [exchange-formats.md](../exchange-formats.md)), **Imported (_n_)**
@@ -261,7 +296,7 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
       yet." — and **Bundled with the app** with **Export as template** (a starting point to edit and
       re-import). Exports go through `api/labelPackFile.ts` (`bolid-labelpack-<id>-<stamp>.json`, a
       `settings/label-packs` warning when nothing was written).
-    - **Security access plugins** (plan 23, `ui/SeedKeysSection.tsx`): what a seed / key unlock is
+    - **Security access plugins** (plan 23, page `/settings-plugins`, `ui/SeedKeysSection.tsx`): what a seed / key unlock is
       and that the app ships, downloads and derives no routine; **Import plugin** (file picker →
       `parseSeedKeyFile`: a refused file shows "Can’t import this file", the reason, the first
       three errors and "Nothing was changed."; a valid one a preview — name, file, scope, widths,
@@ -270,11 +305,11 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
       widths, any / this / another car, import date, **Test in simulator**, **Delete** after
       "Delete this plugin?") or "No plugins installed. Writes to modules that need security
       access are refused." See [coding → Security-access plugins](./coding.md#security-access-plugins-plan-23).
-  - **About** (plan 08, plan 07) — "Bolid Tester <version>" (`APP_NAME` / `APP_VERSION` from
+  - **About** (plan 08, plan 07, page `/settings-about`) — "Bolid Tester <version>" (`APP_NAME` / `APP_VERSION` from
     `shared/lib/appInfo.ts`, read from `app.json`; the version is also the OTA runtime version),
     "Build <n>" when `app.json` carries `expo.extra.build` (`APP_BUILD`; none today), a
     note that OTA updates only reach the same version and are checked only from **More → Check for
-    updates**, and a **Privacy policy** button that expands the policy in place ("Last updated
+    updates**, and a **Privacy policy** row that expands the policy below the rows ("Last updated
     <date>", then each section). The text lives in `model/privacyPolicy.ts` and is published as
     [docs/privacy-policy.md](../privacy-policy.md); `privacyPolicy.test.ts` fails when a heading or
     paragraph differs between the two. **Documentation (GitHub)** opens `DOCS_URL` (the repo's
@@ -386,7 +421,7 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
     only when a migration ran), so the next launch reads `'ble'` and the notice does not return.
     With no platform set (tests) nothing is replaced. In the browser (plan 28, [web](../web.md))
     Wi-Fi is unsupported too (no raw TCP sockets), so a stored `'wifi'` or `'spp'` source falls back
-    to `'ble'` with `WEB_SOURCE_FALLBACK_NOTICE`; the Developer section offers only **Real adapter
+    to `'ble'` with `WEB_SOURCE_FALLBACK_NOTICE`; the Developer page offers only **Real adapter
     (Bluetooth)** and **Simulator (no car)** there, and under the AI key field a note says the key
     is kept only until the tab closes (no keystore in the browser).
 - **Known limitation:** v1's `partialize` always wrote `adapterSource` and `injectedDtcs`, so every
@@ -418,24 +453,27 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
 - With the simulator and **Injected DTCs: None**, Faults shows no codes; **Custom…** `P0135` shows
   `P0135`.
 - App is fully usable end-to-end in simulator mode.
-- Settings opens with General, Connection, Privacy, AI assistant, Notifications, Data, Developer &
-  simulator (collapsed: no adapter-source, simulator or log control rendered) and About, in that
-  order; pressing **Developer & simulator** reveals them.
+- Settings opens as the hub: General, Connection, then the rows AI assistant, Notifications,
+  Privacy, Backup & restore, Label packs, Security access plugins, Developer & simulator and About,
+  in that order, each showing its state; no page control (AI address, adapter source, log, reset,
+  label packs, plugins) is on the hub, and each row opens its page (`SettingsScreen.test.tsx`).
+  Android back on a page returns to the hub.
+- **AI assistant** switched off shows only the Enabled switch and its one-line explanation
+  (`AiSettingsScreen.test.tsx`).
 - **Privacy**: a fresh install has **Send anonymous crash reports** off and sends nothing; without
   `EXPO_PUBLIC_SENTRY_DSN` it shows **Unavailable in this build** and nothing initialises; **On**
   asks first (Cancel keeps it off); off → later errors produce no events; on again resumes without
-  a restart (`crashReporting.test.ts`, `useCrashReporting.test.tsx`, `SettingsScreen.test.tsx`).
+  a restart (`crashReporting.test.ts`, `useCrashReporting.test.tsx`, `PrivacySettingsScreen.test.tsx`).
 - No imperial code remains: `grep -rn "UnitSystem\|imperial\|displayUnit\|convertValue" src` is
   empty; Dashboard and Trips show km/h, °C, km and L/100 km.
 - **Show hints again** brings back the first-run card; **Reset all app data**, after two
   confirmations, returns the app to a fresh state (real adapter, no garage, no history) and no
   `bolid.*` store is missed.
-- **Notifications** → **Notification settings** opens `/notifications`.
-- **Data** → **Backup & restore** / **Export data…** open the backup screen.
-- **Data** → **Label packs**: importing the example pack (`docs/examples/label-pack.example.json`)
+- **Notifications** opens `/notifications`; **Backup & restore** opens `/backup`.
+- **Label packs**: importing the example pack (`docs/examples/label-pack.example.json`)
   lists it under Imported; Delete brings the bundled names back; a corrupted file shows its first
   three errors and stores nothing.
-- **Data** → **Security access plugins**: importing a valid plugin shows the preview, Install lists
+- **Security access plugins**: importing a valid plugin shows the preview, Install lists
   it, **Test in simulator** reports "Passed in the simulator…"; a plugin over the DSL limits is
   refused with the reason and nothing is installed.
 - **About** shows the app version from `app.json`; **Privacy policy** expands every section of

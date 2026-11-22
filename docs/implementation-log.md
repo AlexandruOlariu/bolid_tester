@@ -5,6 +5,36 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Settings becomes a short hub (2026-11-22)
+
+- **Why:** the owner found Settings busy — one page about five phone screens tall. Now it is a hub
+  of about one and a half: **General** (Theme with capitalised **System / Light / Dark**, Language,
+  the metric line) and **Connection** (Auto-reconnect, Poll interval, Recognise my cars by VIN, one
+  one-line hint each; the long explanations moved to [settings](./features/settings.md)) stay
+  inline, then one card of rows, each with its state: **AI assistant** ("On · Local server"),
+  **Notifications**, **Privacy** ("Crash reports off"), **Backup & restore** (straight to
+  `/backup` — the Data section's text and both its buttons only opened that screen), **Label
+  packs** ("2 bundled · 0 imported"), **Security access plugins** ("None installed"), **Developer &
+  simulator** (the adapter source) and **About** ("v0.9.1"); then Disconnect.
+- **Pages:** six new hidden-tab routes — `/settings-ai`, `/settings-privacy`,
+  `/settings-label-packs`, `/settings-plugins`, `/settings-developer`, `/settings-about` — each a
+  thin re-export of a screen in `src/features/settings/ui/` (`SettingsScreen.tsx` went from 1321
+  lines to a hub plus one file per page, `SettingsRow.tsx`, `parts.tsx`, `AdapterLogSection.tsx`,
+  `WifiEndpointSection.tsx`). The AI page hides its configuration while the assistant is off (the
+  switch and one line remain). Developer & simulator is no longer collapsed on its page; **Reset all
+  app data** is now injected by `src/app/settings-developer.tsx`. About's five full-width buttons
+  became a list of rows. Android back on a page returns to the hub (`useBackToSettings`); the pages
+  are hidden tabs like every other non-tab screen, so no tab is highlighted while one is open.
+- **Copy:** "Settings → Data" in other screens' strings (label-pack limit, adaptation and routine
+  plugin hints, the reset confirmation) now names the new rows; same in the docs and the privacy
+  policy ("Settings → Backup & restore"). en + ro.
+- **Tests:** `SettingsScreen.test.tsx` split per page (hub, AI, Privacy, Developer, About);
+  `SettingsDeveloperRoute.test.tsx` replaces `SettingsRoute.test.tsx`; the a11y sweep opens the
+  Developer page directly; More's hidden-route list gains the six pages (reached from Settings).
+- **Maestro:** `simulator-smoke.yaml` taps the **Developer & simulator** row (a button named
+  "Developer & simulator. <source>") instead of expanding a section; `screenshots.yaml` unchanged
+  apart from its comment (its `DEV_TITLE` tap now opens the page).
+
 ## First signed release v0.9.1; CI e2e green (2026-11-22)
 
 - **Release:** PR #1 merged into `main`; `v0.9.1` built by CI, signed with the upload key
