@@ -3,4 +3,5 @@
 export * from './readOnlySession';
 export * from './types';
 export * from './skillFile';
+export * from './registry';
 export * from './actionSchema';
