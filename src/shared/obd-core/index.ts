@@ -57,3 +57,4 @@ export * from './uds/vagHeaders';
 export * from './uds/discoverModules';
 export * from './analysis/captureAnalyzer';
 export * from './confirmation';
+export * from './agent';

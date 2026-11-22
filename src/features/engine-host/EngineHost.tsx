@@ -222,25 +222,30 @@ export function EngineHost(): null {
       // re-addressed here. The phases fail independently: a DID read that throws (an ELM timeout, a
       // link hiccup on an unanswered DID) only drops this sweep's extended values, which then simply
       // age out, while the Mode 01 snapshot is still published, alerted on and trip-sampled.
-      let snap: Record<string, LiveValue> | null = null;
-      try {
-        snap = pids.length ? await session.pollOnce(pids) : {};
-        lastPollErrorMsg = null;
-      } catch (e) {
-        // Transient read errors keep the loop going, but log the first of each distinct kind so a
-        // persistent polling fault is visible in the error log without flooding it every interval.
-        logPollError('live-data', e);
-      }
-      let ext: Record<string, LiveValue> = {};
-      if (dids.length && !cancelled) {
+      // The whole sweep runs inside `session.exclusive`, so it never goes out while another block
+      // (a module scan, an agent module read) has the adapter addressed at another module.
+      const { snap, ext } = await session.exclusive(async () => {
+        let snap: Record<string, LiveValue> | null = null;
         try {
-          const raw = await session.pollExtendedOnce(dids);
-          ext = decodeExtendedSnapshot(raw, extendedDefs, Date.now());
-          lastExtendedErrorMsg = null;
+          snap = pids.length ? await session.pollOnce(pids) : {};
+          lastPollErrorMsg = null;
         } catch (e) {
-          logPollError('live-data/extended', e);
+          // Transient read errors keep the loop going, but log the first of each distinct kind so a
+          // persistent polling fault is visible in the error log without flooding it every interval.
+          logPollError('live-data', e);
         }
-      }
+        let ext: Record<string, LiveValue> = {};
+        if (dids.length && !cancelled) {
+          try {
+            const raw = await session.pollExtendedOnce(dids);
+            ext = decodeExtendedSnapshot(raw, extendedDefs, Date.now());
+            lastExtendedErrorMsg = null;
+          } catch (e) {
+            logPollError('live-data/extended', e);
+          }
+        }
+        return { snap, ext };
+      });
       if (!cancelled && (snap || Object.keys(ext).length > 0)) {
         try {
           if (!snap) {

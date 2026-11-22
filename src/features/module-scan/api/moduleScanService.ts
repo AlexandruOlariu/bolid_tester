@@ -25,27 +25,32 @@ export async function scanModule(
       dtcs: [],
     };
   }
+  const reqHeader = module.reqHeader;
   const send = (cmd: string) => session.send(cmd);
-  try {
-    await session.setHeader(module.reqHeader);
-    if (module.rxFilter) await session.setRxFilter(module.rxFilter);
-    const ident = await readModuleIdent(send);
-    const dtcs = await readModuleDtcs(send, 0xff);
-    return { module, state: 'ok', ident, dtcs };
-  } catch (e) {
-    const msg = (e as Error).message;
-    if (isModuleUnreachableError(msg)) {
-      return {
-        module,
-        state: 'silent',
-        reason: translate('moduleScan:reason.silent'),
-        dtcs: [],
-      };
+  // The header block runs inside `session.exclusive`: no live poll sweep (or other addressed block)
+  // can go out while the adapter is addressed at this module.
+  return session.exclusive(async (): Promise<ModuleScanResult> => {
+    try {
+      await session.setHeader(reqHeader);
+      if (module.rxFilter) await session.setRxFilter(module.rxFilter);
+      const ident = await readModuleIdent(send);
+      const dtcs = await readModuleDtcs(send, 0xff);
+      return { module, state: 'ok', ident, dtcs };
+    } catch (e) {
+      const msg = (e as Error).message;
+      if (isModuleUnreachableError(msg)) {
+        return {
+          module,
+          state: 'silent',
+          reason: translate('moduleScan:reason.silent'),
+          dtcs: [],
+        };
+      }
+      return { module, state: 'error', reason: msg, dtcs: [] };
+    } finally {
+      await session.resetAddressing();
     }
-    return { module, state: 'error', reason: msg, dtcs: [] };
-  } finally {
-    await session.resetAddressing();
-  }
+  });
 }
 
 /** Clear one module's DTC store (0x14 FFFFFF), then re-scan it for the fresh state. */
@@ -61,12 +66,16 @@ export async function clearModule(
       dtcs: [],
     };
   }
-  try {
-    await session.setHeader(module.reqHeader);
-    if (module.rxFilter) await session.setRxFilter(module.rxFilter);
-    await clearModuleDtcs((cmd) => session.send(cmd));
-  } finally {
-    await session.resetAddressing();
-  }
+  const reqHeader = module.reqHeader;
+  await session.exclusive(async () => {
+    try {
+      await session.setHeader(reqHeader);
+      if (module.rxFilter) await session.setRxFilter(module.rxFilter);
+      await clearModuleDtcs((cmd) => session.send(cmd));
+    } finally {
+      await session.resetAddressing();
+    }
+  });
+  // The re-scan takes the lock itself, after the clear's block has released it.
   return scanModule(session, module);
 }

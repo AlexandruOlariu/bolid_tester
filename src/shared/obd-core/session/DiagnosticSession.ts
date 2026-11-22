@@ -56,6 +56,8 @@ export class DiagnosticSession {
   private protocol: ProtocolId = 'UNKNOWN';
   /** Memoised `readPartNumber` result (including a `null` "no answer") for this connection. */
   private partNumberRead: Promise<string | null> | null = null;
+  /** Tail of the `exclusive` chain: settles when the last queued exclusive block has finished. */
+  private exclusiveTail: Promise<void> = Promise.resolve();
 
   constructor(
     private transport: Transport,
@@ -331,6 +333,21 @@ export class DiagnosticSession {
       out[did] = ok ? b.slice(3) : null;
     }
     return out;
+  }
+
+  /** Run `fn` with no other exclusive block interleaved: a promise-chain mutex (like the TP2.0
+   *  channel lock). Every block that re-addresses the adapter (`setHeader` / `setRxFilter` …
+   *  `resetAddressing`) runs inside one, and so does the live poll sweep, so a poll can never go out
+   *  on another module's header. A block that rejects releases the lock like one that resolves.
+   *
+   *  Not re-entrant: JavaScript has no async context to tell a call made from inside `fn` from a
+   *  concurrent one, so a nested `exclusive` would queue behind `fn` itself and never run. Code
+   *  inside a block calls the session's plain methods instead. */
+  exclusive<T>(fn: () => Promise<T>): Promise<T> {
+    const run = this.exclusiveTail.then(fn);
+    const release = (): void => undefined;
+    this.exclusiveTail = run.then(release, release);
+    return run;
   }
 
   /** Run `fn` with a shorter (or longer) per-command timeout — see

@@ -335,3 +335,41 @@ describe('DiagnosticSession (integration via simulator)', () => {
     });
   });
 });
+
+describe('DiagnosticSession.exclusive', () => {
+  const session = new DiagnosticSession(new MockTransport(buildScenario('generic')));
+
+  it('runs blocks one at a time, in call order, and returns each result', async () => {
+    const log: string[] = [];
+    let releaseFirst!: () => void;
+    const first = session.exclusive(async () => {
+      log.push('first:start');
+      await new Promise<void>((r) => (releaseFirst = r));
+      log.push('first:end');
+      return 1;
+    });
+    const second = session.exclusive(async () => {
+      log.push('second');
+      return 2;
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(log).toEqual(['first:start']);
+    releaseFirst();
+    expect(await Promise.all([first, second])).toEqual([1, 2]);
+    expect(log).toEqual(['first:start', 'first:end', 'second']);
+  });
+
+  it('a block that rejects (or throws synchronously) releases the lock for the next one', async () => {
+    const failing = session.exclusive(async () => {
+      throw new Error('boom');
+    });
+    const throwing = session.exclusive(() => {
+      throw new Error('sync');
+    });
+    const next = session.exclusive(async () => 'ok');
+    await expect(failing).rejects.toThrow('boom');
+    await expect(throwing).rejects.toThrow('sync');
+    await expect(next).resolves.toBe('ok');
+  });
+});
