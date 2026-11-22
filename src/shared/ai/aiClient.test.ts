@@ -168,3 +168,132 @@ describe('getAiClient — mock://ai', () => {
     expect(() => getAiClient({ baseUrl: 'mock://ai', model: '' })).toThrow(/development-only/);
   });
 });
+
+describe('getAiClient — per-call schema, fallback ladder and Stop', () => {
+  const openaiSettings = {
+    provider: 'openai' as const,
+    baseUrl: 'https://api.openai.com',
+    model: 'gpt-5-mini',
+    apiKey: 'sk-openai',
+    jsonMode: 'schema' as const,
+  };
+  const anthropicSettings = {
+    provider: 'anthropic' as const,
+    baseUrl: 'https://api.anthropic.com',
+    model: 'claude-sonnet-5-5',
+    apiKey: 'sk-ant-test',
+    jsonMode: 'off' as const,
+  };
+  const AGENT_LIKE = { name: 'bolid_agent_action', schema: { type: 'object' } };
+
+  /** A fetch that answers each call with the next canned `{ status, body }` and records the sent
+   *  request bodies. */
+  function sequenceFetch(replies: { status: number; body: unknown }[]) {
+    const sentBodies: Record<string, unknown>[] = [];
+    let i = 0;
+    setAiFetch(async (_url, init) => {
+      sentBodies.push(JSON.parse(String(init.body)) as Record<string, unknown>);
+      const reply = replies[Math.min(i++, replies.length - 1)];
+      return {
+        ok: reply.status >= 200 && reply.status < 300,
+        status: reply.status,
+        statusText: reply.status === 200 ? 'OK' : 'Bad Request',
+        json: async () => reply.body,
+        text: async () =>
+          typeof reply.body === 'string' ? reply.body : JSON.stringify(reply.body),
+      } as Response;
+    });
+    return sentBodies;
+  }
+
+  const formatOf = (b: Record<string, unknown>) =>
+    (b.response_format as { type?: string } | undefined)?.type;
+
+  it('sends the per-call schema as json_schema', async () => {
+    const sentBodies = sequenceFetch([
+      { status: 200, body: { choices: [{ message: { content: '{}' } }] } },
+    ]);
+    await getAiClient(openaiSettings).chat(MESSAGES, { schema: AGENT_LIKE });
+    expect(sentBodies[0].response_format).toEqual({
+      type: 'json_schema',
+      json_schema: { name: 'bolid_agent_action', strict: false, schema: { type: 'object' } },
+    });
+  });
+
+  it('a rejected json_schema falls back to json_object, then to no response_format', async () => {
+    const sentBodies = sequenceFetch([
+      { status: 400, body: 'response_format json_schema not supported' },
+      { status: 400, body: 'json_object not supported' },
+      { status: 200, body: { choices: [{ message: { content: '{"tool":"x"}' } }] } },
+    ]);
+    const text = await getAiClient(openaiSettings).chat(MESSAGES, { schema: AGENT_LIKE });
+    expect(text).toBe('{"tool":"x"}');
+    expect(sentBodies.map(formatOf)).toEqual(['json_schema', 'json_object', undefined]);
+  });
+
+  it('object mode falls back straight to no response_format', async () => {
+    const sentBodies = sequenceFetch([
+      { status: 400, body: 'json_object not supported' },
+      { status: 200, body: { choices: [{ message: { content: 'ok' } }] } },
+    ]);
+    await getAiClient({ ...openaiSettings, jsonMode: 'object' }).chat(MESSAGES);
+    expect(sentBodies.map(formatOf)).toEqual(['json_object', undefined]);
+  });
+
+  it('a non-format error is not retried, and the last rung error surfaces', async () => {
+    let sentBodies = sequenceFetch([{ status: 500, body: 'boom' }]);
+    await expect(getAiClient(openaiSettings).chat(MESSAGES)).rejects.toThrow(/500/);
+    expect(sentBodies).toHaveLength(1);
+    sentBodies = sequenceFetch([{ status: 400, body: 'response_format is not allowed' }]);
+    await expect(getAiClient(openaiSettings).chat(MESSAGES)).rejects.toThrow(/response_format/);
+    expect(sentBodies.map(formatOf)).toEqual(['json_schema', 'json_object', undefined]);
+  });
+
+  it('json: false still forces plain text even with a schema', async () => {
+    const sentBodies = sequenceFetch([
+      { status: 200, body: { choices: [{ message: { content: 'answer' } }] } },
+    ]);
+    await getAiClient(openaiSettings).chat(MESSAGES, { json: false, schema: AGENT_LIKE });
+    expect(sentBodies[0]).not.toHaveProperty('response_format');
+  });
+
+  it('aborting the signal rejects with "Stopped."', async () => {
+    setAiFetch(() => new Promise<Response>(() => undefined)); // fetch never resolves
+    const ac = new AbortController();
+    const p = getAiClient(openaiSettings).chat(MESSAGES, { signal: ac.signal });
+    ac.abort();
+    await expect(p).rejects.toThrow('Stopped.');
+    await expect(p).rejects.toBeInstanceOf(AiClientError);
+  });
+
+  it('an already-aborted signal sends nothing', async () => {
+    const sentBodies = sequenceFetch([{ status: 200, body: {} }]);
+    const ac = new AbortController();
+    ac.abort();
+    await expect(
+      getAiClient(anthropicSettings).chat(MESSAGES, { signal: ac.signal }),
+    ).rejects.toThrow('Stopped.');
+    expect(sentBodies).toHaveLength(0);
+  });
+
+  it('the Anthropic wire puts the per-call schema in the prompt', async () => {
+    const sentBodies = sequenceFetch([
+      { status: 200, body: { content: [{ type: 'text', text: '{}' }], stop_reason: 'end_turn' } },
+    ]);
+    await getAiClient(anthropicSettings).chat(MESSAGES, { schema: AGENT_LIKE });
+    expect(sentBodies[0].system).toContain('bolid_agent_action');
+    expect(sentBodies[0].response_format).toBeUndefined();
+  });
+
+  it('the mock client accepts the chat options', async () => {
+    const g = globalThis as { __DEV__?: boolean };
+    g.__DEV__ = true;
+    try {
+      const client = getAiClient({ provider: 'custom', baseUrl: 'mock://ai', model: '' });
+      const text = await client.chat(MESSAGES, { schema: AGENT_LIKE });
+      expect(JSON.parse(text ?? '{}')).toHaveProperty('overall');
+    } finally {
+      delete g.__DEV__;
+    }
+  });
+});

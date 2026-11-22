@@ -6,12 +6,13 @@
  *  See docs/features/ai-diagnose.md#mock-ai-server. */
 
 import type { AiChatMessage } from '@/shared/obd-core';
+import type { AiChatOptions } from '../http';
 
 export const MOCK_AI_MODEL = 'mock-diagnostic-model';
 
 export interface MockAiClient {
   listModels(): Promise<string[]>;
-  chat(messages: AiChatMessage[], opts?: { json?: boolean }): Promise<string | null>;
+  chat(messages: AiChatMessage[], opts?: AiChatOptions): Promise<string | null>;
 }
 
 const CODE_RE = /\b[PCBU][0-3][0-9A-F]{3}\b/g;

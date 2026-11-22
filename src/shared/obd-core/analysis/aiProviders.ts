@@ -5,7 +5,7 @@
  *  applies when the user switches provider; the I/O lives in `shared/ai` (`openaiClient`,
  *  `anthropicClient`, the `getAiClient` dispatcher). See docs/features/ai-diagnose.md#providers. */
 
-import type { AiChatMessage, AiClientConfig } from './aiDiagnosis';
+import type { AiChatMessage, AiClientConfig, AiJsonSchema } from './aiDiagnosis';
 
 export const AI_PROVIDER_IDS = ['local', 'openai', 'anthropic', 'custom'] as const;
 export type AiProviderId = (typeof AI_PROVIDER_IDS)[number];
@@ -199,20 +199,33 @@ export function aiConfigProblem(ai: {
 
 // ------------------------------------------------------------------ Anthropic Messages wire
 
+/** The Messages API has no `response_format`, so a per-call schema travels in the system prompt. */
+export function schemaPromptHint(schema: AiJsonSchema): string {
+  return (
+    'Reply with ONE JSON object only, no prose, matching this JSON Schema (' +
+    schema.name +
+    '):\n' +
+    JSON.stringify(schema.schema)
+  );
+}
+
 /** Body for `POST {base}/messages` (Anthropic Messages API). System messages are joined into the
  *  top-level `system` field; consecutive same-role turns are merged (the API wants alternating
  *  turns starting with `user`); a leading assistant turn gets a short user turn before it. No
- *  `temperature` / `top_p` / `top_k` (rejected on API version 2026-10-21) and no assistant prefill. */
+ *  `temperature` / `top_p` / `top_k` (rejected on API version 2026-10-21) and no assistant prefill.
+ *  A per-call `schema` is appended to the system text as {@link schemaPromptHint}. */
 export function buildAnthropicRequestBody(
   messages: AiChatMessage[],
   config: AiClientConfig,
   maxTokens = ANTHROPIC_DEFAULT_MAX_TOKENS,
+  schema?: AiJsonSchema,
 ): Record<string, unknown> {
-  const system = messages
+  const systemParts = messages
     .filter((m) => m.role === 'system')
     .map((m) => m.content.trim())
-    .filter(Boolean)
-    .join('\n\n');
+    .filter(Boolean);
+  if (schema) systemParts.push(schemaPromptHint(schema));
+  const system = systemParts.join('\n\n');
   const turns: { role: 'user' | 'assistant'; content: string }[] = [];
   for (const m of messages) {
     if (m.role === 'system') continue;

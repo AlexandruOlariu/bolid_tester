@@ -436,7 +436,8 @@ const PROMPT_INTRO = [
   'produce a concise, practical health assessment for the car’s owner.',
 ];
 
-const PROMPT_RULES = [
+/** Ground rules shared by every assistant prompt (report, follow-ups and the diagnostic agent). */
+export const PROMPT_RULES: readonly string[] = [
   '- The snapshot starts with the vehicle’s details (make/model/year/engine/fuel where known) — tailor your analysis to that specific car and its fuel type.',
   '- Use ONLY the data provided. Do not invent readings, mileage, or codes that are not present.',
   '- A generic OBD2 adapter only reaches the engine/emissions ECU — do not claim ABS/airbag/transmission findings.',
@@ -598,10 +599,25 @@ export const REPORT_JSON_SCHEMA = {
   required: ['overall', 'summary', 'findings', 'actions'],
 } as const;
 
-/** Build the body for `POST {base}/chat/completions` (OpenAI-compatible). */
+/** A named JSON Schema for one structured-output call: `response_format: json_schema` on the
+ *  OpenAI-compatible wire, a prompt hint on the Anthropic wire (`schemaPromptHint`). */
+export interface AiJsonSchema {
+  name: string;
+  schema: Record<string, unknown>;
+}
+
+/** The diagnosis report schema — the default for every structured call. */
+export const REPORT_SCHEMA: AiJsonSchema = {
+  name: 'obd_diagnosis_report',
+  schema: REPORT_JSON_SCHEMA,
+};
+
+/** Build the body for `POST {base}/chat/completions` (OpenAI-compatible). `schema` is the per-call
+ *  structured-output schema used in `schema` mode (the report schema unless the caller passes one). */
 export function buildChatRequestBody(
   messages: AiChatMessage[],
   config: AiClientConfig,
+  schema: AiJsonSchema = REPORT_SCHEMA,
 ): Record<string, unknown> {
   const body: Record<string, unknown> = {
     model: config.model,
@@ -612,7 +628,7 @@ export function buildChatRequestBody(
   if (mode === 'schema') {
     body.response_format = {
       type: 'json_schema',
-      json_schema: { name: 'obd_diagnosis_report', strict: false, schema: REPORT_JSON_SCHEMA },
+      json_schema: { name: schema.name, strict: false, schema: schema.schema },
     };
   } else if (mode === 'object') {
     body.response_format = { type: 'json_object' };
@@ -640,7 +656,7 @@ export function extractMessageContent(json: unknown): string | null {
 }
 
 /** Extract the first balanced JSON object from a string that may be fenced or wrapped in prose. */
-function extractJsonObject(text: string): string | null {
+export function extractJsonObject(text: string): string | null {
   let t = text.trim();
   // strip a leading ```json / ``` fence and the trailing fence, if present
   const fence = t.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
@@ -667,7 +683,8 @@ function coerceSeverity(v: unknown): DiagSeverity {
     : 'info';
 }
 
-function sanitizeFindings(v: unknown): AiFinding[] {
+/** Keep the well-formed findings of a model answer (unknown severities become `info`). */
+export function sanitizeFindings(v: unknown): AiFinding[] {
   if (!Array.isArray(v)) return [];
   const out: AiFinding[] = [];
   for (const raw of v) {
@@ -686,7 +703,8 @@ function sanitizeFindings(v: unknown): AiFinding[] {
   return out;
 }
 
-function sanitizeActions(v: unknown): AiAction[] {
+/** Keep the model's recommended actions whose type the app knows. */
+export function sanitizeActions(v: unknown): AiAction[] {
   if (!Array.isArray(v)) return [];
   const out: AiAction[] = [];
   for (const raw of v) {

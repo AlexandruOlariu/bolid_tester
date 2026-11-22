@@ -13,6 +13,12 @@ import {
   followUpSuggestions,
   MAX_FOLLOWUP_TURNS,
   SUGGESTED_FOLLOWUPS,
+  PROMPT_RULES,
+  REPORT_JSON_SCHEMA,
+  REPORT_SCHEMA,
+  extractJsonObject,
+  sanitizeActions,
+  sanitizeFindings,
   DiagnosticSnapshot,
   AiChatMessage,
   AiFinding,
@@ -86,6 +92,47 @@ describe('buildChatRequestBody', () => {
   it('omits response_format when mode is "off"', () => {
     const body = buildChatRequestBody(messages, { baseUrl: 'x', model: 'm', jsonMode: 'off' });
     expect(body.response_format).toBeUndefined();
+  });
+  it('buildChatRequestBody uses the per-call schema', () => {
+    const body = buildChatRequestBody(
+      messages,
+      { baseUrl: 'x', model: 'm', jsonMode: 'schema' },
+      { name: 'bolid_agent_action', schema: { type: 'object' } },
+    );
+    expect(body.response_format).toEqual({
+      type: 'json_schema',
+      json_schema: { name: 'bolid_agent_action', strict: false, schema: { type: 'object' } },
+    });
+  });
+  it('defaults to the report schema', () => {
+    const body = buildChatRequestBody(messages, { baseUrl: 'x', model: 'm' });
+    const format = body.response_format as { json_schema: { name: string; schema: unknown } };
+    expect(format.json_schema.name).toBe('obd_diagnosis_report');
+    expect(format.json_schema.schema).toBe(REPORT_JSON_SCHEMA);
+    expect(REPORT_SCHEMA).toEqual({ name: 'obd_diagnosis_report', schema: REPORT_JSON_SCHEMA });
+  });
+});
+
+describe('helpers exported for the agent', () => {
+  it('extractJsonObject pulls the first balanced object out of a fence or prose', () => {
+    expect(extractJsonObject('Sure:\n```json\n{"a":1}\n```')).toBe('{"a":1}');
+    expect(extractJsonObject('Here you go {"a":{"b":2}} done')).toBe('{"a":{"b":2}}');
+    expect(extractJsonObject('no json here')).toBeNull();
+  });
+  it('sanitizeFindings and sanitizeActions keep only well-formed entries', () => {
+    expect(
+      sanitizeFindings([{ title: 'T', severity: 'bogus', detail: 'D' }, { title: '' }, 'x']),
+    ).toEqual([
+      { title: 'T', severity: 'info', detail: 'D', codes: undefined, likelyCauses: undefined },
+    ]);
+    expect(sanitizeActions([{ type: 'recheck', label: 'Again' }, { type: 'rm -rf' }])).toEqual([
+      { type: 'recheck', label: 'Again', detail: undefined },
+    ]);
+  });
+  it('PROMPT_RULES is the shared rule list', () => {
+    expect(PROMPT_RULES.length).toBeGreaterThan(0);
+    expect(PROMPT_RULES.every((r) => r.startsWith('- '))).toBe(true);
+    expect(buildSystemPrompt()).toContain(PROMPT_RULES[0]);
   });
 });
 

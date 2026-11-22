@@ -10,6 +10,7 @@ import {
   inferProvider,
   isMockAiUrl,
   resolveProvider,
+  schemaPromptHint,
   type AiPresetFields,
 } from './aiProviders';
 import type { AiChatMessage } from './aiDiagnosis';
@@ -173,6 +174,33 @@ describe('Anthropic Messages shaping', () => {
     expect(body.max_tokens).toBeGreaterThanOrEqual(2048);
     expect(body.system).toBe('A\n\nB');
     expect((body.messages as { role: string }[]).map((m) => m.role)).toEqual(['user', 'assistant']);
+  });
+
+  it('buildAnthropicRequestBody appends the schema hint to system', () => {
+    const msgs: AiChatMessage[] = [
+      { role: 'system', content: 'You are a mechanic.' },
+      { role: 'user', content: 'Snapshot' },
+    ];
+    const body = buildAnthropicRequestBody(msgs, cfg, 1024, {
+      name: 'bolid_agent_action',
+      schema: { type: 'object' },
+    });
+    expect(body.system).toContain('matching this JSON Schema (bolid_agent_action)');
+    expect(body.system).toContain('{"type":"object"}');
+    expect(String(body.system).startsWith('You are a mechanic.\n\n')).toBe(true);
+    expect(body).not.toHaveProperty('response_format');
+  });
+
+  it('schemaPromptHint is the exact one-object instruction plus the schema JSON', () => {
+    expect(schemaPromptHint({ name: 'x', schema: { type: 'object' } })).toBe(
+      'Reply with ONE JSON object only, no prose, matching this JSON Schema (x):\n{"type":"object"}',
+    );
+    // with no system message the hint alone becomes the system text
+    const body = buildAnthropicRequestBody([{ role: 'user', content: 'hi' }], cfg, 10, {
+      name: 'x',
+      schema: { type: 'object' },
+    });
+    expect(body.system).toBe(schemaPromptHint({ name: 'x', schema: { type: 'object' } }));
   });
 
   it('extractAnthropicContent joins text blocks and skips the rest', () => {

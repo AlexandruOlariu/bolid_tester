@@ -85,9 +85,11 @@ repeats the report's own run (focused when it was).
   provider keeps a model that is in the list).
 - **Structured output** (hidden for Anthropic) — `Schema` sends `response_format: json_schema`
   (modern LM Studio / current OpenAI), `JSON` sends `json_object` (older OpenAI), `Off` sends plain
-  text. Default `Schema`. The client **auto-retries without `response_format`** if the server
-  rejects it (e.g. a 400 like `'response_format.type' must be 'json_schema' or 'text'`), so a
-  diagnosis still succeeds and the tolerant parser extracts the JSON.
+  text. Default `Schema`. If the server rejects the format (a 400 naming `response_format`,
+  `json_schema` or `json_object`), the client **steps down the ladder** `json_schema` →
+  `json_object` → no `response_format`, so a diagnosis still succeeds and the tolerant parser
+  extracts the JSON. The schema is per call (`chat(messages, { schema })`, an `AiJsonSchema`;
+  the report schema `REPORT_SCHEMA` by default).
 - **Timeout** — 15 / 30 / 60 s.
 - **Test connection** — calls the provider's `/v1/models` (through the dispatcher) and reports
   success/failure; a 401/403 names the API key.
@@ -125,11 +127,14 @@ Pure presets in `shared/obd-core/analysis/aiProviders.ts` (`AI_PROVIDER_PRESETS`
 Native **Messages API**, not an OpenAI-compatibility shim (documented, stable surface; meaningful
 errors). Shaping is pure in `aiProviders.ts`, I/O in `shared/ai/anthropicClient.ts`:
 
-- `POST {base}/v1/messages` with `buildAnthropicRequestBody(messages, config, maxTokens = 8192)` →
+- `POST {base}/v1/messages` with
+  `buildAnthropicRequestBody(messages, config, maxTokens = 8192, schema?)` →
   `{ model, max_tokens, system, messages }`: system messages joined into `system`, consecutive
   same-role turns merged, a leading assistant turn preceded by a short user turn. No `temperature`
   / `top_p` / `top_k`, no assistant prefill, no `response_format` — the prompt asks for JSON and
-  `parseAiReport` is tolerant. `max_tokens` leaves room for the adaptive thinking current Claude
+  `parseAiReport` is tolerant. A per-call `schema` is appended to `system` as
+  `schemaPromptHint(schema)` ("Reply with ONE JSON object only … matching this JSON Schema").
+  `max_tokens` leaves room for the adaptive thinking current Claude
   models do by default.
 - `anthropicHeaders(apiKey)` → `x-api-key`, `anthropic-version: 2026-10-21` (current API version),
   `content-type: application/json`, plus `anthropic-dangerous-direct-browser-access: true` for a web
@@ -212,8 +217,10 @@ ask(question) → followUp(snapshot, report, conversation, question)
   the [vehicle report](./report.md) only uses a report stamped for its car), `conversation`,
   `asking`, `askError`.
 - **AI client** (`@/shared/ai`) — `getAiClient` dispatcher over `openaiClient` (chat completions,
-  `response_format` retry), `anthropicClient` (Messages API) and the dev mock; `http.ts` has the
-  shared `fetchJson` (timeout via AbortController, friendly errors, injectable `fetch`). Lives in
+  `response_format` fallback ladder), `anthropicClient` (Messages API) and the dev mock; `http.ts`
+  has the shared `fetchJson` (timeout via AbortController, friendly errors, injectable `fetch`) and
+  `AiChatOptions` (`json`, `schema`, `signal`: an aborted signal rejects with
+  `AiClientError('Stopped.')`). Lives in
   `shared` so features don't depend on each other.
 - **core** (`@/shared/obd-core` → `analysis/aiDiagnosis.ts` + `analysis/aiProviders.ts`, **pure &
   unit-tested**): `DiagnosticSnapshot` / `AiReport` / `KnownCheck` types, `KEY_DIAGNOSTIC_PIDS`,

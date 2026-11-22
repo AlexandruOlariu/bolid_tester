@@ -12,19 +12,20 @@ import {
   isMockAiUrl,
   resolveProvider,
 } from '@/shared/obd-core';
-import { AiClientError } from './http';
+import { type AiChatOptions, AiClientError } from './http';
 import * as openai from './openaiClient';
 import * as anthropic from './anthropicClient';
 import { createMockAiClient } from './__mocks__/mockAiServer';
 
-export { AiClientError, setAiFetch } from './http';
+export { type AiChatOptions, AiClientError, setAiFetch } from './http';
 export { chatCompletion, listModels } from './openaiClient';
 
 export interface AiClient {
   listModels(): Promise<string[]>;
   /** Send a conversation. `json: false` forces plain text (no `response_format`) for follow-ups;
-   *  the default uses the settings' structured-output mode. */
-  chat(messages: AiChatMessage[], opts?: { json?: boolean }): Promise<string | null>;
+   *  the default uses the settings' structured-output mode with `schema` (the report schema unless
+   *  given). An aborted `signal` rejects with `AiClientError('Stopped.')`. */
+  chat(messages: AiChatMessage[], opts?: AiChatOptions): Promise<string | null>;
 }
 
 /** What the dispatcher needs from `AiSettings`: the connection config plus the provider (inferred
@@ -53,7 +54,11 @@ export function getAiClient(settings: AiClientSettings): AiClient {
   if (wire === 'anthropic-messages')
     return {
       listModels: () => anthropic.listModels(config),
-      chat: (messages) => anthropic.chatCompletion(messages, config),
+      chat: (messages, opts = {}) =>
+        anthropic.chatCompletion(messages, config, {
+          schema: opts.json === false ? undefined : opts.schema,
+          signal: opts.signal,
+        }),
     };
   return {
     listModels: () => openai.listModels(config),
@@ -61,6 +66,7 @@ export function getAiClient(settings: AiClientSettings): AiClient {
       openai.chatCompletion(
         messages,
         opts.json === false ? { ...config, jsonMode: 'off' } : config,
+        { schema: opts.schema, signal: opts.signal },
       ),
   };
 }

@@ -8,6 +8,8 @@
 import {
   type AiChatMessage,
   type AiClientConfig,
+  type AiJsonSchema,
+  ANTHROPIC_DEFAULT_MAX_TOKENS,
   anthropicHeaders,
   anthropicStopReason,
   buildAnthropicRequestBody,
@@ -37,10 +39,13 @@ export async function listModels(config: AiClientConfig): Promise<string[]> {
 }
 
 /** POST {base}/messages → the reply text (null when the model returned none). A `refusal` stop is
- *  reported as an error so the caller falls back / shows it instead of parsing a partial answer. */
+ *  reported as an error so the caller falls back / shows it instead of parsing a partial answer.
+ *  `opts.schema` goes into the system prompt (the Messages API has no `response_format`); an
+ *  aborted `opts.signal` rejects with `AiClientError('Stopped.')`. */
 export async function chatCompletion(
   messages: AiChatMessage[],
   config: AiClientConfig,
+  opts: { schema?: AiJsonSchema; signal?: AbortSignal } = {},
 ): Promise<string | null> {
   const base = requireBase(config);
   if (!config.model)
@@ -50,9 +55,12 @@ export async function chatCompletion(
     {
       method: 'POST',
       headers: anthropicHeaders(requireKey(config)),
-      body: JSON.stringify(buildAnthropicRequestBody(messages, config)),
+      body: JSON.stringify(
+        buildAnthropicRequestBody(messages, config, ANTHROPIC_DEFAULT_MAX_TOKENS, opts.schema),
+      ),
     },
     config.timeoutMs ?? 30000,
+    opts.signal,
   );
   if (anthropicStopReason(json) === 'refusal')
     throw new AiClientError('The model declined to answer this request.');
