@@ -217,6 +217,7 @@ describe('DRIVER_INSTRUCTIONS', () => {
       'hold_2500_rpm',
       'electrical_load_on',
       'electrical_load_off',
+      'wiggle_connector',
     ];
     expect(Object.keys(DRIVER_INSTRUCTIONS)).toEqual(ids);
     for (const id of ids)
@@ -226,6 +227,9 @@ describe('DRIVER_INSTRUCTIONS', () => {
     );
     expect(DRIVER_INSTRUCTIONS.hold_2500_rpm.en).toBe(
       'In Park or Neutral, hold the engine at 2500 rpm for 10 seconds.',
+    );
+    expect(DRIVER_INSTRUCTIONS.wiggle_connector.en).toBe(
+      'With the engine idling, gently flex the wiring and connector of the sensor the app is watching for 10 seconds.',
     );
   });
 });

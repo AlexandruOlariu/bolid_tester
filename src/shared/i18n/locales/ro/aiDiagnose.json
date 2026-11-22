@@ -82,7 +82,8 @@
       "restart_engine": "Oprește motorul, apoi pornește-l din nou.",
       "hold_2500_rpm": "În Park sau la punctul mort, ține motorul la 2500 rpm timp de 10 secunde.",
       "electrical_load_on": "Aprinde farurile, aerul condiționat și dezaburirea lunetei.",
-      "electrical_load_off": "Stinge farurile, aerul condiționat și dezaburirea lunetei."
+      "electrical_load_off": "Stinge farurile, aerul condiționat și dezaburirea lunetei.",
+      "wiggle_connector": "Cu motorul la ralanti, îndoaie ușor cablajul și mufa senzorului pe care îl urmărește aplicația, timp de 10 secunde."
     },
     "finding": {
       "battery": {

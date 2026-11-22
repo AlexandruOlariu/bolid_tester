@@ -20,7 +20,8 @@ export type DriverInstructionId =
   | 'restart_engine'
   | 'hold_2500_rpm'
   | 'electrical_load_on'
-  | 'electrical_load_off'; // 34b/34c extend this union
+  | 'electrical_load_off'
+  | 'wiggle_connector'; // 34b/34c extend this union
 
 /** How an `ask_driver` step ended. */
 export type DriverReply =

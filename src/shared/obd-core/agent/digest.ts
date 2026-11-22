@@ -1,6 +1,6 @@
 /** Formatting helpers for the compact text digests the AI diagnostic agent's tools return to the
- *  model (plan 34a): a length clamp (~400 tokens) and a one-line min / avg / max summary of a
- *  sampled value. See docs/features/ai-diagnose.md. */
+ *  model (plan 34a): a length clamp (~400 tokens), a one-line min / avg / max summary of a sampled
+ *  value and its trend (plan 34b). See docs/features/ai-diagnose.md. */
 
 /** A tool digest's length cap: about 400 tokens. */
 export const MAX_DIGEST_CHARS = 1600;
@@ -60,4 +60,17 @@ export function statsLine(name: string, unit: string, values: number[], seconds:
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
   const u = unit ? ` ${unit}` : '';
   return `${name}: min ${oneDecimal(min)} / avg ${oneDecimal(avg)} / max ${oneDecimal(max)}${u} ${window}`;
+}
+
+const mean = (values: number[]): number => values.reduce((a, b) => a + b, 0) / values.length;
+
+/** Whether a sampled value went up, down or stayed put over the window: the mean of the last third
+ *  minus the mean of the first third, `steady` when that change is under 1 or 5 % of the overall
+ *  mean, whichever is larger. Fewer than two values read as `steady`. */
+export function trendOf(values: number[]): 'rising' | 'falling' | 'steady' {
+  if (values.length < 2) return 'steady';
+  const third = Math.max(1, Math.floor(values.length / 3));
+  const delta = mean(values.slice(-third)) - mean(values.slice(0, third));
+  if (Math.abs(delta) < Math.max(1, 0.05 * Math.abs(mean(values)))) return 'steady';
+  return delta > 0 ? 'rising' : 'falling';
 }

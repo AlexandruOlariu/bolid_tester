@@ -76,6 +76,10 @@ the buffered time span so the pan can be clamped.
   four-column format. PNG export would require a new native dependency and is deferred; CSV
   is the share format for now.
 
+## AI agent
+
+- AI agent: `record_live` — `agent/agentTools.ts` contributes the tool (up to 4 Mode 01 PIDs recorded for 3–15 s, one poll every 500 ms through the read-only facade; per PID min / avg / max plus a `rising` / `falling` / `steady` trend from `trendOf`) and the `record_live` skill to the [AI agent](./ai-diagnose.md#agent).
+
 ## hooks
 
 - `useChartSeries(pids, window, maxPoints?, endOffsetMs?)` — maintains a downsampled ring buffer per

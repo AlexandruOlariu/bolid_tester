@@ -81,7 +81,8 @@
       "restart_engine": "Switch the engine off, then start it again.",
       "hold_2500_rpm": "In Park or Neutral, hold the engine at 2500 rpm for 10 seconds.",
       "electrical_load_on": "Switch on the headlights, the A/C and the rear demister.",
-      "electrical_load_off": "Switch the headlights, the A/C and the rear demister off."
+      "electrical_load_off": "Switch the headlights, the A/C and the rear demister off.",
+      "wiggle_connector": "With the engine idling, gently flex the wiring and connector of the sensor the app is watching for 10 seconds."
     },
     "finding": {
       "battery": {

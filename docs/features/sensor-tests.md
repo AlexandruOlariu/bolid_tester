@@ -38,6 +38,10 @@ a **standard tier** (any OBD2 car) and an **experimental tier** (non-powertrain 
 - A four-wheel layout for wheel-speed so you can spin one wheel (raised, in neutral) and confirm the
   matching channel responds.
 
+## AI agent
+
+- AI agent: `read_mode06` and `wiggle_test` — `agent/agentTools.ts` contributes `read_mode06` (the profile's Mode 06 monitors as `MID 01 TID 8E: <value> (limits <min>–<max>) pass|fail`, a failing one a `monitorFail` finding, plus the Mode 05 sweep on a petrol K-line car; offered when the profile declares Mode 06 tests or on petrol K-line), `wiggle_test` (one PID read every 250 ms while the stationary driver flexes its wiring — `askDriver('wiggle_connector')` — reporting min / max, NO DATA dropouts and the largest step; `wiggleDropout` / `wiggleUnstable` findings) and the `sensor_tests` skill to the [AI agent](./ai-diagnose.md#agent).
+
 ## hooks
 - `useLiveSensor(pid)` — high-priority single-PID poll + rolling buffer + min/max.
 - `useMode06()` — request and decode Mode 06 TIDs into a labeled results table.

@@ -19,5 +19,10 @@
   "hint": {
     "title": "Explorează graficul",
     "body": "Ciupește pentru a mări fereastra de timp (10 s–10 min), trage stânga/dreapta pentru a derula istoricul și atinge o linie pentru a citi valoarea și ora exacte. Folosește „Partajează fereastra (CSV)” pentru a trimite datele."
+  },
+  "agent": {
+    "tool": {
+      "record_live": "Înregistrare — {{pids}}"
+    }
   }
 }

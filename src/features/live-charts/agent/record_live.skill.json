@@ -1,0 +1,20 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "record_live",
+  "kind": "capability",
+  "description": "Use when you need to see how engine values change over a few seconds: min / avg / max and whether each is rising, falling or steady.",
+  "tools": ["record_live"],
+  "instructions": [
+    "Call record_live with up to 4 Mode 01 PIDs and 3-15 seconds, e.g. {\"pids\":[\"0105\",\"010C\"],\"seconds\":10}. It polls every 0.5 s.",
+    "Use it instead of read_live when the question is about change: a warm-up curve (coolant 0105), idle stability (rpm 010C), boost or MAP following rpm (010B with 010C), fuel trims drifting (0106 / 0107), module voltage while charging (0142).",
+    "Record related PIDs together in one call so their trends line up in time.",
+    "PIDs the car does not support come back as \"Not supported on this car\": do not ask for them again."
+  ],
+  "interpret": [
+    "Each line is min / avg / max over the window plus a trend: the mean of the last third against the mean of the first third, steady when the change is under 1 or 5 % of the average.",
+    "Coolant rising steadily after a cold start is a normal warm-up; coolant falling while the engine idles warm points to a thermostat stuck open or a sensor fault.",
+    "A wide min-max spread with a steady trend means the value swings around a constant level (e.g. an unstable idle), not that it drifts.",
+    "Module voltage (0142) with the engine running under 13.5 V means the alternator is not charging; falling over the window means the battery is being drained.",
+    "A short recording shows a few seconds only: a trend here does not prove a long-term drift."
+  ]
+}

@@ -38,4 +38,8 @@ export const DRIVER_INSTRUCTIONS: Record<DriverInstructionId, DriverInstruction>
     en: 'Switch the headlights, the A/C and the rear demister off.',
     labelKey: 'aiDiagnose:agent.driver.electrical_load_off',
   },
+  wiggle_connector: {
+    en: 'With the engine idling, gently flex the wiring and connector of the sensor the app is watching for 10 seconds.',
+    labelKey: 'aiDiagnose:agent.driver.wiggle_connector',
+  },
 };

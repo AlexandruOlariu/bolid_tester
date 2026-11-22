@@ -1,0 +1,23 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "sensor_tests",
+  "kind": "capability",
+  "description": "Use when you need the car's own monitor test results (Mode 06 pass / fail vs limits) or a wiggle test on a sensor that drops out or acts up.",
+  "tools": ["read_mode06", "wiggle_test"],
+  "driverSteps": ["wiggle_connector"],
+  "instructions": [
+    "Call read_mode06 {} for the on-board monitor results: each line is \"MID <monitor> TID <test>: <value> (limits <min>–<max>) pass|fail\". On a petrol K-line car it also lists Mode 05 O2-sensor results.",
+    "Propose a wiggle test when a code is intermittent (pending, or stored and then gone), when a reading drops to 0 or to an impossible value now and then, or when the driver reports a fault that comes and goes over bumps.",
+    "Call wiggle_test with the PID of the sensor in question, e.g. {\"pid\":\"010B\",\"seconds\":10}. It asks the stationary driver to flex the sensor's wiring and connector while the app reads the PID every 0.25 s; the engine should be idling.",
+    "Pick a PID the car supports (read_live names the ones it does not); wiggle_test refuses an unsupported PID without asking the driver."
+  ],
+  "interpret": [
+    "A Mode 06 test passes when its value lies between its limits. A fail points at the monitored component (e.g. an O2 sensor, the catalyst, EGR) even before a fault code is set; a pass is the car's own evidence that the part works.",
+    "Mode 06 MIDs and TIDs are standard (SAE J1979) but the units and test meanings vary by maker: quote the line as given instead of guessing what an unknown TID measures.",
+    "Mode 05 lines are O2-sensor thresholds and switch times with no limits: they inform, they do not pass or fail.",
+    "Wiggle test: NO DATA dropouts while the wiring is flexed point to a loose connector, a broken wire or a bad ground on that sensor's circuit.",
+    "Wiggle test: a largest step many times the median step (a sudden jump while the rest of the reads stay close) points to an intermittent contact; a smooth spread is normal engine variation.",
+    "A wiggle test with no dropouts and small steps makes a wiring fault on that sensor unlikely at idle; it cannot rule out a fault that appears only when hot or under load.",
+    "When the driver could not do the step (refused, moving, could not) the wiggle test is not judged: do not draw a conclusion from it."
+  ]
+}

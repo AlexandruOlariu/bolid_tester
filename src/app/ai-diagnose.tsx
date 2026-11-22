@@ -4,6 +4,8 @@ import { faultCodesAgentTools } from '@/features/fault-codes';
 import { liveDataAgentTools } from '@/features/live-data';
 import { batteryHealthAgentTools } from '@/features/battery-health';
 import { moduleScanAgentTools } from '@/features/module-scan';
+import { liveChartsAgentTools } from '@/features/live-charts';
+import { sensorTestsAgentTools } from '@/features/sensor-tests';
 import type { AgentContribution } from '@/shared/obd-core';
 
 /** What each feature contributes to the AI diagnostic agent (plan 34a). Features never import each
@@ -13,6 +15,8 @@ export const AGENT_CONTRIBUTIONS: AgentContribution[] = [
   liveDataAgentTools,
   batteryHealthAgentTools,
   moduleScanAgentTools,
+  liveChartsAgentTools,
+  sensorTestsAgentTools,
 ];
 
 export default function AiDiagnoseRoute() {

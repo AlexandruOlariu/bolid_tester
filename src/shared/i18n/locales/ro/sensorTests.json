@@ -12,5 +12,29 @@
   "noMode05": "Niciun rezultat Mode 05 încă — rulează testele (multe ECU-uri nu îl suportă).",
   "modules": "Module (experimental)",
   "modulesHelp": "Doar CAN, adresare pe fiecare mașină. Ai încredere într-o valoare doar când insigna ei arată că a fost confirmată pe această mașină.",
-  "noModules": "Niciun senzor experimental de modul pentru această mașină / acest protocol."
+  "noModules": "Niciun senzor experimental de modul pentru această mașină / acest protocol.",
+  "agent": {
+    "tool": {
+      "read_mode06": "Teste ale monitoarelor de bord (Mode 06)",
+      "wiggle_test": "Test de mișcare a cablajului — {{pid}}"
+    },
+    "finding": {
+      "monitorFail": {
+        "title": "Test de monitor de bord picat (MID {{mid}}, TID {{tid}})",
+        "detail": "Autotestul mașinii MID {{mid}} TID {{tid}} este în afara limitelor. Deschide Teste senzori ca să vezi valoarea și limitele: componenta monitorizată poate avea nevoie de o verificare chiar înainte să apară un cod de eroare."
+      },
+      "wiggleDropout": {
+        "title_one": "{{pid}} a căzut de {{count}} dată cât timp cablajul a fost mișcat",
+        "title_few": "{{pid}} a căzut de {{count}} ori cât timp cablajul a fost mișcat",
+        "title_other": "{{pid}} a căzut de {{count}} de ori cât timp cablajul a fost mișcat",
+        "detail_one": "Mașina nu a răspuns pentru {{pid}} o dată cât timp cablajul și mufa lui au fost mișcate. Verifică mufa, pinii ei și cablajul pentru un contact slab sau un fir rupt.",
+        "detail_few": "Mașina nu a răspuns pentru {{pid}} de {{count}} ori cât timp cablajul și mufa lui au fost mișcate. Verifică mufa, pinii ei și cablajul pentru un contact slab sau un fir rupt.",
+        "detail_other": "Mașina nu a răspuns pentru {{pid}} de {{count}} de ori cât timp cablajul și mufa lui au fost mișcate. Verifică mufa, pinii ei și cablajul pentru un contact slab sau un fir rupt."
+      },
+      "wiggleUnstable": {
+        "title": "{{pid}} a sărit cât timp cablajul a fost mișcat",
+        "detail": "Valoarea a sărit cu {{step}} {{unit}} între două citiri, în timp ce celelalte au rămas apropiate. Verifică mufa și cablajul senzorului pentru un contact intermitent."
+      }
+    }
+  }
 }

@@ -19,5 +19,10 @@
   "hint": {
     "title": "Explore the chart",
     "body": "Pinch to zoom the time window (10 s–10 min), drag left/right to pan through history, and tap a line to read the exact value and time. Use “Share window (CSV)” to send the data out."
+  },
+  "agent": {
+    "tool": {
+      "record_live": "Recording — {{pids}}"
+    }
   }
 }

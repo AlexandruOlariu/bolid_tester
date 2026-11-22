@@ -12,5 +12,27 @@
   "noMode05": "No Mode 05 results yet — run tests (many ECUs do not support it).",
   "modules": "Modules (experimental)",
   "modulesHelp": "CAN-only, per-car addressing. Trust a value only once its badge says it was confirmed on this car.",
-  "noModules": "No experimental module sensors for this car / protocol."
+  "noModules": "No experimental module sensors for this car / protocol.",
+  "agent": {
+    "tool": {
+      "read_mode06": "On-board monitor tests (Mode 06)",
+      "wiggle_test": "Wiggle test — {{pid}}"
+    },
+    "finding": {
+      "monitorFail": {
+        "title": "On-board monitor test failed (MID {{mid}}, TID {{tid}})",
+        "detail": "The car's own self-test MID {{mid}} TID {{tid}} reads outside its limits. Open Sensor tests to see the value and the limits: the monitored part may need checking even before a fault code is set."
+      },
+      "wiggleDropout": {
+        "title_one": "{{pid}} dropped out {{count}} time while the wiring was flexed",
+        "title_other": "{{pid}} dropped out {{count}} times while the wiring was flexed",
+        "detail_one": "The car gave no answer for {{pid}} once while its wiring and connector were flexed. Check that connector, its pins and the wiring for a loose contact or a broken wire.",
+        "detail_other": "The car gave no answer for {{pid}} {{count}} times while its wiring and connector were flexed. Check that connector, its pins and the wiring for a loose contact or a broken wire."
+      },
+      "wiggleUnstable": {
+        "title": "{{pid}} jumped while the wiring was flexed",
+        "detail": "The reading jumped by {{step}} {{unit}} between two reads while the others stayed close. Check the sensor's connector and wiring for an intermittent contact."
+      }
+    }
+  }
 }
