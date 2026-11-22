@@ -3069,6 +3069,23 @@
     ],
     "type": "doc"
   },
+  "doc:superpowers/specs/2026-11-22-ai-agent-diagnose-design": {
+    "path": "docs/superpowers/specs/2026-11-22-ai-agent-diagnose-design.md",
+    "summary": "AI diagnostic agent \u2014 design (2026-11-22)",
+    "tokens": [
+      "11",
+      "2026",
+      "22",
+      "agent",
+      "ai",
+      "design",
+      "diagnose",
+      "diagnostic",
+      "specs",
+      "superpowers"
+    ],
+    "type": "doc"
+  },
   "doc:testing": {
     "path": "docs/testing.md",
     "summary": "Testing",

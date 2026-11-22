@@ -2000,6 +2000,11 @@
     "imports"
   ],
   [
+    "core:session/DiagnosticSession",
+    "doc:superpowers/specs/2026-11-22-ai-agent-diagnose-design",
+    "named"
+  ],
+  [
     "core:tp20/elmRawCan",
     "core:elm327/Elm327Client",
     "imports"
@@ -2693,11 +2698,6 @@
     "feature:ai-diagnose",
     "core:session/DiagnosticSession",
     "imports"
-  ],
-  [
-    "feature:ai-diagnose",
-    "doc:features/ai-diagnose",
-    "named"
   ],
   [
     "feature:ai-diagnose",
@@ -5096,18 +5096,8 @@
   ],
   [
     "screen:ai-diagnose",
-    "doc:features/ai-diagnose",
-    "named"
-  ],
-  [
-    "screen:ai-diagnose",
     "feature:ai-diagnose",
     "serves"
-  ],
-  [
-    "screen:ai-diagnose",
-    "service:ai",
-    "named"
   ],
   [
     "screen:alerts",
@@ -5468,11 +5458,6 @@
     "service:ai",
     "core:analysis/aiProviders",
     "imports"
-  ],
-  [
-    "service:ai",
-    "doc:features/ai-diagnose",
-    "named"
   ],
   [
     "service:notify",
