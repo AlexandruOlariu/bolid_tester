@@ -87,6 +87,15 @@ number, name, description, an "illustrative" badge and up to four live tiles (`V
 - Everything uses the default (engine) header. Groups for other modules and KWP `21 <group>` over
   TP2.0 are deferred until addresses and timing are confirmed on the car.
 
+## AI agent
+
+- AI agent: `read_extended` — `agent/agentTools.ts` contributes the tool (up to 8 declared DIDs, by
+  default the first 8 the profile declares, read once through the read-only facade's
+  `pollExtendedOnce` and decoded with the profile decoder; one line per DID,
+  `<did> <name>: <value> <unit>`, ` (unconfirmed)` for an unverified DID; an undeclared DID is named
+  and never sent) and the `extended_data` skill to the [AI agent](./ai-diagnose.md#agent). Offered on
+  CAN when the profile declares extended PIDs (the screen's own gate).
+
 ## hooks
 
 - `useExtendedPids()` — reads the profile's `extendedPids`, issues the Mode 22 requests, exposes

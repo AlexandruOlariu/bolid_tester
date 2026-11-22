@@ -30,9 +30,9 @@ plain status (_OK / filling / regen due / regenerating / high_) with driver advi
 
 ## hooks
 
-- `useDpf()` — filters `profile.extendedPids` to `category` dpf/diesel, gates on `isCan`, issues the
-  Mode 22 reads via `session.readExtended(did)`, decodes with the profile decoder, maps the `role`s
-  into a `DpfInput`, and returns `{ available, values, report, refresh, running }`.
+- `useDpf()` — gates on `dpfAvailable` (diesel, CAN, at least one `category` dpf/diesel DID), calls
+  `readDpf` on refresh, keeps the result in `dpfStore`, and returns
+  `{ available, values, report, refresh, running }`.
 
 ## api (core)
 
@@ -40,6 +40,21 @@ plain status (_OK / filling / regen due / regenerating / high_) with driver advi
   returning `{ status, sootPct, advice, flags }`. No I/O, unit-tested.
 - The raw reads reuse `DiagnosticSession.readExtended` (the same path as
   [`extended-pids`](./extended-pids.md)); values also appear there raw, for debugging.
+- `api/dpfRead.ts` — `readDpf(session, profile)`: filters `profile.extendedPids` to `category`
+  dpf/diesel, issues the Mode 22 reads via `session.readExtended(did)`, decodes with the profile
+  decoder (an empty answer is `null`, never `NaN`), maps the `role`s into a `DpfInput` and returns
+  `{ values, report }` from `assessDpf`, or `null` when the car is not a diesel on CAN with DPF
+  DIDs. It needs only `readExtended` + `currentProtocol`, so the screen passes the
+  `DiagnosticSession` and the AI agent passes its read-only facade.
+
+## AI agent
+
+- AI agent: `read_dpf` — `agent/agentTools.ts` contributes the tool (soot % and g, ash g, km since
+  regen, regen count, EGT °C, the other diesel DIDs and the `assessDpf` status, through `readDpf` on
+  the read-only facade; each value from an unverified DID is labelled `unconfirmed`; one finding
+  `dpf:agent.finding.<status>` — ok `ok`, filling / regenerating / unknown `info`, regen-due / high
+  `warn` — flagged `unconfirmed` when any value it used is), the `dpf` procedure and the `dpf` skill
+  to the [AI agent](./ai-diagnose.md#agent). Offered on a diesel, CAN car with DPF / diesel DIDs.
 
 ## model
 

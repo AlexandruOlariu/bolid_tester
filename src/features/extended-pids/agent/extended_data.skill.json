@@ -1,0 +1,20 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "extended_data",
+  "kind": "capability",
+  "description": "Use when standard OBD2 PIDs are not enough and you need the car's manufacturer values: oil temperature, EGR position, DPF figures and the like.",
+  "tools": ["read_extended"],
+  "requires": { "protocol": "can", "profile": ["extendedPids"] },
+  "instructions": [
+    "Call read_extended {} to read the first 8 DIDs this car's profile declares, or name up to 8 declared DIDs, e.g. {\"dids\":[\"1707\",\"1708\"]}.",
+    "Each line is \"<did> <name>: <value> <unit>\"; only DIDs the profile declares are read, an undeclared one is named and skipped.",
+    "For a diesel particulate filter question use the dpf skill (read_dpf): it reads the same DPF DIDs and adds the assessed status.",
+    "Read a value once with read_extended; to see one change over time, ask about it with standard PIDs in read_live or record_live instead."
+  ],
+  "interpret": [
+    "These DIDs are manufacturer-specific and read on the engine ECU's default addressing; the decoding comes from this car's profile.",
+    "A value marked unconfirmed comes from a DID not yet checked on this car: treat it as indicative, a lead to confirm, never as proof of a fault, and never base an urgent verdict on it.",
+    "\"no answer\" means the ECU did not return that DID (not supported, or another ECU holds it): it is not a fault.",
+    "Compare a value with what standard PIDs say where they overlap (e.g. oil temperature against coolant 0105 on a warm engine): a large disagreement points at the decoding, not the engine."
+  ]
+}

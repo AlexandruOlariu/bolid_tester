@@ -13,5 +13,36 @@
   },
   "soot": "Soot load {{pct}}%",
   "reading": "Reading…",
-  "refresh": "Refresh"
+  "refresh": "Refresh",
+  "agent": {
+    "tool": {
+      "read_dpf": "Particulate filter (DPF)"
+    },
+    "finding": {
+      "ok": {
+        "title": "DPF soot load low ({{pct}}%)",
+        "detail": "The particulate filter reads {{pct}}% soot: it is healthy and needs nothing."
+      },
+      "filling": {
+        "title": "DPF soot building normally ({{pct}}%)",
+        "detail": "The particulate filter reads {{pct}}% soot. That is normal; the car burns it off on its own during a longer drive."
+      },
+      "regenerating": {
+        "title": "DPF regeneration in progress",
+        "detail": "The exhaust is hot enough that the car is cleaning the particulate filter now. Keep driving at a steady speed and do not switch off until it finishes."
+      },
+      "regen-due": {
+        "title": "DPF regeneration due ({{pct}}%)",
+        "detail": "The particulate filter reads {{pct}}% soot. A regeneration is due: 15–20 minutes of steady driving above 60 km/h usually starts it."
+      },
+      "high": {
+        "title": "DPF soot load high ({{pct}}%)",
+        "detail": "The particulate filter reads {{pct}}% soot. A forced or service regeneration may be needed; have it checked before the car goes into limp mode."
+      },
+      "unknown": {
+        "title": "DPF soot load not read",
+        "detail": "The car gave no soot-load reading, so the particulate filter could not be judged. Open DPF / regen to read it again."
+      }
+    }
+  }
 }

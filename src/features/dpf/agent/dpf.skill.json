@@ -1,0 +1,24 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "dpf",
+  "kind": "capability",
+  "description": "Use when a diesel's particulate filter matters: DPF warning light, limp mode, low power, smoke, frequent regenerations or many short trips.",
+  "tools": ["read_dpf"],
+  "requires": { "fuel": ["diesel"], "protocol": "can", "profile": ["extendedPids"] },
+  "procedure": "dpf",
+  "instructions": [
+    "Call read_dpf {} once: it reads soot load and mass, ash, km since the last regeneration, regeneration count and exhaust temperature, and gives the assessed status.",
+    "Read the status line first, then the soot load; use the distance since regen and the regeneration count to judge how the car is driven.",
+    "When the status is regen-due or high, or the symptom is low power, also look at the fault codes (P2002, P2452-P2463 point to the DPF or its pressure sensor) before you recommend anything.",
+    "Values marked unconfirmed come from DIDs not yet checked on this car: quote them as indicative and say so."
+  ],
+  "interpret": [
+    "Soot load bands (as assessDpf uses them): under 45 % ok (filter healthy); 45-69 % filling (normal, no action); 70-89 % regen-due; 90 % and above high (a forced or service regeneration may be needed).",
+    "Exhaust temperature at or above 500 °C with soot present means a regeneration is running now: the driver should keep driving at a steady speed and not switch off.",
+    "A regen needs 15–20 min above 60 km/h of steady driving; many short trips stop it from finishing, so soot keeps building.",
+    "Ash does not burn off in a regeneration: it only grows with age and mileage. A high ash load with a low soot load points to a worn filter, not to a missed regeneration.",
+    "Few km since the last regeneration together with a high regeneration count means the car regenerates very often: look for an underlying cause (EGR, injectors, a faulty pressure sensor, oil dilution).",
+    "Unconfirmed data never justifies an urgent verdict: an alarming unconfirmed value is a reason to check with a dedicated tool or a workshop, not proof of a blocked filter.",
+    "Status unknown means the car gave no soot reading: say that the filter could not be judged, not that it is fine."
+  ]
+}

@@ -27,5 +27,10 @@
   "noData": "fără date",
   "raw": "brut {{raw}}",
   "fromGuide": "din ghid",
-  "chartThis": "Grafic"
+  "chartThis": "Grafic",
+  "agent": {
+    "tool": {
+      "read_extended": "Valori de producător (Mode 22)"
+    }
+  }
 }

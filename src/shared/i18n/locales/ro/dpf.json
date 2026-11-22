@@ -13,5 +13,36 @@
   },
   "soot": "Încărcare cu funingine {{pct}}%",
   "reading": "Se citește…",
-  "refresh": "Reîmprospătează"
+  "refresh": "Reîmprospătează",
+  "agent": {
+    "tool": {
+      "read_dpf": "Filtru de particule (DPF)"
+    },
+    "finding": {
+      "ok": {
+        "title": "Încărcare DPF mică ({{pct}}%)",
+        "detail": "Filtrul de particule arată {{pct}}% funingine: este în stare bună și nu are nevoie de nimic."
+      },
+      "filling": {
+        "title": "Funinginea DPF se acumulează normal ({{pct}}%)",
+        "detail": "Filtrul de particule arată {{pct}}% funingine. Este normal; mașina o arde singură la un drum mai lung."
+      },
+      "regenerating": {
+        "title": "Regenerare DPF în curs",
+        "detail": "Gazele de evacuare sunt destul de fierbinți încât mașina curăță acum filtrul de particule. Mergi în continuare cu viteză constantă și nu opri motorul până se termină."
+      },
+      "regen-due": {
+        "title": "Regenerare DPF necesară ({{pct}}%)",
+        "detail": "Filtrul de particule arată {{pct}}% funingine. Este nevoie de o regenerare: 15–20 de minute de mers constant peste 60 km/h o pornesc de obicei."
+      },
+      "high": {
+        "title": "Încărcare mare a DPF ({{pct}}%)",
+        "detail": "Filtrul de particule arată {{pct}}% funingine. Poate fi nevoie de o regenerare forțată sau în service; verifică-l înainte ca mașina să intre în regim de avarie."
+      },
+      "unknown": {
+        "title": "Încărcarea DPF nu a fost citită",
+        "detail": "Mașina nu a dat o citire a încărcării cu funingine, așa că filtrul de particule nu a putut fi evaluat. Deschide DPF / regenerare ca să-l citești din nou."
+      }
+    }
+  }
 }

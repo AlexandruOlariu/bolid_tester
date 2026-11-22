@@ -26,5 +26,10 @@
   "noData": "no data",
   "raw": "raw {{raw}}",
   "fromGuide": "from guide",
-  "chartThis": "Chart this"
+  "chartThis": "Chart this",
+  "agent": {
+    "tool": {
+      "read_extended": "Manufacturer values (Mode 22)"
+    }
+  }
 }

@@ -1,11 +1,12 @@
 import { useCallback } from 'react';
-import { assessDpf, isCan, DpfInput } from '@/shared/obd-core';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { logError } from '@/shared/state/errorLogStore';
-import { useActiveProfile } from '@/features/vehicle-select/api/activeProfile';
-import { useDpfStore, DpfValue } from '../model/dpfStore';
+import { useActiveProfile } from '@/shared/state/activeProfile';
+import { useDpfStore } from '../model/dpfStore';
+import { dpfAvailable, dpfPids, readDpf } from '../api/dpfRead';
 
-/** Read the active profile's diesel/DPF Mode 22 PIDs (CAN only) and interpret them via assessDpf. */
+/** Read the active profile's diesel/DPF Mode 22 PIDs (diesel, CAN only) and interpret them via
+ *  assessDpf — the read itself is `readDpf`, shared with the AI agent's `read_dpf` tool. */
 export function useDpf() {
   const session = useSessionStore((s) => s.session);
   const profile = useActiveProfile();
@@ -14,37 +15,19 @@ export function useDpf() {
   const running = useDpfStore((s) => s.running);
   const set = useDpfStore((s) => s.set);
 
-  const dieselPids = (profile.extendedPids ?? []).filter(
-    (p) => p.category === 'dpf' || p.category === 'diesel',
-  );
-  const proto = session?.currentProtocol ?? 'UNKNOWN';
-  const available = dieselPids.length > 0 && isCan(proto);
+  const dieselPids = dpfPids(profile);
+  const available = dpfAvailable(profile, session?.currentProtocol ?? 'UNKNOWN');
 
   const refresh = useCallback(async () => {
-    if (!session || dieselPids.length === 0 || !isCan(session.currentProtocol)) return;
+    if (!session || !dpfAvailable(profile, session.currentProtocol)) return;
     set({ running: true });
     try {
-      const out: DpfValue[] = [];
-      const input: DpfInput = {};
-      for (const p of dieselPids) {
-        const bytes = await session.readExtended(p.did);
-        const value = bytes ? p.decode(bytes) : null;
-        out.push({ did: p.did, name: p.name, unit: p.unit, value, role: p.role });
-        if (p.role && value != null) {
-          if (p.role === 'sootPct') input.sootPct = value;
-          else if (p.role === 'sootMassG') input.sootMassG = value;
-          else if (p.role === 'ashMassG') input.ashMassG = value;
-          else if (p.role === 'kmSinceRegen') input.kmSinceRegen = value;
-          else if (p.role === 'regenCount') input.regenCount = value;
-          else if (p.role === 'egtC') input.egtC = value;
-        }
-      }
-      set({ values: out, report: assessDpf(input), running: false });
+      const out = await readDpf(session, profile);
+      set(out ? { values: out.values, report: out.report, running: false } : { running: false });
     } catch (e) {
       logError({ source: 'dpf', error: e, severity: 'warning' });
       set({ running: false });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- dieselPids derives from the listed profile (memoised active profile)
   }, [session, profile, set]);
 
   return { available, values, report, running, refresh, dieselPids };
