@@ -7,6 +7,7 @@ export * from './registry';
 export * from './actionSchema';
 export * from './driver';
 export * from './digest';
+export * from './liveSampling';
 export * from './coreTools';
 export * from './procedures/batteryCapture';
 export * from './triage';

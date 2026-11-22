@@ -6,15 +6,13 @@
 import type { Dtc } from '../obd/dtc';
 import { toDtc } from '../obd/dtc';
 import type { MonitorStatus } from '../obd/readiness';
-import type { LiveValue } from '../session/DiagnosticSession';
 import type { VehicleProfile } from '../../vehicles/types';
 import { clampDigest, oneDecimal, statsLine } from './digest';
+import { liveSampleNotes, parseLivePids, sampleLivePids } from './liveSampling';
 import { batteryCaptureProcedure } from './procedures/batteryCapture';
 import type { ReadOnlySession } from './readOnlySession';
 import type { AgentContribution, AgentTool, ToolContext, ToolResult } from './types';
 
-/** Gap between two polls when `read_live` samples over `seconds`. */
-export const LIVE_SAMPLE_MS = 500;
 export const READ_LIVE_MAX_SECONDS = 15;
 export const READ_LIVE_MAX_PIDS = 8;
 
@@ -58,55 +56,16 @@ function stats(values: number[]): LiveStats {
 }
 
 async function readLive(args: Record<string, unknown>, ctx: ToolContext): Promise<ToolResult> {
-  const raw = Array.isArray(args.pids) ? args.pids : [];
-  const requested = [
-    ...new Set(raw.filter((p): p is string => typeof p === 'string').map((p) => p.toUpperCase())),
-  ];
+  const requested = parseLivePids(args.pids);
   const secondsArg = typeof args.seconds === 'number' ? Math.floor(args.seconds) : 0;
   const seconds = Math.min(READ_LIVE_MAX_SECONDS, Math.max(0, secondsArg));
 
-  const supported = new Set(ctx.session.effectivePids());
-  const pids = requested.filter((p) => supported.has(p));
-  const unsupported = requested.filter((p) => !supported.has(p));
-
-  const values = new Map<string, number[]>(pids.map((p) => [p, []]));
-  const meta = new Map<string, LiveValue>();
-  const record = (polled: Record<string, LiveValue>) => {
-    for (const pid of pids) {
-      const v = polled[pid];
-      if (!v) continue;
-      values.get(pid)?.push(v.value);
-      if (!meta.has(pid)) meta.set(pid, v);
-    }
-  };
-
-  if (pids.length > 0) {
-    if (seconds === 0) {
-      record(await ctx.session.pollOnce(pids));
-    } else {
-      // One poll per 500 ms tick of the window; a slow poll skips the ticks it overran.
-      const start = ctx.now();
-      const end = start + seconds * 1000;
-      for (let tick = start; tick < end && !ctx.signal.aborted; tick += LIVE_SAMPLE_MS) {
-        const wait = tick - ctx.now();
-        if (wait > 0) await ctx.sleep(wait);
-        if (ctx.now() >= end || ctx.signal.aborted) break;
-        record(await ctx.session.pollOnce(pids));
-      }
-    }
-  }
+  const sample = await sampleLivePids(ctx, requested, seconds);
 
   const lines: string[] = [];
   const brief: string[] = [];
   const data: Record<string, LiveStats> = {};
-  const silent: string[] = [];
-  for (const pid of pids) {
-    const vs = values.get(pid) ?? [];
-    const m = meta.get(pid);
-    if (!m || vs.length === 0) {
-      silent.push(pid);
-      continue;
-    }
+  for (const { pid, meta: m, values: vs } of sample.series) {
     const s = stats(vs);
     data[pid] = s;
     const unit = m.unit ? ` ${m.unit}` : '';
@@ -118,10 +77,9 @@ async function readLive(args: Record<string, unknown>, ctx: ToolContext): Promis
       brief.push(`${pid} avg ${oneDecimal(s.avg)}${unit}`);
     }
   }
-  if (silent.length) lines.push(`No answer from the car: ${silent.join(', ')}.`);
-  if (unsupported.length) lines.push(`Not supported on this car: ${unsupported.join(', ')}.`);
-  if (lines.length === 0) lines.push('No PIDs requested.');
+  lines.push(...liveSampleNotes(sample));
 
+  const { unsupported } = sample;
   const head = seconds === 0 ? 'Live' : `Live ${seconds} s`;
   const tail = unsupported.length ? `; not supported ${unsupported.join(', ')}` : '';
   return {
