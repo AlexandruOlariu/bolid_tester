@@ -67,7 +67,7 @@ function FuelEconomyCard({ result }: { result: FuelEconomyResult }) {
   return (
     <Card elevate bordered padding="$3" backgroundColor="$backgroundHover" testID="fuel-economy">
       <YStack gap="$1">
-        <Paragraph theme="alt2" fontSize="$2" numberOfLines={1}>
+        <Paragraph theme="alt2" fontSize="$2">
           {result.source === 'fuel-rate' ? t('fuel.titleRate') : t('fuel.titleMaf')}
         </Paragraph>
         <XStack alignItems="baseline" gap="$2" flexWrap="wrap">

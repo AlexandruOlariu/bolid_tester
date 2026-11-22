@@ -7,11 +7,15 @@ import { useVehicleInfo } from '../hooks/useVehicleInfo';
 import { useTranslation } from '@/shared/i18n';
 import { formatFixed } from '@/shared/lib/format';
 
+/** Label left, value right; at large font sizes a long value (VIN, protocol) wraps onto its own
+ *  line instead of running off the card (plan 20). */
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <XStack justifyContent="space-between" paddingVertical="$1.5">
+    <XStack flexWrap="wrap" columnGap="$3" paddingVertical="$1.5">
       <Paragraph theme="alt2">{label}</Paragraph>
-      <Text fontWeight="700">{value}</Text>
+      <Text flexShrink={1} marginLeft="auto" textAlign="right" fontWeight="700">
+        {value}
+      </Text>
     </XStack>
   );
 }

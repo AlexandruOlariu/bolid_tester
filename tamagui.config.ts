@@ -67,7 +67,9 @@ export const tamaguiConfig = createTamagui({
   // Every Button is one accessibility element (plan 20), as React Native's `Pressable` is by
   // default: TalkBack / VoiceOver focus the button itself and read its label or text, instead of
   // landing on the text inside it, which has no action.
-  defaultProps: { Button: { accessible: true } },
+  // Inputs have a fixed height, so text above 1.5x the base size is clipped top and bottom (plan 20
+  // manual check at the largest font size); cap the scaling there, like the display numbers.
+  defaultProps: { Button: { accessible: true }, Input: { maxFontSizeMultiplier: 1.5 } },
 });
 
 export type AppTamaguiConfig = typeof tamaguiConfig;
