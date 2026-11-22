@@ -434,3 +434,19 @@ describe('MockTransport SecurityAccess model (plan 23)', () => {
     }
   });
 });
+
+describe('MockTransport readiness ignition type', () => {
+  const ignitionOf = async (id: string) => {
+    const t = new MockTransport(buildScenario(id));
+    await t.connect();
+    const line = dataLines(await ask(t, '0101')).find((l) => l.includes('4101')) ?? '';
+    const b = parseInt(line.slice(line.indexOf('4101') + 6, line.indexOf('4101') + 8), 16);
+    return (b & 0x08) !== 0 ? 'compression' : 'spark';
+  };
+
+  it('reports compression ignition for a diesel profile and spark otherwise', async () => {
+    expect(getVehicleProfile('golf-plus-2009-20tdi').fuel).toBe('diesel');
+    expect(await ignitionOf('golf-plus-2009-20tdi')).toBe('compression');
+    expect(await ignitionOf('generic')).toBe('spark');
+  });
+});

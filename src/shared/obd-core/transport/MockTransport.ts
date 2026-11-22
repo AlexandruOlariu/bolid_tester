@@ -35,6 +35,9 @@ export interface SimScenario {
   /** IUPR (Mode 09 08/0B) payload after the 0x49 0x08/0x0B echo: [itemCount, ...2-byte items]. */
   iuprSpark?: number[];
   iuprCompression?: number[];
+  /** Ignition type reported in Mode 01 PID 01 byte B bit 3 (readiness monitor set). Default spark;
+   *  diesel profiles use 'compression' (buildScenario sets it from the profile's fuel). */
+  ignition?: 'spark' | 'compression';
   /** Mode 05 responses keyed by tid+sensor (e.g. '0101') -> full response bytes (0x45 …). */
   mode05?: Record<string, number[]>;
   /** Raw monitor lines the simulator streams cyclically during ATMA (CAN sniffer). */
@@ -623,7 +626,9 @@ export class MockTransport implements Transport {
       if (h === '0101') {
         const n = (this.scenario.storedDtcs ?? []).length;
         const a = (n > 0 ? 0x80 : 0) | (n & 0x7f);
-        return '4101' + toHex([a, 0x07, 0x21, 0x00]);
+        // Byte B: misfire, fuel system and components supported + complete; bit 3 = compression.
+        const b = 0x07 | (this.scenario.ignition === 'compression' ? 0x08 : 0);
+        return '4101' + toHex([a, b, 0x21, 0x00]);
       }
       if (this.scenario.supportedPids.includes(h)) {
         const data = SIM_PID_BYTES[h.toLowerCase()] ?? [0x00];

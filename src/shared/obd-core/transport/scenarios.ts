@@ -265,6 +265,7 @@ export function buildScenario(
     moduleIdent,
     iuprSpark,
     iuprCompression,
+    ignition: profile.fuel === 'diesel' ? 'compression' : 'spark',
     monitorFrames,
     secondaryEcus: SIM_SECONDARY_ECUS[profileId],
     kwpLocals,
