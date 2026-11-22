@@ -113,6 +113,14 @@ $env:SENTRY_DISABLE_AUTO_UPLOAD = "true"
 cd android; .\gradlew.bat assembleRelease bundleRelease --no-daemon
 ```
 
+Gradle memory: the template's `org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=512m` is too
+small for Expo SDK 57 (`:expo-updates:kspReleaseKotlin` fails with `OutOfMemoryError: Metaspace` and
+the daemon hangs). `plugins/withGradleMemory.js` (registered in `app.json` before the signing plugin,
+unit-tested next to it) rewrites that key in the generated `android/gradle.properties` to
+`-Xmx4096m -XX:MaxMetaspaceSize=1536m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8` at every
+prebuild, so local, CI (16 GB GitHub runners) and EAS builds get the same settings. On a dev machine
+with the emulator running at the same time, close it first if memory is short.
+
 Keystores never enter git: `.gitignore` ignores `*.keystore` and `*.jks`.
 
 ## OTA updates (EAS Update)
