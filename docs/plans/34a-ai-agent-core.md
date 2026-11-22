@@ -17,6 +17,8 @@
 - **Read-only agent in this phase.** No tool can reach a write path: tools receive a `ReadOnlySession` (`createReadOnlySession`), never `DiagnosticSession`; raw requests pass `isReadOnlyRequest`; **Clear codes** stays the existing button behind its existing confirmation and is not an agent tool.
 - Never immobilizer / airbag / cluster-mileage: no tool, skill or driver instruction addresses them; `ReadOnlySession.withModule` refuses VAG addresses `15` (airbag) and `25` (immobilizer).
 - Never ship seed/key algorithms; SecurityAccess (`27`) is not in the read allowlist.
+- Never enter a programming session: KWP `10 85` (ISO 14230 ECU programming mode) and UDS `10 02` are blocked by the facade.
+- Header changes are exclusive: every addressed read runs inside `DiagnosticSession.exclusive`, and so does the engine-host poll sweep, so a live poll (alerts, trip recording) can never go out on another module's header.
 - Metric only (°C, kPa, km/h, V, L/100 km, ms). No imperial anywhere.
 - Every user-facing string is translated **en + ro** in the same task (`i18nParity.test.ts` fails otherwise); ș/ț comma-below. Model-facing text (prompts, skill documents, digests) stays English.
 - Prompts are English; the model is told to write the report in the app's current language (`currentLanguage()`).
@@ -142,6 +144,8 @@ git commit -m "feat(ai): per-call JSON schema, schema fallback ladder and aborta
 **Files:**
 
 - Create: `src/shared/obd-core/agent/readOnlySession.ts`, `src/shared/obd-core/agent/index.ts` (barrel), export from `src/shared/obd-core/index.ts` (`export * from './agent'`)
+- Modify: `src/shared/obd-core/session/DiagnosticSession.ts` (`exclusive`), `src/features/engine-host/EngineHost.tsx` (each sweep inside `session.exclusive`), `src/features/module-scan/api/moduleScanService.ts` (each module's header block inside `session.exclusive`; the same race exists there today)
+- Test: `src/shared/obd-core/session/DiagnosticSession.test.ts` (extend)
 - Test: `src/shared/obd-core/agent/readOnlySession.test.ts`
 
 **Interfaces:**
@@ -187,9 +191,11 @@ export interface ReadOnlySession {
   withModule<T>(addr: ModuleAddress, fn: (send: UdsSend) => Promise<T>): Promise<T>;
 }
 export function createReadOnlySession(session: DiagnosticSession): ReadOnlySession;
+// DiagnosticSession (new): runs fn with no other exclusive block interleaved; re-entrant calls from inside fn run inline.
+exclusive<T>(fn: () => Promise<T>): Promise<T>;
 ```
 
-Allowlist (first byte of the hex request, spaces ignored): `01 02 03 06 07 09 0A 19 1A 21 22 3E`; `10` only with sub-function `01 03 81 85 89`. Everything else (`04 14 2E 2F 31 3B 27 28 10 02 …`) is blocked before any byte is written. The facade object has no `clearDtcs`, `send`, `setHeader`, `setRxFilter`, `client` or sniffer members.
+Allowlist (first byte of the hex request, spaces ignored): `01 02 03 06 07 09 0A 19 1A 21 22 3E`; `10` only with sub-function `01 03 81 89` (`85` is KWP ECU programming mode and `02` UDS programming: never). Everything else (`04 14 2E 2F 31 3B 27 28 10 02 10 85 …`) is blocked before any byte is written. The facade object has no `clearDtcs`, `send`, `setHeader`, `setRxFilter`, `client` or sniffer members.
 
 - [ ] **Step 1: Write the failing tests** (Golf simulator: `new DiagnosticSession(new MockTransport(buildScenario('golf-plus-2009-20tdi')))`, a write spy counting bytes sent)
 
@@ -200,7 +206,8 @@ it.each([
   ['19 02 FF', true],
   ['22F187', true],
   ['1003', true],
-  ['1085', true],
+  ['1089', true],
+  ['1085', false],
   ['04', false],
   ['14FFFFFF', false],
   ['2E 06 00', false],
@@ -236,6 +243,19 @@ it('restores addressing even when fn throws', async () => {
   ).rejects.toThrow('x');
   expect((await ro.readDtcs('03')).length).toBeGreaterThanOrEqual(0); // a stale ATCRA would answer NO DATA → throw
 });
+it('withModule holds the session: a concurrent poll waits until addressing is restored', async () => {
+  let release!: () => void;
+  const inside = ro.withModule(
+    { reqHeader: '7E0', rxFilter: '7E8' },
+    () => new Promise<void>((r) => (release = r)),
+  );
+  const poll = session.exclusive(() => session.pollOnce(['010C']));
+  await Promise.resolve();
+  expect(sent.some((c) => c.startsWith('010C'))).toBe(false);
+  release();
+  await Promise.all([inside, poll]);
+  expect(sent.findIndex((c) => c.startsWith('010C'))).toBeGreaterThan(sent.lastIndexOf('ATCRA'));
+});
 it('refuses the airbag and immobilizer addresses without traffic', async () => {
   await expect(
     ro.withModule({ address: '15', reqHeader: '715' }, async () => 1),
@@ -251,7 +271,7 @@ it('refuses the airbag and immobilizer addresses without traffic', async () => {
 Run: `npx jest --selectProjects core src/shared/obd-core/agent/readOnlySession.test.ts`
 Expected: FAIL — `Cannot find module './readOnlySession'`.
 
-- [ ] **Step 3: Implement `createReadOnlySession(session)`** as a plain object literal that closes over the session (no class, so no private member leaks through `in`); `withModule` calls `setHeader`, `setRxFilter` when given, then `fn(filteredSend)`, and `resetAddressing()` in `finally`.
+- [ ] **Step 3: Implement `createReadOnlySession(session)`** as a plain object literal that closes over the session (no class, so no private member leaks through `in`); `withModule` runs inside `session.exclusive`: `setHeader`, `setRxFilter` when given, then `fn(filteredSend)`, and `resetAddressing()` in `finally`. `DiagnosticSession.exclusive` is a promise-chain mutex (like `tp20.ts`'s channel lock); EngineHost wraps each sweep (`pollOnce` + `pollExtendedOnce`) in it and `moduleScanService` wraps each module's `setHeader … resetAddressing` block in it.
 
 - [ ] **Step 4: Run the test, then `npm run ci`** → PASS / green.
 
@@ -856,7 +876,7 @@ export interface AgentOutcome {
 export function runAgent(req: AgentRunRequest, deps: AgentDeps): Promise<AgentOutcome>;
 ```
 
-Behaviour (each line is a test below): the trail starts with `deps.triage.step`; `chat === null` → end `no_ai` at once with `agentRuleReport`; each model reply is one step (ids 2, 3, …); `open_skill {name}` returns `renderSkillForModel` as the digest (kind `skill`); `run_skill {name}` runs the skill's procedure with a `ProcedureContext` (nested `callTool`/`runProcedure` do not count as model steps; their time counts as adapter time), and is invalid when the skill is unavailable or has no procedure (its cost for the adapter check is `skill.maxAdapterMs ?? procedure.costMs`); `ask_driver {id}` (id enum from `DRIVER_INSTRUCTIONS`) goes through the **driver gate**: read `010D` — not exactly 0 → step `refused` (`speed_unknown` when no value); otherwise race `deps.askDriver` against `driverTimeoutMs` and a speed poll every `driverSpeedPollMs` (> 0 → `moving`); `timeout`/`moving` count as "Can't" (`status: 'cant'`); the same gate is the `askDriver` handed to tools and procedures; driver time is excluded from wall time and adapter time. Invalid replies get the error text as their result and count as steps; `maxInvalidInRow` in a row → end `invalid`; any valid action resets the run of invalids. A tool error becomes a `status: 'error'` step with digest `"Read failed: <message>"` and the loop continues, except `Elm327ClosedError` → end `disconnected`. Before every model call: steps used ≥ 12 → `steps`; (elapsed − driver time) ≥ 240 000 → `time`; adapter time ≥ 120 000 → `adapter`; a tool whose `costMs` exceeds the adapter time left is refused with `"Not enough adapter time left for <tool>; finish now."` (an invalid step). `signal` aborted → `stopped`. `chat` throws → `ai_error` with `error` = message. A valid `final` → `parseAgentFinal`; `null` counts as an invalid reply. Every non-`final` end returns `agentRuleReport(snapshot, trail, { focusCode, translate })`. `onProgress` fires after every step and when a driver prompt opens or closes. Tools run strictly one at a time.
+Behaviour (each line is a test below): the trail starts with `deps.triage.step`; `chat === null` → end `no_ai` at once with `agentRuleReport`; each model reply is one step (ids 2, 3, …); `open_skill {name}` returns `renderSkillForModel` as the digest (kind `skill`); `run_skill {name}` runs the skill's procedure with a `ProcedureContext` (nested `callTool`/`runProcedure` do not count as model steps; their time counts as adapter time), and is invalid when the skill is unavailable or has no procedure (its cost for the adapter check is `skill.maxAdapterMs ?? procedure.costMs`); `ask_driver {id}` (id enum from `DRIVER_INSTRUCTIONS`) goes through the **driver gate**: read `010D` — not exactly 0 → step `refused` (`speed_unknown` when no value); otherwise race `deps.askDriver` against `driverTimeoutMs` and a speed poll every `driverSpeedPollMs` (> 0 → `moving`; during the wait a poll with no value — engine off, ECU asleep, e.g. while restarting — counts as stationary, so only a value above 0 aborts); `timeout`/`moving` count as "Can't" (`status: 'cant'`); the same gate is the `askDriver` handed to tools and procedures; driver time is excluded from wall time and adapter time. Invalid replies get the error text as their result and count as steps; `maxInvalidInRow` in a row → end `invalid`; any valid action resets the run of invalids. A tool error becomes a `status: 'error'` step with digest `"Read failed: <message>"` and the loop continues, except `Elm327ClosedError` → end `disconnected`. Before every model call: steps used ≥ 12 → `steps`; (elapsed − driver time) ≥ 240 000 → `time`; adapter time ≥ 120 000 → `adapter`; a tool whose `costMs` exceeds the adapter time left is refused with `"Not enough adapter time left for <tool>; finish now."` (an invalid step). `signal` aborted → `stopped`. `chat` throws → `ai_error` with `error` = message. A valid `final` → `parseAgentFinal`; `null` counts as an invalid reply. Every non-`final` end returns `agentRuleReport(snapshot, trail, { focusCode, translate })`. `onProgress` fires after every step and when a driver prompt opens or closes. Tools run strictly one at a time.
 
 - [ ] **Step 1: Write the failing tests** (fake `chat` returns scripted strings; fake tools with fixed `costMs` that advance a fake clock by a given duration; fake `askDriver`)
 
@@ -946,6 +966,18 @@ it("a driver step aborts when the car starts moving, and times out after 180 s a
     (await runAgent(sym('x'), deps([DRIVER_HOLD, FINAL], { driver: 'never' }))).trail[1].digest,
   ).toContain('No answer within 3 minutes');
 });
+it('no speed value while the driver restarts the engine does not abort the step', async () =>
+  expect(
+    (
+      await runAgent(
+        sym('x'),
+        deps([DRIVER_RESTART, FINAL], {
+          speedAfter: [0, null, null, 0],
+          driver: 'done-after-3-polls',
+        }),
+      )
+    ).trail[1].status,
+  ).toBe('ok'));
 it('open_skill returns the document; run_skill without a procedure is invalid', async () => {
   const o = await runAgent(
     sym('x'),

@@ -41,7 +41,7 @@
 | `sensor_tests`         | sensor-tests      | `read_mode06 {}`; `wiggle_test {pid, seconds?: 5..15 = 10}`                      | `readMode06(t.mid)` over `profile.mode06Tests`, `readMode05` sweep `01 02 05 06` on petrol K-line (as `useSensorTests`); wiggle samples every 250 ms while `askDriver('wiggle_connector')` | Mode 06 tests declared, or petrol K-line; wiggle always                        | 4000; 1000 + 1000 × s      | —                |
 | `extended_data`        | extended-pids     | `read_extended {dids?: ≤8 ^[0-9A-F]{4}$}`                                        | `pollExtendedOnce` + each `ExtendedPid.decode`; default = first 8 declared                                                                                                                 | `profile.extendedPids` non-empty and CAN (same gate as `useExtendedPids`)      | 500 × dids                 | —                |
 | `dpf`                  | dpf               | `read_dpf {}`                                                                    | new `readDpf` extracted from `useDpf` → `assessDpf`                                                                                                                                        | diesel, CAN, ≥ 1 `dpf`/`diesel` category DID                                   | 4000                       | `dpf`            |
-| `adaptations_read`     | adaptations       | `read_adaptations {channel?: string}`                                            | new `readChannelReadOnly(ro, ch)` (KWP: `enterSession` + `kwpReadLocal`; UDS: `22 <did>`), `decodeAdaptationRaw`                                                                           | `profile.adaptations` non-empty; each channel only on its transport's protocol | 1500 × channels (max 10)   | —                |
+| `adaptations_read`     | adaptations       | `read_adaptations {channel?: string}`                                            | new `readChannelReadOnly(ro, ch)` (KWP: `kwpReadLocal` in the current session, no session change; UDS: `22 <did>`), `decodeAdaptationRaw`                                                  | `profile.adaptations` non-empty; each channel only on its transport's protocol | 1500 × channels (max 10)   | —                |
 | `coding_read`          | coding            | `read_coding {module?: string}`                                                  | `22 <codingDid>` in `withModule`, decoded with the same label-pack view `useCoding` builds (`buildCodingView` / `decodeSchema`)                                                            | CAN and `profile.codingModules` non-empty                                      | 2000 × modules             | —                |
 | `used_car_check`       | inspection        | `read_inspection {}`                                                             | new `runInspection` extracted from `useInspection` → `assessInspection`                                                                                                                    | always                                                                         | 6000                       | `used_car_check` |
 | `vehicle_identity`     | vehicle-info      | `read_identity {}`                                                               | `ctx.vin ?? readVin()`, `decodeVin`, `readCalibrationId`, `readPartNumber` (CAN), `PROTOCOL_LABELS`                                                                                        | always                                                                         | 3000                       | —                |
@@ -228,7 +228,7 @@ it('read_extended reads the first 8 declared DIDs by default', async () => {
 **Interfaces:**
 
 - Produces:
-  - `readChannelReadOnly(ro: ReadOnlySession, ch: AdaptationChannel): Promise<number[] | null>` — `withModule({ reqHeader: ch.reqHeader, rxFilter: <same rule as address()> }, send => KWP ? (enterSession(send, ch.session ?? DEFAULT_KWP_SESSION), kwpReadLocal(send, ch.did)) : <22 read of ch.did through send>)`.
+  - `readChannelReadOnly(ro: ReadOnlySession, ch: AdaptationChannel): Promise<number[] | null>` — `withModule({ reqHeader: ch.reqHeader, rxFilter: <same rule as address()> }, send => KWP ? kwpReadLocal(send, ch.did) : <22 read of ch.did through send>)` — **no session change**: the Adaptations screen opens `DEFAULT_KWP_SESSION` (`0x85`, which ISO 14230 defines as ECU programming mode), and the facade refuses `10 85`. A channel the module only answers inside that session returns `null`, and the digest says "not readable without the adaptation session; open Adaptations".
   - `readCodingReadOnly(ro: ReadOnlySession, m: CodingModule, labels: <the label source useCoding uses>): Promise<{ hex: string; fields: { name: string; value: string }[] } | null>`.
   - `read_adaptations` digest per channel (max 10): `"<name> (<module>): <decoded> <unit> raw <hex>"` + ` (unconfirmed)`; `read_coding` digest: module, coding hex, up to 12 decoded fields.
 
@@ -236,13 +236,13 @@ it('read_extended reads the first 8 declared DIDs by default', async () => {
 
 ```ts
 // adaptationService.test.ts, Passat KWP scenario: the read path never sends a write or a login
-it('readChannelReadOnly reads a KWP channel with a session change only', async () => {
+it('readChannelReadOnly reads a KWP channel without any session change, write or login', async () => {
   const { session, sent, mark } = await passatSession();
   mark();
   const raw = await readChannelReadOnly(createReadOnlySession(session), idle);
   expect(raw).not.toBeNull();
   expect(sent().filter((c) => /^(2B|3B|27|2E)/.test(c))).toEqual([]);
-  expect(sent()).toContain('1085');
+  expect(sent().filter((c) => c.startsWith('10'))).toEqual([]);
 });
 it('readCodingReadOnly decodes the Golf coding module', async () => {
   const out = await readCodingReadOnly(
@@ -551,5 +551,6 @@ it('no capability tool is a write', () => {
 ## Deferred until an on-car session
 
 1. **Golf module scan vs VCDS.** On the Golf, run `scan_modules` through the agent (Investigate "check all modules") and compare each module's part number and codes with a VCDS auto-scan from the same day (see `golf-real-logs` in the owner's notes: VAG 5-digit = the DTC's two bytes as decimal). Mismatches go into the module entries of `src/shared/vehicles/golf-plus-2009-20tdi.ts` with `confirmed` evidence (plan 25 rules).
-2. **Adaptation and coding reads.** On the Passat (KWP) run `read_adaptations` and on the Golf `read_coding`; confirm the session change (`10 85`) is accepted and the values match the Adaptations / Coding screens. No write is attempted by the agent.
-3. **`bus_listen` on the real adapter.** On a Vgate (BLE), run `listen_bus` for 10 s at idle; record the frame count and distinct ids in `docs/features/can-sniffer.md`; if the adapter drops frames (`BUFFER FULL`), lower the default to 5 s.
+2. **Adaptation and coding reads.** On the Passat (KWP) run `read_adaptations` and on the Golf `read_coding`; confirm which channels answer in the default session (no session change) and that the values match the Adaptations / Coding screens. No write is attempted by the agent.
+3. **Pre-existing: the Adaptations screen's KWP session.** `DEFAULT_KWP_SESSION = 0x85` in `adaptationService.ts` is ECU programming mode in ISO 14230; VAG tools normally use `10 89` for adaptation. Compare with a VCDS adaptation log on the Passat before anyone writes a channel from that screen; if VCDS uses `89`, change the constant (separate fix, not part of the agent).
+4. **`bus_listen` on the real adapter.** On a Vgate (BLE), run `listen_bus` for 10 s at idle; record the frame count and distinct ids in `docs/features/can-sniffer.md`; if the adapter drops frames (`BUFFER FULL`), lower the default to 5 s.
