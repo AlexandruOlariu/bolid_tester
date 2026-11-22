@@ -9,7 +9,6 @@
     "scheme": "bolidtester",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "runtimeVersion": {
       "policy": "appVersion"
     },
