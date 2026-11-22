@@ -290,8 +290,10 @@ describe('getAiClient — per-call schema, fallback ladder and Stop', () => {
     g.__DEV__ = true;
     try {
       const client = getAiClient({ provider: 'custom', baseUrl: 'mock://ai', model: '' });
+      // The agent schema plays the mock's scripted agent turn; any other call keeps the report.
       const text = await client.chat(MESSAGES, { schema: AGENT_LIKE });
-      expect(JSON.parse(text ?? '{}')).toHaveProperty('overall');
+      expect(JSON.parse(text ?? '{}')).toHaveProperty('tool', 'read_live');
+      expect(JSON.parse((await client.chat(MESSAGES)) ?? '{}')).toHaveProperty('overall');
     } finally {
       delete g.__DEV__;
     }
