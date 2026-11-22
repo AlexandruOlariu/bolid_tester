@@ -29,29 +29,57 @@ function codesIn(messages: AiChatMessage[]): string[] {
   return out;
 }
 
-function cannedReport(messages: AiChatMessage[]): string {
-  const codes = codesIn(messages);
-  const findings = codes.map((code) => ({
-    title: `${code} needs a look (mock)`,
-    severity: 'warn',
-    detail: `Canned mock finding for ${code}. Follow the known check for this car if one is listed.`,
-    codes: [code],
-    likelyCauses: ['Mock cause one', 'Mock cause two'],
-  }));
-  const actions = [
-    ...(codes.length
-      ? [{ type: 'clear_dtcs', label: 'Clear fault codes', detail: 'Mock suggestion.' }]
-      : []),
-    { type: 'recheck', label: 'Re-run diagnosis', detail: 'Read the car again.' },
-  ];
-  return JSON.stringify({
+interface MockFinding {
+  title: string;
+  severity: string;
+  detail: string;
+  codes: string[];
+  likelyCauses: string[];
+  steps?: number[];
+}
+
+interface MockAction {
+  type: string;
+  label: string;
+  detail: string;
+}
+
+const RECHECK: MockAction = {
+  type: 'recheck',
+  label: 'Re-run diagnosis',
+  detail: 'Read the car again.',
+};
+
+/** The report body shared by the canned report and the default agent final: one `warn` finding per
+ *  code (citing `steps` when given), `clear_dtcs` only when codes are present, then `recheck`. */
+function mockReportBody(
+  codes: string[],
+  steps?: number[],
+): { overall: string; summary: string; findings: MockFinding[]; actions: MockAction[] } {
+  return {
     overall: codes.length ? 'attention' : 'ok',
     summary: codes.length
       ? `Mock AI report: ${codes.length} fault code(s) to look at.`
       : 'Mock AI report: nothing to flag.',
-    findings,
-    actions,
-  });
+    findings: codes.map((code) => ({
+      title: `${code} needs a look (mock)`,
+      severity: 'warn',
+      detail: `Canned mock finding for ${code}. Follow the known check for this car if one is listed.`,
+      codes: [code],
+      likelyCauses: ['Mock cause one', 'Mock cause two'],
+      ...(steps ? { steps } : {}),
+    })),
+    actions: [
+      ...(codes.length
+        ? [{ type: 'clear_dtcs', label: 'Clear fault codes', detail: 'Mock suggestion.' }]
+        : []),
+      RECHECK,
+    ],
+  };
+}
+
+function cannedReport(messages: AiChatMessage[]): string {
+  return JSON.stringify(mockReportBody(codesIn(messages)));
 }
 
 function cannedAnswer(messages: AiChatMessage[]): string {
@@ -94,8 +122,6 @@ function finalAction(final: Record<string, unknown>): string {
   return JSON.stringify({ final });
 }
 
-const RECHECK = { type: 'recheck', label: 'Re-run diagnosis', detail: 'Read the car again.' };
-
 /** `open_skill battery` → `run_skill battery` → a final citing triage and the run. */
 function batteryScript(position: number): string {
   if (position === 0)
@@ -129,20 +155,11 @@ function defaultScript(messages: AiChatMessage[], position: number): string {
     );
   const first = messages.find((m) => m.role === 'user');
   const codes = first ? codesIn([first]) : [];
+  const body = mockReportBody(codes, [1]);
   return finalAction({
-    overall: codes.length ? 'attention' : 'ok',
-    summary: codes.length
-      ? `Mock AI report: ${codes.length} fault code(s) to look at.`
-      : 'Mock AI report: nothing to flag.',
+    ...body,
     findings: [
-      ...codes.map((code) => ({
-        title: `${code} needs a look (mock)`,
-        severity: 'warn',
-        detail: `Canned mock finding for ${code}. Follow the known check for this car if one is listed.`,
-        codes: [code],
-        likelyCauses: ['Mock cause one', 'Mock cause two'],
-        steps: [1],
-      })),
+      ...body.findings,
       {
         title: 'Idle readings look normal (mock)',
         severity: 'ok',
@@ -151,12 +168,6 @@ function defaultScript(messages: AiChatMessage[], position: number): string {
         likelyCauses: [],
         steps: [2],
       },
-    ],
-    actions: [
-      ...(codes.length
-        ? [{ type: 'clear_dtcs', label: 'Clear fault codes', detail: 'Mock suggestion.' }]
-        : []),
-      RECHECK,
     ],
   });
 }
