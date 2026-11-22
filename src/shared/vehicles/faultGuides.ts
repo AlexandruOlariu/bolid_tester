@@ -147,3 +147,30 @@ export function matchFaultGuide(
   }
   return GENERIC_GUIDE;
 }
+
+/** One curated guide with the codes it covers, as `findFaultGuides` returns it. */
+export interface FaultGuideEntry {
+  /** The generic P-codes and VAG 5-digit codes the guide lists. */
+  codes: string[];
+  /** The code family prefix the guide also covers, e.g. 'P040'. */
+  prefix?: string;
+  guide: FaultGuide;
+}
+
+/** The profile's curated guides (never GENERIC_GUIDE) whose note, codes or prefix contain every
+ *  word of `topic`, case-insensitively, in table order — the AI agent's `lookup_guide` by topic.
+ *  Empty for a blank topic or a profile without curated guides. */
+export function findFaultGuides(profileId: string, topic: string): FaultGuideEntry[] {
+  const words = topic.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  return (PROFILE_GUIDES[profileId] ?? [])
+    .filter((r) => {
+      const text = [r.guide.note, ...(r.codes ?? []), r.prefix ?? ''].join(' ').toLowerCase();
+      return words.every((w) => text.includes(w));
+    })
+    .map((r) => ({
+      codes: [...(r.codes ?? [])],
+      ...(r.prefix ? { prefix: r.prefix } : {}),
+      guide: r.guide,
+    }));
+}

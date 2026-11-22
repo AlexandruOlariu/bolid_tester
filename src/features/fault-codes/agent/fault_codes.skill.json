@@ -3,11 +3,12 @@
   "name": "fault_codes",
   "kind": "capability",
   "description": "Use when you need the fault codes, the check-engine light (MIL), the readiness monitors, or the details and freeze frame of one code.",
-  "tools": ["read_dtcs", "read_dtcs_detail"],
+  "tools": ["read_dtcs", "read_dtcs_detail", "lookup_guide"],
   "instructions": [
     "Triage already read the codes once. Call read_dtcs again only to re-check the stored, pending and permanent codes, the MIL state or the readiness monitors.",
     "For each code that matters to the symptom, call read_dtcs_detail with that code, e.g. {\"code\":\"P0401\"}: description, system, VAG number, status now, freeze frame and this car's guide note.",
-    "Use the freeze frame (rpm, load, coolant, speed, MAP when the code set) to choose the live values to read next."
+    "Use the freeze frame (rpm, load, coolant, speed, MAP when the code set) to choose the live values to read next.",
+    "Call lookup_guide with a code, e.g. {\"code\":\"P0401\"}, or with a topic when there is no code, e.g. {\"topic\":\"egr\"}: this car's curated guide, the extended DIDs worth reading for it and the guided routine. It sends nothing to the car."
   ],
   "interpret": [
     "Stored (confirmed, mode 03): the ECU saw the fault on enough drive cycles to confirm it; an emissions fault usually turns the MIL on.",
@@ -16,6 +17,8 @@
     "MIL on: the ECU asks for service now. MIL off with stored codes: a non-emissions or history fault, rarely urgent on its own.",
     "Readiness: monitors not complete are normal for a while after codes were cleared or the battery was disconnected; many incomplete monitors and no codes suggest a recent clear.",
     "The VAG 5-digit number is the same fault as the P code (its two bytes in decimal); use it to match VCDS logs.",
-    "The guide note lists this car's known causes; confirm them with live data before naming a part."
+    "The guide note lists this car's known causes; confirm them with live data before naming a part.",
+    "lookup_guide's related DIDs are this car's extended data for the fault: read them with read_extended when it is offered. A routine in the guide is something the user runs from the Routines screen; the agent never runs it, so suggest it in the report instead.",
+    "No curated guide means only that nobody wrote one for this code on this car yet, not that the code is harmless."
   ]
 }

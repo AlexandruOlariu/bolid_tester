@@ -56,6 +56,20 @@ BLE, Wi-Fi TCP, the simulator); `SppTransport` declares `{ monitor: false }`.
 - connectionService's adapter-log wrapper forwards `capabilities`, so the session sees the real
   link's.
 
+## AI agent
+
+- AI agent: `listen_bus` — `agent/agentTools.ts` contributes the tool and the `bus_listen` skill
+  (CAN only) to the [AI agent](./ai-diagnose.md#agent). It listens 1–10 s (default 5) through the
+  read-only facade's `listenBus(ms)`: `ATH1` + the passive `ATMA` monitor inside
+  `DiagnosticSession.exclusive`, the window clamped to 10 000 ms, `stopSniffer()` (interrupt +
+  `ATH0`) in `finally`; nothing is transmitted on the bus. `listenBus` refuses before sending
+  anything with `MONITOR_UNAVAILABLE_MESSAGE` over a link that cannot stream the monitor and with
+  "Bus listening needs a CAN car." off CAN (and with "The bus monitor is already running." while
+  the sniffer screen's run holds the adapter, which it never joins or stops); the tool is offered
+  only when `canMonitor && isCan(protocol)`. The digest gives the frame count, seconds, distinct ids and the
+  10 busiest ids with frames/s (`… (N more ids)`, unparsed lines counted); no frames is one line
+  ("No frames heard in 5 s."). It does not touch the sniffer screen's capture.
+
 ## Capture files
 
 Both files start with the same `#` comment header:
@@ -174,7 +188,12 @@ share, failures logged), `features/can-sniffer/model/snifferStore.test.ts`,
 `features/can-sniffer/model/snifferController.test.ts` (Start clears the buffer and freezes the
 header context, which also carries the app version; export refused while running / empty; dispose stops `ATMA` and ends the run, also
 mid-setup; Stop mid-setup; double Start), `ui/SnifferScreen.test.tsx` (Start over the simulator;
-the unavailability notice over a Classic Bluetooth session), the `transport capabilities` cases in
+the unavailability notice over a Classic Bluetooth session),
+`features/can-sniffer/agent/agentTools.test.ts` (`listen_bus` over the Golf simulator, per-id
+counts and frames/s, top 10, the 1–10 s clamp, no frames, a refused listen, availability) and the
+`listenBus` cases of `shared/obd-core/agent/readOnlySession.test.ts` (Golf frames, only
+`ATH1` / `ATMA` / interrupt / `ATH0` sent, the 10 s clamp, refusals before any traffic, a running
+monitor left alone), the `transport capabilities` cases in
 `session/sniffer.integration.test.ts` and `transports/spp/SppTransport.session.integration.test.ts`
 (the sniffer refused before anything is sent; the link stays usable).
 

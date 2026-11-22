@@ -139,6 +139,14 @@ coach helps finish them:
 ## AI agent
 
 - `agent/agentTools.ts` contributes the `fault_codes` skill and the `read_dtcs_detail` tool (one code's description, status, freeze frame and guide note) to the [AI agent](./ai-diagnose.md#agent).
+- AI agent: `lookup_guide` — this car's curated [fault guide](#guided-fault-finding-6b7) by `code`
+  (`matchFaultGuide` on the guide profile, with the VAG number as for the Guide row) or by `topic`
+  (`findFaultGuides(profileId, topic)`: the guides whose note, codes or prefix contain every word,
+  case-insensitively, each listed with its codes). The digest gives the note, the related DIDs and
+  the routine id with their names from the car's profile (the routine is only suggested: the agent
+  never runs one); "No curated guide for <code> on this car." when only the generic guide would
+  match, "Give a code or a topic." with neither. No adapter traffic (`costMs` 0); listed in the
+  `fault_codes` skill's `tools`.
 
 ## hooks
 

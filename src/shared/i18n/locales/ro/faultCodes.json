@@ -97,7 +97,8 @@
   },
   "agent": {
     "tool": {
-      "read_dtcs_detail": "Detalii cod de eroare — {{code}}"
+      "read_dtcs_detail": "Detalii cod de eroare — {{code}}",
+      "lookup_guide": "Căutare în ghidul de erori"
     }
   }
 }

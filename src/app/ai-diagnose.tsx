@@ -19,6 +19,7 @@ import { maintenanceAgentTools } from '@/features/maintenance';
 import { historyAgentTools } from '@/features/history';
 import { alertsAgentTools } from '@/features/alerts';
 import { errorLogAgentTools } from '@/features/error-log';
+import { canSnifferAgentTools } from '@/features/can-sniffer';
 import type { AgentContribution } from '@/shared/obd-core';
 
 /** What each feature contributes to the AI diagnostic agent (plan 34a). Features never import each
@@ -43,6 +44,7 @@ export const AGENT_CONTRIBUTIONS: AgentContribution[] = [
   historyAgentTools,
   alertsAgentTools,
   errorLogAgentTools,
+  canSnifferAgentTools,
 ];
 
 export default function AiDiagnoseRoute() {

@@ -94,7 +94,8 @@
   },
   "agent": {
     "tool": {
-      "read_dtcs_detail": "Fault code details — {{code}}"
+      "read_dtcs_detail": "Fault code details — {{code}}",
+      "lookup_guide": "Fault guide lookup"
     }
   }
 }

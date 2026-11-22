@@ -108,7 +108,8 @@ symptom run with the code.
   time, **2 min** of adapter time, **3 invalid replies** in a row. Time waiting for the driver counts
   toward none of them; each driver step times out after **3 min** (counted as "Can't").
 - **Tools** (all reads, behind `createReadOnlySession`: a read-request allowlist, no
-  SecurityAccess, no programming session, never the airbag `15` or immobilizer `25` modules).
+  SecurityAccess, no programming session, never the airbag `15` or immobilizer `25` modules; the
+  only monitor access is `listenBus(ms)`, a passive `ATMA` window of at most 10 s on CAN).
   Core: `read_live` (up to 8 Mode 01 PIDs, once or sampled up to 15 s for min / avg / max) and
   `read_dtcs`; built in: `open_skill`, `run_skill`, `ask_driver`. Features add their own through
   an `AgentContribution` (fault-codes adds `read_dtcs_detail`). **Clear codes** is not a tool: it

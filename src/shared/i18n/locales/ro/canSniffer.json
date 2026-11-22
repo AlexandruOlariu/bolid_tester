@@ -20,5 +20,10 @@
   "shareHelp": "CSV-ul are un rând pe cadru (timp de la pornire, id CAN, număr de octeți, octeți); brut înseamnă fiecare linie a adaptorului exact cum a fost afișată. Fișierul conține mașina, adaptorul și nota de la momentul pornirii.",
   "saved": "Salvat: {{file}}",
   "count": "număr",
-  "help": "Transmite fiecare cadru pe care îl aude adaptorul (cu headere). Pe mașinile cu K-line vei vedea mai ales mesajele periodice de menținere a conexiunii; pe CAN aceasta este magistrala live grupată după id-ul de arbitrare. Fiecare linie este păstrată (până la 20 000), ca rularea să poată fi partajată după Oprește."
+  "help": "Transmite fiecare cadru pe care îl aude adaptorul (cu headere). Pe mașinile cu K-line vei vedea mai ales mesajele periodice de menținere a conexiunii; pe CAN aceasta este magistrala live grupată după id-ul de arbitrare. Fiecare linie este păstrată (până la 20 000), ca rularea să poată fi partajată după Oprește.",
+  "agent": {
+    "tool": {
+      "listen_bus": "Ascultare magistrală CAN"
+    }
+  }
 }

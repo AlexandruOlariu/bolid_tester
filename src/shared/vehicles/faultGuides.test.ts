@@ -1,4 +1,4 @@
-import { matchFaultGuide, GENERIC_GUIDE } from './faultGuides';
+import { findFaultGuides, matchFaultGuide, GENERIC_GUIDE } from './faultGuides';
 
 const GOLF = 'golf-plus-2009-20tdi';
 
@@ -43,5 +43,28 @@ describe('matchFaultGuide', () => {
   it('falls back to the generic guide for a profile with no curated guides', () => {
     expect(matchFaultGuide('fiat-punto-2008-12', 'P0401')).toBe(GENERIC_GUIDE);
     expect(matchFaultGuide('generic', 'P2002')).toBe(GENERIC_GUIDE);
+  });
+});
+
+describe('findFaultGuides', () => {
+  it('finds the guides whose note mentions every word of the topic, case-insensitively', () => {
+    const egr = findFaultGuides(GOLF, 'EGR');
+    expect(egr).toHaveLength(1);
+    expect(egr[0].guide).toBe(matchFaultGuide(GOLF, 'P0401'));
+    expect(egr[0].codes).toContain('P0401');
+    expect(egr[0].prefix).toBe('P040');
+    expect(findFaultGuides(GOLF, 'intake flap').map((e) => e.codes[0])).toEqual(['P0299', 'P2015']);
+  });
+
+  it('matches the codes a guide covers too', () => {
+    expect(findFaultGuides(GOLF, 'p2183').map((e) => e.guide)).toEqual([
+      matchFaultGuide(GOLF, 'P2183'),
+    ]);
+  });
+
+  it('finds nothing for a blank topic, an unknown topic or a profile without guides', () => {
+    expect(findFaultGuides(GOLF, '  ')).toEqual([]);
+    expect(findFaultGuides(GOLF, 'sunroof')).toEqual([]);
+    expect(findFaultGuides('fiat-punto-2008-12', 'egr')).toEqual([]);
   });
 });

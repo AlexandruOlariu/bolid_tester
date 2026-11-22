@@ -1,0 +1,21 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "bus_listen",
+  "kind": "capability",
+  "description": "Use when you need to know whether the CAN bus at the OBD port is alive and which ids talk on it, e.g. modules not answering or network (U) codes.",
+  "tools": ["listen_bus"],
+  "requires": { "protocol": "can" },
+  "instructions": [
+    "Call listen_bus with 1-10 seconds, e.g. {\"seconds\":5}. It only listens (the adapter's monitor mode); nothing is sent on the bus, and no other reading runs meanwhile.",
+    "Use it once per run, after the codes: to check the bus is alive when modules do not answer, or to see which ids talk when there are network (U) codes.",
+    "Read the frame count and the number of distinct ids first, then the busiest ids and their frames per second."
+  ],
+  "interpret": [
+    "Frames from several ids at steady rates mean the bus at the OBD port is alive.",
+    "No frames at all: the OBD port may sit behind a gateway that passes only diagnostic traffic (many VAG cars of this era), the ignition may be off, or the adapter cannot monitor this bus. That alone is not a fault.",
+    "On VAG cars with the gateway in front of the OBD port, the ids heard are mostly diagnostic traffic (7E0 / 7E8, 200 / 2xx TP2.0 setup), not the powertrain bus: do not read them as module broadcasts.",
+    "An id is an arbitration id, not a module name: say which id is busy, never guess which module sends it.",
+    "Frames per second here are an average over a few seconds; a short listen does not prove an intermittent bus fault is absent.",
+    "Unparsed lines (BUFFER FULL and similar) mean the adapter could not keep up with the bus: frames around them are missing, so counts are a lower bound."
+  ]
+}

@@ -6,7 +6,13 @@ import { createReadOnlySession, parseSkillFile } from '@/shared/obd-core';
 import type { AgentContribution, AgentTool, ToolContext } from '@/shared/obd-core';
 import { GENERIC_GUIDE } from '@/shared/vehicles/faultGuides';
 import { golfPlus2009 } from '@/shared/vehicles/golf-plus-2009-20tdi';
+import { passatB55 } from '@/shared/vehicles/passat-b55-19tdi';
 import { agentTools } from './agentTools';
+
+const faultTools = agentTools;
+
+/** The Golf simulator with no codes: `lookup_guide` needs only the profile. */
+const golfCtx_ = () => golfCtx([]);
 
 /** A Golf simulator behind the read-only facade with exactly these stored codes (no pending /
  *  permanent unless given); `freezeFrameReads` counts the Mode 02 frame reads. */
@@ -106,11 +112,85 @@ describe('fault-codes agent tools', () => {
     for (const s of agentTools.skills ?? []) expect(parseSkillFile(s).ok).toBe(true);
   });
 
-  it('bundles the fault_codes capability skill over read_dtcs and read_dtcs_detail', () => {
+  it('bundles the fault_codes capability skill over read_dtcs, read_dtcs_detail and lookup_guide', () => {
     const skill = agentTools.skills?.find((s) => s.name === 'fault_codes');
-    expect(skill).toMatchObject({ kind: 'capability', tools: ['read_dtcs', 'read_dtcs_detail'] });
+    expect(skill).toMatchObject({
+      kind: 'capability',
+      tools: ['read_dtcs', 'read_dtcs_detail', 'lookup_guide'],
+    });
+    expect(skill?.instructions.join(' ')).toContain('lookup_guide');
     const interpret = skill?.interpret.join(' ') ?? '';
     for (const word of ['Stored', 'Pending', 'Permanent', 'Readiness', 'MIL'])
       expect(interpret).toContain(word);
+  });
+
+  it('lookup_guide finds the Golf EGR guide by code and by topic', async () => {
+    const golfCtx = await golfCtx_();
+    expect(
+      (await toolOf(faultTools, 'lookup_guide').run({ code: 'P0401' }, golfCtx)).digest,
+    ).toContain('EGR flow/position fault');
+    expect(
+      (await toolOf(faultTools, 'lookup_guide').run({ topic: 'egr' }, golfCtx)).digest,
+    ).toContain('EGR');
+    expect((await toolOf(faultTools, 'lookup_guide').run({}, golfCtx)).digest).toBe(
+      'Give a code or a topic.',
+    );
+  });
+
+  it('lookup_guide gives the related DIDs and the routine with their names', async () => {
+    const r = await toolOf(faultTools, 'lookup_guide').run({ code: 'p0401' }, await golfCtx_());
+    const lines = r.digest.split('\n');
+    expect(lines[0]).toMatch(/^Guide for P0401 on this car: EGR flow\/position fault\./);
+    expect(r.digest).toContain('Related DIDs: 1708 EGR valve position.');
+    expect(r.digest).toMatch(/Routine: 0130 EGR valve output test \(/);
+    expect(r.summary).toBe('Guide for P0401: found');
+  });
+
+  it('lookup_guide leaves out the DIDs and routine a note-only guide does not have', async () => {
+    const r = await toolOf(faultTools, 'lookup_guide').run({ code: 'P2183' }, await golfCtx_());
+    expect(r.digest).toContain('coolant temperature sensor 2');
+    expect(r.digest).not.toContain('Related DIDs');
+    expect(r.digest).not.toContain('Routine');
+  });
+
+  it('lookup_guide says when there is no curated guide', async () => {
+    const tool = toolOf(faultTools, 'lookup_guide');
+    const golf = await golfCtx_();
+    expect((await tool.run({ code: 'P0123' }, golf)).digest).toBe(
+      'No curated guide for P0123 on this car.',
+    );
+    expect((await tool.run({ topic: 'sunroof' }, golf)).digest).toBe(
+      'No curated guide for sunroof on this car.',
+    );
+    const passat: ToolContext = { ...golf, profile: passatB55, guideProfileId: passatB55.id };
+    expect((await tool.run({ code: 'P0401' }, passat)).digest).toBe(
+      'No curated guide for P0401 on this car.',
+    );
+    expect((await tool.run({ code: 'P0123' }, golf)).summary).toBe('Guide for P0123: none');
+  });
+
+  it('lookup_guide by topic lists every matching guide with its codes', async () => {
+    const r = await toolOf(faultTools, 'lookup_guide').run(
+      { topic: 'intake flap' },
+      await golfCtx_(),
+    );
+    expect(r.digest.split('\n')[0]).toBe('Guides for "intake flap" on this car: 2');
+    expect(r.digest).toContain('Codes P0299, P0234, P0238, P2263: Boost-pressure fault');
+    expect(r.digest).toContain('Codes P2015, 08213: Intake manifold runner/flap');
+    expect(r.summary).toBe('Guides for "intake flap": 2');
+  });
+
+  it('lookup_guide declares optional code and topic arguments, its cost and label', () => {
+    const t = toolOf(faultTools, 'lookup_guide');
+    expect(t.labelKey).toBe('faultCodes:agent.tool.lookup_guide');
+    expect(t.costMs).toBe(0);
+    expect(t.available({} as never)).toBe(true);
+    expect(t.args).toEqual({
+      type: 'object',
+      properties: {
+        code: expect.objectContaining({ type: 'string', pattern: '^[PCBU][0-3][0-9A-F]{3}$' }),
+        topic: expect.objectContaining({ type: 'string' }),
+      },
+    });
   });
 });

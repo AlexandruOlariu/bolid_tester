@@ -1,9 +1,10 @@
 /** The read-only session facade the AI diagnostic agent's tools receive instead of a
  *  `DiagnosticSession` (plan 34a). It exposes the session's reads and nothing that writes: no
- *  `clearDtcs`, no raw `send`, no `setHeader` / `setRxFilter`, no `client`, no sniffer. Raw requests
- *  pass a read-request allowlist before any byte goes out, module addressing happens only through
- *  `withModule` (inside `DiagnosticSession.exclusive`, addressing restored in `finally`), and the
- *  airbag (15) and immobilizer (25) modules are refused outright. See docs/features/ai-diagnose.md. */
+ *  `clearDtcs`, no raw `send`, no `setHeader` / `setRxFilter`, no `client`, no sniffer controls (only
+ *  `listenBus`, a bounded passive monitor window). Raw requests pass a read-request allowlist before
+ *  any byte goes out, module addressing happens only through `withModule` (inside
+ *  `DiagnosticSession.exclusive`, addressing restored in `finally`), and the airbag (15) and
+ *  immobilizer (25) modules are refused outright. See docs/features/ai-diagnose.md. */
 
 import type {
   DiagnosticSession,
@@ -12,16 +13,26 @@ import type {
   LiveValue,
 } from '../session/DiagnosticSession';
 import type { UdsSend } from '../coding/udsCoding';
-import type { ProtocolId } from '../obd/protocols';
+import { isCan, type ProtocolId } from '../obd/protocols';
 import type { Dtc } from '../obd/dtc';
 import type { MonitorStatus } from '../obd/readiness';
 import type { Mode06Result } from '../obd/mode06';
 import type { Mode05Result } from '../obd/mode05';
 import type { IuprReport } from '../obd/iupr';
+import { MONITOR_UNAVAILABLE_MESSAGE } from '../transport/Transport';
 import { VAG_UDS_HEADER_CANDIDATES } from '../uds/vagHeaders';
 
 /** VAG diagnostic addresses the agent never addresses: 15 airbag, 25 immobilizer. */
 export const AGENT_EXCLUDED_MODULE_ADDRESSES = ['15', '25'] as const;
+
+/** The longest window `listenBus` monitors the bus for. */
+export const BUS_LISTEN_MAX_MS = 10_000;
+
+/** Why `listenBus` refuses a car that is not on CAN (the ELM monitor shows little on K-line). */
+export const BUS_LISTEN_NEEDS_CAN_MESSAGE = 'Bus listening needs a CAN car.';
+
+/** Why `listenBus` refuses while another monitor run (the sniffer screen) holds the adapter. */
+export const BUS_LISTEN_BUSY_MESSAGE = 'The bus monitor is already running.';
 
 /** A request outside the read allowlist was refused before anything was sent. */
 export class WriteBlockedError extends Error {
@@ -93,6 +104,14 @@ export interface ReadOnlySession {
   request(cmd: string): Promise<number[] | null>;
   /** Address one module, hand `fn` a read-filtered `send`, restore addressing in `finally`. */
   withModule<T>(addr: ModuleAddress, fn: (send: UdsSend) => Promise<T>): Promise<T>;
+  /** Listen to the CAN bus for `ms` (clamped to `BUS_LISTEN_MAX_MS`) with the adapter's passive
+   *  monitor (`ATMA`, headers on) and return every line heard. Nothing goes out on the bus; the
+   *  monitor is stopped (headers off again) in `finally`. Rejects before sending anything with
+   *  `MONITOR_UNAVAILABLE_MESSAGE` when the link cannot stream the monitor, and with
+   *  `BUS_LISTEN_NEEDS_CAN_MESSAGE` off CAN (`BUS_LISTEN_BUSY_MESSAGE` while another monitor run
+   *  holds the adapter). Holds the session (`exclusive`) meanwhile, so never
+   *  call it from inside `withModule`. */
+  listenBus(ms: number): Promise<string[]>;
 }
 
 /** Request headers of the excluded modules, so a caller that omits `address` is refused too. */
@@ -187,6 +206,25 @@ export function createReadOnlySession(session: DiagnosticSession): ReadOnlySessi
           await addressed.catch(() => undefined);
           await session.resetAddressing();
         }
+      });
+    },
+    listenBus: async (ms) => {
+      if (!session.canMonitor) throw new Error(MONITOR_UNAVAILABLE_MESSAGE);
+      if (!isCan(session.currentProtocol)) throw new Error(BUS_LISTEN_NEEDS_CAN_MESSAGE);
+      // Someone else's monitor run (the sniffer screen) owns the channel: never join or stop it.
+      if (session.sniffing) throw new Error(BUS_LISTEN_BUSY_MESSAGE);
+      const window = Math.min(BUS_LISTEN_MAX_MS, Math.max(0, Number.isFinite(ms) ? ms : 0));
+      return session.exclusive(async () => {
+        const lines: string[] = [];
+        try {
+          await session.startSniffer((line) => {
+            if (line.trim()) lines.push(line);
+          });
+          await new Promise((resolve) => setTimeout(resolve, window));
+        } finally {
+          await session.stopSniffer();
+        }
+        return lines;
       });
     },
   };

@@ -1,8 +1,10 @@
 import { DiagnosticSession } from '../session/DiagnosticSession';
 import { MockTransport } from '../transport/MockTransport';
 import { buildScenario } from '../transport/scenarios';
+import { MONITOR_UNAVAILABLE_MESSAGE, type Transport } from '../transport/Transport';
 import { bytesToString } from '../../lib/bytes';
 import {
+  BUS_LISTEN_MAX_MS,
   AGENT_EXCLUDED_MODULE_ADDRESSES,
   ModuleNotAllowedError,
   ReadOnlySession,
@@ -183,5 +185,107 @@ describe('createReadOnlySession', () => {
       ModuleNotAllowedError,
     );
     expect(sent.length).toBe(before);
+  });
+});
+
+describe('ReadOnlySession.listenBus', () => {
+  /** A connected simulator session; `sent` records every command written to it. */
+  async function connected(
+    scenario: string,
+    capabilities?: Transport['capabilities'],
+  ): Promise<{ session: DiagnosticSession; sent: string[] }> {
+    const mock = new MockTransport(buildScenario(scenario));
+    const sent: string[] = [];
+    const transport: Transport = {
+      get status() {
+        return mock.status;
+      },
+      ...(capabilities ? { capabilities } : {}),
+      connect: () => mock.connect(),
+      disconnect: () => mock.disconnect(),
+      write: (b) => {
+        sent.push(bytesToString(b).trim());
+        return mock.write(b);
+      },
+      onData: (l) => mock.onData(l),
+      onStatusChange: (l) => mock.onStatusChange(l),
+    };
+    const session = new DiagnosticSession(transport, {
+      commandTimeoutMs: 1000,
+      firstCommandTimeoutMs: 1000,
+    });
+    await session.connect();
+    return { session, sent };
+  }
+
+  it('listenBus returns the Golf monitor frames and stops the monitor', async () => {
+    const { session: golfSession } = await connected('golf-plus-2009-20tdi');
+    const lines = await createReadOnlySession(golfSession).listenBus(200);
+    expect(lines.length).toBeGreaterThan(0);
+    expect(golfSession.sniffing).toBe(false);
+  });
+
+  it('only monitors (ATH1, ATMA, the interrupt, ATH0) and leaves the link usable', async () => {
+    const { session, sent } = await connected('golf-plus-2009-20tdi');
+    const before = sent.length;
+    const lines = await createReadOnlySession(session).listenBus(200);
+    expect(lines.every((l) => l.trim().length > 0)).toBe(true);
+    expect(sent.slice(before)).toEqual(['ATH1', 'ATMA', '', 'ATH0']);
+    expect((await session.readValue('010C'))?.value).toBeCloseTo(820, 0);
+  });
+
+  it('clamps the window to 10 s', async () => {
+    const { session } = await connected('golf-plus-2009-20tdi');
+    expect(BUS_LISTEN_MAX_MS).toBe(10_000);
+    jest.useFakeTimers();
+    try {
+      let done = false;
+      const listening = createReadOnlySession(session)
+        .listenBus(60_000)
+        .then((l) => {
+          done = true;
+          return l;
+        });
+      await jest.advanceTimersByTimeAsync(9_900);
+      expect(done).toBe(false);
+      expect(session.sniffing).toBe(true);
+      await jest.advanceTimersByTimeAsync(1_000);
+      expect(done).toBe(true);
+      expect((await listening).length).toBeGreaterThan(0);
+      expect(session.sniffing).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('refuses a link that cannot stream the monitor before sending anything', async () => {
+    const { session, sent } = await connected('golf-plus-2009-20tdi', { monitor: false });
+    const before = sent.length;
+    await expect(createReadOnlySession(session).listenBus(200)).rejects.toThrow(
+      MONITOR_UNAVAILABLE_MESSAGE,
+    );
+    expect(sent).toHaveLength(before);
+  });
+
+  it('refuses a K-line car before sending anything', async () => {
+    const { session, sent } = await connected('passat-b55-19tdi');
+    const before = sent.length;
+    await expect(createReadOnlySession(session).listenBus(200)).rejects.toThrow(
+      'Bus listening needs a CAN car.',
+    );
+    expect(sent).toHaveLength(before);
+    expect(session.sniffing).toBe(false);
+  });
+
+  it('never joins or stops a monitor run someone else started', async () => {
+    const { session, sent } = await connected('golf-plus-2009-20tdi');
+    await session.startSniffer(() => undefined);
+    const before = sent.length;
+    await expect(createReadOnlySession(session).listenBus(200)).rejects.toThrow(
+      'The bus monitor is already running.',
+    );
+    expect(sent).toHaveLength(before);
+    expect(session.sniffing).toBe(true);
+    await session.stopSniffer();
   });
 });
