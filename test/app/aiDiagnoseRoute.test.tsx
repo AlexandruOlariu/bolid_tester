@@ -11,7 +11,8 @@ import {
   type AvailabilityContext,
 } from '@/shared/obd-core';
 import { getVehicleProfile } from '@/shared/vehicles';
-import { AGENT_CONTRIBUTIONS } from '@/app/ai-diagnose';
+import { AGENT_CONTRIBUTIONS, SIM_REV_HOLD_MS, onDriverAnswer } from '@/app/ai-diagnose';
+import { connectionService } from '@/features/connection';
 
 /** The 21 capability skills of the spec's catalog (plan 34b): one per app feature the agent reads. */
 const CAPABILITY_SKILLS = [
@@ -111,6 +112,22 @@ describe('AI diagnose route', () => {
       expect.arrayContaining(['fuel_trims', 'misfire', 'cooling', 'check_engine_light']),
     );
     expect(offered('fiat-punto-2008-12')).not.toContain('dpf_regen');
+  });
+
+  it('a confirmed rev hold starts the simulator hold for 15 s; nothing else does (plan 34c)', () => {
+    const hold = jest.spyOn(connectionService.__sim, 'holdRevs').mockReturnValue(true);
+    try {
+      onDriverAnswer('hold_2500_rpm', { kind: 'cant' });
+      onDriverAnswer('hold_2500_rpm', { kind: 'timeout' });
+      onDriverAnswer('restart_engine', { kind: 'done' });
+      expect(hold).not.toHaveBeenCalled();
+      onDriverAnswer('hold_2500_rpm', { kind: 'done' });
+      expect(SIM_REV_HOLD_MS).toBe(15_000);
+      expect(hold).toHaveBeenCalledWith(15_000);
+      expect(hold).toHaveBeenCalledTimes(1);
+    } finally {
+      hold.mockRestore();
+    }
   });
 
   it('no capability tool is a write', () => {

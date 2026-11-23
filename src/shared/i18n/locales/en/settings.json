@@ -200,6 +200,16 @@
     "customInputA11y": "Custom fault codes to inject, comma-separated",
     "injecting": "Injecting: {{codes}}. Reconnect the simulator to apply.",
     "customHelp": "Enter codes like P0135 (letter P, C, B or U plus four digits). Invalid codes are ignored.",
+    "simFault": "Scripted fault",
+    "simFaultA11y": "Scripted simulator fault",
+    "simFaultOption": {
+      "none": "None",
+      "noneA11y": "No scripted fault",
+      "low_boost": "Low boost",
+      "lean_trims": "Lean fuel trims",
+      "weak_charging": "Weak charging"
+    },
+    "simFaultHelp": "A fault the AI diagnosis can find: boost that stays near 104 kPa while revving, lean fuel trims (+12.5 % / +18.0 % at idle), or a battery at 12.1 V with the engine running. Reconnect the simulator to apply; it resets when the app restarts.",
     "dropped": "Link dropped. With auto-reconnect on it reconnects in 2 s; three drops in a minute pause it.",
     "connectSimFirst": "Connect to the simulator first.",
     "armed": "Armed: the next simulator connect gets no reply to ATZ. Connect to see the diagnostics.",

@@ -357,7 +357,8 @@ function linkInfoOf(t: Transport) {
 /** Build the transport + session, run init, and publish the connected state. Does NOT touch the
  *  auto-reconnect controller, so it is safe to call from within a reconnect attempt. */
 async function connectInternal(target?: ConnectTarget): Promise<void> {
-  const { adapterSource, simulatedVehicleId, injectedDtcs, wifi } = useSettingsStore.getState();
+  const { adapterSource, simulatedVehicleId, injectedDtcs, simFault, wifi } =
+    useSettingsStore.getState();
   const epoch = connectEpoch;
   /** True once the adapter source was switched while this connect was in flight. */
   const stale = () => epoch !== connectEpoch;
@@ -450,11 +451,14 @@ async function connectInternal(target?: ConnectTarget): Promise<void> {
       // A garage car as the simulated vehicle (plan 06) simulates its base profile with the learned
       // VIN / supported-PID set on top, so a car learned in the simulator reconnects as itself.
       const sim = simulatorSourceFor(simulatedVehicleId, useGarageStore.getState().vehicles);
+      // A scripted fault (plan 34c, Settings → Developer) is opt-in: without one the scenario is
+      // the default, byte for byte.
       const scenario = buildScenario(sim.profileId, {
         ...sim.overrides,
         storedDtcs: injectedDtcs,
         pendingDtcs: [],
         permanentDtcs: [],
+        ...(simFault ? { simFault } : {}),
       });
       const mock = new MockTransport(scenario);
       if (failNextSimConnect) {
@@ -646,5 +650,13 @@ export const __sim = {
   /** True while a "fail next connect" is armed and not yet consumed. */
   isFailNextConnectArmed(): boolean {
     return failNextSimConnect;
+  },
+  /** The stationary rev hold (plan 34c): the live simulator answers 2500 rpm and boost for `ms`
+   *  (the AI screen calls it when the driver confirms "hold 2500 rpm"). Returns false when the live
+   *  transport is not the simulator. */
+  holdRevs(ms: number): boolean {
+    if (!(liveRawTransport instanceof MockTransport)) return false;
+    liveRawTransport.holdRevs(ms);
+    return true;
   },
 };

@@ -450,3 +450,106 @@ describe('MockTransport readiness ignition type', () => {
     expect(await ignitionOf('generic')).toBe('spark');
   });
 });
+
+describe('MockTransport scripted faults and the rev hold (plan 34c)', () => {
+  /** One command's answer with the prompt and whitespace removed (`NO DATA` reads `NODATA`). */
+  const answer = async (t: MockTransport, cmd: string) =>
+    (await ask(t, cmd)).replace(/[\s>]+/g, '');
+  const connect = (t: MockTransport) => t.connect();
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const answersFor = async (t: MockTransport, cmds: string[]) => {
+    await connect(t);
+    const out: string[] = [];
+    for (const c of cmds) out.push(await answer(t, c));
+    return out;
+  };
+  /** What every default scenario answered before scripted faults existed (recorded, not derived). */
+  const BASELINE: Record<string, string[]> = {
+    generic: ['410C0CD0', '410B64', '410680', '410780', '414236B0', '12.3V'],
+    'golf-plus-2009-20tdi': ['410C0CD0', '410B64', 'NODATA', 'NODATA', '414236B0', '12.3V'],
+    'fiat-punto-2008-12': ['410C0CD0', '410B64', '410680', '410780', '414236B0', '12.3V'],
+    'passat-b55-19tdi': ['SEARCHING...410C0CD0', '410B64', 'NODATA', 'NODATA', '414236B0', '12.3V'],
+  };
+
+  it('default scenarios answer exactly as before', async () => {
+    for (const id of ['generic', 'golf-plus-2009-20tdi', 'fiat-punto-2008-12', 'passat-b55-19tdi'])
+      expect(
+        await answersFor(new MockTransport(buildScenario(id)), [
+          '010C',
+          '010B',
+          '0106',
+          '0107',
+          '0142',
+          'ATRV',
+        ]),
+      ).toEqual(BASELINE[id]);
+  });
+
+  it('no default scenario declares a scripted fault', () => {
+    for (const id of ['generic', 'golf-plus-2009-20tdi', 'fiat-punto-2008-12', 'passat-b55-19tdi'])
+      expect(buildScenario(id).simFault).toBeUndefined();
+  });
+
+  it('holdRevs raises rpm and MAP for its window only', async () => {
+    const m = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+    await connect(m);
+    m.holdRevs(50);
+    expect(await answer(m, '010C')).toBe('410C2710');
+    expect(await answer(m, '010B')).toBe('410B7D');
+    await sleep(60);
+    expect(await answer(m, '010C')).toBe('410C0CD0');
+    expect(await answer(m, '010B')).toBe('410B64');
+  });
+
+  it('a multi-PID read sees the hold too', async () => {
+    const m = new MockTransport(buildScenario('fiat-punto-2008-12'));
+    await connect(m);
+    m.holdRevs(1_000);
+    expect(await answer(m, '010C0B')).toBe('410C27100B7D');
+  });
+
+  it('low_boost keeps MAP near baro during the hold', async () => {
+    const m = new MockTransport(buildScenario('golf-plus-2009-20tdi', { simFault: 'low_boost' }));
+    await connect(m);
+    expect(await answer(m, '010B')).toBe('410B64'); // idle is untouched
+    m.holdRevs(50);
+    expect(await answer(m, '010B')).toBe('410B68');
+    expect(await answer(m, '010C')).toBe('410C2710');
+  });
+
+  it('lean_trims and weak_charging bytes', async () => {
+    const p = new MockTransport(buildScenario('fiat-punto-2008-12', { simFault: 'lean_trims' }));
+    await connect(p);
+    expect(await answer(p, '0107')).toBe('410797');
+    const g = new MockTransport(
+      buildScenario('golf-plus-2009-20tdi', { simFault: 'weak_charging' }),
+    );
+    await connect(g);
+    expect(await answer(g, 'ATRV')).toBe('12.1V');
+  });
+
+  it('lean_trims: +12.5 / +18.0 % at idle, +3.1 / +9.4 % during the hold', async () => {
+    const p = new MockTransport(buildScenario('fiat-punto-2008-12', { simFault: 'lean_trims' }));
+    await connect(p);
+    expect(await answer(p, '0106')).toBe('410690');
+    expect(await answer(p, '010607')).toBe('4106900797');
+    p.holdRevs(1_000);
+    expect(await answer(p, '0106')).toBe('410684');
+    expect(await answer(p, '0107')).toBe('41078C');
+  });
+
+  it('weak_charging: the module voltage PID reads 12.1 V too', async () => {
+    const g = new MockTransport(
+      buildScenario('golf-plus-2009-20tdi', { simFault: 'weak_charging' }),
+    );
+    await connect(g);
+    expect(await answer(g, '0142')).toBe('41422F44');
+  });
+
+  it('a fault never makes an unsupported PID answer', async () => {
+    const g = new MockTransport(buildScenario('golf-plus-2009-20tdi', { simFault: 'lean_trims' }));
+    await connect(g);
+    expect(await answer(g, '0106')).toBe('NODATA');
+    expect(await answer(g, '0107')).toBe('NODATA');
+  });
+});

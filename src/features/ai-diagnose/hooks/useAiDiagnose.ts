@@ -11,6 +11,7 @@ import {
   type AiReport,
   type DiagnosisOptions,
   type DiagnosticSnapshot,
+  type DriverInstructionId,
   type DriverReply,
 } from '@/shared/obd-core';
 import { useAiDiagnoseStore } from '../model/aiDiagnoseStore';
@@ -43,13 +44,21 @@ function addHistoryEntry(report: AiReport, snapshot: DiagnosticSnapshot): void {
   });
 }
 
+/** Told after the driver answers a prompt (plan 34c): the instruction and the reply. The route uses
+ *  it to start the simulator's rev hold when "hold 2500 rpm" is confirmed. */
+export type DriverAnswerListener = (id: DriverInstructionId, reply: DriverReply) => void;
+
 /** Orchestrates the AI diagnostic agent (plan 34a): **Investigate** a typed symptom or **Check
  *  everything** runs triage then the agent loop over `contributions` (the app layer composes them),
  *  with Stop, the driver prompt's answer and Re-run; the outcome lands in the store and in History.
  *  `run({ focusCode })` starts a run seeded with one fault code (fault-codes "Explain with AI").
  *  `ask(question)` sends a follow-up question over the trail. `clearCodes()` clears, then re-reads
- *  the car with triage only. A start while a run is going is ignored. */
-export function useAiDiagnose(contributions: AgentContribution[]) {
+ *  the car with triage only. A start while a run is going is ignored. `onDriverAnswer` is called
+ *  after each answer to an open driver prompt. */
+export function useAiDiagnose(
+  contributions: AgentContribution[],
+  onDriverAnswer?: DriverAnswerListener,
+) {
   const status = useSessionStore((s) => s.status);
   // The selected car's DTC make, so a focused code reads the same as on the Faults screen.
   const profile = useActiveProfile();
@@ -156,7 +165,16 @@ export function useAiDiagnose(contributions: AgentContribution[]) {
 
   const stop = useCallback(() => activeRun?.stop(), []);
 
-  const answerDriver = useCallback((reply: DriverReply) => activeRun?.gate.answer(reply), []);
+  const answerDriver = useCallback(
+    (reply: DriverReply) => {
+      const gate = activeRun?.gate;
+      const id = gate?.pending();
+      if (!gate || !id) return; // no open prompt: nothing to answer, nothing to report
+      gate.answer(reply);
+      onDriverAnswer?.(id, reply);
+    },
+    [onDriverAnswer],
+  );
 
   const clearCodes = useCallback(async (): Promise<boolean> => {
     if (isRunning()) return false;

@@ -204,6 +204,16 @@
     "customInputA11y": "Coduri de eroare personalizate de injectat, separate prin virgulă",
     "injecting": "Se injectează: {{codes}}. Reconectează simulatorul pentru a aplica.",
     "customHelp": "Introdu coduri ca P0135 (litera P, C, B sau U plus patru cifre). Codurile invalide sunt ignorate.",
+    "simFault": "Defect scriptat",
+    "simFaultA11y": "Defect scriptat al simulatorului",
+    "simFaultOption": {
+      "none": "Niciunul",
+      "noneA11y": "Fără defect scriptat",
+      "low_boost": "Presiune turbo mică",
+      "lean_trims": "Corecții de amestec sărac",
+      "weak_charging": "Încărcare slabă"
+    },
+    "simFaultHelp": "Un defect pe care diagnoza AI îl poate găsi: presiune turbo care rămâne în jur de 104 kPa la turație, corecții de amestec sărac (+12,5 % / +18,0 % la ralanti) sau o baterie la 12,1 V cu motorul pornit. Reconectează simulatorul pentru a aplica; se resetează la repornirea aplicației.",
     "dropped": "Legătură întreruptă. Cu reconectarea automată activă, se reconectează în 2 s; trei întreruperi într-un minut o opresc.",
     "connectSimFirst": "Conectează-te mai întâi la simulator.",
     "armed": "Pregătit: următoarea conectare la simulator nu primește răspuns la ATZ. Conectează-te ca să vezi diagnoza.",

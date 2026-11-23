@@ -16,7 +16,7 @@ import { ACTION_ICON, OverallBanner, FindingCard, UncitedNotice } from './AiRepo
 import { AgentStartCard } from './AgentStartCard';
 import { AgentTrail } from './AgentTrail';
 import { DriverPrompt } from './DriverPrompt';
-import { useAiDiagnose } from '../hooks/useAiDiagnose';
+import { useAiDiagnose, type DriverAnswerListener } from '../hooks/useAiDiagnose';
 import { useTranslation } from '@/shared/i18n';
 import { formatTime } from '@/shared/lib/format';
 
@@ -271,11 +271,14 @@ const NO_CONTRIBUTIONS: AgentContribution[] = [];
  *  everything**; the agent run's trail with **Stop** and the driver prompt; then the cited report
  *  with Re-run (the last request again), Clear codes (its confirmation, then a triage-only re-read)
  *  and follow-up questions over the trail. `contributions`: the agent tools and skills the app
- *  layer composes (`src/app/ai-diagnose.tsx`). */
+ *  layer composes (`src/app/ai-diagnose.tsx`). `onDriverAnswer`: called after each answer to the
+ *  driver prompt (plan 34c: the route starts the simulator's rev hold on "hold 2500 rpm"). */
 export function AiDiagnoseScreen({
   contributions = NO_CONTRIBUTIONS,
+  onDriverAnswer,
 }: {
   contributions?: AgentContribution[];
+  onDriverAnswer?: DriverAnswerListener;
 }) {
   const { t } = useTranslation('aiDiagnose');
   const status = useSessionStore((s) => s.status);
@@ -307,7 +310,7 @@ export function AiDiagnoseScreen({
     rerun,
     stop,
     answerDriver,
-  } = useAiDiagnose(contributions);
+  } = useAiDiagnose(contributions, onDriverAnswer);
   const params = useLocalSearchParams<{ focus?: string | string[] }>();
   const rawFocus = Array.isArray(params.focus) ? params.focus[0] : params.focus;
   const focusParam = rawFocus?.trim().toUpperCase() || undefined;

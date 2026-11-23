@@ -23,6 +23,7 @@ import {
 import {
   type AiProviderId,
   type AiProviderMemory,
+  type SimFaultId,
   AI_PROVIDER_IDS,
   applyProviderPreset,
   inferProvider,
@@ -98,6 +99,9 @@ export interface SettingsState {
   adapterSource: AdapterSource;
   simulatedVehicleId: string;
   injectedDtcs: string[];
+  /** Runtime only (never persisted, plan 34c): the simulator's scripted fault, applied on the next
+   *  simulator connect. Null = none, the default — every app start begins without one. */
+  simFault: SimFaultId | null;
   pollIntervalMs: number;
   /** Automatically retry the last device with backoff after an unexpected link drop. Default on
    *  (plan 12); connectionService's flap guard pauses it after 3 drops in a minute. */
@@ -121,6 +125,7 @@ export interface SettingsState {
   setAdapterSource: (s: AdapterSource) => void;
   setSimulatedVehicle: (id: string) => void;
   setInjectedDtcs: (codes: string[]) => void;
+  setSimFault: (f: SimFaultId | null) => void;
   setPollInterval: (ms: number) => void;
   setAutoReconnect: (v: boolean) => void;
   setAutoSelectByVin: (v: boolean) => void;
@@ -221,6 +226,7 @@ export const useSettingsStore = create<SettingsState>()(
       adapterSource: 'ble',
       simulatedVehicleId: 'golf-plus-2009-20tdi',
       injectedDtcs: [],
+      simFault: null,
       pollIntervalMs: 1000,
       // On by default (plan 12): a drop on the Live tab reconnects on its own; the flap guard in
       // connectionService pauses it after 3 drops in a minute.
@@ -239,6 +245,7 @@ export const useSettingsStore = create<SettingsState>()(
       setAdapterSource: (adapterSource) => set({ adapterSource }),
       setSimulatedVehicle: (simulatedVehicleId) => set({ simulatedVehicleId }),
       setInjectedDtcs: (injectedDtcs) => set({ injectedDtcs }),
+      setSimFault: (simFault) => set({ simFault }),
       setPollInterval: (pollIntervalMs) => set({ pollIntervalMs }),
       setAutoReconnect: (autoReconnect) => set({ autoReconnect }),
       setAutoSelectByVin: (autoSelectByVin) => set({ autoSelectByVin }),
@@ -274,8 +281,9 @@ export const useSettingsStore = create<SettingsState>()(
       version: SETTINGS_VERSION,
       storage: createJSONStorage(() => fileStateStorage),
       migrate: (persisted, version) => migrateSettings(persisted, version) as SettingsState,
-      // Persist user config only — never the live adapter I/O log, and never the AI apiKey (redacted
-      // here; it is stored in the OS keystore instead — finding F8).
+      // Persist user config only — never the live adapter I/O log, never the simulator's scripted
+      // fault (plan 34c, a per-session test switch), and never the AI apiKey (redacted here; it is
+      // stored in the OS keystore instead — finding F8).
       partialize: (s) => ({
         adapterSource: s.adapterSource,
         simulatedVehicleId: s.simulatedVehicleId,

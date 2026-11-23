@@ -9,6 +9,7 @@ import {
   isAdapterSourceSupported,
   type AdapterSource,
 } from '@/shared/state/settingsStore';
+import type { SimFaultId } from '@/shared/obd-core';
 import { ADAPTER_LOG_CAPACITY } from '@/shared/state/adapterLog';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useGarageStore } from '@/shared/state/garageStore';
@@ -107,6 +108,40 @@ function InjectedDtcsSection() {
           ) : null}
         </YStack>
       </YStack>
+    </YStack>
+  );
+}
+
+/** The scripted-fault picker's "none" value (the store holds null). */
+const NO_SIM_FAULT = 'none';
+const SIM_FAULTS: SimFaultId[] = ['low_boost', 'lean_trims', 'weak_charging'];
+
+/** Simulator **Scripted fault** (plan 34c): None · Low boost · Lean fuel trims · Weak charging —
+ *  live-data faults the AI diagnosis can find. Applied on the next simulator connect; runtime only
+ *  (an app restart starts without one). See docs/simulator.md. */
+function SimFaultSection() {
+  const { t } = useTranslation('settings');
+  const simFault = useSettingsStore((st) => st.simFault);
+  const setSimFault = useSettingsStore((st) => st.setSimFault);
+  return (
+    <YStack gap="$2">
+      <SubLabel>{t('dev.simFault')}</SubLabel>
+      <SegmentedControl<SimFaultId | typeof NO_SIM_FAULT>
+        label={t('dev.simFaultA11y')}
+        options={[
+          {
+            value: NO_SIM_FAULT,
+            label: t('dev.simFaultOption.none'),
+            accessibilityLabel: t('dev.simFaultOption.noneA11y'),
+          },
+          ...SIM_FAULTS.map((f) => ({ value: f, label: t(`dev.simFaultOption.${f}`) })),
+        ]}
+        value={simFault ?? NO_SIM_FAULT}
+        onChange={(v) => setSimFault(v === NO_SIM_FAULT ? null : v)}
+      />
+      <Paragraph theme="alt2" fontSize="$1">
+        {t('dev.simFaultHelp')}
+      </Paragraph>
     </YStack>
   );
 }
@@ -348,6 +383,8 @@ export function DeveloperSettingsScreen({ resetAppData }: { resetAppData?: Reset
               </YStack>
 
               <InjectedDtcsSection />
+
+              <SimFaultSection />
 
               <SimulatorDeveloperSection />
             </>

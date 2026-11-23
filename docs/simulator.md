@@ -163,6 +163,36 @@ speed; non-zero to emulate K-line in the UI).
   identifies the Golf and reads `03` over it. The simulator is also the primary web experience: in
   the browser build every screen runs against it with no adapter ([web](./web.md)).
 
+## Scripted faults (plan 34c)
+
+Opt-in live-data faults the AI diagnostic agent's procedures can find
+([ai-diagnose](./features/ai-diagnose.md)). `SimScenario.simFault?: SimFaultId` (`'low_boost' |
+'lean_trims' | 'weak_charging'`); `buildScenario(id, { simFault })` passes it through. **Default
+scenarios carry none** and, with `simFault` undefined, every byte is identical to before
+(`MockTransport.test.ts` pins the baseline; the recorded `sim-fixtures` stay fresh without
+re-recording). Only PIDs the scenario supports answer, as always — `lean_trims` on the Golf changes
+nothing, because the Golf does not report `0106`/`0107`.
+
+| Fault           | Idle                                            | During a rev hold                                |
+| --------------- | ----------------------------------------------- | ------------------------------------------------ |
+| (none)          | `010C` `0C D0` (820 rpm), `010B` `64` (100 kPa) | `010C` `27 10` (2500 rpm), `010B` `7D` (125 kPa) |
+| `low_boost`     | unchanged                                       | `010B` `68` (104 kPa, near baro)                 |
+| `lean_trims`    | `0106` `90` (+12.5 %), `0107` `97` (+18.0 %)    | `0106` `84` (+3.1 %), `0107` `8C` (+9.4 %)       |
+| `weak_charging` | `ATRV` → `12.1V`, `0142` `2F 44` (12.1 V)       | unchanged                                        |
+
+- **Rev hold** — `MockTransport.holdRevs(ms)`: for `ms` from now `010C` answers 2500 rpm and `010B`
+  125 kPa (104 kPa with `low_boost`); afterwards the idle bytes (`SIM_PID_BYTES`) return. Calling it
+  again replaces the window. Single and multi-PID Mode 01 reads both see it; Mode 02 freeze frames
+  keep their stored idle snapshot.
+- **Developer picker** — Settings → Developer & simulator → **Scripted fault**: None · Low boost ·
+  Lean fuel trims · Weak charging. Stored as `useSettingsStore.simFault` (`null` = none), runtime only
+  (never persisted, so an app restart starts without one); `connectionService` passes it to
+  `buildScenario` on the next simulator connect, so reconnect to apply.
+- **AI screen hook** — `__sim.holdRevs(ms)` (false when the live transport is not the simulator).
+  The AI diagnose route passes `onDriverAnswer` to the screen; when the driver answers **Done** to
+  "hold 2500 rpm" it calls `__sim.holdRevs(15_000)`, so in simulator mode the hold step triggers a
+  15 s hold the boost and fuel-trim procedures can measure. With a real adapter it does nothing.
+
 ## Replay fixtures
 
 A **replay fixture** is a recorded adapter session: every command the app sent, paired with the

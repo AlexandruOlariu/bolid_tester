@@ -67,7 +67,7 @@ import { useLinkStore } from '@/shared/state/linkStore';
 
 beforeEach(async () => {
   await disconnect();
-  useSettingsStore.setState({ adapterSource: 'mock', injectedDtcs: [] });
+  useSettingsStore.setState({ adapterSource: 'mock', injectedDtcs: [], simFault: null });
 });
 
 afterAll(async () => {
@@ -270,6 +270,32 @@ describe('auto-reconnect flap guard (plan 12)', () => {
 
   it('simulateDrop is a no-op without a live simulator session', () => {
     expect(__sim.simulateDrop()).toBe(false);
+  });
+});
+
+describe('simulator scripted faults (plan 34c)', () => {
+  it('connect passes the scripted fault from settings', async () => {
+    useSettingsStore.setState({ adapterSource: 'mock', simFault: 'weak_charging' });
+    await connect();
+    expect(useSessionStore.getState().info?.voltage).toBeCloseTo(12.1);
+  });
+
+  it('no scripted fault by default: the simulator reads its usual 12.3 V', async () => {
+    expect(useSettingsStore.getState().simFault).toBeNull();
+    await connect();
+    expect(useSessionStore.getState().info?.voltage).toBeCloseTo(12.3);
+  });
+
+  it('holdRevs reaches the live simulator, and is a no-op without one', async () => {
+    expect(__sim.holdRevs(15_000)).toBe(false);
+    const hold = jest.spyOn(MockTransport.prototype, 'holdRevs');
+    try {
+      await connect();
+      expect(__sim.holdRevs(15_000)).toBe(true);
+      expect(hold).toHaveBeenCalledWith(15_000);
+    } finally {
+      hold.mockRestore();
+    }
   });
 });
 

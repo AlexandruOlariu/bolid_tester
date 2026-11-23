@@ -113,6 +113,27 @@ describe('DeveloperSettingsScreen', () => {
     expect(useSettingsStore.getState().injectedDtcs).toEqual(['P0299', 'P0401']);
   });
 
+  it('the scripted-fault picker sets the simulator fault, and None clears it (plan 34c)', () => {
+    useSettingsStore.setState({ adapterSource: 'mock', simFault: null });
+    renderWithProviders(<DeveloperSettingsScreen resetAppData={resetAllAppData} />);
+    expect(screen.getByText('Scripted fault')).toBeTruthy();
+
+    fireEvent.press(screen.getByText('Low boost'));
+    expect(useSettingsStore.getState().simFault).toBe('low_boost');
+    fireEvent.press(screen.getByText('Lean fuel trims'));
+    expect(useSettingsStore.getState().simFault).toBe('lean_trims');
+    fireEvent.press(screen.getByText('Weak charging'));
+    expect(useSettingsStore.getState().simFault).toBe('weak_charging');
+    fireEvent.press(screen.getByLabelText('No scripted fault'));
+    expect(useSettingsStore.getState().simFault).toBeNull();
+  });
+
+  it('the scripted-fault picker is a simulator control only', () => {
+    useSettingsStore.setState({ adapterSource: 'ble' });
+    renderWithProviders(<DeveloperSettingsScreen />);
+    expect(screen.queryByText('Scripted fault')).toBeNull();
+  });
+
   it('Preview feedback bundle opens Report a problem in preview mode (plan 32)', () => {
     renderWithProviders(<DeveloperSettingsScreen />);
     fireEvent.press(screen.getByText('Preview feedback bundle'));

@@ -282,7 +282,13 @@ describe('AiDiagnoseScreen agent run with mock://ai', () => {
   it("a battery symptom asks the driver to restart; Can't still finishes", async () => {
     useMockAi();
     await connectSimulator();
-    renderWithProviders(<AiDiagnoseScreen contributions={[batteryHealthAgentTools]} />);
+    const onDriverAnswer = jest.fn();
+    renderWithProviders(
+      <AiDiagnoseScreen
+        contributions={[batteryHealthAgentTools]}
+        onDriverAnswer={onDriverAnswer}
+      />,
+    );
     fireEvent.changeText(screen.getByPlaceholderText(/pulls weak/), 'battery dies overnight');
     await act(async () => {
       fireEvent.press(screen.getByText('Investigate'));
@@ -298,6 +304,8 @@ describe('AiDiagnoseScreen agent run with mock://ai', () => {
     await act(async () => {
       fireEvent.press(screen.getByText("Can't"));
     });
+    // The route hears each answer (plan 34c: the simulator's rev hold starts on one).
+    expect(onDriverAnswer).toHaveBeenCalledWith('restart_engine', { kind: 'cant' });
     // battery_capture samples real time (2 s before, 4 s after the answer)
     expect(await screen.findByText(/Mock AI report/, {}, { timeout: 10_000 })).toBeTruthy();
   }, 20_000);

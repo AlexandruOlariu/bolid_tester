@@ -8,6 +8,11 @@ import { encodeDtc } from '../obd/dtc';
 import { asciiToBytes, bytesToString, stringToBytes } from '../../lib/bytes';
 import { byteToHex, toHex, parseHexBytes } from '../../lib/hex';
 
+/** Opt-in scripted faults (plan 34c) that the AI agent's procedures can find in the simulator:
+ *  boost that stays near baro during a rev hold, lean fuel trims, and a battery that is not
+ *  being charged. See docs/simulator.md#scripted-faults-plan-34c. */
+export type SimFaultId = 'low_boost' | 'lean_trims' | 'weak_charging';
+
 export interface SimScenario {
   protocol: ProtocolId;
   supportedPids: string[]; // '0104' etc — the PIDs this ECU reports
@@ -74,6 +79,9 @@ export interface SimScenario {
     string,
     { level: number; seed: number[]; key: number[]; protects: ('2E' | '31' | '2F' | '3B')[] }
   >;
+  /** A scripted fault (plan 34c) that changes a few live PID bytes and the adapter voltage.
+   *  Undefined ⇒ every byte is the default one. Only PIDs in `supportedPids` answer, as always. */
+  simFault?: SimFaultId;
   latencyMs?: number;
   emitSearching?: boolean;
   /** Adapter auto-sleep: after this idle gap (ms since the last write or reply) the next non-empty command is
@@ -111,6 +119,21 @@ const SIM_PID_BYTES: Record<string, number[]> = {
   '015e': [0x00, 0x1e],
 };
 
+/** Live bytes while a stationary rev hold runs (`holdRevs`): 2500 rpm and 125 kPa MAP. */
+const HOLD_RPM_BYTES = [0x27, 0x10];
+const HOLD_MAP_BYTES = [0x7d];
+/** `low_boost`: MAP stays near baro (104 kPa) during the hold. */
+const LOW_BOOST_HOLD_MAP_BYTES = [0x68];
+/** `lean_trims`: STFT / LTFT bank 1, at idle (+12.5 % / +18.0 %) and during the hold
+ *  (+3.1 % / +9.4 %) — lean at idle that mostly corrects under load, like an intake leak. */
+const LEAN_TRIM_BYTES: Record<'idle' | 'hold', Record<'0106' | '0107', number[]>> = {
+  idle: { '0106': [0x90], '0107': [0x97] },
+  hold: { '0106': [0x84], '0107': [0x8c] },
+};
+/** `weak_charging`: the module voltage (0142) and ATRV read 12.1 V with the engine running. */
+const WEAK_CHARGING_0142_BYTES = [0x2f, 0x44];
+const WEAK_CHARGING_ATRV = '12.1V';
+
 /** ISO 15765-4 physical request id of the engine ECU (11-bit CAN). */
 const ENGINE_REQ_HEADER = '7E0';
 
@@ -138,6 +161,8 @@ export class MockTransport implements Transport {
   private secUnlocked = new Set<string>();
   private secSeedSent = new Set<string>();
   private secFailures = new Map<string, number>();
+  /** End (epoch ms) of the current stationary rev hold (`holdRevs`); 0 = none. */
+  private holdUntil = 0;
 
   constructor(public scenario: SimScenario) {}
 
@@ -161,6 +186,27 @@ export class MockTransport implements Transport {
   dropResponses(n: number, opts: { includeAt?: boolean } = {}): void {
     this.dropBudget = Math.max(0, Math.floor(n));
     this.dropIncludesAt = opts.includeAt ?? false;
+  }
+
+  /** Sim hook (plan 34c): for `ms` from now the engine "holds 2500 rpm" — `010C` answers 2500 rpm
+   *  and `010B` 125 kPa (104 kPa with the `low_boost` fault); afterwards the idle bytes return.
+   *  Calling it again replaces the previous window. */
+  holdRevs(ms: number): void {
+    this.holdUntil = Date.now() + Math.max(0, ms);
+  }
+
+  /** The live data bytes of Mode 01 PID `pid` (lower-case, e.g. `010c`): the rev hold and the
+   *  scripted fault on top of the default idle bytes. Undefined when there is no default either. */
+  private livePidBytes(pid: string): number[] | undefined {
+    const holding = Date.now() < this.holdUntil;
+    const fault = this.scenario.simFault;
+    if (holding && pid === '010c') return HOLD_RPM_BYTES;
+    if (holding && pid === '010b')
+      return fault === 'low_boost' ? LOW_BOOST_HOLD_MAP_BYTES : HOLD_MAP_BYTES;
+    if (fault === 'lean_trims' && (pid === '0106' || pid === '0107'))
+      return LEAN_TRIM_BYTES[holding ? 'hold' : 'idle'][pid];
+    if (fault === 'weak_charging' && pid === '0142') return WEAK_CHARGING_0142_BYTES;
+    return SIM_PID_BYTES[pid];
   }
 
   /** Send adapter output to the listeners after the scenario's latency. */
@@ -283,7 +329,8 @@ export class MockTransport implements Transport {
   private respondAt(c: string): string {
     if (c === 'ATZ' || c === 'ATI') return 'ELM327 v2.2';
     if (c === 'ATDPN') return elmNumberFromProtocol(this.scenario.protocol);
-    if (c === 'ATRV') return '12.3V';
+    if (c === 'ATRV')
+      return this.scenario.simFault === 'weak_charging' ? WEAK_CHARGING_ATRV : '12.3V';
     if (c.startsWith('ATSP')) return 'OK';
     if (c.startsWith('ATSH')) {
       const hh = c.slice(4).trim();
@@ -604,7 +651,7 @@ export class MockTransport implements Transport {
       for (const pb of pids) {
         const full = '01' + pb;
         if (!this.scenario.supportedPids.includes(full)) continue;
-        const data = SIM_PID_BYTES[full.toLowerCase()] ?? [0x00];
+        const data = this.livePidBytes(full.toLowerCase()) ?? [0x00];
         body += pb + toHex(data);
       }
       return body ? '41' + body : 'NO DATA';
@@ -631,7 +678,7 @@ export class MockTransport implements Transport {
         return '4101' + toHex([a, b, 0x21, 0x00]);
       }
       if (this.scenario.supportedPids.includes(h)) {
-        const data = SIM_PID_BYTES[h.toLowerCase()] ?? [0x00];
+        const data = this.livePidBytes(h.toLowerCase()) ?? [0x00];
         return this.maybeSearching() + '41' + h.slice(2) + toHex(data);
       }
       return 'NO DATA';
