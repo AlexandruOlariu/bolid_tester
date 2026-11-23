@@ -107,13 +107,27 @@ const CORE_FINDING_KEYS = [
   ...['none', 'cylinder', 'random'].map((v) => `misfire.${v}`),
 ].map((k) => `aiDiagnose:agent.finding.${k}`);
 
+// `lngs: [lng]`, not `lng`: with `lng` alone i18next also looks in `fallbackLng` (en), so a key
+// missing from ro would still count as present.
 const missing = (keys: string[], lng: string): string[] =>
-  keys.filter((k) => !i18n.exists(k, { lng }));
+  keys.filter((k) => !i18n.exists(k, { lngs: [lng] }));
 
 describe('agent strings are translated (plan 34d)', () => {
   it('covers every feature contribution and the core tools', () => {
     expect(FEATURE_AGENT_TOOLS).toHaveLength(20);
     expect(CORE_AGENT_CONTRIBUTION.tools?.length).toBeGreaterThan(0);
+  });
+
+  it('a key that exists only in English counts as missing in Romanian (no fallback)', () => {
+    // i18n has `fallbackLng: 'en'`, so the check must look in the one language only.
+    i18n.addResourceBundle('en', 'agentStringsProbe', { onlyEn: 'x' });
+    try {
+      const key = 'agentStringsProbe:onlyEn';
+      expect(missing([key], 'en')).toEqual([]);
+      expect(missing([key], 'ro')).toEqual([key]);
+    } finally {
+      i18n.removeResourceBundle('en', 'agentStringsProbe');
+    }
   });
 
   it.each(['en', 'ro'])('every tool label exists in %s', (lng) => {
