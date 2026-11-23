@@ -20,6 +20,19 @@ const STATUS_META: Record<AgentStep['status'], { Icon: typeof Check; tone: Tone 
   refused: { Icon: X, tone: 'statusError' },
 };
 
+type Translate = ReturnType<typeof useTranslation>['t'];
+
+/** The step's translated label. `open_skill` / `run_skill` labels carry the skill's id as `name`
+ *  (`used_car_check`); it is shown by its translated name (`agent.skillName.<id>`), falling back to
+ *  the id with spaces for a skill without one. */
+export function stepLabel(t: Translate, label: TrailRow['label']): string {
+  const values = label.values ?? {};
+  const name = values.name;
+  if (typeof name !== 'string') return t(label.key, values);
+  const shown = t(`aiDiagnose:agent.skillName.${name}`, { defaultValue: name.replace(/_/g, ' ') });
+  return t(label.key, { ...values, name: shown });
+}
+
 function StepRow({ step }: { step: TrailRow }) {
   const { t } = useTranslation('aiDiagnose');
   const palette = usePalette();
@@ -31,7 +44,7 @@ function StepRow({ step }: { step: TrailRow }) {
         <Icon size={16} color={palette[tone]} />
       </YStack>
       <YStack flex={1} gap="$1">
-        <Text fontWeight="700">{t(step.label.key, step.label.values ?? {})}</Text>
+        <Text fontWeight="700">{stepLabel(t, step.label)}</Text>
         {step.why ? (
           <Paragraph theme="alt2" fontSize="$2">
             {step.why}

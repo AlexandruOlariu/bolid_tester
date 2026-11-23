@@ -70,7 +70,9 @@ Reachable from the **More** tab (`/ai-diagnose`). Every run is saved, with its t
   - **Trail** (`ui/AgentTrail.tsx`): "Investigating · step n of 12" with **Stop** for the whole run,
     one row per step (✓ ok, ⚠ error, ✕ the driver could not / refused), the model's one-line "why"
     and the digest behind **Show data**; after the run its header ("Investigation · n steps")
-    collapses / expands the rows.
+    collapses / expands the rows. A skill step shows the skill's translated name
+    (`agent.skillName.<id>`, en + ro, one per `*.skill.json`; `AgentTrail.test.tsx` checks every
+    skill has one), so the row reads "Ran the used-car check", never the id.
   - **Stop** aborts the run at once (an open driver prompt settles as "Can't"); the run ends
     `stopped`. A double tap, or a tap while a run is going, starts nothing. A reset (the store's
     `reset()`, or Settings → reset app data) stops the run in flight (`stopActiveAgentRun`); a run
