@@ -4,7 +4,7 @@
     "slug": "bolid-tester",
     "description": "Generic OBD2 / EOBD diagnostics for any car over an ELM327 Bluetooth LE, Wi-Fi or classic Bluetooth adapter: live data, fault codes, readiness, VIN, trips and reports. Local-first: no account, no tracking.",
     "githubUrl": "https://github.com/AlexandruOlariu/bolid_tester",
-    "version": "0.9.1",
+    "version": "0.10.0",
     "orientation": "default",
     "scheme": "bolidtester",
     "icon": "./assets/icon.png",
