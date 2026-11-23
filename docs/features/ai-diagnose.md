@@ -143,9 +143,15 @@ symptom run with the code.
   script picked from the symptom. The default (Check everything, focus runs, other symptoms) does one
   idle `read_live`, then a final with one `warn` finding per code citing step 1 and an "idle
   readings" finding citing step 2. A symptom with "battery" / "baterie" opens and runs the
-  `battery` skill (restart prompt), then a final citing steps 1 and 3. `mock:loop` reads rpm forever
-  (exercise **Stop** or the step budget). `mock:invalid` never sends JSON (the rule report after
-  three invalid replies).
+  `battery` skill (restart prompt), then a final citing steps 1 and 3. A symptom with "pulls weak",
+  "boost" or "turbo" opens and runs the `boost` playbook (the 2500 rpm hold prompt), then a final
+  citing steps 1 and 3 with one finding per boost verdict in the step-3 digest, titled
+  "Boost check: <id> (mock)" (`ok` when boost was judged and nothing was flagged, none when it was
+  not judged). The digest carries the verdict sentences of `assessBoost`, not finding keys, so the
+  mock maps each sentence back to its id. With the simulator's **Low boost** scripted fault this is
+  `no_boost_hold`; `.maestro/ai-agent.yaml` drives it ([testing.md](../testing.md#end-to-end)).
+  `mock:loop` reads rpm forever (exercise **Stop** or the step budget). `mock:invalid` never sends
+  JSON (the rule report after three invalid replies).
 
 ### Capability skills (plan 34b)
 

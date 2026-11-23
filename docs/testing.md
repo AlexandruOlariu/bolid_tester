@@ -179,6 +179,25 @@ app's real labels; when a screen's copy changes, update the flow in the same cha
   and resilience to "… isn't responding" system dialogs on a freshly booted emulator (hide error
   dialogs, settle, tap **Wait**, retry the flow once).
 
+### AI agent flow (plan 34c)
+
+`.maestro/ai-agent.yaml` drives a whole agent investigation with no car and no AI server: fresh
+install → **Settings → Developer & simulator → Simulator (no car) → Scripted fault: Low boost** →
+back → **Settings → AI assistant** → switch on → **Provider: Custom** → **Server URL** `mock://ai` →
+**Connect → Connect to simulator** → pick the Golf → **More → Diagnose (AI)** → type
+`pulls weak above 2000 rpm` → **Investigate** → the rev-hold prompt ("In Park or Neutral, hold the
+engine at 2500 rpm for 10 seconds.") → **Done** (the simulator then holds 2500 rpm with MAP near
+baro) → the mock report ("Mock AI report: boost checked (no_boost_hold).") with **Based on: steps
+1, 3** and the trail row **Ran the boost check**. The mock's boost script is described in
+[features/ai-diagnose.md](./features/ai-diagnose.md#agent).
+
+- **Needs a debug build.** `mock://ai` is refused in release builds (`getAiClient` checks
+  `__DEV__`), so install a development build (`npm run android`, with `npm start` running) and run
+  `maestro test .maestro/ai-agent.yaml`. The flow is **not** part of `e2e.yml`, which builds a
+  release APK.
+- **Status (2026-11-23): written, not yet run on an emulator.** The labels are the app's English
+  strings; when a screen's copy changes, update the flow in the same change.
+
 ### Store screenshots (plan 30)
 
 `.maestro/screenshots.yaml` reuses the same harness to capture the eight store screenshots in

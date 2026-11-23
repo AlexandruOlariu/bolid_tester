@@ -3,11 +3,17 @@
  *  findings and the follow-up conversation can be exercised in the simulator with no AI server or
  *  key. Deterministic: the report has one finding per fault code found in the snapshot digest, and a
  *  follow-up answer quotes the question and counts the turns. With the agent action schema (plan
- *  34a) it plays a scripted agent conversation chosen from the request line, so the agent loop can
- *  be exercised end to end. Never used in a release build.
+ *  34a) it plays a scripted agent conversation chosen from the request line (battery, boost, the
+ *  default read, `mock:invalid`, `mock:loop`), so the agent loop can be exercised end to end.
+ *  Never used in a release build.
  *  See docs/features/ai-diagnose.md#mock-ai-server. */
 
-import { AGENT_ACTION_SCHEMA_NAME, type AiChatMessage } from '@/shared/obd-core';
+import {
+  AGENT_ACTION_SCHEMA_NAME,
+  type AiChatMessage,
+  type BoostFindingId,
+  type DiagSeverity,
+} from '@/shared/obd-core';
 import type { AiChatOptions } from '../http';
 
 export const MOCK_AI_MODEL = 'mock-diagnostic-model';
@@ -98,6 +104,7 @@ function cannedAnswer(messages: AiChatMessage[]): string {
 
 const DRIVER_REPORTS = 'The driver reports: ';
 const BATTERY_RE = /battery|baterie/i;
+const BOOST_RE = /pulls weak|boost|turbo/i;
 
 /** The driver's symptom from the request line of the first user message, or '' (Check everything,
  *  focus runs). The line carries the symptom JSON-quoted. */
@@ -145,6 +152,63 @@ function batteryScript(position: number): string {
   });
 }
 
+/** The boost verdicts and the sentence of the boost analysis (`assessBoost` notes) that says each
+ *  one in the procedure's digest. The digest carries sentences, not finding keys, so the mock reads
+ *  the verdicts back from them; the test builds its digests from `assessBoost` to catch drift. */
+const BOOST_VERDICTS: { id: BoostFindingId; severity: DiagSeverity; says: string }[] = [
+  { id: 'map_below_baro', severity: 'warn', says: 'below baro at idle' },
+  { id: 'stuck_vnt', severity: 'warn', says: 'points to a stuck (closed) VNT' },
+  { id: 'idle_high', severity: 'info', says: 'Idle boost above the expected range' },
+  { id: 'hold_not_reached', severity: 'info', says: 'rev hold not reached' },
+  { id: 'stuck_sensor', severity: 'warn', says: 'the MAP reading looks stuck' },
+  { id: 'no_boost_hold', severity: 'warn', says: 'Boost at the rev hold below the expected range' },
+  {
+    id: 'overboost_hold',
+    severity: 'warn',
+    says: 'Boost at the rev hold above the expected range',
+  },
+];
+/** A judged boost line ("… kPa over baro (expected …)"): with no verdict sentence, boost is `ok`. */
+const BOOST_JUDGED = 'over baro (expected';
+
+/** The digest of step `id` from its `Step <id> result:` message, or ''. */
+function stepDigest(messages: AiChatMessage[], id: number): string {
+  const head = `Step ${id} result:\n`;
+  const m = messages.find((x) => x.role === 'user' && x.content.startsWith(head));
+  return m ? m.content.slice(head.length) : '';
+}
+
+/** The boost verdicts said in a boost procedure digest, in table order; `ok` when the digest judged
+ *  boost and found nothing; none when it judged nothing (no data, no range). */
+function boostVerdicts(digest: string): { id: BoostFindingId; severity: DiagSeverity }[] {
+  const found = BOOST_VERDICTS.filter((v) => digest.includes(v.says));
+  if (found.length) return found;
+  return digest.includes(BOOST_JUDGED) ? [{ id: 'ok', severity: 'ok' }] : [];
+}
+
+/** `open_skill boost` → `run_skill boost` → a final citing triage and the run, one finding per
+ *  boost verdict in the step-3 digest. */
+function boostScript(messages: AiChatMessage[], position: number): string {
+  if (position === 0)
+    return toolAction('open_skill', { name: 'boost' }, 'The complaint points at boost.');
+  if (position === 1)
+    return toolAction('run_skill', { name: 'boost' }, 'Run the boost check it describes.');
+  const verdicts = boostVerdicts(stepDigest(messages, 3));
+  return finalAction({
+    overall: verdicts.some((v) => v.severity === 'warn') ? 'attention' : 'ok',
+    summary: `Mock AI report: boost checked (${verdicts.map((v) => v.id).join(', ') || 'not judged'}).`,
+    findings: verdicts.map((v) => ({
+      title: `Boost check: ${v.id} (mock)`,
+      severity: v.severity,
+      detail: `Canned mock finding for the boost verdict ${v.id}.`,
+      codes: [],
+      likelyCauses: [],
+      steps: [1, 3],
+    })),
+    actions: [RECHECK],
+  });
+}
+
 /** One idle `read_live` → a final with one `warn` finding per code in the first user message. */
 function defaultScript(messages: AiChatMessage[], position: number): string {
   if (position === 0)
@@ -181,6 +245,7 @@ function agentReply(messages: AiChatMessage[]): string {
   if (symptom.includes('mock:loop'))
     return toolAction('read_live', { pids: ['010C'] }, 'Read the rpm again.');
   if (BATTERY_RE.test(symptom)) return batteryScript(position);
+  if (BOOST_RE.test(symptom)) return boostScript(messages, position);
   return defaultScript(messages, position);
 }
 

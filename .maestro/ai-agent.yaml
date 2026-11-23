@@ -1,0 +1,117 @@
+# AI agent flow (plan 34c): simulator with the Low boost scripted fault + the dev mock AI server
+# (`mock://ai`) → "pulls weak" symptom → the boost playbook with its 2500 rpm hold prompt → the
+# mock report citing steps 1 and 3.
+# NEEDS A DEBUG BUILD: `mock://ai` is refused in release builds (`getAiClient` checks `__DEV__`), so
+# this flow is NOT part of .github/workflows/e2e.yml, which builds a release APK. Run it locally
+# against an emulator with a development build installed (see docs/testing.md → "AI agent flow"):
+#   maestro test .maestro/ai-agent.yaml
+# Labels are the app's real English strings (tapOn text is a regular expression); when a screen's
+# copy changes, update this flow in the same change.
+appId: com.bolidtester.app
+name: AI agent — simulator low boost, mock AI, boost playbook
+---
+- launchApp:
+    clearState: true
+# A slow emulator may show an "… isn't responding" system dialog over the app; keep waiting.
+- tapOn:
+    text: 'Wait'
+    optional: true
+# Android 13+ may ask for the notification permission on first launch; dismiss it if it shows.
+- tapOn:
+    text: '(?i)(allow|don.t allow)'
+    optional: true
+- extendedWaitUntil:
+    visible: 'Pair with your OBD2 Bluetooth adapter'
+    timeout: 30000
+
+# Settings → Developer & simulator → Simulator (no car) (the simulated vehicle defaults to the
+# Golf) → Scripted fault: Low boost.
+- tapOn: 'Settings'
+- scrollUntilVisible:
+    element:
+      text: 'Developer & simulator.*'
+    direction: DOWN
+    timeout: 60000
+- tapOn: 'Developer & simulator.*'
+- scrollUntilVisible:
+    element:
+      text: 'Simulator \(no car\)'
+    direction: DOWN
+    timeout: 60000
+- tapOn: 'Simulator \(no car\)'
+- scrollUntilVisible:
+    element:
+      text: 'Low boost'
+    direction: DOWN
+    timeout: 60000
+- tapOn: 'Low boost'
+
+# Back to the Settings hub → AI assistant → on → Provider Custom → Server URL mock://ai.
+- back
+- scrollUntilVisible:
+    element:
+      text: 'AI assistant.*'
+    direction: DOWN
+    timeout: 60000
+# The hub row is one button labelled "AI assistant. <Off | On · provider>".
+- tapOn: 'AI assistant.*'
+- tapOn: 'AI assistant enabled'
+- tapOn: 'Custom'
+- tapOn: 'AI server URL'
+- inputText: 'mock://ai'
+- hideKeyboard
+
+# Connect tab → connect to the simulator → pick the Golf (the app only suggests it from the VIN);
+# picking a car opens the dashboard.
+- tapOn: 'Connect'
+- tapOn: 'Connect to simulator'
+- extendedWaitUntil:
+    visible: 'Pick a car, or use Auto / Generic for any OBD2 car'
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      text: 'VW Golf Plus 2009 2\.0 TDI 81 kW.*'
+    direction: DOWN
+    timeout: 60000
+- tapOn: 'VW Golf Plus 2009 2\.0 TDI 81 kW.*'
+- waitForAnimationToEnd
+
+# More → Diagnose (AI) (the entry is one button labelled "Diagnose (AI). <subtitle>").
+- tapOn: 'More'
+- scrollUntilVisible:
+    element:
+      text: 'Diagnose \(AI\).*'
+    direction: DOWN
+    timeout: 60000
+- tapOn: 'Diagnose \(AI\).*'
+
+# Describe the symptom and investigate: the mock opens, then runs the boost playbook.
+- tapOn: 'Describe what.s wrong with the car'
+- inputText: 'pulls weak above 2000 rpm'
+- hideKeyboard
+- tapOn: 'Investigate'
+
+# The boost procedure reads idle for 3 s, then asks for the stationary rev hold; Done makes the
+# simulator hold 2500 rpm for 15 s (MAP stays near baro with Low boost).
+- extendedWaitUntil:
+    visible: 'In Park or Neutral, hold the engine at 2500 rpm for 10 seconds\.'
+    timeout: 90000
+- tapOn: 'Done'
+
+# The mock's final: "Mock AI report: boost checked (no_boost_hold)." with one finding citing
+# steps 1 and 3, and the trail row of the boost run.
+- extendedWaitUntil:
+    visible: 'Mock AI report.*'
+    timeout: 30000
+- scrollUntilVisible:
+    element:
+      text: 'Based on: steps.*'
+    direction: DOWN
+    timeout: 60000
+- assertVisible: 'Based on: steps.*'
+- scrollUntilVisible:
+    element:
+      text: 'Ran the boost check'
+    direction: UP
+    timeout: 60000
+- assertVisible: 'Ran the boost check'
