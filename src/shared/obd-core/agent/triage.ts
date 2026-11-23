@@ -105,6 +105,7 @@ export async function runTriage(
       label: { key: 'aiDiagnose:agent.step.triage', values: { count: codes.length, volts } },
       status: 'ok',
       findings,
+      ...(codes.length ? { confirmedCodes: codes } : {}),
       durationMs: ctx.now() - started,
     },
   };

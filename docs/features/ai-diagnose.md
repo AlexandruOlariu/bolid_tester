@@ -263,7 +263,11 @@ start (symptom | "check everything" | focus code)
   digest as "Driver answered: <value>"). Asked only while the car is stationary (above).
 - **Cited report** (`report.ts`, `parseAgentFinal`): every finding cites step ids; a finding citing
   no step, an unknown step or a failed / refused one is dropped and counted in `uncitedDropped`. A
-  finding resting only on unconfirmed data is capped at `info` and tagged `unconfirmed`.
+  finding resting only on unconfirmed data is capped at `info` and tagged `unconfirmed`: every cited
+  step is unconfirmed, or the finding names codes that the cited steps carry only in tool findings
+  flagged unconfirmed (e.g. `scan_modules` codes from a module with unverified addressing, inside the
+  otherwise confirmed triage step) and in no confirmed finding or standard read
+  (`AgentStep.confirmedCodes`, triage's 03 / 07 / 0A codes).
 - **Fallbacks — never worse than before.** Any other ending (`AgentEnd`: `no_ai`, `steps`, `time`,
   `adapter`, `invalid`, `stopped`, `disconnected`, `ai_error`) ends in the on-device rule report over
   everything gathered (`agentRuleReport`: the rule checks on the triage snapshot, each citing step 1,

@@ -109,6 +109,57 @@ describe('parseAgentFinal', () => {
     expect(r.findings[0]).not.toHaveProperty('unconfirmed');
     expect(r.overall).toBe('urgent');
   });
+  it('caps a finding citing triage whose codes come only from an unconfirmed module scan', () => {
+    const triage = step(1, {
+      confirmedCodes: ['P0401'],
+      findings: [
+        {
+          key: 'moduleScan:agent.finding.moduleDtcs',
+          severity: 'warn',
+          values: { module: '03 ABS', count: 1 },
+          codes: ['C0130'],
+          unconfirmed: true,
+        },
+      ],
+    });
+    const r = parseAgentFinal(
+      {
+        summary: 's',
+        findings: [
+          { title: 'ABS fault', severity: 'critical', detail: 'd', codes: ['C0130'], steps: [1] },
+          { title: 'EGR', severity: 'warn', detail: 'd', codes: ['P0401'], steps: [1] },
+          { title: 'general', severity: 'warn', detail: 'd', steps: [1] },
+        ],
+      },
+      [triage],
+    )!;
+    expect(r.findings[0]).toMatchObject({ severity: 'info', unconfirmed: true });
+    expect(r.findings[1].severity).toBe('warn');
+    expect(r.findings[1]).not.toHaveProperty('unconfirmed');
+    expect(r.findings[2].severity).toBe('warn');
+  });
+  it('does not cap a code that a confirmed finding or read also reports', () => {
+    const triage = step(1, {
+      confirmedCodes: ['P0401'],
+      findings: [
+        {
+          key: 'moduleScan:agent.finding.moduleDtcs',
+          severity: 'warn',
+          values: {},
+          codes: ['P0401'],
+          unconfirmed: true,
+        },
+      ],
+    });
+    const r = parseAgentFinal(
+      {
+        summary: 's',
+        findings: [{ title: 'EGR', severity: 'warn', detail: 'd', codes: ['p0401'], steps: [1] }],
+      },
+      [triage],
+    )!;
+    expect(r.findings[0].severity).toBe('warn');
+  });
   it('builds an ai report with sanitized actions and the AI disclaimer', () => {
     const r = parseAgentFinal(
       {

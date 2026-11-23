@@ -37,6 +37,27 @@ function validCitations(raw: unknown, okSteps: ReadonlyMap<number, AgentStep>): 
   return out;
 }
 
+/** Whether a finding's `codes` rest only on unconfirmed data in the cited steps: every code appears
+ *  there in a tool finding flagged unconfirmed (or in an unconfirmed step's findings) and in no
+ *  confirmed finding and no confirmed read (`confirmedCodes`). This catches a triage step, which is
+ *  confirmed overall, carrying `scan_modules` codes from modules whose addressing is unverified. */
+function codesOnlyUnconfirmed(codes: string[] | undefined, steps: AgentStep[]): boolean {
+  if (!codes?.length) return false;
+  const unconfirmed = new Set<string>();
+  const confirmed = new Set<string>();
+  for (const s of steps) {
+    for (const c of s.confirmedCodes ?? []) confirmed.add(c.toUpperCase());
+    for (const f of s.findings ?? []) {
+      const target = f.unconfirmed === true || s.unconfirmed === true ? unconfirmed : confirmed;
+      for (const c of f.codes ?? []) target.add(c.toUpperCase());
+    }
+  }
+  return codes.every((c) => {
+    const code = c.toUpperCase();
+    return unconfirmed.has(code) && !confirmed.has(code);
+  });
+}
+
 /** The model's `final` object as a report, or null when it has neither a summary nor a finding
  *  that cites a successful step. `overall` is recomputed from the kept findings. */
 export function parseAgentFinal(final: unknown, trail: AgentStep[]): AiReport | null {
@@ -53,7 +74,9 @@ export function parseAgentFinal(final: unknown, trail: AgentStep[]): AiReport | 
       dropped++;
       continue;
     }
-    const unconfirmed = steps.every((id) => okSteps.get(id)?.unconfirmed === true);
+    const cited = steps.map((id) => okSteps.get(id)).filter((s): s is AgentStep => !!s);
+    const unconfirmed =
+      cited.every((s) => s.unconfirmed === true) || codesOnlyUnconfirmed(finding.codes, cited);
     findings.push(
       unconfirmed
         ? { ...finding, severity: capUnconfirmed(finding.severity), steps, unconfirmed: true }

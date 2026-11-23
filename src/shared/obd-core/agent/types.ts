@@ -143,6 +143,9 @@ export interface AgentStep {
   status: 'ok' | 'error' | 'cant' | 'refused';
   unconfirmed?: boolean;
   findings?: SkillFinding[];
+  /** Fault codes this step read from a confirmed source (triage: the standard 03 / 07 / 0A reads),
+   *  so a code that a tool finding also flags unconfirmed still counts as confirmed. */
+  confirmedCodes?: string[];
   durationMs: number;
 }
 
