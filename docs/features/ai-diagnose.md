@@ -50,6 +50,9 @@ Reachable from the **More** tab (`/ai-diagnose`). Every run is saved to [History
   - **Ask about this report** — suggestion chips, a question field + send button, the conversation
     as alternating bubbles (selectable text) and **Clear**. Disabled with a hint for an on-device
     report (see [Follow-up questions](#follow-up-questions)).
+  - **Send to Claude / ChatGPT** under the report's actions: a sheet previewing the run as one text,
+    **Include VIN** (off) and **Share** through the system share sheet (see
+    [Send to Claude / ChatGPT](#send-to-claude--chatgpt)).
   - A **notice** banner explains any fallback (AI off / not configured / no key / unreachable).
 - **AiReportView** (`ui/AiReportView.tsx`, exported from the slice's `index.ts`, plan 16) — a saved
   report, read-only: the overall banner, the finding cards (with the car's fault guides), the
@@ -468,6 +471,40 @@ for an on-device report and the config problem when the AI is not set up. `useAi
 records the turn or the error (logged as an `ai-diagnose` warning); an answer that lands after a new
 report (re-run, recheck, clear codes, a focus run) or a Clear is dropped, so it never joins a
 conversation it was not asked in.
+
+## Send to Claude / ChatGPT
+
+Plan 34d. The owner can take a finished run to Claude, ChatGPT or any other assistant app for a
+second opinion. **Send to Claude / ChatGPT** (under the report's actions) opens
+`ui/SharePackageSheet.tsx`: the package as selectable, scrollable text, an **Include VIN** switch
+("Off by default. Turn on only if you want the other app to see it."; off again each time the sheet
+opens, and the preview re-renders when it changes) and **Share**, which calls
+`Share.share({ message, title })`. The text goes only where the owner sends it from the system share
+sheet; the app opens no connection of its own. Dismissing the share sheet does nothing; a share sheet
+that fails to open is logged as an `ai-diagnose` warning (`context.phase: 'share'`).
+
+`buildAgentSharePackage(input, { includeVin })` (`src/shared/lib/agentShare.ts`, pure, unit-tested)
+builds the text in English (it is a document another app reads, not app UI):
+
+- an instruction for the other assistant: "I used the Bolid Tester app to read my car over OBD2.
+  Below is everything it read and what its assistant concluded. Please explain the most likely
+  causes, how sure we can be, and what I should check next. You cannot ask the app for new
+  readings; tell me what to check and I will report back.";
+- `Vehicle:` (the car's label, a `VIN:` line only when **Include VIN** is on, the read time in UTC);
+- `Complaint:` the described symptom, "explain fault code <code>" for a focused run, or "Check
+  everything" (left out for the triage-only re-read after Clear codes, which answered no request);
+- `Fault codes:` stored / pending / permanent with their descriptions (from the triage snapshot);
+- `Assistant report:` the overall verdict and its source, the summary, and each finding with its
+  severity, detail, codes, likely causes, "(based on steps …)" and "(unconfirmed data)";
+- `Checks made:` each trail step as `Step N — <tool or Triage> — <why>` with its digest (and its
+  result when it was not ok);
+- the report's disclaimer.
+
+With **Include VIN** off, every occurrence of the car's VIN (any case, even inside a longer word)
+and every other VIN-looking word in the **whole** text, including the step digests, becomes
+`[VIN hidden]` (`VIN_HIDDEN`). The VINs are hidden before the text is cut to
+`SHARE_PACKAGE_MAX_CHARS` (20 000 characters, ending with `… (cut to fit)`), so the cut never leaves
+part of one behind.
 
 ## Guide citations
 

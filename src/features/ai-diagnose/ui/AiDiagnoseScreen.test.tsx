@@ -4,7 +4,7 @@
  *  guides (note + deep-link buttons), Clear codes and the bounded follow-up conversation. No
  *  network: the dispatcher serves the scripted mock client in this (development) test build. */
 import React from 'react';
-import { Alert, type AlertButton } from 'react-native';
+import { Alert, Share, type AlertButton } from 'react-native';
 import { act, fireEvent, screen } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { connectSimulator } from '@test/simulator';
@@ -12,6 +12,7 @@ import { mockPush, setMockSearchParams } from '@test/mocks/router';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useVehicleStore } from '@/shared/state/vehicleStore';
 import { useHistoryStore, type AiHistoryEntry } from '@/shared/state/historyStore';
+import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import { faultCodesAgentTools } from '@/features/fault-codes';
 import { liveDataAgentTools } from '@/features/live-data';
 import { batteryHealthAgentTools } from '@/features/battery-health';
@@ -361,6 +362,70 @@ describe('AiDiagnoseScreen agent run with mock://ai', () => {
     expect(reread.trail?.map((s) => s.kind)).toEqual(['triage']);
     expect(reread.request).toBeUndefined();
     expect(reread.end).toBeUndefined();
+  });
+});
+
+describe('AiDiagnoseScreen — Send to Claude / ChatGPT (plan 34d)', () => {
+  beforeEach(() => {
+    useVehicleStore.setState({ selectedProfileId: GOLF });
+    useMockAi();
+  });
+
+  /** A finished mock-AI run on the simulator Golf (which reports its VIN, WVWZZZ1KZ9W903398). */
+  async function runMockReport() {
+    await connectSimulator({ vehicleId: GOLF, injectedDtcs: ['P0401'] });
+    renderWithProviders(<AiDiagnoseScreen />);
+    await runDiagnosis();
+  }
+
+  it('Send to Claude / ChatGPT previews without the VIN and shares', async () => {
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    await runMockReport();
+    fireEvent.press(screen.getByText('Send to Claude / ChatGPT'));
+    expect(screen.getByText(/I used the Bolid Tester app/)).toBeTruthy();
+    expect(screen.queryByText(/WVWZZZ1KZ9W903398/)).toBeNull();
+    await act(async () => {
+      fireEvent.press(screen.getByText('Share'));
+    });
+    expect(share).toHaveBeenCalledTimes(1);
+    expect(share.mock.calls[0][0]).toMatchObject({ title: 'Car diagnosis from Bolid Tester' });
+    const message = (share.mock.calls[0][0] as { message: string }).message;
+    expect(message).toContain('[VIN hidden]');
+    expect(message).not.toContain('WVWZZZ1KZ9W903398');
+    expect(message).toContain('P0401');
+    share.mockRestore();
+  });
+
+  it('Include VIN puts the VIN into the preview and the package', async () => {
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
+    await runMockReport();
+    fireEvent.press(screen.getByText('Send to Claude / ChatGPT'));
+    fireEvent(screen.getByRole('switch', { name: 'Include VIN' }), 'onCheckedChange', true);
+    expect(screen.getByText(/VIN: WVWZZZ1KZ9W903398/)).toBeTruthy();
+    await act(async () => {
+      fireEvent.press(screen.getByText('Share'));
+    });
+    expect((share.mock.calls[0][0] as { message: string }).message).toContain(
+      'VIN: WVWZZZ1KZ9W903398',
+    );
+    share.mockRestore();
+  });
+
+  it('a failing share sheet is logged, not thrown', async () => {
+    const share = jest.spyOn(Share, 'share').mockRejectedValue(new Error('no app'));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    await runMockReport();
+    fireEvent.press(screen.getByText('Send to Claude / ChatGPT'));
+    await act(async () => {
+      fireEvent.press(screen.getByText('Share'));
+    });
+    expect(useErrorLogStore.getState().errors[0]).toMatchObject({
+      source: 'ai-diagnose',
+      severity: 'warning',
+      context: { phase: 'share' },
+    });
+    share.mockRestore();
+    warn.mockRestore();
   });
 });
 

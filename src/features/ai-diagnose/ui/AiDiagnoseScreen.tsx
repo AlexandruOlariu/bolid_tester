@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useIsFocused, useLocalSearchParams, useNavigation } from 'expo-router';
 import { YStack, XStack, Card, Text, Paragraph, Button, Spinner, Input } from 'tamagui';
-import { Eraser, RefreshCw, Activity, MessageCircle, Send } from 'lucide-react-native';
+import { Eraser, RefreshCw, Activity, MessageCircle, Send, Share2 } from 'lucide-react-native';
 import { Screen, appAlert, SectionTitle, HIT_SLOP, usePalette } from '@/shared/ui';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { describeDtc, followUpSuggestions } from '@/shared/obd-core';
@@ -16,9 +16,12 @@ import { ACTION_ICON, OverallBanner, FindingCard, UncitedNotice } from './AiRepo
 import { AgentStartCard } from './AgentStartCard';
 import { AgentTrail } from './AgentTrail';
 import { DriverPrompt } from './DriverPrompt';
+import { SharePackageSheet } from './SharePackageSheet';
+import { useAiDiagnoseStore } from '../model/aiDiagnoseStore';
 import { useAiDiagnose, type DriverAnswerListener } from '../hooks/useAiDiagnose';
 import { useTranslation } from '@/shared/i18n';
 import { formatTime } from '@/shared/lib/format';
+import type { AgentShareInput } from '@/shared/lib/agentShare';
 
 function Bubble({ message }: { message: AiChatMessage }) {
   const mine = message.role === 'user';
@@ -202,6 +205,7 @@ function ReportView({
   profileId,
   onClear,
   onRecheck,
+  onShare,
   followUp,
 }: {
   report: AiReport;
@@ -210,6 +214,8 @@ function ReportView({
   profileId: string;
   onClear: () => void;
   onRecheck: () => void;
+  /** Opens the Send to Claude / ChatGPT preview (plan 34d). */
+  onShare: () => void;
   followUp: React.ReactNode;
 }) {
   const { t } = useTranslation('aiDiagnose');
@@ -237,6 +243,10 @@ function ReportView({
       )}
 
       <ActionsView actions={report.actions} onClear={onClear} onRecheck={onRecheck} />
+
+      <Button onPress={onShare} icon={<Share2 size={18} />}>
+        {t('share.button')}
+      </Button>
 
       {followUp}
 
@@ -270,8 +280,9 @@ const NO_CONTRIBUTIONS: AgentContribution[] = [];
 /** The AI diagnose screen (plans 11, 19, 34a): describe a symptom and **Investigate**, or **Check
  *  everything**; the agent run's trail with **Stop** and the driver prompt; then the cited report
  *  with Re-run (the last request again), Clear codes (its confirmation, then a triage-only re-read)
- *  and follow-up questions over the trail. `contributions`: the agent tools and skills the app
- *  layer composes (`src/app/ai-diagnose.tsx`). `onDriverAnswer`: called after each answer to the
+ *  and follow-up questions over the trail, and **Send to Claude / ChatGPT** (plan 34d: the run as
+ *  one text through the share sheet, VIN off by default). `contributions`: the agent tools and
+ *  skills the app layer composes (`src/app/ai-diagnose.tsx`). `onDriverAnswer`: called after each answer to the
  *  driver prompt (plan 34c: the route starts the simulator's rev hold on "hold 2500 rpm"). */
 export function AiDiagnoseScreen({
   contributions = NO_CONTRIBUTIONS,
@@ -305,6 +316,7 @@ export function AiDiagnoseScreen({
     stepsUsed,
     maxSteps,
     driver,
+    end,
     investigate,
     checkEverything,
     rerun,
@@ -316,6 +328,10 @@ export function AiDiagnoseScreen({
   const focusParam = rawFocus?.trim().toUpperCase() || undefined;
   // The triage-only re-read after Clear codes is not an agent run: no Stop, no step counter.
   const [clearing, setClearing] = useState(false);
+  // Send to Claude / ChatGPT: the package input, taken when the button is pressed; null = closed.
+  const [shareInput, setShareInput] = useState<AgentShareInput | null>(null);
+  const snapshot = useAiDiagnoseStore((s) => s.snapshot);
+  const ranFor = useAiDiagnoseStore((s) => s.ranFor);
   const connected = status === 'connected';
   const running = busy && !clearing;
 
@@ -354,6 +370,20 @@ export function AiDiagnoseScreen({
         },
       },
     ]);
+
+  const openShare = () => {
+    if (!report) return;
+    setShareInput({
+      vehicleLabel: snapshot?.vehicle?.label ?? ranFor?.label ?? '',
+      vin: snapshot?.vin ?? ranFor?.vin ?? null,
+      generatedAt: ranAt ?? Date.now(),
+      report,
+      dtcs: snapshot?.dtcs ?? { stored: [], pending: [], permanent: [] },
+      trail,
+      // The triage-only re-read after Clear codes (no `end`) answered no request.
+      request: end !== null ? request : null,
+    });
+  };
 
   return (
     <Screen title={t('title')} subtitle={t('subtitle')}>
@@ -417,6 +447,7 @@ export function AiDiagnoseScreen({
             profileId={guideProfileId}
             onClear={confirmClear}
             onRecheck={() => void rerun()}
+            onShare={openShare}
             followUp={
               <FollowUpCard
                 report={report}
@@ -437,6 +468,8 @@ export function AiDiagnoseScreen({
           {t('intro')}
         </Paragraph>
       ) : null}
+
+      <SharePackageSheet input={shareInput} onClose={() => setShareInput(null)} />
     </Screen>
   );
 }

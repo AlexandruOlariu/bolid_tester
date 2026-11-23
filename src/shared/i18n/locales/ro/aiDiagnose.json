@@ -251,5 +251,13 @@
     "uncitedDropped_one": "{{count}} constatare pe care AI-ul nu a susținut-o cu un pas al acestei rulări a fost omisă.",
     "uncitedDropped_few": "{{count}} constatări pe care AI-ul nu le-a susținut cu un pas al acestei rulări au fost omise.",
     "uncitedDropped_other": "{{count}} de constatări pe care AI-ul nu le-a susținut cu un pas al acestei rulări au fost omise."
+  },
+  "share": {
+    "button": "Trimite la Claude / ChatGPT",
+    "title": "Diagnoză auto din Bolid Tester",
+    "preview": "Ce se va trimite",
+    "includeVin": "Include VIN-ul",
+    "includeVinHint": "Oprit implicit. Pornește-l doar dacă vrei ca cealaltă aplicație să-l vadă.",
+    "send": "Partajează"
   }
 }

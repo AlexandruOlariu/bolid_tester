@@ -248,5 +248,13 @@
     "unconfirmedTag": "Unconfirmed data",
     "uncitedDropped_one": "{{count}} finding the AI did not back with a step of this run was left out.",
     "uncitedDropped_other": "{{count}} findings the AI did not back with a step of this run were left out."
+  },
+  "share": {
+    "button": "Send to Claude / ChatGPT",
+    "title": "Car diagnosis from Bolid Tester",
+    "preview": "What will be shared",
+    "includeVin": "Include VIN",
+    "includeVinHint": "Off by default. Turn on only if you want the other app to see it.",
+    "send": "Share"
   }
 }
