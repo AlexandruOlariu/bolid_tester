@@ -3584,6 +3584,7 @@
       "src/features/ai-diagnose/agentStrings.test.ts",
       "src/features/ai-diagnose/api/agentService.test.ts",
       "src/features/ai-diagnose/api/driverGate.test.ts",
+      "src/features/ai-diagnose/ui/AgentTrail.test.tsx",
       "src/features/ai-diagnose/ui/AiDiagnoseScreen.test.tsx"
     ],
     "tokens": [

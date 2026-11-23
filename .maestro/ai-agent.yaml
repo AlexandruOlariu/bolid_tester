@@ -91,6 +91,13 @@ name: AI agent — simulator low boost, mock AI, boost playbook
 
 # More → Diagnose (AI) (the entry is one button labelled "Diagnose (AI). <subtitle>").
 - tapOn: 'More'
+# More can open where it was last scrolled to; look upwards first, then downwards.
+- scrollUntilVisible:
+    element:
+      text: 'Diagnose \(AI\).*'
+    direction: UP
+    timeout: 10000
+    optional: true
 - scrollUntilVisible:
     element:
       text: 'Diagnose \(AI\).*'
@@ -113,9 +120,15 @@ name: AI agent — simulator low boost, mock AI, boost playbook
 
 # The mock's final: "Mock AI report: boost checked (no_boost_hold)." with one finding citing
 # steps 1 and 3, and the trail row of the boost run.
+# The report renders below the trail: wait for the run to end, then scroll to it.
 - extendedWaitUntil:
-    visible: 'Mock AI report.*'
-    timeout: 30000
+    visible: 'Re-run diagnosis'
+    timeout: 60000
+- scrollUntilVisible:
+    element:
+      text: 'Mock AI report.*'
+    direction: DOWN
+    timeout: 60000
 - scrollUntilVisible:
     element:
       text: 'Based on: steps.*'

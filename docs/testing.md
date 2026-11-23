@@ -260,8 +260,8 @@ install → **Settings → Developer & simulator → Simulator (no car) → Scri
 back → **Settings → AI assistant** → make sure it is on (it is on by default; the flow taps the switch
 only while the "off" help text shows) → **Provider: Custom** → **Server URL** `mock://ai` →
 **Connect → Connect to simulator** → pick the Golf → **More → Diagnose (AI)** → type
-`pulls weak above 2000 rpm` → **Investigate** → the rev-hold prompt ("In Park or Neutral, hold the
-engine at 2500 rpm for 10 seconds.") → **Done** (the simulator then holds 2500 rpm with MAP near
+`pulls weak above 2000 rpm` → **Investigate** → the rev-hold prompt ("In Park or Neutral, bring the
+engine to 2500 rpm, tap Done and keep holding until the next message (about 10 seconds).") → **Done** (the simulator then holds 2500 rpm with MAP near
 baro) → the mock report ("Mock AI report: boost checked (no_boost_hold).") with **Based on: steps
 1, 3** and the trail row **Ran the boost check**. The mock's boost script is described in
 [features/ai-diagnose.md](./features/ai-diagnose.md#agent).
@@ -270,8 +270,15 @@ baro) → the mock report ("Mock AI report: boost checked (no_boost_hold).") wit
   `__DEV__`), so install a development build (`npm run android`, with `npm start` running) and run
   `maestro test .maestro/ai-agent.yaml`. The flow is **not** part of `e2e.yml`, which builds a
   release APK.
-- **Status (2026-11-23): written, not yet run on an emulator.** The labels are the app's English
-  strings; when a screen's copy changes, update the flow in the same change.
+- **The dev launcher.** A development build opens the Expo dev launcher after `clearState`, not the
+  app. Before running the flow locally, either connect the launcher once by hand and drop
+  `clearState`, or run a copy of the flow that, after `launchApp`, taps the `http://` field, types
+  `localhost:8081` (with `adb reverse tcp:8081 tcp:8081`), taps **Connect** and waits for the app.
+- **Status (2026-11-23): passes on the Sere_API36 emulator** (debug build, Metro on 8081, the
+  launcher step above). The report renders below the trail, so the flow waits for **Re-run
+  diagnosis** and scrolls to it; **More** can open where it was last scrolled, so the flow looks
+  upwards first. The labels are the app's English strings; when a screen's copy changes, update the
+  flow in the same change.
 
 ### Store screenshots (plan 30)
 
