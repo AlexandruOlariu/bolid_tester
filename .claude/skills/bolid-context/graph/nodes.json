@@ -55,6 +55,32 @@
     ],
     "type": "concept"
   },
+  "concept:ai-agent": {
+    "path": null,
+    "summary": "Read-only multi-step AI diagnosis: triage \u2192 JSON actions over a tool/skill registry (core tools + feature agentTools composed in src/app/ai-diagnose.\u2026",
+    "tokens": [
+      "agent",
+      "agenttools",
+      "ai",
+      "ai-agent",
+      "budget",
+      "chatgpt",
+      "claude",
+      "driver",
+      "investigate",
+      "open_skill",
+      "playbook",
+      "registry",
+      "run_skill",
+      "share",
+      "skill",
+      "skills",
+      "tool",
+      "trail",
+      "triage"
+    ],
+    "type": "concept"
+  },
   "concept:ai-diagnose-flow": {
     "path": null,
     "summary": "AI Diagnose: snapshot fault codes + live readings + per-car guide notes -> aiDiagnosis builds the prompt -> getAiClient dispatcher (provider preset p\u2026",
@@ -1037,6 +1063,199 @@
     ],
     "type": "concept"
   },
+  "core:agent/actionSchema": {
+    "path": "src/shared/obd-core/agent/actionSchema.ts",
+    "summary": "The agent's one-action-per-turn reply format (plan 34a).",
+    "tests": [
+      "src/shared/obd-core/agent/actionSchema.test.ts"
+    ],
+    "tokens": [
+      "action",
+      "agent",
+      "schema"
+    ],
+    "type": "core"
+  },
+  "core:agent/coreTools": {
+    "path": "src/shared/obd-core/agent/coreTools.ts",
+    "summary": "The AI diagnostic agent's core read tools (plan 34a): `read_live` (Mode 01 PIDs, once or sampled for up to 15 s) and `read_dtcs` (the profile's DTC m\u2026",
+    "tests": [
+      "src/shared/obd-core/agent/coreTools.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "tools"
+    ],
+    "type": "core"
+  },
+  "core:agent/digest": {
+    "path": "src/shared/obd-core/agent/digest.ts",
+    "summary": "Formatting helpers for the compact text digests the AI diagnostic agent's tools return to the model (plan 34a): a length clamp (~400 tokens), a one-l\u2026",
+    "tests": [
+      "src/shared/obd-core/agent/digest.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "digest"
+    ],
+    "type": "core"
+  },
+  "core:agent/driver": {
+    "path": "src/shared/obd-core/agent/driver.ts",
+    "summary": "The fixed list of things the AI diagnostic agent may ask the driver to do (plan 34a), each with its model-facing English text and the translation key\u2026",
+    "tokens": [
+      "agent",
+      "driver"
+    ],
+    "type": "core"
+  },
+  "core:agent/index": {
+    "path": "src/shared/obd-core/agent/index.ts",
+    "summary": "AI diagnostic agent core (plan 34a).",
+    "tokens": [
+      "agent"
+    ],
+    "type": "core"
+  },
+  "core:agent/liveSampling": {
+    "path": "src/shared/obd-core/agent/liveSampling.ts",
+    "summary": "Shared Mode 01 sampling for the AI agent's live tools (`read_live` in coreTools, `record_live` in live-charts): PID argument parsing, the supported /\u2026",
+    "tests": [
+      "src/shared/obd-core/agent/liveSampling.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "live",
+      "sampling"
+    ],
+    "type": "core"
+  },
+  "core:agent/loop": {
+    "path": "src/shared/obd-core/agent/loop.ts",
+    "summary": "The AI diagnostic agent loop (plan 34a): after triage, the model answers one JSON action per turn; the app validates it, runs the one tool (or skill,\u2026",
+    "tests": [
+      "src/shared/obd-core/agent/loop.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "loop"
+    ],
+    "type": "core"
+  },
+  "core:agent/playbooks/index": {
+    "path": "src/shared/obd-core/agent/playbooks/index.ts",
+    "summary": "The 17 symptom playbooks of the AI diagnostic agent (plan 34c): `bolid.skill.v1` documents (`kind: 'playbook'`) that tell the model which capability\u2026",
+    "tokens": [
+      "agent",
+      "playbooks"
+    ],
+    "type": "core"
+  },
+  "core:agent/playbooks/procedures": {
+    "path": "src/shared/obd-core/agent/playbooks/procedures.ts",
+    "summary": "The on-device procedures of the symptom playbooks (plan 34c), one per playbook that has one; each procedure id equals its playbook name.",
+    "tokens": [
+      "agent",
+      "playbooks",
+      "procedures"
+    ],
+    "type": "core"
+  },
+  "core:agent/procedures/batteryCapture": {
+    "path": "src/shared/obd-core/agent/procedures/batteryCapture.ts",
+    "summary": "The `battery_capture` skill procedure (plan 34a): samples the adapter voltage while the (stationary) driver restarts the engine, then reads resting /\u2026",
+    "tokens": [
+      "agent",
+      "battery",
+      "capture",
+      "procedures"
+    ],
+    "type": "core"
+  },
+  "core:agent/prompt": {
+    "path": "src/shared/obd-core/agent/prompt.ts",
+    "summary": "The AI diagnostic agent's prompts (plan 34a): the system prompt (rules, tool menu, skill index), the per-turn messages within the 8k-token context ta\u2026",
+    "tests": [
+      "src/shared/obd-core/agent/prompt.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "prompt"
+    ],
+    "type": "core"
+  },
+  "core:agent/readOnlySession": {
+    "path": "src/shared/obd-core/agent/readOnlySession.ts",
+    "summary": "The read-only session facade the AI diagnostic agent's tools receive instead of a `DiagnosticSession` (plan 34a).",
+    "tests": [
+      "src/shared/obd-core/agent/readOnlySession.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "only",
+      "read",
+      "session"
+    ],
+    "type": "core"
+  },
+  "core:agent/registry": {
+    "path": "src/shared/obd-core/agent/registry.ts",
+    "summary": "The agent registry (plan 34a): every tool, skill and skill procedure the features contribute, checked once when the agent screen is composed, and the\u2026",
+    "tests": [
+      "src/shared/obd-core/agent/registry.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "registry"
+    ],
+    "type": "core"
+  },
+  "core:agent/report": {
+    "path": "src/shared/obd-core/agent/report.ts",
+    "summary": "The AI diagnostic agent's reports (plan 34a): the model's final report kept only where it cites the trail (findings citing no successful step are dro\u2026",
+    "tests": [
+      "src/shared/obd-core/agent/report.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "report"
+    ],
+    "type": "core"
+  },
+  "core:agent/skillFile": {
+    "path": "src/shared/obd-core/agent/skillFile.ts",
+    "summary": "The agent skill file format `bolid.skill.v1` (plan 34a): a declarative document that tells the model which tools to use for a capability or symptom a\u2026",
+    "tests": [
+      "src/shared/obd-core/agent/skillFile.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "file",
+      "skill"
+    ],
+    "type": "core"
+  },
+  "core:agent/triage": {
+    "path": "src/shared/obd-core/agent/triage.ts",
+    "summary": "Triage, step 1 of every AI diagnostic agent run (plan 34a): the same read pass as the classic diagnosis (DTCs per the profile's modes, readiness, fre\u2026",
+    "tests": [
+      "src/shared/obd-core/agent/triage.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "triage"
+    ],
+    "type": "core"
+  },
+  "core:agent/types": {
+    "path": "src/shared/obd-core/agent/types.ts",
+    "summary": "Shared types of the AI diagnostic agent (plan 34a): tools, skills' procedures, the context a tool runs in, the steps a run records and how a run ends.",
+    "tokens": [
+      "agent",
+      "types"
+    ],
+    "type": "core"
+  },
   "core:analysis/aiDiagnosis": {
     "path": "src/shared/obd-core/analysis/aiDiagnosis.ts",
     "summary": "Pure logic for the AI auto-diagnosis feature.",
@@ -1087,6 +1306,18 @@
     ],
     "type": "core"
   },
+  "core:analysis/boost": {
+    "path": "src/shared/obd-core/analysis/boost.ts",
+    "summary": "Pure MAP-only boost check for the diagnostic agent's boost procedure.",
+    "tests": [
+      "src/shared/obd-core/analysis/boost.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "boost"
+    ],
+    "type": "core"
+  },
   "core:analysis/captureAnalyzer": {
     "path": "src/shared/obd-core/analysis/captureAnalyzer.ts",
     "summary": "Capture analyzer (plan 25): turns a sniffer CSV (plan 03 format) into ISO-TP messages, request/response pairs with UDS / KWP2000 decoding, request \"f\u2026",
@@ -1110,6 +1341,18 @@
       "analysis",
       "buffer",
       "chart"
+    ],
+    "type": "core"
+  },
+  "core:analysis/cooling": {
+    "path": "src/shared/obd-core/analysis/cooling.ts",
+    "summary": "Pure cooling check for the diagnostic agent's cooling procedure.",
+    "tests": [
+      "src/shared/obd-core/analysis/cooling.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "cooling"
     ],
     "type": "core"
   },
@@ -1138,6 +1381,19 @@
     ],
     "type": "core"
   },
+  "core:analysis/fuelTrims": {
+    "path": "src/shared/obd-core/analysis/fuelTrims.ts",
+    "summary": "Pure fuel-trim pattern analysis for the diagnostic agent's fuel-trim procedure.",
+    "tests": [
+      "src/shared/obd-core/analysis/fuelTrims.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "fuel",
+      "trims"
+    ],
+    "type": "core"
+  },
   "core:analysis/inspection": {
     "path": "src/shared/obd-core/analysis/inspection.ts",
     "summary": "Pure \"used-car inspection\" assessment.",
@@ -1159,6 +1415,18 @@
     "tokens": [
       "analysis",
       "maintenance"
+    ],
+    "type": "core"
+  },
+  "core:analysis/misfire": {
+    "path": "src/shared/obd-core/analysis/misfire.ts",
+    "summary": "Pure misfire check for the diagnostic agent's misfire procedure.",
+    "tests": [
+      "src/shared/obd-core/analysis/misfire.test.ts"
+    ],
+    "tokens": [
+      "analysis",
+      "misfire"
     ],
     "type": "core"
   },
@@ -3014,6 +3282,96 @@
     ],
     "type": "doc"
   },
+  "doc:plans/34a-ai-agent-core": {
+    "path": "docs/plans/34a-ai-agent-core.md",
+    "summary": "Plan 34a \u2014 AI diagnostic agent: core loop, tools, skills and the new AI diagnose screen Implementation Plan",
+    "tokens": [
+      "34",
+      "agent",
+      "ai",
+      "diagnose",
+      "diagnostic",
+      "implementation",
+      "loop",
+      "new",
+      "plan",
+      "plans",
+      "skills",
+      "tools"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/34b-ai-agent-capability-skills": {
+    "path": "docs/plans/34b-ai-agent-capability-skills.md",
+    "summary": "Plan 34b \u2014 AI diagnostic agent: every capability skill (phase 1, read-only) Implementation Plan",
+    "tokens": [
+      "34",
+      "agent",
+      "ai",
+      "capability",
+      "diagnostic",
+      "every",
+      "implementation",
+      "only",
+      "phase",
+      "plan",
+      "plans",
+      "read",
+      "skill",
+      "skills"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/34c-ai-agent-playbooks": {
+    "path": "docs/plans/34c-ai-agent-playbooks.md",
+    "summary": "Plan 34c \u2014 AI diagnostic agent: symptom playbooks, new analysis modules, no-AI mode, simulator faults and the eval set Implementation Plan",
+    "tokens": [
+      "34",
+      "agent",
+      "ai",
+      "analysis",
+      "diagnostic",
+      "eval",
+      "faults",
+      "implementation",
+      "mode",
+      "modules",
+      "new",
+      "no",
+      "plan",
+      "plans",
+      "playbooks",
+      "set",
+      "simulator",
+      "symptom"
+    ],
+    "type": "doc"
+  },
+  "doc:plans/34d-ai-agent-history-privacy-share": {
+    "path": "docs/plans/34d-ai-agent-history-privacy-share.md",
+    "summary": "Plan 34d \u2014 AI diagnostic agent: trail in History, privacy, Send to Claude / ChatGPT, i18n and docs Implementation Plan",
+    "tokens": [
+      "18",
+      "34",
+      "agent",
+      "ai",
+      "chat",
+      "claude",
+      "diagnostic",
+      "gpt",
+      "history",
+      "implementation",
+      "in",
+      "plan",
+      "plans",
+      "privacy",
+      "send",
+      "share",
+      "to",
+      "trail"
+    ],
+    "type": "doc"
+  },
   "doc:plans/README": {
     "path": "docs/plans/README.md",
     "summary": "Implementation plans \u2014 handoff guide",
@@ -3193,6 +3551,7 @@
     "path": "src/features/adaptations",
     "summary": "VCDS-style **adaptation channels**: small numeric module values (idle offset, base duties, service",
     "tests": [
+      "src/features/adaptations/agent/agentTools.test.ts",
       "src/features/adaptations/api/adaptationService.test.ts",
       "src/features/adaptations/api/codeBook.test.ts",
       "src/features/adaptations/hooks/useAdaptations.test.tsx",
@@ -3207,6 +3566,7 @@
     "path": "src/features/adapter-health",
     "summary": "A one-tap **adapter health check** that grades your ELM327 so \"is my clone junk?\" support questions",
     "tests": [
+      "src/features/adapter-health/agent/agentTools.test.ts",
       "src/features/adapter-health/api/adapterReportJson.test.ts",
       "src/features/adapter-health/api/gradeAdapter.test.ts",
       "src/features/adapter-health/ui/AdapterHealthScreen.test.tsx"
@@ -3219,8 +3579,11 @@
   },
   "feature:ai-diagnose": {
     "path": "src/features/ai-diagnose",
-    "summary": "**One-tap, AI-assisted health check.** Reads the car in one pass, sends a structured snapshot to the",
+    "summary": "**An AI assistant that investigates the car step by step.** The owner describes what is wrong",
     "tests": [
+      "src/features/ai-diagnose/agentStrings.test.ts",
+      "src/features/ai-diagnose/api/agentService.test.ts",
+      "src/features/ai-diagnose/api/driverGate.test.ts",
       "src/features/ai-diagnose/ui/AiDiagnoseScreen.test.tsx"
     ],
     "tokens": [
@@ -3233,6 +3596,7 @@
     "path": "src/features/alerts",
     "summary": "User-defined **thresholds** on live PIDs that fire visual + haptic (and optional audible) alerts \u2014",
     "tests": [
+      "src/features/alerts/agent/agentTools.test.ts",
       "src/features/alerts/ui/AlertsScreen.test.tsx"
     ],
     "tokens": [
@@ -3271,6 +3635,7 @@
     "path": "src/features/can-sniffer",
     "summary": "A raw **bus monitor** built on the ELM327 `ATMA` (monitor all) command: every frame the adapter",
     "tests": [
+      "src/features/can-sniffer/agent/agentTools.test.ts",
       "src/features/can-sniffer/api/captureExport.test.ts",
       "src/features/can-sniffer/model/snifferController.test.ts",
       "src/features/can-sniffer/model/snifferStore.test.ts",
@@ -3286,9 +3651,11 @@
     "path": "src/features/coding",
     "summary": "**Custom coding** = changing a control module's configuration (\"long coding\" / adaptation) rather",
     "tests": [
+      "src/features/coding/agent/agentTools.test.ts",
       "src/features/coding/api/adaptationRestore.integration.test.ts",
       "src/features/coding/api/adaptationRestore.test.ts",
       "src/features/coding/api/carBackup.test.ts",
+      "src/features/coding/api/codingRead.test.ts",
       "src/features/coding/hooks/useAdaptationRestore.security.test.tsx",
       "src/features/coding/hooks/useCoding.security.test.tsx",
       "src/features/coding/ui/CodingBackup.test.tsx",
@@ -3322,6 +3689,8 @@
     "path": "src/features/dpf",
     "summary": "A diesel-focused read-only view of the **diesel particulate filter**: soot load, ash load, distance",
     "tests": [
+      "src/features/dpf/agent/agentTools.test.ts",
+      "src/features/dpf/api/dpfRead.test.ts",
       "src/features/dpf/ui/DpfScreen.test.tsx"
     ],
     "tokens": [
@@ -3348,6 +3717,7 @@
     "path": "src/features/error-log",
     "summary": "A persistent, on-device **logging zone**: a capped store of the errors the app has hit, so they can",
     "tests": [
+      "src/features/error-log/agent/agentTools.test.ts",
       "src/features/error-log/hooks/useErrorLogExport.test.tsx",
       "src/features/error-log/ui/ErrorLogScreen.test.tsx"
     ],
@@ -3361,6 +3731,7 @@
     "path": "src/features/extended-pids",
     "summary": "Profile-driven **manufacturer-specific** reads via **Mode 22** (UDS `readDataByIdentifier`). **VAG is",
     "tests": [
+      "src/features/extended-pids/agent/agentTools.test.ts",
       "src/features/extended-pids/api/measuringLog.test.ts",
       "src/features/extended-pids/model/measuringGroups.test.ts",
       "src/features/extended-pids/ui/ExtendedPidsScreen.test.tsx"
@@ -3375,6 +3746,7 @@
     "path": "src/features/fault-codes",
     "summary": "Read and clear Diagnostic Trouble Codes (DTCs), show freeze frame and readiness monitors. Every read is saved to [History](./history.md).",
     "tests": [
+      "src/features/fault-codes/agent/agentTools.test.ts",
       "src/features/fault-codes/api/dtcService.test.ts",
       "src/features/fault-codes/model/dtcDetail.test.ts",
       "src/features/fault-codes/ui/FaultCodesScreen.test.tsx"
@@ -3400,6 +3772,7 @@
     "path": "src/features/history",
     "summary": "The **per-car timeline** ([plan 16](../plans/16-per-car-timeline.md)): one chronological view of",
     "tests": [
+      "src/features/history/agent/agentTools.test.ts",
       "src/features/history/api/reportFile.test.ts",
       "src/features/history/api/timelineSources.test.ts",
       "src/features/history/ui/HistoryScreen.test.tsx"
@@ -3412,6 +3785,10 @@
   "feature:inspection": {
     "path": "src/features/inspection",
     "summary": "Inspection feature (screen + hooks + model).",
+    "tests": [
+      "src/features/inspection/agent/agentTools.test.ts",
+      "src/features/inspection/api/runInspection.test.ts"
+    ],
     "tokens": [
       "inspection"
     ],
@@ -3421,6 +3798,7 @@
     "path": "src/features/live-charts",
     "summary": "Plot live PIDs over **time** (line charts) alongside the gauges in [`live-data`](./live-data.md), and",
     "tests": [
+      "src/features/live-charts/agent/agentTools.test.ts",
       "src/features/live-charts/api/chartCsv.test.ts",
       "src/features/live-charts/api/chartGeometry.test.ts",
       "src/features/live-charts/model/chartKeys.test.ts",
@@ -3451,6 +3829,7 @@
     "path": "src/features/maintenance",
     "summary": "Maintenance feature (screen + hooks + model).",
     "tests": [
+      "src/features/maintenance/agent/agentTools.test.ts",
       "src/features/maintenance/model/maintenanceStore.test.ts",
       "src/features/maintenance/ui/MaintenanceScreen.test.tsx"
     ],
@@ -3463,6 +3842,7 @@
     "path": "src/features/module-scan",
     "summary": "Scan every control module the profile declares: identification (part number, software version,",
     "tests": [
+      "src/features/module-scan/agent/agentTools.test.ts",
       "src/features/module-scan/api/discovery.test.ts",
       "src/features/module-scan/api/scanDiff.test.ts",
       "src/features/module-scan/api/scanReport.test.ts",
@@ -3514,6 +3894,9 @@
   "feature:performance-tests": {
     "path": "src/features/performance-tests",
     "summary": "Measure vehicle performance from live OBD2 data: **0\u2013100 km/h**, custom speed intervals, a",
+    "tests": [
+      "src/features/performance-tests/agent/agentTools.test.ts"
+    ],
     "tokens": [
       "performance",
       "tests"
@@ -3549,6 +3932,7 @@
     "path": "src/features/sensor-tests",
     "summary": "Inspect and **actively test individual sensors** \u2014 watch a single sensor live while you actuate it",
     "tests": [
+      "src/features/sensor-tests/agent/agentTools.test.ts",
       "src/features/sensor-tests/ui/SensorTestScreen.test.tsx"
     ],
     "tokens": [
@@ -3596,6 +3980,7 @@
     "path": "src/features/trip-recording",
     "summary": "Record a drive as a typed **time-series** of live PIDs (plus DTC snapshots), persist it on the",
     "tests": [
+      "src/features/trip-recording/agent/agentTools.test.ts",
       "src/features/trip-recording/api/trackRecorder.test.ts",
       "src/features/trip-recording/hooks/useTripRecorder.test.ts",
       "src/features/trip-recording/model/tripStore.test.ts",
@@ -3612,6 +3997,7 @@
     "path": "src/features/vehicle-info",
     "summary": "Show vehicle and adapter identity.",
     "tests": [
+      "src/features/vehicle-info/agent/agentTools.test.ts",
       "src/features/vehicle-info/ui/VehicleInfoScreen.test.tsx"
     ],
     "tokens": [
@@ -3643,6 +4029,18 @@
       "vin"
     ],
     "type": "feature"
+  },
+  "lib:agentShare": {
+    "path": "src/shared/lib/agentShare.ts",
+    "summary": "The \"Send to Claude / ChatGPT\" package (plan 34d): one plain-English text with everything an AI diagnose run read and concluded \u2014 the car, the compla\u2026",
+    "tests": [
+      "src/shared/lib/agentShare.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "share"
+    ],
+    "type": "lib"
   },
   "lib:appInfo": {
     "path": "src/shared/lib/appInfo.ts",
@@ -3966,7 +4364,7 @@
   },
   "screen:ai-diagnose": {
     "path": "src/app/ai-diagnose.tsx",
-    "summary": "Route screen 'ai diagnose' (expo-router).",
+    "summary": "What each feature contributes to the AI diagnostic agent (plan 34a).",
     "tokens": [
       "ai",
       "diagnose"
@@ -4864,6 +5262,18 @@
       "reduced"
     ],
     "type": "ui"
+  },
+  "vehicle:agentContext": {
+    "path": "src/shared/vehicles/agentContext.ts",
+    "summary": "What the AI diagnostic agent is told about the car (plan 34a): the vehicle context built from the selected profile and the per-car known checks for t\u2026",
+    "tests": [
+      "src/shared/vehicles/agentContext.test.ts"
+    ],
+    "tokens": [
+      "agent",
+      "context"
+    ],
+    "type": "vehicle"
   },
   "vehicle:confirmation": {
     "path": "src/shared/vehicles/confirmation.ts",

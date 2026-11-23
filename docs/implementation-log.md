@@ -5,6 +5,64 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## AI agent: history, privacy, share (plan 34d) (2026-11-23)
+
+**The AI diagnostic agent, 34a–34d in one paragraph.** AI diagnose no longer reads the car once
+and asks for a verdict: a read-only agent (`src/shared/obd-core/agent/`) runs triage, then asks
+the configured model for one JSON action per turn over a registry of core tools, feature tools and
+`bolid.skill.v1` skills (21 capability skills, one per feature that can read the car, plus 17
+symptom playbooks, ten with an on-device procedure; `open_skill` / `run_skill` for progressive
+disclosure), asks the driver for a step only while the car is stationary, and ends with a report
+whose every finding cites the steps behind it — within 12 steps, 4 min of model + adapter time and
+2 min of adapter time. Every tool gets a read-only session facade (read allowlist, never the airbag
+or immobilizer module, no SecurityAccess); **Clear codes** stays the report's confirmed button.
+Features contribute through `src/app/ai-diagnose.tsx`, not a fifth composition point. Without AI,
+or when the model fails, the on-device rule report covers everything gathered (the no-AI mode
+sweeps the procedures first). 34d saves the trail with each run in History, tells the user exactly
+what is sent, and adds **Send to Claude / ChatGPT** through the share sheet. Spec
+`docs/superpowers/specs/2026-11-22-ai-agent-diagnose-design.md`; the whole feature is in
+[ai-diagnose](./features/ai-diagnose.md).
+
+- **Why:** a run's trail vanished once the screen moved on, the privacy policy did not list the new
+  kinds of data the agent sends, and owners with a Claude or ChatGPT subscription had no way to use
+  it (the app cannot sign in to a consumer subscription).
+- **History:** `AiHistoryEntry` gains an optional, bounded `trail` (`toStoredTrail`: the first 16
+  steps, digests cut to 600 characters, findings dropped), `request` and `end`; `bolid.history` goes
+  to `version: 3` (v2 entries pass through unchanged, so a backup from before restores in full).
+  `AiReportView` shows the saved trail collapsed and read-only; a run saved before 34d opens as
+  before, with no trail header ([history](./features/history.md)).
+- **Privacy:** the policy's "AI assistant:" paragraph (in `docs/privacy-policy.md` and
+  `privacyPolicy.ts`, word for word) lists everything the agent can send — investigation steps,
+  module part numbers and software versions, manufacturer readings, trips, fuel economy and
+  performance results, the maintenance log, History, alert rules, recent app errors (VINs masked),
+  adapter details, the driver's answers; a new "Sharing and exports" paragraph describes the share
+  flow; `PRIVACY_POLICY_UPDATED` 2026-11-23. The Play data-safety and App Store privacy answers in
+  `store/compliance/` carry the same list. Settings → AI assistant shows one line under the switch
+  (`settings:ai.whatIsSent`).
+- **Send to Claude / ChatGPT:** `buildAgentSharePackage` (`src/shared/lib/agentShare.ts`, pure)
+  builds an English plain-text package (instruction for the other assistant, vehicle, complaint,
+  fault codes, the report with cited steps, every check with its digest, the disclaimer), capped at
+  20 000 characters; with **Include VIN** off (the default, every time the sheet opens) every VIN in
+  the whole text becomes `[VIN hidden]` before the cut. `SharePackageSheet` previews it and calls
+  `Share.share`; no network destination added, a failed share sheet is logged.
+- **i18n:** `agentStrings.test.ts` checks that every tool label, driver instruction and choice, end
+  notice and core finding exists in en and ro (each language on its own, no en fallback);
+  `docs/i18n.md` sets out what stays English (skill documents, digests, prompts, the share package)
+  and adds Claude and ChatGPT to the brand names.
+- **Docs:** [ai-diagnose](./features/ai-diagnose.md) rewritten top to bottom for the agent;
+  [architecture](./architecture.md) gains an "AI agent" paragraph; the roadmap gains the "AI
+  diagnostic agent" row; the context graph gains `concept:ai-agent`.
+- **Tests:** `historyStore.test.ts` (bounded trail, v2 → v3), `HistoryScreen.test.tsx` (a run with
+  and without a trail), `backupService.test.ts` (a v2 backup restores), `agentShare.test.ts` (VIN
+  inside a digest, any case, other VINs, the clamp), `AiDiagnoseScreen.test.tsx` (the run saved with
+  its trail; the share preview without and with the VIN, Share, a failing share sheet),
+  `privacyPolicy.test.ts`, `AiSettingsScreen.test.tsx`, `agentStrings.test.ts`.
+- **Open (owner, on the car):** review the Romanian agent copy (`docs/i18n.md` → Owner review); hand
+  a real Golf run to the Claude and ChatGPT apps and check the text arrives whole (lower
+  `SHARE_PACKAGE_MAX_CHARS` if one truncates); update the Play data-safety form and the App Store
+  privacy answers from `store/compliance/` before the next release that ships the agent; the boost
+  ranges and the eval against the owner's model (plan 34c).
+
 ## AI agent playbooks (plan 34c) (2026-11-23)
 
 - **Why:** the agent knew the car's features but not the complaints a driver actually has, and

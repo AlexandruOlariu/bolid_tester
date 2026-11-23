@@ -55,6 +55,51 @@
     "relates"
   ],
   [
+    "concept:ai-agent",
+    "concept:ai-diagnose-flow",
+    "relates"
+  ],
+  [
+    "concept:ai-agent",
+    "core:analysis/aiDiagnosis",
+    "relates"
+  ],
+  [
+    "concept:ai-agent",
+    "doc:features/ai-diagnose",
+    "relates"
+  ],
+  [
+    "concept:ai-agent",
+    "doc:plans/34a-ai-agent-core",
+    "relates"
+  ],
+  [
+    "concept:ai-agent",
+    "doc:plans/34b-ai-agent-capability-skills",
+    "relates"
+  ],
+  [
+    "concept:ai-agent",
+    "doc:plans/34c-ai-agent-playbooks",
+    "relates"
+  ],
+  [
+    "concept:ai-agent",
+    "doc:plans/34d-ai-agent-history-privacy-share",
+    "relates"
+  ],
+  [
+    "concept:ai-agent",
+    "doc:superpowers/specs/2026-11-22-ai-agent-diagnose-design",
+    "relates"
+  ],
+  [
+    "concept:ai-agent",
+    "feature:ai-diagnose",
+    "relates"
+  ],
+  [
     "concept:ai-diagnose-flow",
     "core:analysis/aiDiagnosis",
     "relates"
@@ -1310,6 +1355,506 @@
     "relates"
   ],
   [
+    "core:agent/actionSchema",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/actionSchema",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "core:agent/coreTools",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "core:agent/coreTools",
+    "core:agent/liveSampling",
+    "imports"
+  ],
+  [
+    "core:agent/coreTools",
+    "core:agent/procedures/batteryCapture",
+    "imports"
+  ],
+  [
+    "core:agent/coreTools",
+    "core:agent/readOnlySession",
+    "imports"
+  ],
+  [
+    "core:agent/coreTools",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/coreTools",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "core:agent/coreTools",
+    "core:obd/readiness",
+    "imports"
+  ],
+  [
+    "core:agent/coreTools",
+    "doc:plans/34a-ai-agent-core",
+    "named"
+  ],
+  [
+    "core:agent/coreTools",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "core:agent/driver",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/actionSchema",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/coreTools",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/driver",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/liveSampling",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/loop",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/playbooks/index",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/procedures/batteryCapture",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/prompt",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/readOnlySession",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/registry",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/report",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/triage",
+    "imports"
+  ],
+  [
+    "core:agent/index",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/liveSampling",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/liveSampling",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "core:agent/actionSchema",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "core:agent/driver",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "core:agent/prompt",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "core:agent/registry",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "core:agent/report",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "core:agent/triage",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "core:elm327/Elm327Client",
+    "imports"
+  ],
+  [
+    "core:agent/loop",
+    "doc:plans/14-mode22-charts-measuring-groups",
+    "named"
+  ],
+  [
+    "core:agent/loop",
+    "doc:plans/34a-ai-agent-core",
+    "named"
+  ],
+  [
+    "core:agent/playbooks/index",
+    "core:agent/playbooks/procedures",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/index",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/index",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/procedures",
+    "core:agent/coreTools",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/procedures",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/procedures",
+    "core:agent/procedures/batteryCapture",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/procedures",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/procedures",
+    "core:analysis/boost",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/procedures",
+    "core:analysis/cooling",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/procedures",
+    "core:analysis/fuelTrims",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/procedures",
+    "core:analysis/misfire",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/procedures",
+    "core:analysis/trip",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/procedures",
+    "core:elm327/Elm327Client",
+    "imports"
+  ],
+  [
+    "core:agent/playbooks/procedures",
+    "core:obd/mode06",
+    "imports"
+  ],
+  [
+    "core:agent/procedures/batteryCapture",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/procedures/batteryCapture",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "core:agent/procedures/batteryCapture",
+    "core:analysis/battery",
+    "imports"
+  ],
+  [
+    "core:agent/prompt",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "core:agent/prompt",
+    "core:agent/driver",
+    "imports"
+  ],
+  [
+    "core:agent/prompt",
+    "core:agent/registry",
+    "imports"
+  ],
+  [
+    "core:agent/prompt",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "core:agent/prompt",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/prompt",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "core:obd/iupr",
+    "imports"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "core:obd/mode05",
+    "imports"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "core:obd/mode06",
+    "imports"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "core:obd/readiness",
+    "imports"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "core:session/DiagnosticSession",
+    "imports"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "core:transport/Transport",
+    "imports"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "core:uds/vagHeaders",
+    "imports"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "doc:plans/34b-ai-agent-capability-skills",
+    "named"
+  ],
+  [
+    "core:agent/readOnlySession",
+    "store:sessionStore",
+    "named"
+  ],
+  [
+    "core:agent/registry",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "core:agent/registry",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/registry",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "core:agent/registry",
+    "doc:vehicles/README",
+    "named"
+  ],
+  [
+    "core:agent/registry",
+    "vehicle:registry",
+    "named"
+  ],
+  [
+    "core:agent/report",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/report",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "core:agent/skillFile",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/skillFile",
+    "doc:plans/34b-ai-agent-capability-skills",
+    "named"
+  ],
+  [
+    "core:agent/skillFile",
+    "lib:saveFile",
+    "named"
+  ],
+  [
+    "core:agent/skillFile",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "core:agent/triage",
+    "core:agent/coreTools",
+    "imports"
+  ],
+  [
+    "core:agent/triage",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "core:agent/triage",
+    "core:agent/registry",
+    "imports"
+  ],
+  [
+    "core:agent/triage",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "core:agent/triage",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "core:agent/triage",
+    "core:elm327/Elm327Client",
+    "imports"
+  ],
+  [
+    "core:agent/types",
+    "core:agent/readOnlySession",
+    "imports"
+  ],
+  [
+    "core:agent/types",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "core:agent/types",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "core:agent/types",
+    "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "core:agent/types",
+    "lib:types",
+    "named"
+  ],
+  [
+    "core:agent/types",
+    "vehicle:types",
+    "imports"
+  ],
+  [
     "core:analysis/aiDiagnosis",
     "core:obd/dtc",
     "imports"
@@ -1345,14 +1890,14 @@
     "named"
   ],
   [
-    "core:analysis/battery",
-    "doc:features/battery-health",
-    "named"
+    "core:analysis/boost",
+    "core:analysis/aiDiagnosis",
+    "imports"
   ],
   [
-    "core:analysis/captureAnalyzer",
-    "doc:plans/03-sniffer-capture",
-    "named"
+    "core:analysis/boost",
+    "vehicle:types",
+    "imports"
   ],
   [
     "core:analysis/captureAnalyzer",
@@ -1360,9 +1905,29 @@
     "named"
   ],
   [
+    "core:analysis/cooling",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "core:analysis/cooling",
+    "core:analysis/trip",
+    "imports"
+  ],
+  [
+    "core:analysis/cooling",
+    "vehicle:types",
+    "imports"
+  ],
+  [
     "core:analysis/dpf",
     "doc:features/dpf",
     "named"
+  ],
+  [
+    "core:analysis/fuelTrims",
+    "core:analysis/aiDiagnosis",
+    "imports"
   ],
   [
     "core:analysis/inspection",
@@ -1388,6 +1953,16 @@
     "core:analysis/maintenance",
     "doc:features/maintenance-log",
     "named"
+  ],
+  [
+    "core:analysis/misfire",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "core:analysis/misfire",
+    "core:obd/mode06",
+    "imports"
   ],
   [
     "core:analysis/performance",
@@ -1510,16 +2085,6 @@
     "imports"
   ],
   [
-    "core:obd/captureBuffer",
-    "doc:plans/03-sniffer-capture",
-    "named"
-  ],
-  [
-    "core:obd/captureBuffer",
-    "doc:plans/25-post-capture-confirmation",
-    "named"
-  ],
-  [
     "core:obd/dtc",
     "core:obd/dtcDatabase/index",
     "imports"
@@ -1625,6 +2190,11 @@
     "named"
   ],
   [
+    "core:obd/mode05",
+    "doc:plans/34c-ai-agent-playbooks",
+    "named"
+  ],
+  [
     "core:obd/mode06",
     "doc:plans/06-garage-learned-profiles",
     "named"
@@ -1632,6 +2202,11 @@
   [
     "core:obd/mode06",
     "doc:plans/14-mode22-charts-measuring-groups",
+    "named"
+  ],
+  [
+    "core:obd/mode06",
+    "doc:plans/34c-ai-agent-playbooks",
     "named"
   ],
   [
@@ -1656,6 +2231,11 @@
   ],
   [
     "core:public-api",
+    "core:agent/index",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:analysis/aiDiagnosis",
     "imports"
   ],
@@ -1676,12 +2256,22 @@
   ],
   [
     "core:public-api",
+    "core:analysis/boost",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:analysis/captureAnalyzer",
     "imports"
   ],
   [
     "core:public-api",
     "core:analysis/chartBuffer",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:analysis/cooling",
     "imports"
   ],
   [
@@ -1696,12 +2286,22 @@
   ],
   [
     "core:public-api",
+    "core:analysis/fuelTrims",
+    "imports"
+  ],
+  [
+    "core:public-api",
     "core:analysis/inspection",
     "imports"
   ],
   [
     "core:public-api",
     "core:analysis/maintenance",
+    "imports"
+  ],
+  [
+    "core:public-api",
+    "core:analysis/misfire",
     "imports"
   ],
   [
@@ -2000,11 +2600,6 @@
     "imports"
   ],
   [
-    "core:session/DiagnosticSession",
-    "doc:superpowers/specs/2026-11-22-ai-agent-diagnose-design",
-    "named"
-  ],
-  [
     "core:tp20/elmRawCan",
     "core:elm327/Elm327Client",
     "imports"
@@ -2067,6 +2662,11 @@
   [
     "core:tp20/tp20Scan",
     "doc:features/module-scan",
+    "named"
+  ],
+  [
+    "core:tp20/vagModules",
+    "doc:plans/34c-ai-agent-playbooks",
     "named"
   ],
   [
@@ -2541,7 +3141,32 @@
   ],
   [
     "feature:adaptations",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "core:agent/readOnlySession",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
     "core:coding/adaptationValue",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
+    "core:coding/coding",
     "imports"
   ],
   [
@@ -2616,6 +3241,11 @@
   ],
   [
     "feature:adaptations",
+    "vehicle:confirmation",
+    "imports"
+  ],
+  [
+    "feature:adaptations",
     "vehicle:loginBook",
     "imports"
   ],
@@ -2627,6 +3257,26 @@
   [
     "feature:adaptations",
     "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:adapter-health",
+    "core:analysis/aiDiagnosis",
     "imports"
   ],
   [
@@ -2676,6 +3326,51 @@
   ],
   [
     "feature:ai-diagnose",
+    "core:agent/coreTools",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:agent/driver",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:agent/loop",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:agent/prompt",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:agent/readOnlySession",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:agent/registry",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:agent/report",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:agent/triage",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
     "core:analysis/aiDiagnosis",
     "imports"
   ],
@@ -2696,17 +3391,17 @@
   ],
   [
     "feature:ai-diagnose",
-    "core:session/DiagnosticSession",
-    "imports"
-  ],
-  [
-    "feature:ai-diagnose",
     "feature:fault-codes",
     "imports"
   ],
   [
     "feature:ai-diagnose",
     "feature:vehicle-select",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
+    "lib:agentShare",
     "imports"
   ],
   [
@@ -2746,17 +3441,12 @@
   ],
   [
     "feature:ai-diagnose",
+    "vehicle:agentContext",
+    "imports"
+  ],
+  [
+    "feature:ai-diagnose",
     "vehicle:faultGuides",
-    "imports"
-  ],
-  [
-    "feature:ai-diagnose",
-    "vehicle:registry",
-    "imports"
-  ],
-  [
-    "feature:ai-diagnose",
-    "vehicle:types",
     "imports"
   ],
   [
@@ -2766,7 +3456,27 @@
   ],
   [
     "feature:alerts",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:alerts",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:alerts",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:alerts",
     "core:analysis/alerts",
+    "imports"
+  ],
+  [
+    "feature:alerts",
+    "core:obd/pids",
     "imports"
   ],
   [
@@ -2941,13 +3651,18 @@
   ],
   [
     "feature:battery-health",
-    "core:analysis/battery",
+    "core:agent/skillFile",
     "imports"
   ],
   [
     "feature:battery-health",
-    "doc:features/battery-health",
-    "named"
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:battery-health",
+    "core:analysis/battery",
+    "imports"
   ],
   [
     "feature:battery-health",
@@ -2976,12 +3691,32 @@
   ],
   [
     "feature:can-sniffer",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
     "core:obd/canMonitor",
     "imports"
   ],
   [
     "feature:can-sniffer",
     "core:obd/captureBuffer",
+    "imports"
+  ],
+  [
+    "feature:can-sniffer",
+    "core:obd/protocols",
     "imports"
   ],
   [
@@ -3017,6 +3752,26 @@
   [
     "feature:can-sniffer",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "core:agent/readOnlySession",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "core:agent/types",
     "imports"
   ],
   [
@@ -3102,6 +3857,11 @@
   [
     "feature:coding",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:coding",
+    "vehicle:confirmation",
     "imports"
   ],
   [
@@ -3236,6 +3996,31 @@
   ],
   [
     "feature:dpf",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:dpf",
+    "core:agent/readOnlySession",
+    "imports"
+  ],
+  [
+    "feature:dpf",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:dpf",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:dpf",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "feature:dpf",
     "core:analysis/dpf",
     "imports"
   ],
@@ -3251,7 +4036,7 @@
   ],
   [
     "feature:dpf",
-    "feature:vehicle-select",
+    "store:activeProfile",
     "imports"
   ],
   [
@@ -3267,6 +4052,11 @@
   [
     "feature:dpf",
     "vehicle:confirmation",
+    "imports"
+  ],
+  [
+    "feature:dpf",
+    "vehicle:types",
     "imports"
   ],
   [
@@ -3381,6 +4171,21 @@
   ],
   [
     "feature:error-log",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:error-log",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:error-log",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:error-log",
     "lib:errorLog",
     "imports"
   ],
@@ -3396,7 +4201,27 @@
   ],
   [
     "feature:error-log",
+    "lib:scrub",
+    "imports"
+  ],
+  [
+    "feature:error-log",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
+    "core:agent/types",
     "imports"
   ],
   [
@@ -3476,7 +4301,32 @@
   ],
   [
     "feature:extended-pids",
+    "vehicle:confirmation",
+    "imports"
+  ],
+  [
+    "feature:extended-pids",
     "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "core:agent/coreTools",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:fault-codes",
+    "core:agent/types",
     "imports"
   ],
   [
@@ -3621,6 +4471,26 @@
   ],
   [
     "feature:history",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "core:agent/liveSampling",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:history",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:history",
     "core:analysis/aiDiagnosis",
     "imports"
   ],
@@ -3631,8 +4501,8 @@
   ],
   [
     "feature:history",
-    "doc:features/history",
-    "named"
+    "core:obd/pids",
+    "imports"
   ],
   [
     "feature:history",
@@ -3691,6 +4561,11 @@
   ],
   [
     "feature:history",
+    "store:activeProfile",
+    "imports"
+  ],
+  [
+    "feature:history",
     "store:errorLogStore",
     "imports"
   ],
@@ -3726,6 +4601,31 @@
   ],
   [
     "feature:inspection",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:inspection",
+    "core:agent/readOnlySession",
+    "imports"
+  ],
+  [
+    "feature:inspection",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:inspection",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:inspection",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "feature:inspection",
     "core:analysis/inspection",
     "imports"
   ],
@@ -3757,6 +4657,26 @@
   [
     "feature:inspection",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "core:agent/liveSampling",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:live-charts",
+    "core:agent/types",
     "imports"
   ],
   [
@@ -3817,6 +4737,16 @@
   [
     "feature:live-charts",
     "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:live-data",
+    "core:agent/types",
     "imports"
   ],
   [
@@ -3891,6 +4821,21 @@
   ],
   [
     "feature:maintenance",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:maintenance",
     "core:analysis/maintenance",
     "imports"
   ],
@@ -3936,7 +4881,32 @@
   ],
   [
     "feature:module-scan",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:agent/readOnlySession",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
     "core:coding/udsCoding",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
+    "core:elm327/Elm327Client",
     "imports"
   ],
   [
@@ -4046,6 +5016,11 @@
   ],
   [
     "feature:module-scan",
+    "vehicle:confirmation",
+    "imports"
+  ],
+  [
+    "feature:module-scan",
     "vehicle:registry",
     "imports"
   ],
@@ -4121,6 +5096,21 @@
   ],
   [
     "feature:performance-tests",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:performance-tests",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:performance-tests",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:performance-tests",
     "core:analysis/performance",
     "imports"
   ],
@@ -4132,6 +5122,11 @@
   [
     "feature:performance-tests",
     "lib:format",
+    "imports"
+  ],
+  [
+    "feature:performance-tests",
+    "store:activeProfile",
     "imports"
   ],
   [
@@ -4321,7 +5316,27 @@
   ],
   [
     "feature:sensor-tests",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:sensor-tests",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:sensor-tests",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:sensor-tests",
     "core:confirmation",
+    "imports"
+  ],
+  [
+    "feature:sensor-tests",
+    "core:elm327/Elm327Client",
     "imports"
   ],
   [
@@ -4337,6 +5352,11 @@
   [
     "feature:sensor-tests",
     "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:sensor-tests",
+    "core:session/DiagnosticSession",
     "imports"
   ],
   [
@@ -4362,6 +5382,11 @@
   [
     "feature:sensor-tests",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "feature:sensor-tests",
+    "vehicle:types",
     "imports"
   ],
   [
@@ -4412,6 +5437,11 @@
   [
     "feature:settings",
     "core:coding/seedKeyDsl",
+    "imports"
+  ],
+  [
+    "feature:settings",
+    "core:transport/MockTransport",
     "imports"
   ],
   [
@@ -4551,12 +5581,42 @@
   ],
   [
     "feature:trip-recording",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "core:agent/liveSampling",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "core:analysis/fuelEconomy",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
     "core:analysis/track",
     "imports"
   ],
   [
     "feature:trip-recording",
     "core:analysis/trip",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "core:obd/pids",
     "imports"
   ],
   [
@@ -4587,6 +5647,11 @@
   [
     "feature:trip-recording",
     "service:notify",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
+    "store:activeProfile",
     "imports"
   ],
   [
@@ -4636,12 +5701,37 @@
   ],
   [
     "feature:trip-recording",
+    "vehicle:types",
+    "imports"
+  ],
+  [
+    "feature:trip-recording",
     "vehicle:userVehicle",
     "imports"
   ],
   [
     "feature:vehicle-info",
+    "core:agent/digest",
+    "imports"
+  ],
+  [
+    "feature:vehicle-info",
+    "core:agent/skillFile",
+    "imports"
+  ],
+  [
+    "feature:vehicle-info",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "feature:vehicle-info",
     "core:obd/protocols",
+    "imports"
+  ],
+  [
+    "feature:vehicle-info",
+    "core:obd/vinDecode",
     "imports"
   ],
   [
@@ -4782,6 +5872,41 @@
   [
     "feature:vin-decode",
     "store:sessionStore",
+    "imports"
+  ],
+  [
+    "lib:agentShare",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "lib:agentShare",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "lib:agentShare",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "lib:agentShare",
+    "doc:plans/03-sniffer-capture",
+    "named"
+  ],
+  [
+    "lib:agentShare",
+    "doc:plans/34d-ai-agent-history-privacy-share",
+    "named"
+  ],
+  [
+    "lib:agentShare",
+    "lib:scrub",
+    "imports"
+  ],
+  [
+    "lib:agentShare",
+    "store:historyStore",
     "imports"
   ],
   [
@@ -5096,7 +6221,122 @@
   ],
   [
     "screen:ai-diagnose",
+    "core:agent/playbooks/index",
+    "imports"
+  ],
+  [
+    "screen:ai-diagnose",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:adaptations",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:adapter-health",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
     "feature:ai-diagnose",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:alerts",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:battery-health",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:can-sniffer",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:coding",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:connection",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:dpf",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:error-log",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:extended-pids",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:fault-codes",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:history",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:inspection",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:live-charts",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:live-data",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:maintenance",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:module-scan",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:performance-tests",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:sensor-tests",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:trip-recording",
+    "serves"
+  ],
+  [
+    "screen:ai-diagnose",
+    "feature:vehicle-info",
     "serves"
   ],
   [
@@ -5118,16 +6358,6 @@
     "screen:backup",
     "feature:backup",
     "serves"
-  ],
-  [
-    "screen:battery",
-    "core:analysis/battery",
-    "named"
-  ],
-  [
-    "screen:battery",
-    "doc:features/battery-health",
-    "named"
   ],
   [
     "screen:battery",
@@ -5181,6 +6411,11 @@
   ],
   [
     "screen:faults",
+    "doc:plans/34c-ai-agent-playbooks",
+    "named"
+  ],
+  [
+    "screen:faults",
     "feature:fault-codes",
     "serves"
   ],
@@ -5196,18 +6431,8 @@
   ],
   [
     "screen:history",
-    "doc:features/history",
-    "named"
-  ],
-  [
-    "screen:history",
     "feature:history",
     "serves"
-  ],
-  [
-    "screen:history",
-    "store:historyStore",
-    "named"
   ],
   [
     "screen:index",
@@ -5396,6 +6621,11 @@
   ],
   [
     "screen:settings-privacy",
+    "doc:plans/34d-ai-agent-history-privacy-share",
+    "named"
+  ],
+  [
+    "screen:settings-privacy",
     "doc:privacy-policy",
     "named"
   ],
@@ -5451,12 +6681,22 @@
   ],
   [
     "service:ai",
+    "core:agent/actionSchema",
+    "imports"
+  ],
+  [
+    "service:ai",
     "core:analysis/aiDiagnosis",
     "imports"
   ],
   [
     "service:ai",
     "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "service:ai",
+    "core:analysis/boost",
     "imports"
   ],
   [
@@ -5641,6 +6881,11 @@
   ],
   [
     "store:historyStore",
+    "core:agent/types",
+    "imports"
+  ],
+  [
+    "store:historyStore",
     "core:analysis/aiDiagnosis",
     "imports"
   ],
@@ -5648,11 +6893,6 @@
     "store:historyStore",
     "core:obd/dtc",
     "imports"
-  ],
-  [
-    "store:historyStore",
-    "doc:features/history",
-    "named"
   ],
   [
     "store:historyStore",
@@ -5767,6 +7007,11 @@
   [
     "store:settingsStore",
     "core:analysis/aiProviders",
+    "imports"
+  ],
+  [
+    "store:settingsStore",
+    "core:transport/MockTransport",
     "imports"
   ],
   [
@@ -6132,6 +7377,31 @@
   [
     "ui:useReducedMotion",
     "store:errorLogStore",
+    "imports"
+  ],
+  [
+    "vehicle:agentContext",
+    "core:analysis/aiDiagnosis",
+    "imports"
+  ],
+  [
+    "vehicle:agentContext",
+    "core:obd/dtc",
+    "imports"
+  ],
+  [
+    "vehicle:agentContext",
+    "vehicle:faultGuides",
+    "imports"
+  ],
+  [
+    "vehicle:agentContext",
+    "vehicle:registry",
+    "imports"
+  ],
+  [
+    "vehicle:agentContext",
+    "vehicle:types",
     "imports"
   ],
   [

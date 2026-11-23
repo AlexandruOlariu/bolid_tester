@@ -156,6 +156,18 @@ day grouping are pure, in `src/shared/lib/timeline.ts` (no state or feature impo
 history slice; it reaches the other screens only through routes (`/module-scan?after=&before=`,
 `/trip-detail?id=`, `/maintenance`, `/coding`).
 
+**AI agent.** The read-only AI diagnostic agent ([ai-diagnose](./features/ai-diagnose.md#agent),
+plans 34a–34d) is **not a fifth composition point**. Its registry, triage, prompts, budgeted loop,
+cited report, rule report, playbooks and the read-only session facade every tool receives are pure,
+in `src/shared/obd-core/agent` (the analysis it needs in `src/shared/obd-core/analysis`). Each
+feature that can read something about the car exports an `AgentContribution` (`<feature>AgentTools`
+from its `agent/` folder: tools, `bolid.skill.v1` skill documents, procedures); a tool lives in core
+when it needs only the read-only session, the profile and obd-core analysis, and in its feature when
+it needs that feature's store, service or i18n. The route `src/app/ai-diagnose.tsx` composes the
+list (`AGENT_CONTRIBUTIONS`: the features, then `PLAYBOOK_CONTRIBUTION`) and hands it to the screen
+as a prop, the same app-layer injection as **Reset all app data** — so `ai-diagnose` imports none of
+the contributing features, and no contribution imports `ai-diagnose`.
+
 **Layout classes (plan 21).** Screens adapt to the window with `useLayoutClass()`
 (`src/shared/ui/useLayoutClass.ts`: `useWindowDimensions()` → `{ cls, width, height, landscape,
 fontScale }`). The class comes from the pure `classify(width)` in `src/shared/ui/layoutClass.ts`
