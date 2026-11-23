@@ -524,7 +524,7 @@ asked to wait for a warm-up.
 - Nothing else → `ok` (only when something was judged).
 
 **Misfire** (`misfire.ts`, `assessMisfire(results)`). Counts per cylinder from the Mode 06 misfire
-monitors `MISFIRE_MIDS` = `A2`–`A5` (cylinder = MID − `0xA1`; all three built-in cars are
+monitors `MISFIRE_MIDS` = `A2`–`A5` (cylinder = MID − `0xA1`; all built-in cars are
 4-cylinder), from TID `0x0C` (`MISFIRE_TID_CYCLE`), else `0x0B` (`MISFIRE_TID_EWMA`); a duplicate
 result keeps the higher value, and a cylinder without a count is left out, never read as zero.
 

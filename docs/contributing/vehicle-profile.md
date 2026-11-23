@@ -70,6 +70,8 @@ runtime). Add one when the car deserves curated data.
   fault store. Do not invent them: a known fault comes from a real scan.
 - **`vinPatterns`** — VIN prefixes for the car family (e.g. `'WVWZZZ1K'`); at connect the app
   suggests the profile when the VIN matches. Use the manufacturer + model prefix, never a full VIN.
+  Do not add the model-year character: it does not identify a model. Profiles that share a prefix
+  are all suggested, and the user picks.
 - **`make`** — picks the manufacturer fault-code table (`'vag'`, `'fiat'`) for P1xxx-style codes.
 - **Per-car experimental arrays** (`extendedPids`, `modules`, `routines`, `adaptations`,
   `codingModules`, `codingPresets`, `moduleSensors`, `serviceReset`) — every entry is

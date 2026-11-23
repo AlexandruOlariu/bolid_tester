@@ -7,7 +7,6 @@ import { setMockWindow, TABLET_WINDOW } from '@test/mocks/window';
 import { connectSimulator } from '@test/simulator';
 import { VEHICLE_PROFILES } from '@/shared/vehicles';
 import { useGarageStore } from '@/shared/state/garageStore';
-import { useSessionStore } from '@/shared/state/sessionStore';
 import { useVehicleStore } from '../model/vehicleStore';
 import { VehicleSelectScreen, GARAGE_COPY } from './VehicleSelectScreen';
 import { translate } from '@/shared/i18n';
@@ -41,32 +40,20 @@ describe('VehicleSelectScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/dashboard');
   });
 
-  it("suggests the matching profile from the connected car's VIN", async () => {
-    // The simulated Golf reports a WVWZZZ1K… VIN while the selected profile is still Auto / Generic.
+  it('a VIN tie shows one card per candidate; picking one hides them all', async () => {
+    // The simulated Golf Plus reports a WVWZZZ1K… VIN while the selected profile is still
+    // Auto / Generic. The Golf Plus and the Golf 6 share that prefix, so both are offered.
     await connectSimulator({ vehicleId: 'golf-plus-2009-20tdi' });
-    renderWithProviders(<VehicleSelectScreen />);
-
-    const card = screen.getByText(SUGGESTION);
-    expect(screen.getByText(/WVWZZZ1KZ9W903398/)).toBeTruthy();
-    fireEvent.press(card);
-
-    expect(useVehicleStore.getState().selectedProfileId).toBe('golf-plus-2009-20tdi');
-    expect(mockPush).toHaveBeenCalledWith('/dashboard');
-    // Once the suggested profile is active the card goes away.
-    expect(screen.queryByText(SUGGESTION)).toBeNull();
-  });
-
-  it('a VIN that several profiles match equally well offers one card per candidate', async () => {
-    // A synthetic 1K VIN of a model year neither the Golf Plus (Z9) nor the Golf 6 (ZA) pins down.
-    await connectSimulator({ vehicleId: 'golf-plus-2009-20tdi' });
-    act(() => {
-      const s = useSessionStore.getState();
-      if (s.info) useSessionStore.setState({ info: { ...s.info, vin: 'WVWZZZ1KZCW000001' } });
-    });
     renderWithProviders(<VehicleSelectScreen />);
 
     expect(screen.getAllByText(SUGGESTION)).toHaveLength(2);
-    expect(screen.getByLabelText(SUGGESTION_A11Y(GOLF))).toBeTruthy();
+    expect(screen.getAllByText(/WVWZZZ1KZ9W903398/)).toHaveLength(2);
+    expect(
+      screen
+        .getAllByLabelText(/^The connected car's VIN matches/)
+        .map((card) => card.props.accessibilityLabel),
+    ).toEqual([SUGGESTION_A11Y(GOLF), SUGGESTION_A11Y(GOLF_6)]);
+    // The second card, so the test proves each card selects its own profile.
     fireEvent.press(screen.getByLabelText(SUGGESTION_A11Y(GOLF_6)));
 
     expect(useVehicleStore.getState().selectedProfileId).toBe('golf-6-2010-14tsi');

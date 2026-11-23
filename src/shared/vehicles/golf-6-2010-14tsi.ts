@@ -10,7 +10,7 @@ export const golf6Tsi: VehicleProfile = {
   fuel: 'petrol',
   make: 'vag',
   expectedProtocol: 'ISO_15765_4_CAN_11_500',
-  vinPatterns: ['WVWZZZ1KZA', 'WVWZZZ1K'],
+  vinPatterns: ['WVWZZZ1K'],
   supportedPids: [
     '0104',
     '0105',
@@ -37,7 +37,7 @@ export const golf6Tsi: VehicleProfile = {
     'it.',
   testChecklist: [
     'Connect with ignition on; confirm the negotiated protocol is CAN 11/500.',
-    'Read VIN (Mode 09) and confirm it matches the registration certificate.',
+    "Read VIN (Mode 09) and confirm it matches the car's documents.",
     'Start the engine; read idle live data: RPM, coolant, MAP, fuel trims (near 0 %), timing advance, voltage (~14 V).',
     'Compare the discovered PID list with the 15 expected; note every difference.',
     'Read DTCs (Mode 03/07); note whether Mode 0A answers.',

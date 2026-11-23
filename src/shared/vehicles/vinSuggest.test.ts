@@ -31,28 +31,29 @@ describe('topVinSuggestions — every profile tied for the longest match', () =>
     expect(topIds('WVGZZZ5NZEW000001')).toEqual(['tiguan-2014-20tdi']);
   });
 
-  it('the Golf Plus and the Golf 6 sample VINs each get only their own profile', () => {
-    // The simulator's sample VINs (SAMPLE_VINS in obd-core/transport/scenarios.ts).
-    expect(topIds('WVWZZZ1KZ9W903398')).toEqual(['golf-plus-2009-20tdi']);
-    expect(topIds('WVWZZZ1KZAW000001')).toEqual(['golf-6-2010-14tsi']);
-  });
-
-  it('a 1K VIN of another model year offers both, in registry order', () => {
-    expect(topIds('WVWZZZ1KZCW000001')).toEqual(['golf-plus-2009-20tdi', 'golf-6-2010-14tsi']);
+  it('a Golf Plus or Golf 6 VIN offers both Golfs, in registry order', () => {
+    // The simulator's sample VINs (SAMPLE_VINS in obd-core/transport/scenarios.ts). The model-year
+    // letter does not identify the model (both were built across several years), so a VIN prefix
+    // cannot tell the two apart and the user picks.
+    const both = ['golf-plus-2009-20tdi', 'golf-6-2010-14tsi'];
+    expect(topIds('WVWZZZ1KZ9W903398')).toEqual(both);
+    expect(topIds('WVWZZZ1KZAW000001')).toEqual(both);
+    expect(topIds('WVWZZZ1KZCW000001')).toEqual(both);
   });
 
   it('the longest matching pattern wins whatever order a profile lists its patterns in', () => {
+    // Synthetic profiles: a longer pattern than the shared one, listed second.
     const shortFirst: VehicleProfile = {
       ...generic,
       id: 'short-first',
-      vinPatterns: ['WVWZZZ1K', 'WVWZZZ1KZA'],
+      vinPatterns: ['WVWZZZ1K', 'WVWZZZ1KZ'],
     };
     const shortOnly: VehicleProfile = { ...generic, id: 'short-only', vinPatterns: ['WVWZZZ1K'] };
     const profiles = [shortOnly, shortFirst];
 
     expect(suggestProfilesForVin('WVWZZZ1KZAW000001', profiles)[0]).toEqual({
       profile: shortFirst,
-      matchedPattern: 'WVWZZZ1KZA',
+      matchedPattern: 'WVWZZZ1KZ',
     });
     expect(topIds('WVWZZZ1KZAW000001', profiles)).toEqual(['short-first']);
   });

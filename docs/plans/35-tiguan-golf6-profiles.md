@@ -12,8 +12,9 @@ certificate for the Tiguan, a vehicle-history report for the Golf):
 | `tiguan-2014-20tdi` | VW Tiguan (5N), model year 2014 | 2.0 TDI **CFFD**, 81 kW / 110 cp | diesel |
 | `golf-6-2010-14tsi` | VW Golf 6 (5K), model year 2010 | 1.4 TSI **CAXA**, 90 kW / 122 cp | petrol |
 
-Both engine codes are confirmed by the owner. A connected Tiguan or Golf 6 is suggested its profile
-by VIN, gets the VAG fault-code texts, and can be picked in the simulator.
+Both engine codes are confirmed by the owner. A connected Tiguan is suggested its profile by VIN; a
+connected Golf 6 is offered its profile and the Golf Plus side by side (they share a VIN prefix).
+Both get the VAG fault-code texts and can be picked in the simulator.
 
 ## Why
 
@@ -36,10 +37,10 @@ comes from proof, so these profiles carry what a certificate can prove and nothi
 
 ## Inputs (all resolved)
 
-| Car    | Source                               | What it gave                                                                                            |
-| ------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| Tiguan | Registration certificate             | 5N, VIN prefix `WVGZZZ5N`, model year 2014 (first registered 2013-12), 1968 cm³, 81 kW, diesel, DPF     |
-| Golf 6 | Vehicle-history report (carVertical) | VIN prefix `WVWZZZ1KZA` (model-year letter `A` = 2010), built 2010-01, 1.4 l petrol, 90 kW, code `CAX…` |
+| Car    | Source                               | What it gave                                                                                        |
+| ------ | ------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| Tiguan | Registration certificate             | 5N, VIN prefix `WVGZZZ5N`, model year 2014 (first registered 2013-12), 1968 cm³, 81 kW, diesel, DPF |
+| Golf 6 | Vehicle-history report (carVertical) | VIN prefix `WVWZZZ1K`, model year 2010, built 2010-01, 1.4 l petrol, 90 kW, code `CAX…`             |
 
 Engine codes CFFD and CAXA are confirmed by the owner. The history report lists the Golf's body as
 an estate; body style does not change the diagnostics, so the profile does not assert one.
@@ -155,7 +156,7 @@ export const golf6Tsi: VehicleProfile = {
   fuel: 'petrol',
   make: 'vag',
   expectedProtocol: 'ISO_15765_4_CAN_11_500',
-  vinPatterns: ['WVWZZZ1KZA', 'WVWZZZ1K'],
+  vinPatterns: ['WVWZZZ1K'],
   supportedPids: [
     '0104',
     '0105',
@@ -186,8 +187,9 @@ export const golf6Tsi: VehicleProfile = {
 - Same omissions as the Tiguan.
 
 `docs/vehicles/golf-6-2010-14tsi.md`: front-matter as above with `supportedPidCount: 15`,
-`engineCode: CAXA`. Checklist as the Tiguan's, with step 3 reading fuel trims (near 0 %) and timing
-advance instead of MAF.
+`engineCode: CAXA`. Checklist as the Tiguan's, with step 2 checking the VIN against "the car's
+documents" (there is no registration certificate for this car) and step 3 reading fuel trims (near
+0 %) and timing advance instead of MAF.
 
 ### 3. VIN suggestion: a tie shows every candidate
 
@@ -195,7 +197,9 @@ The Golf 6 and the Golf Plus share the VIN prefix `WVWZZZ1K`. Today
 `VehicleSelectScreen` shows only `suggestProfilesForVin(...)[0]`, so a Golf 6 would be offered the
 Golf Plus profile (registry order).
 
-- `golf-plus-2009-20tdi.ts`: `vinPatterns: ['WVWZZZ1KZ9', 'WVWZZZ1K']` (model-year letter added).
+- Patterns: both profiles declare only the family prefix, `vinPatterns: ['WVWZZZ1K']` (the Golf
+  Plus unchanged). A VIN prefix cannot tell the two models apart: the model-year character does not
+  identify the model (the Golf Plus was built about 2005–2014, the Golf 6 about 2008–2013).
 - `vinSuggest.ts`:
   - `suggestProfilesForVin` keeps its signature; per profile it now records the **longest**
     matching pattern (not the first), so pattern order inside a profile does not matter.
@@ -207,8 +211,12 @@ Golf Plus profile (registry order).
   matches or when the selected profile is already one of the candidates.
 - Grep for other `suggestProfilesForVin` callers and move any `[0]` use to `topVinSuggestions`.
 
-Result: the Golf Plus (`…1KZ9…`, 2009) and the Golf 6 (`…1KZA…`, 2010) each get exactly their
-profile; a 1K car of any other year gets both cards, because the VIN alone cannot tell them apart.
+Result: every `WVWZZZ1K…` VIN ties, and the Vehicle screen shows both recognition cards (Golf Plus
+first, registry order); the user picks. The Tiguan (`WVGZZZ5N`) is unaffected.
+
+**Changed in review.** The first version added the model-year letter to each Golf pattern
+(`WVWZZZ1K` + `Z9` / `ZA`) so each sample VIN got only its own profile; review dropped it, because
+both models span several model years, so the letter matched the owner's two cars, not the models.
 
 ### 4. Registry and simulator
 
@@ -224,11 +232,12 @@ profile; a 1K car of any other year gets both cards, because the VIN alone canno
 
 ### 5. Tests
 
-- `vinSuggest.test.ts`: Tiguan VIN → `tiguan-2014-20tdi`; Golf Plus sample VIN → Golf Plus alone;
-  Golf 6 sample VIN → Golf 6 alone; `WVWZZZ1KZCW000001` (a third year) → both, via
-  `topVinSuggestions`; longest pattern wins regardless of order.
-- `VehicleSelectScreen.test.tsx`: `VEHICLE_PROFILES` length 4 → 6; a tied VIN renders two cards and
-  tapping one selects that profile and hides both.
+- `vinSuggest.test.ts`: Tiguan VIN → `tiguan-2014-20tdi`; the Golf Plus and the Golf 6 sample VINs
+  (and `WVWZZZ1KZCW000001`) → both, Golf Plus first, via `topVinSuggestions`;
+  `suggestProfilesForVin(...)[0]` for the Golf Plus sample VIN is still the Golf Plus; longest
+  pattern wins regardless of order (synthetic profiles); no match → empty.
+- `VehicleSelectScreen.test.tsx`: `VEHICLE_PROFILES` length 4 → 6; the simulated Golf Plus renders
+  two cards (Golf Plus, Golf 6) and tapping one selects that profile and hides both.
 - `vehicle-docs-sync`, `sim-fixtures.freshness` and `fixtures.replay` cover the new ids on their own.
 
 ### 6. Docs
@@ -269,9 +278,9 @@ Per car, by the procedure in [testing.md → Recording results](../testing.md#re
 ## Acceptance
 
 - [ ] Both profiles appear on the Vehicle screen and in the simulator picker; the simulated Tiguan
-      and Golf 6 each suggest their own profile at connect.
-- [ ] A `WVWZZZ1K…` VIN of a third model year shows two suggestion cards; the Golf Plus sample VIN
-      still suggests the Golf Plus.
+      suggests its own profile at connect.
+- [ ] Any `WVWZZZ1K…` VIN (the simulated Golf Plus and Golf 6 included) shows two suggestion cards,
+      Golf Plus first; tapping one selects it and hides both.
 - [ ] Neither profile declares any experimental array, `boost` or `knownFaults`.
 - [ ] `git grep` for either car's real VIN serial, and for the Tiguan's plate and owner name,
       returns nothing.

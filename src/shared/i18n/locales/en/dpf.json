@@ -1,6 +1,6 @@
 {
   "title": "DPF / regen",
-  "unavailable": "The DPF monitor needs a diesel profile with DPF PIDs on a CAN (UDS) link. It is hidden for petrol cars and K-line cars (no Mode 22). Select the Golf TDI (or another diesel CAN profile) to use it.",
+  "unavailable": "The DPF monitor needs a diesel profile with DPF PIDs on a CAN (UDS) link. It is hidden for petrol cars and K-line cars (no Mode 22). Select a diesel profile that has DPF values (for example the Golf Plus TDI) to use it.",
   "allConfirmed": "All DIDs confirmed on this car",
   "experimental": "⚠ Experimental Mode 22 reads — confirm values on the car.",
   "status": {

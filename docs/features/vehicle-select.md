@@ -12,10 +12,11 @@ Garage cars and learned profiles landed with [plan 06](../plans/06-garage-learne
     that is not active, "The connected car is _name_ from your garage — tap to switch to it". When no
     garage car matches, the registry suggestion stays as before ("The connected car's VIN (…) matches
     _profile_ — tap to switch to that profile"), one card per profile tied for the longest
-    VIN-pattern match (`topVinSuggestions`). Several profiles can share a VIN prefix — the Golf Plus
-    and the Golf 6 are both `WVWZZZ1K…` and only the model-year letter (`…1KZ9…` / `…1KZA…`) tells
-    them apart — so a VIN that matches them equally well (a `WVWZZZ1K` car of another model year)
-    offers both rather than silently picking the first in registry order. Per profile the longest
+    VIN-pattern match (`topVinSuggestions`). Several profiles can share a VIN prefix: the Golf Plus
+    and the Golf 6 both declare `WVWZZZ1K`, and a VIN prefix cannot tell them apart (the
+    model-year character does not identify the model; both were built across several years). So
+    every `WVWZZZ1K…` VIN shows both cards, Golf Plus first (registry order), and the user picks,
+    rather than the app silently picking the first in registry order. Per profile the longest
     matching pattern counts, whatever order the profile lists them in. A garage match hides the
     registry suggestion, and so does an active profile that is one of the candidates (tapping any
     card hides them all). Each card's screen-reader label names its own profile.

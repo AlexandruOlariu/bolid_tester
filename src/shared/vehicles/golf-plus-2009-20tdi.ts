@@ -9,7 +9,7 @@ export const golfPlus2009: VehicleProfile = {
   fuel: 'diesel',
   make: 'vag',
   expectedProtocol: 'ISO_15765_4_CAN_11_500',
-  vinPatterns: ['WVWZZZ1KZ9', 'WVWZZZ1K'],
+  vinPatterns: ['WVWZZZ1K'],
   supportedPids: [
     '0104',
     '0105',

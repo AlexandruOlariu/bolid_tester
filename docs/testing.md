@@ -66,7 +66,7 @@ next to the screen (`src/features/<slug>/ui/<Screen>.test.tsx`). Tests that cann
 | Suite                              | Covers                                                                                                                                                                                                          |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ConnectionScreen.test.tsx`        | simulator mode: **Connect to simulator** + first-run card; BLE: **Scan for adapters**; error panel; a real simulator connect reaches `connected` and moves on to `/vehicle`                                     |
-| `VehicleSelectScreen.test.tsx`     | the four built-in profiles; tapping the Golf selects it and opens `/dashboard`; the VIN suggestion card from the simulated Golf's VIN                                                                           |
+| `VehicleSelectScreen.test.tsx`     | the six built-in profiles; tapping the Golf selects it and opens `/dashboard`; the simulated Golf's `WVWZZZ1K…` VIN ties the Golf Plus and the Golf 6, so two suggestion cards show and picking one hides both  |
 | `DashboardScreen.test.tsx`         | not connected: prompt; seeded `liveDataStore` values on the RPM / Speed / Coolant gauges (km/h, °C); **All sensors** segment; petrol preset on a new garage car                                                 |
 | `FaultCodesScreen.test.tsx`        | two simulator-injected codes with descriptions, readiness / MIL; inline Guide toggle; **Clear codes**, confirm, empty re-read                                                                                   |
 | `VehicleInfoScreen.test.tsx`       | VIN, protocol label, supported-PID count and adapter name from the simulator session                                                                                                                            |
@@ -320,6 +320,10 @@ profile's `testChecklist`:
   (expect CAN; trims/timing; VIN available).
 - **Passat B5.5 1.9 TDI** → [`vehicles/passat-b55-19tdi.md`](./vehicles/passat-b55-19tdi.md)
   (expect slow K-line, fewer PIDs; RPM/coolant/DTC read+clear is success).
+- **Tiguan 2014 2.0 TDI** → [`vehicles/tiguan-2014-20tdi.md`](./vehicles/tiguan-2014-20tdi.md),
+  section "On-car checklist" (profile from registration data, first on-car session pending).
+- **Golf 6 2010 1.4 TSI** → [`vehicles/golf-6-2010-14tsi.md`](./vehicles/golf-6-2010-14tsi.md),
+  section "On-car checklist" (profile from registration data, first on-car session pending).
 
 ### Recording results
 

@@ -7,7 +7,7 @@
 import type { Mode06Result } from '../obd/mode06';
 import type { DiagSeverity } from './aiDiagnosis';
 
-/** Misfire monitor MIDs for cylinders 1–4 (all three built-in cars are 4-cylinder). */
+/** Misfire monitor MIDs for cylinders 1–4 (all built-in cars are 4-cylinder). */
 export const MISFIRE_MIDS = ['A2', 'A3', 'A4', 'A5'] as const;
 export const MISFIRE_TID_CYCLE = 0x0c,
   MISFIRE_TID_EWMA = 0x0b,

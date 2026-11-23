@@ -14,7 +14,7 @@ other docs; this file is the "what we did" history.)
 - **Profiles:** two thin profiles copied from the Punto template. `tiguan-2014-20tdi` (Tiguan 5N,
   model year 2014, 2.0 TDI CFFD, 81 kW, diesel, VIN prefix `WVGZZZ5N`, 16 expected PIDs: the Golf
   Plus set) and `golf-6-2010-14tsi` (Golf 6 5K, model year 2010, 1.4 TSI CAXA, 90 kW, petrol, VIN
-  prefix `WVWZZZ1KZA`, 15 expected PIDs, no MAF). Both CAN 11/500 expected, `make: 'vag'`,
+  prefix `WVWZZZ1K`, 15 expected PIDs, no MAF). Both CAN 11/500 expected, `make: 'vag'`,
   `dtcModes` 03 / 07 only; no known faults, extended PIDs, boost ranges, modules, coding,
   adaptations or routines. The PID lists are expected, not observed. Docs in
   [`vehicles/tiguan-2014-20tdi.md`](./vehicles/tiguan-2014-20tdi.md) and
@@ -24,17 +24,19 @@ other docs; this file is the "what we did" history.)
   screen's single suggestion offered the Golf Plus to any 1K car. `suggestProfilesForVin` now
   records each profile's longest matching pattern; the new `topVinSuggestions` returns every
   profile tied for the longest match, and the Vehicle screen shows one recognition card per
-  candidate. The Golf Plus `vinPatterns` gained the model-year letter (`WVWZZZ1KZ9`), so the Golf
-  Plus and the Golf 6 sample VINs each get only their own profile; a 1K VIN of another model year
-  gets both cards ([vehicle-select](./features/vehicle-select.md)).
+  candidate. Both Golfs declare only `vinPatterns: ['WVWZZZ1K']`: a VIN prefix cannot tell them
+  apart, so every `WVWZZZ1K…` VIN (both sample VINs included) shows both cards, Golf Plus first,
+  and the user picks ([vehicle-select](./features/vehicle-select.md)). A model-year-letter pattern
+  per Golf was tried and dropped in review, because the model year does not identify the model.
 - **Simulator:** both cars in the registry and the simulator picker, with synthetic VINs (serial
   `000001`) and visibly synthetic calibration ids (`SIM-CFFD-01`, `SIM-CAXA-01`); `sim-connect`,
   `sim-faults` and `sim-clear` fixtures recorded for both (the DTC flows seed the fallback codes)
   ([simulator](./simulator.md#scenarios)).
-- **Tests:** `vinSuggest.test.ts` (Tiguan VIN, each Golf sample VIN alone, a third model year gets
-  both, longest pattern wins in any order, no match); `VehicleSelectScreen.test.tsx` (six built-in
-  profiles; a tied VIN shows one card per candidate). `vehicle-docs-sync`,
-  `sim-fixtures.freshness` and `fixtures.replay` cover the new ids on their own.
+- **Tests:** `vinSuggest.test.ts` (Tiguan VIN, every Golf sample VIN gets both Golfs, longest
+  pattern wins in any order, no match); `VehicleSelectScreen.test.tsx` (six built-in profiles; the
+  simulated Golf Plus shows one card per candidate, and picking one hides them all).
+  `vehicle-docs-sync`, `sim-fixtures.freshness` and `fixtures.replay` cover the new ids on their
+  own.
 - **Docs:** [vehicles/README](./vehicles/README.md) (five example cars), the root README and the
   docs index (the three reference cars stay the owner's own; the two new profiles are marked as
   written from registration data), [settings](./features/settings.md) (simulator picker), the

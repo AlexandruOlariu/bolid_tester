@@ -1,6 +1,6 @@
 {
   "title": "DPF / regenerare",
-  "unavailable": "Monitorul filtrului de particule (DPF) are nevoie de un profil diesel cu PID-uri DPF pe o legătură CAN (UDS). Este ascuns pentru mașinile pe benzină și cele cu K-line (fără Mode 22). Selectează Golf TDI (sau alt profil diesel CAN) pentru a-l folosi.",
+  "unavailable": "Monitorul filtrului de particule (DPF) are nevoie de un profil diesel cu PID-uri DPF pe o legătură CAN (UDS). Este ascuns pentru mașinile pe benzină și cele cu K-line (fără Mode 22). Selectează un profil diesel care are valori DPF (de exemplu, Golf Plus TDI) pentru a-l folosi.",
   "allConfirmed": "Toate DID-urile sunt confirmate pe această mașină",
   "experimental": "⚠ Citiri experimentale Mode 22 — confirmă valorile pe mașină.",
   "status": {

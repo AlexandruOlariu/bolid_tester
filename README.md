@@ -107,7 +107,7 @@ platform dependencies**, exercised against a built-in **virtual ELM327**
 
 ```bash
 npm install
-npm test          # unit + integration tests (incl. the 3 example cars via the simulator)
+npm test          # unit + integration tests (incl. the five registry cars via the simulator)
 npm run lint
 ```
 
@@ -223,6 +223,6 @@ VCDS label files) and the checks CI runs (`npm run ci`, which includes
 Three of the cars in [`docs/vehicles/`](./docs/vehicles) are the owner's own, used as reference
 profiles: **VW Golf Plus 2009 2.0 TDI** (CAN), **Fiat Grande Punto 1.2 2008** (CAN), and **VW Passat
 B5.5 1.9 TDI** (K-line). Two more profiles, **VW Tiguan 2014 2.0 TDI** and **VW Golf 6 2010 1.4
-TSI** (both CAN), are written from registration data only and are not yet validated on the car. All
-five are examples — the app works with any OBD2 car, and new cars are added as data (a Markdown
-profile + a typed object). See [`docs/architecture.md`](./docs/architecture.md).
+TSI** (both expected on CAN), are written from registration data only and are not yet validated on
+the car. All five are examples — the app works with any OBD2 car, and new cars are added as data (a
+Markdown profile + a typed object). See [`docs/architecture.md`](./docs/architecture.md).
