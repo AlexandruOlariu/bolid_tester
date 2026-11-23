@@ -9,7 +9,7 @@ import {
   VEHICLE_PROFILES,
   getVehicleProfile,
   pickVehicleForVin,
-  suggestProfilesForVin,
+  topVinSuggestions,
   vinSuffix,
   type UserVehicle,
   type VehicleProfile,
@@ -188,10 +188,11 @@ export function VehicleSelectScreen() {
   const importer = useExchangeImport(EXCHANGE_SOURCE);
   const [exportNote, setExportNote] = useState<string | null>(null);
 
-  // A garage car learned with this VIN wins over a registry suggestion.
+  // A garage car learned with this VIN wins over a registry suggestion. Profiles sharing a VIN
+  // prefix tie, and then each gets a card; once one of them is active the VIN is accounted for.
   const garageMatch = pickVehicleForVin(vin, garage);
-  const suggestion = garageMatch ? undefined : suggestProfilesForVin(vin, VEHICLE_PROFILES)[0];
-  const suggestDifferent = suggestion && suggestion.profile.id !== selectedProfileId;
+  const candidates = garageMatch ? [] : topVinSuggestions(vin, VEHICLE_PROFILES);
+  const suggestions = candidates.some((s) => s.profile.id === selectedProfileId) ? [] : candidates;
   const garageDifferent = garageMatch && garageMatch.id !== selectedProfileId;
 
   const pick = (id: string) => {
@@ -239,26 +240,27 @@ export function VehicleSelectScreen() {
             </Paragraph>
           </Card>
         ) : null}
-        {suggestDifferent ? (
+        {suggestions.map(({ profile }) => (
           <Card
+            key={profile.id}
             bordered
             padding="$3"
             borderColor="$accent"
             pressStyle={{ opacity: 0.85 }}
             accessible
             accessibilityRole="button"
-            accessibilityLabel={t('match.profileA11y', { name: suggestion.profile.name })}
-            onPress={() => pick(suggestion.profile.id)}
+            accessibilityLabel={t('match.profileA11y', { name: profile.name })}
+            onPress={() => pick(profile.id)}
           >
             <Paragraph size="$2">
               <Trans
                 i18nKey="vehicleSelect:match.profile"
-                values={{ vin, name: suggestion.profile.name }}
+                values={{ vin, name: profile.name }}
                 components={{ b: <Text fontWeight="800" /> }}
               />
             </Paragraph>
           </Card>
-        ) : null}
+        ))}
 
         <YStack gap="$2">
           <H4>{t('garage.title')}</H4>

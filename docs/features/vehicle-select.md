@@ -11,8 +11,14 @@ Garage cars and learned profiles landed with [plan 06](../plans/06-garage-learne
   - **Recognition cards** (only while connected): when the connected car's VIN matches a garage car
     that is not active, "The connected car is _name_ from your garage — tap to switch to it". When no
     garage car matches, the registry suggestion stays as before ("The connected car's VIN (…) matches
-    _profile_ — tap to switch to that profile", `suggestProfilesForVin`). A garage match hides the
-    registry suggestion.
+    _profile_ — tap to switch to that profile"), one card per profile tied for the longest
+    VIN-pattern match (`topVinSuggestions`). Several profiles can share a VIN prefix — the Golf Plus
+    and the Golf 6 are both `WVWZZZ1K…` and only the model-year letter (`…1KZ9…` / `…1KZA…`) tells
+    them apart — so a VIN that matches them equally well (a `WVWZZZ1K` car of another model year)
+    offers both rather than silently picking the first in registry order. Per profile the longest
+    matching pattern counts, whatever order the profile lists them in. A garage match hides the
+    registry suggestion, and so does an active profile that is one of the candidates (tapping any
+    card hides them all). Each card's screen-reader label names its own profile.
   - **My garage** — the copy "Cars you add here are remembered on this phone. Built-in profiles are
     curated and documented.", then two actions:
     - **Add from connected car** — disabled (with the hint "Connect to a car first…") until a session

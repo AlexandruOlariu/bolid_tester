@@ -7536,6 +7536,11 @@
   ],
   [
     "vehicle:registry",
+    "vehicle:golf-6-2010-14tsi",
+    "imports"
+  ],
+  [
+    "vehicle:registry",
     "vehicle:golf-plus-2009-20tdi",
     "imports"
   ],
@@ -7547,6 +7552,11 @@
   [
     "vehicle:registry",
     "vehicle:passat-b55-19tdi",
+    "imports"
+  ],
+  [
+    "vehicle:registry",
+    "vehicle:tiguan-2014-20tdi",
     "imports"
   ],
   [

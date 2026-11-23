@@ -7,6 +7,7 @@ import { setMockWindow, TABLET_WINDOW } from '@test/mocks/window';
 import { connectSimulator } from '@test/simulator';
 import { VEHICLE_PROFILES } from '@/shared/vehicles';
 import { useGarageStore } from '@/shared/state/garageStore';
+import { useSessionStore } from '@/shared/state/sessionStore';
 import { useVehicleStore } from '../model/vehicleStore';
 import { VehicleSelectScreen, GARAGE_COPY } from './VehicleSelectScreen';
 import { translate } from '@/shared/i18n';
@@ -17,7 +18,9 @@ import * as exchangeService from '@/shared/state/exchangeService';
 import { serializeExchange } from '@/shared/lib/exchange';
 
 const GOLF = 'VW Golf Plus 2009 2.0 TDI 81 kW';
+const GOLF_6 = 'VW Golf 6 2010 1.4 TSI 90 kW';
 const SUGGESTION = /tap to switch to that profile/;
+const SUGGESTION_A11Y = (name: string) => translate('vehicleSelect:match.profileA11y', { name });
 
 describe('VehicleSelectScreen', () => {
   it('lists the six built-in profiles', () => {
@@ -50,6 +53,25 @@ describe('VehicleSelectScreen', () => {
     expect(useVehicleStore.getState().selectedProfileId).toBe('golf-plus-2009-20tdi');
     expect(mockPush).toHaveBeenCalledWith('/dashboard');
     // Once the suggested profile is active the card goes away.
+    expect(screen.queryByText(SUGGESTION)).toBeNull();
+  });
+
+  it('a VIN that several profiles match equally well offers one card per candidate', async () => {
+    // A synthetic 1K VIN of a model year neither the Golf Plus (Z9) nor the Golf 6 (ZA) pins down.
+    await connectSimulator({ vehicleId: 'golf-plus-2009-20tdi' });
+    act(() => {
+      const s = useSessionStore.getState();
+      if (s.info) useSessionStore.setState({ info: { ...s.info, vin: 'WVWZZZ1KZCW000001' } });
+    });
+    renderWithProviders(<VehicleSelectScreen />);
+
+    expect(screen.getAllByText(SUGGESTION)).toHaveLength(2);
+    expect(screen.getByLabelText(SUGGESTION_A11Y(GOLF))).toBeTruthy();
+    fireEvent.press(screen.getByLabelText(SUGGESTION_A11Y(GOLF_6)));
+
+    expect(useVehicleStore.getState().selectedProfileId).toBe('golf-6-2010-14tsi');
+    expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    // Either candidate being active hides every card: the VIN is accounted for.
     expect(screen.queryByText(SUGGESTION)).toBeNull();
   });
 

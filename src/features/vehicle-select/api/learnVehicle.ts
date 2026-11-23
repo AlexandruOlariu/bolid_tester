@@ -73,7 +73,7 @@ export function deleteGarageVehicle(id: string): void {
 /** Connect-time VIN auto-select (`settings.autoSelectByVin`): when the connected car's VIN equals a
  *  garage car's learned VIN, select that car and say so. Returns the selected car, or null when the
  *  setting is off, there is no VIN or no garage car matches. Registry profiles are not auto-selected
- *  — the Vehicle screen keeps suggesting them (`suggestProfilesForVin`). */
+ *  — the Vehicle screen keeps suggesting them (`topVinSuggestions`). */
 export function autoSelectGarageCarForVin(vin: string | null | undefined): UserVehicle | null {
   if (!useSettingsStore.getState().autoSelectByVin) return null;
   const match = pickVehicleForVin(vin, useGarageStore.getState().vehicles);
