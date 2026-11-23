@@ -11,6 +11,7 @@ real Vgate adapter).
 | `npm run test:ui`                  | `*.test.tsx`: component tests (jest-expo + React Native Testing Library)                       |
 | `npm run check:release`            | release config: signing plugin vs. a generated-gradle fixture, version sync                    |
 | `npm run fixtures:sim`             | re-record the committed simulator replay fixtures (`sim-*.json`)                               |
+| `npm run eval:agent`               | the AI agent eval set against a configured model (skipped unless `BOLID_EVAL_URL` is set)      |
 | `npm run check:capture`            | capture analyzer CLI smoke on `docs/captures/synthetic-golf.csv` (plan 25)                     |
 | `npm run analyze:capture -- <csv>` | analyze a sniffer capture ([captures](./captures/README.md))                                   |
 | `npm run ci`                       | core typecheck + app typecheck + lint + `check:release` + `check:capture` + both Jest projects |
@@ -147,6 +148,79 @@ Notes:
   inside a `View`.
 - `expo-modules-core` is nested under `node_modules/expo/` (not hoisted); the `ui` project adds that
   folder to `modulePaths` because jest-expo's setup requires the package by name.
+
+## Agent eval set
+
+`src/shared/ai/eval/agentEval.test.ts` (plan 34c) measures how well a real model drives the AI
+diagnostic agent. It is **not in CI**: the suite is skipped unless `BOLID_EVAL_URL` is set, so
+`npm test` and `npm run ci` report its four cases as skipped.
+
+Each case in `src/shared/ai/eval/cases.json` names a simulator profile, an optional scripted fault
+(`low_boost`, `lean_trims`, `weak_charging`, see
+[simulator.md](./simulator.md#scripted-faults-plan-34c)), a symptom (`null` = **Check everything**)
+and `expect`, a case-insensitive regex for the cause:
+
+| id                   | car   | fault           | symptom                              | expect                        |
+| -------------------- | ----- | --------------- | ------------------------------------ | ----------------------------- |
+| `golf-low-boost`     | Golf  | `low_boost`     | pulls weak above 2000 rpm            | `boost\|turbo\|MAP`           |
+| `punto-lean`         | Punto | `lean_trims`    | high fuel consumption and rough idle | `lean\|vacuum\|trim`          |
+| `golf-weak-charging` | Golf  | `weak_charging` | battery light flickers               | `charg\|alternator\|voltage`  |
+| `golf-everything`    | Golf  | none            | (Check everything)                   | `P2183\|P2015` (seeded codes) |
+
+Per case the harness connects a real `DiagnosticSession` over `MockTransport`, builds the core +
+playbook registry, runs triage and then `runAgent` with the real `getAiClient` chat (Node `fetch`).
+The eval's driver answers **Done** to every driver step; on the rev hold (`hold_2500_rpm`) it also
+calls `holdRevs(15_000)`, so the simulator holds 2500 rpm the way the app does after **Done**. The
+clock and sleeps are real, so a case takes as long as it would in the app.
+
+**Run it** against your own server (PowerShell; the provider defaults to `custom`, an
+OpenAI-compatible server such as LM Studio or llama.cpp):
+
+```powershell
+$env:BOLID_EVAL_URL='http://192.168.1.50:1234'   # the server, with or without /v1
+$env:BOLID_EVAL_MODEL='qwen2.5-14b-instruct'     # the model name the server lists
+$env:BOLID_EVAL_KEY='sk-...'                     # optional
+$env:BOLID_EVAL_PROVIDER='custom'                # optional: local | openai | anthropic | custom
+npm run eval:agent
+```
+
+In Git Bash: `BOLID_EVAL_URL=http://192.168.1.50:1234 BOLID_EVAL_MODEL=qwen2.5-14b-instruct npm run eval:agent`.
+To check the harness without a model, point `BOLID_EVAL_URL` at an address nothing listens on
+(`http://127.0.0.1:9`): every case ends `ai_error` with the rule report, and the suite passes.
+
+**Reading the output.** One line per case, then the pass count:
+
+```text
+golf-low-boost  PASS  final  5  48.2  Boost stays near baro at the rev hold
+punto-lean  FAIL  steps  12  131.0  Check-engine light is on
+...
+3/4
+```
+
+The columns are `id`, `PASS` / `FAIL`, how the run ended (`final` = the model's own report; `steps`,
+`time`, `invalid`, `ai_error`, ... = the rule fallback), steps used of the 12-step budget (triage
+included), wall time in seconds, and the title of the most severe finding (the first on ties). A case
+**passes** when the report is the model's own (`source: 'ai'`), its most severe finding matches
+`expect` (title, detail, codes or likely causes) and cites at least one step. A rule-fallback report
+never passes, because the eval measures the model, not the on-device rules. The test asserts only that
+every case finished; the pass rate is a measurement.
+
+**What to tune** when cases fail:
+
+- **Ends `invalid`:** the model keeps sending replies that are not one valid JSON action. Try the
+  other structured-output mode for the server, or tighten the action wording in
+  `buildAgentSystemPrompt` (`src/shared/obd-core/agent/prompt.ts`).
+- **Ends `steps` or `time`:** the model wanders instead of opening the matching playbook. Check the
+  playbook descriptions it sees and the prompt's step-budget wording; `AGENT_BUDGET.maxSteps` (12) in
+  `loop.ts` is the step budget.
+- **`final` but the wrong top finding:** the model loses the evidence of earlier steps. `FULL_DIGESTS`
+  (3) in `prompt.ts` is how many of the latest steps keep their full digest; older ones send only their
+  summary. Raise it if the context window allows (`CONTEXT_TOKEN_TARGET`).
+- **`final` but `FAIL` with the right cause:** the finding cites no step (it is dropped as uncited)
+  or a milder finding outranks it. Look at the prompt's citation and severity rules.
+
+Change one thing at a time and compare the lines and the pass count across runs; a small local model
+varies from run to run, so run the set more than once before you trust a change.
 
 ## End-to-end
 

@@ -1,0 +1,29 @@
+[
+  {
+    "id": "golf-low-boost",
+    "profile": "golf-plus-2009-20tdi",
+    "simFault": "low_boost",
+    "symptom": "pulls weak above 2000 rpm",
+    "expect": "boost|turbo|MAP"
+  },
+  {
+    "id": "punto-lean",
+    "profile": "fiat-punto-2008-12",
+    "simFault": "lean_trims",
+    "symptom": "high fuel consumption and rough idle",
+    "expect": "lean|vacuum|trim"
+  },
+  {
+    "id": "golf-weak-charging",
+    "profile": "golf-plus-2009-20tdi",
+    "simFault": "weak_charging",
+    "symptom": "battery light flickers",
+    "expect": "charg|alternator|voltage"
+  },
+  {
+    "id": "golf-everything",
+    "profile": "golf-plus-2009-20tdi",
+    "symptom": null,
+    "expect": "P2183|P2015"
+  }
+]

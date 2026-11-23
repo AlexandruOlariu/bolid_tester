@@ -27,6 +27,7 @@
     "adapters:build": "node scripts/build-adapter-matrix.mjs",
     "adapters:check": "node scripts/build-adapter-matrix.mjs --check",
     "fixtures:sim": "node scripts/run-ts.cjs scripts/record-sim-fixtures.ts",
+    "eval:agent": "jest src/shared/ai/eval --selectProjects core",
     "version": "node scripts/check-version-sync.mjs --write && git add app.json",
     "format": "prettier --write \"src/**/*.{ts,tsx}\" \"test/**/*.{ts,tsx}\" \"docs/**/*.md\"",
     "prebuild:android": "expo prebuild --platform android --clean",
