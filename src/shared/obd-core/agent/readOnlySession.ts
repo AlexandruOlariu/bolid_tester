@@ -152,8 +152,32 @@ function guardedSend(send: UdsSend, ready?: Promise<void>): UdsSend {
   };
 }
 
+/** Argument shapes the typed reads put on the wire: a Mode 01 PID, a DID, a Mode 06 MID, a Mode 05
+ *  TID / sensor. Anything else (`'04'`, `'14FFFFFF'`, `'F190 04'`) is refused before it is sent,
+ *  because `DiagnosticSession` sends the caller's string unchanged. */
+const MODE01_PID = /^01[0-9A-F]{2}$/i;
+const DID = /^[0-9A-F]{4}$/i;
+const BYTE = /^[0-9A-F]{2}$/i;
+const DTC_KINDS: ReadonlySet<string> = new Set(['03', '07', '0A']);
+
+/** Throws `WriteBlockedError` unless `value` matches `shape` (a non-string never does). */
+function check(value: unknown, shape: RegExp | ReadonlySet<string>): void {
+  const ok =
+    typeof value === 'string' &&
+    (shape instanceof RegExp ? shape.test(value) : shape.has(value.toUpperCase()));
+  if (!ok) throw new WriteBlockedError(String(value));
+}
+
+const checkAll = (values: readonly unknown[] | undefined, shape: RegExp): void => {
+  if (values === undefined) return;
+  if (!Array.isArray(values)) throw new WriteBlockedError(String(values));
+  for (const v of values) check(v, shape);
+};
+
 /** Wrap `session` in the read-only facade. A plain object literal closing over the session, so no
- *  write member (or the session itself) is reachable through it. */
+ *  write member (or the session itself) is reachable through it. Every typed read checks its
+ *  arguments' shape first (`WriteBlockedError`, nothing sent), so no argument can turn a read into
+ *  a write: `readValue('04')` would otherwise clear the codes. */
 export function createReadOnlySession(session: DiagnosticSession): ReadOnlySession {
   const send = guardedSend((cmd) => session.send(cmd));
   return {
@@ -167,19 +191,47 @@ export function createReadOnlySession(session: DiagnosticSession): ReadOnlySessi
       return session.canMonitor;
     },
     effectivePids: (profilePids) => session.effectivePids(profilePids),
-    readValue: (pid) => session.readValue(pid),
-    pollOnce: (pids) => session.pollOnce(pids),
-    readDtcs: (kind) => session.readDtcs(kind),
+    readValue: async (pid) => {
+      check(pid, MODE01_PID);
+      return session.readValue(pid);
+    },
+    pollOnce: async (pids) => {
+      checkAll(pids, MODE01_PID);
+      return session.pollOnce(pids);
+    },
+    readDtcs: async (kind) => {
+      check(kind, DTC_KINDS);
+      return session.readDtcs(kind);
+    },
     readReadiness: () => session.readReadiness(),
-    readFreezeFrame: (pids) => session.readFreezeFrame(pids),
-    readFreezeFrames: (pids, maxFrames) => session.readFreezeFrames(pids, maxFrames),
+    readFreezeFrame: async (pids) => {
+      checkAll(pids, MODE01_PID);
+      return session.readFreezeFrame(pids);
+    },
+    readFreezeFrames: async (pids, maxFrames) => {
+      checkAll(pids, MODE01_PID);
+      return session.readFreezeFrames(pids, maxFrames);
+    },
     readVin: () => session.readVin(),
     readCalibrationId: () => session.readCalibrationId(),
     readPartNumber: () => session.readPartNumber(),
-    readExtended: (did) => session.readExtended(did),
-    pollExtendedOnce: (dids) => session.pollExtendedOnce(dids),
-    readMode06: (mid) => session.readMode06(mid),
-    readMode05: (tid, sensor) => session.readMode05(tid, sensor),
+    readExtended: async (did) => {
+      check(did, DID);
+      return session.readExtended(did);
+    },
+    pollExtendedOnce: async (dids) => {
+      checkAll(dids, DID);
+      return session.pollExtendedOnce(dids);
+    },
+    readMode06: async (mid) => {
+      check(mid, BYTE);
+      return session.readMode06(mid);
+    },
+    readMode05: async (tid, sensor) => {
+      check(tid, BYTE);
+      if (sensor !== undefined) check(sensor, BYTE);
+      return session.readMode05(tid, sensor);
+    },
     readIupr: () => session.readIupr(),
     voltage: () => session.client.voltage(),
     adapterVersion: () => session.client.version(),

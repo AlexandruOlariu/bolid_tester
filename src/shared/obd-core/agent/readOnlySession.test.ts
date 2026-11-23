@@ -106,6 +106,32 @@ describe('createReadOnlySession', () => {
     expect(sent.length).toBe(before);
   });
 
+  it('the typed reads refuse an argument that is not a read, before any traffic', async () => {
+    const before = sent.length;
+    const blocked = (p: Promise<unknown>) => expect(p).rejects.toBeInstanceOf(WriteBlockedError);
+    await blocked(ro.readValue('04'));
+    await blocked(ro.readValue('14FFFFFF'));
+    await blocked(ro.pollOnce(['010C', '04']));
+    await blocked(ro.readDtcs('04' as '03'));
+    await blocked(ro.readExtended('F190 04'));
+    await blocked(ro.readExtended('2E0600'));
+    await blocked(ro.pollExtendedOnce(['F190', '0600 01']));
+    await blocked(ro.readMode06('A2;04'));
+    await blocked(ro.readMode05('0104'));
+    await blocked(ro.readMode05('01', '04 '));
+    await blocked(ro.readFreezeFrame(['04']));
+    await blocked(ro.readFreezeFrames(['010C', '14']));
+    expect(sent.length).toBe(before);
+  });
+
+  it('the typed reads still accept well-formed arguments', async () => {
+    expect(await ro.readDtcs('07')).toEqual(expect.any(Array));
+    expect(await ro.readDtcs('0A')).toEqual(expect.any(Array));
+    expect(await ro.pollExtendedOnce(['F190'])).toHaveProperty('F190');
+    expect(await ro.readMode06('A2')).toEqual(expect.any(Array));
+    expect(await ro.readFreezeFrame(['010C'])).toBeDefined();
+  });
+
   it('a write through withModule is blocked before any traffic', async () => {
     const before = sent.length;
     await expect(

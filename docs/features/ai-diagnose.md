@@ -25,8 +25,12 @@ Reachable from the **More** tab (`/ai-diagnose`). Every run is saved, with its t
   raw `send`, no `setHeader` / `setRxFilter`, no sniffer controls. Raw requests pass a
   **read-request allowlist** before any byte goes out (OBD2 modes `01 02 03 06 07 09 0A`, UDS `19`,
   KWP `1A` / `21`, `22`, `3E`; session control `10` only with `01 03 81 89`, never a programming
-  session); anything else throws `WriteBlockedError`. No SecurityAccess, no KWP login, no mileage
-  DID.
+  session); anything else throws `WriteBlockedError`. The typed reads check their arguments' shape
+  the same way before sending (`DiagnosticSession` puts the caller's string on the wire unchanged):
+  a Mode 01 PID `01xx` for `readValue` / `pollOnce` / the freeze-frame PIDs, a DTC kind `03` / `07`
+  / `0A`, a 4-digit DID for `readExtended` / `pollExtendedOnce`, one byte for a Mode 06 MID and a
+  Mode 05 TID / sensor — so `readValue('04')` or `readExtended('F190 04')` sends nothing. No
+  SecurityAccess, no KWP login, no mileage DID.
 - **Excluded modules.** The airbag (`15`) and immobilizer (`25`) modules are refused outright
   (`AGENT_EXCLUDED_MODULE_ADDRESSES`, `ModuleNotAllowedError`) before any traffic. Cluster mileage is
   out of scope. Module addressing happens only through `withModule`, inside the session's
