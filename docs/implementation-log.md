@@ -177,6 +177,12 @@ what is sent, and adds **Send to Claude / ChatGPT** through the share sheet. Spe
   real run on the Golf (restart prompt only while stationary, triage voltage against the cluster,
   step count and wall time).
 
+## Back goes where you came from (2026-11-22)
+
+- The root tabs use `backBehavior="history"` (`src/app/_layout.tsx`): Android back on a hidden screen
+  (Notifications, Backup, Licences, any More entry) returns to the screen that opened it instead of
+  the Connect tab, the tab navigator's default. The Settings pages keep `useBackToSettings`.
+
 ## Settings becomes a short hub (2026-11-22)
 
 - **Why:** the owner found Settings busy — one page about five phone screens tall. Now it is a hub
