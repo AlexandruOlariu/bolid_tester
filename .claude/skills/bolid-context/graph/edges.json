@@ -1756,6 +1756,11 @@
   ],
   [
     "core:agent/registry",
+    "doc:plans/35-tiguan-golf6-profiles",
+    "named"
+  ],
+  [
+    "core:agent/registry",
     "doc:vehicles/README",
     "named"
   ],
@@ -5036,16 +5041,6 @@
   ],
   [
     "feature:more",
-    "doc:features/more",
-    "named"
-  ],
-  [
-    "feature:more",
-    "doc:plans/07-information-architecture",
-    "named"
-  ],
-  [
-    "feature:more",
     "store:errorLogStore",
     "imports"
   ],
@@ -6511,16 +6506,6 @@
   ],
   [
     "screen:more",
-    "doc:features/more",
-    "named"
-  ],
-  [
-    "screen:more",
-    "doc:plans/07-information-architecture",
-    "named"
-  ],
-  [
-    "screen:more",
     "feature:more",
     "serves"
   ],
@@ -7461,12 +7446,12 @@
   ],
   [
     "vehicle:golf-plus-2009-20tdi",
-    "doc:vehicles/golf-plus-2009-20tdi",
+    "doc:plans/35-tiguan-golf6-profiles",
     "named"
   ],
   [
     "vehicle:golf-plus-2009-20tdi",
-    "doc:vehicles/passat-b55-19tdi",
+    "doc:vehicles/golf-plus-2009-20tdi",
     "named"
   ],
   [
@@ -7491,11 +7476,6 @@
   ],
   [
     "vehicle:passat-b55-19tdi",
-    "doc:vehicles/golf-plus-2009-20tdi",
-    "named"
-  ],
-  [
-    "vehicle:passat-b55-19tdi",
     "doc:vehicles/passat-b55-19tdi",
     "named"
   ],
@@ -7503,6 +7483,11 @@
     "vehicle:passat-b55-19tdi",
     "vehicle:types",
     "imports"
+  ],
+  [
+    "vehicle:registry",
+    "doc:plans/35-tiguan-golf6-profiles",
+    "named"
   ],
   [
     "vehicle:registry",

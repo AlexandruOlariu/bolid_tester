@@ -3372,6 +3372,25 @@
     ],
     "type": "doc"
   },
+  "doc:plans/35-tiguan-golf6-profiles": {
+    "path": "docs/plans/35-tiguan-golf6-profiles.md",
+    "summary": "Plan 35 \u2014 Two more registry cars: Tiguan 2.0 TDI and Golf 6 1.4 TSI",
+    "tokens": [
+      "35",
+      "cars",
+      "golf",
+      "more",
+      "plan",
+      "plans",
+      "profiles",
+      "registry",
+      "tdi",
+      "tiguan",
+      "tsi",
+      "two"
+    ],
+    "type": "doc"
+  },
   "doc:plans/README": {
     "path": "docs/plans/README.md",
     "summary": "Implementation plans \u2014 handoff guide",
