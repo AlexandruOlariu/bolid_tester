@@ -43,8 +43,11 @@ buttons only opened it too). Each page's title is its row's title.
 
 - **AI assistant** — the **Enabled** switch. While it is off the page shows only that switch and
   one line ("When on, Diagnose (AI) asks an AI model you choose — on your own computer or in the
-  cloud — to explain the car's faults.", `settings-ai-off`); on, the provider configuration below
-  it (see **User preferences**).
+  cloud — to explain the car's faults.", `settings-ai-off`); on, one line on what is sent
+  (`settings:ai.whatIsSent`, `settings-ai-what-is-sent`, plan 34d: "Sent to the provider you choose:
+  fault codes, live and recorded readings, module and manufacturer data, trips, maintenance,
+  history, the VIN and your answers. Details in Settings → About → Privacy policy.") and the
+  provider configuration below it (see **User preferences**).
 - **Privacy** — **Send anonymous crash reports**, its full text and **Read the privacy policy**
   (see [Privacy](#privacy-crash-reports-plan-31)).
 - **Label packs** and **Security access plugins** — `ui/LabelPacksSection.tsx` and
@@ -267,7 +270,8 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
     profiles are only suggested on the Vehicle screen. See
     [vehicle-select](./vehicle-select.md#vin-auto-select).
   - **AI assistant (auto-diagnose)** (plan 19, its own page) — **Enabled**, then (only while it is
-    on) a **Provider** segment
+    on) the "what is sent" line (plan 34d; the full list is the privacy policy's AI paragraph) and a
+    **Provider** segment
     (**Local server** · **OpenAI** · **Anthropic** · **Custom**) with the preset's one-line hint.
     Switching provider applies that preset once (`setAi({ provider })` →
     `applyProviderPreset`): Anthropic fills `https://api.anthropic.com`, `claude-sonnet-5-5` and

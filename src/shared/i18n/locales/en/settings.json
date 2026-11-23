@@ -62,6 +62,7 @@
     "enabled": "Enabled",
     "enabledA11y": "AI assistant enabled",
     "offHelp": "When on, Diagnose (AI) asks an AI model you choose — on your own computer or in the cloud — to explain the car's faults.",
+    "whatIsSent": "Sent to the provider you choose: fault codes, live and recorded readings, module and manufacturer data, trips, maintenance, history, the VIN and your answers. Details in Settings → About → Privacy policy.",
     "connecting": "Connecting…",
     "noModels": "Connected, but the server lists no models. Load a model on the server first.",
     "connected_one": "Connected ✓ — {{count}} model: {{models}}",

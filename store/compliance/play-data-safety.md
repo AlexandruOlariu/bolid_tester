@@ -40,14 +40,27 @@ pick, is neither.
 
 ## The AI assistant (not "collected" — explain it in the description and the policy)
 
-**Diagnose (AI)** sends a scan summary (fault codes, readiness, freeze frame, a few live values,
-make / model / engine, the VIN and the user's question) to the AI provider **the user configured**:
-their own local server, or a cloud provider (OpenAI, Anthropic, a custom URL) with **their own API
-key** (`src/shared/ai/openaiClient.ts`, `src/shared/ai/anthropicClient.ts`, `src/shared/ai/http.ts`;
-the key in `src/shared/state/secureApiKey.ts`). The developer runs no server and receives nothing;
-the destination is chosen and paid for by the user, like a browser bookmark. That is why the form
-answers **not collected** for it and the [privacy policy](../../docs/privacy-policy.md) describes
-it in "When the app uses the internet".
+**Diagnose (AI)** — each diagnosis, each step of the multi-step investigation (plan 34) and each
+follow-up question — sends what the app has read for it to the AI provider **the user configured**:
+fault codes and their descriptions, readiness monitors, the freeze frame, live values and short
+recordings, make / model / engine, the VIN, the car's known checks for those codes and, when the
+investigation reads them, control-module part numbers, software versions and fault codes,
+manufacturer readings (extended data, adaptation and coding values, DPF values), recorded trip
+values, fuel-economy and performance-test results, the maintenance log, past diagnoses and
+fault-code checks from History, the user's alert rules, recent app error messages (VINs and
+addresses removed), adapter details, the user's answers to the on-screen driver steps, the user's
+question and the earlier answers. It goes to their own local server, or a cloud provider (OpenAI,
+Anthropic, a custom URL) with **their own API key** (`src/shared/ai/openaiClient.ts`,
+`src/shared/ai/anthropicClient.ts`, `src/shared/ai/http.ts`; the key in
+`src/shared/state/secureApiKey.ts`). The developer runs no server and receives nothing; the
+destination is chosen and paid for by the user, like a browser bookmark. That is why the form
+answers **not collected** for it and the [privacy policy](../../docs/privacy-policy.md) describes it
+in "When the app uses the internet".
+
+**Send to Claude / ChatGPT** (on an AI report) is not a network call: it builds a plain-text summary
+(the report, the fault codes and every check the investigation made), shows it first, and hands it
+to the app the user picks in the share sheet, without the VIN unless the user turns on **Include
+VIN** in that preview. Like the other exports it is not "collected" or "shared" by the developer.
 
 > **Owner's judgement call.** If Play review disagrees (it treats a cloud preset as the app sending
 > data to a third party), the conservative alternative is: _Other info → Other_ (vehicle

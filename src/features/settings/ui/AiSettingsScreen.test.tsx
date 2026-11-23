@@ -29,6 +29,16 @@ describe('AiSettingsScreen', () => {
     expect(screen.queryByText('Test connection')).toBeNull();
   });
 
+  it('shows what is sent while the assistant is on, and not while it is off (plan 34d)', () => {
+    useSettingsStore.setState((s) => ({ ai: { ...s.ai, enabled: true } }));
+    renderWithProviders(<AiSettingsScreen />);
+    expect(screen.getByText(/Sent to the provider you choose/)).toBeTruthy();
+
+    fireEvent.press(screen.getByRole('switch', { name: 'AI assistant enabled' }));
+
+    expect(screen.queryByText(/Sent to the provider you choose/)).toBeNull();
+  });
+
   it('in the browser says the AI key is memory-only (plan 28)', () => {
     jest.replaceProperty(Platform, 'OS', 'web');
     renderWithProviders(<AiSettingsScreen />);

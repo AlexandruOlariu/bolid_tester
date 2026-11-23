@@ -240,7 +240,8 @@ function AiConfig() {
 }
 
 /** Settings → **AI assistant** (plan 19, route `/settings-ai`): the **Enabled** switch, then — only
- *  while it is on — the provider configuration. Off, one line says what turning it on does. */
+ *  while it is on — one line on what is sent (plan 34d) and the provider configuration. Off, one
+ *  line says what turning it on does. */
 export function AiSettingsScreen() {
   const { t } = useTranslation('settings');
   useBackToSettings();
@@ -259,7 +260,12 @@ export function AiSettingsScreen() {
             testID="settings-ai-enabled"
           />
           {enabled ? (
-            <AiConfig />
+            <>
+              <Paragraph theme="alt2" fontSize="$2" testID="settings-ai-what-is-sent">
+                {t('ai.whatIsSent')}
+              </Paragraph>
+              <AiConfig />
+            </>
           ) : (
             <Paragraph theme="alt2" fontSize="$2" testID="settings-ai-off">
               {t('ai.offHelp')}

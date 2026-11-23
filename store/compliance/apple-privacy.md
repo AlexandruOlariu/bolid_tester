@@ -33,15 +33,25 @@ for advertising, or sharing it with a data broker.
 | Contact Info, Health, Financial, Contacts, User Content, Browsing / Search History, Purchases, Sensitive Info | **Not collected** — no accounts; exports leave the device only through the share sheet, to an app the user picks                                                                                                                                                                                                              | —                 | `src/shared/lib/saveFile.ts` (`expo-sharing`), `src/features/backup/api/backupService.ts`                                                                              |
 | Identifiers → User ID                                                                                         | **Not collected** — no accounts, no user id on crash reports                                                                                                                                                                                                                                                                  | —                 | `src/shared/telemetry/crashReporting.ts`                                                                                                                               |
 | Usage Data (product interaction, advertising data)                                                            | **Not collected** — no analytics, no ads                                                                                                                                                                                                                                                                                      | —                 | `src/shared/telemetry/crashReporting.ts` (the only telemetry, and opt-in)                                                                                              |
-| Other Data (vehicle data, VIN)                                                                                | **Not collected by the developer** — the AI assistant sends a scan summary only to the AI provider the user configured, with the user's own key (see below)                                                                                                                                                                   | —                 | `src/shared/ai/openaiClient.ts`, `src/shared/ai/anthropicClient.ts`, `src/shared/state/secureApiKey.ts`                                                                |
+| Other Data (vehicle data, VIN)                                                                                | **Not collected by the developer** — the AI assistant sends what it read for a diagnosis or investigation only to the AI provider the user configured, with the user's own key (see below)                                                                                                                                    | —                 | `src/shared/ai/openaiClient.ts`, `src/shared/ai/anthropicClient.ts`, `src/shared/state/secureApiKey.ts`                                                                |
 
 ### The AI assistant
 
 As in the Play sheet: the developer runs no AI server and receives nothing. The user picks the
 provider (their own local server, OpenAI, Anthropic or a custom URL) and supplies the key; the
-request goes straight from the phone to that provider. If App Review asks, answer in the review
-notes and point to the privacy policy; the conservative alternative label is _Other Data → Other
-Data Types_, not linked, optional, App Functionality.
+request goes straight from the phone to that provider. Each diagnosis, each investigation step and
+each follow-up question sends what the app has read for it: fault codes and their descriptions,
+readiness monitors, the freeze frame, live values and short recordings, make / model / engine, the
+VIN, the car's known checks for those codes and, when the investigation reads them, control-module
+part numbers, software versions and fault codes, manufacturer readings (extended data, adaptation
+and coding values, DPF values), recorded trip values, fuel-economy and performance-test results, the
+maintenance log, past diagnoses and fault-code checks from History, the user's alert rules, recent
+app error messages (VINs and addresses removed), adapter details, the user's answers to the
+on-screen driver steps, the user's question and the earlier answers. **Send to Claude / ChatGPT** on
+an AI report only hands a plain-text summary to the share sheet (the VIN left out unless the user
+turns on **Include VIN** in the preview); the app sends nothing itself. If App Review asks, answer
+in the review notes and point to the privacy policy; the conservative alternative label is _Other
+Data → Other Data Types_, not linked, optional, App Functionality.
 
 ## Other App Store Connect answers
 

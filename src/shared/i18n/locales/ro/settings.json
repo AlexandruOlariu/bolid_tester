@@ -64,6 +64,7 @@
     "enabled": "Activat",
     "enabledA11y": "Asistent AI activat",
     "offHelp": "Când este activat, Diagnoză (AI) cere unui model AI ales de tine — pe calculatorul tău sau în cloud — să explice defectele mașinii.",
+    "whatIsSent": "Se trimit furnizorului ales de tine: coduri de eroare, valori live și înregistrate, date de la module și de producător, călătorii, întreținere, istoric, VIN-ul și răspunsurile tale. Detalii în Setări → Despre → Politica de confidențialitate.",
     "connecting": "Se conectează…",
     "noModels": "Conectat, dar serverul nu listează niciun model. Încarcă mai întâi un model pe server.",
     "connected_one": "Conectat ✓ — {{count}} model: {{models}}",

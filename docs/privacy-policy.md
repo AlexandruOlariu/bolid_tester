@@ -1,6 +1,6 @@
 # Bolid Tester — Privacy policy
 
-Last updated: 2026-11-10
+Last updated: 2026-11-23
 
 Bolid Tester is an OBD2 diagnostics app. This policy says what it stores, what it sends and where.
 The same text is shown in the app under **Settings → About → Privacy policy**
@@ -21,13 +21,19 @@ from the app unless you turn on crash reports (below).
 ## When the app uses the internet
 
 - AI assistant: off until you set up a provider. When you pick one (your own local server, OpenAI,
-  Anthropic or another server you enter), each diagnosis and each follow-up question sends that
-  provider a summary of the scan: fault codes, readiness monitors, the freeze frame, a few live
-  values, the vehicle make, model and engine, the VIN and the car’s known checks for those codes,
-  plus your question and the earlier answers. It goes only to the provider you chose. A local
-  server stays on your network; a cloud provider (OpenAI or Anthropic) receives it over the
-  internet and handles it under its own privacy policy and terms. API keys are kept in the phone’s
-  secure storage, one per provider, never in backups, and each is sent only to its own provider.
+  Anthropic or another server you enter), each diagnosis, each investigation step and each follow-up
+  question sends that provider what the app has read for it: fault codes and their descriptions,
+  readiness monitors, the freeze frame, live values and short recordings, the vehicle make, model
+  and engine, the VIN, the car’s known checks for those codes and, when the investigation reads
+  them, control-module part numbers, software versions and fault codes, manufacturer readings
+  (extended data, adaptation and coding values, DPF values), recorded trip values, fuel-economy and
+  performance-test results, the maintenance log, past diagnoses and fault-code checks from History,
+  your alert rules, recent app error messages (with VINs and addresses removed), adapter details,
+  and your answers to the on-screen driver steps, plus your question and the earlier answers. It
+  goes only to the provider you chose. A local server stays on your network; a cloud provider
+  (OpenAI or Anthropic) receives it over the internet and handles it under its own privacy policy
+  and terms. API keys are kept in the phone’s secure storage, one per provider, never in backups,
+  and each is sent only to its own provider.
 - App updates: when you tap More → Check for updates, the app asks the Expo update server (run by
   Expo, expo.dev) whether a newer version exists and downloads it only if you accept. The request
   carries the app version, the update channel, the platform and a random installation ID created by
@@ -60,6 +66,11 @@ a backup or the error log — and they go to the app you pick in the share sheet
 
 Sharing a problem report: More → Report a problem builds one file with the error log, the adapter log, the app version, the phone’s system version, the selected car and the last module scan, plus anything you type. The VIN and the adapter’s address are removed unless you turn on Keep VIN and adapter address, and AI server addresses and keys are never included. Nothing is sent until you choose where it goes: the share sheet, an email draft, or Open GitHub issue, which opens your browser on a new public issue on the project page with a summary filled in (always without the VIN and the adapter address); you see it and submit it yourself.
 
+Send to Claude / ChatGPT: on an AI report, this builds a plain-text summary of the report, the fault
+codes and every check the investigation made, shows it to you first, and hands it to the app you
+pick in the share sheet, for example the official Claude or ChatGPT app. The VIN is left out unless
+you turn on Include VIN in that preview. The app sends nothing itself.
+
 A backup (Settings → Backup & restore) is one plain-text file that you create and keep where
 you choose. It holds everything listed above, including your VINs, and is not encrypted, so keep it
 somewhere private. It never contains an AI API key.
@@ -79,9 +90,13 @@ github.com/AlexandruOlariu/bolid_tester.
 
 ---
 
-_Technical notes (not part of the policy text):_ the AI request is built by
-`buildDiagnosisMessages` (`src/shared/obd-core/analysis/aiDiagnosis.ts`) and sent by
-`src/shared/ai/openaiClient.ts`; the update check is `src/features/more/api/updates.ts`, configured
+_Technical notes (not part of the policy text):_ the one-shot AI request is built by
+`buildDiagnosisMessages` (`src/shared/obd-core/analysis/aiDiagnosis.ts`); the agent's requests are
+built by `buildAgentMessages` / `buildAgentFollowUpMessages` (`src/shared/obd-core/agent/prompt.ts`)
+from tool digests (`src/shared/obd-core/agent/`, `src/features/*/agent/`); all of them are sent by
+`src/shared/ai` (`openaiClient.ts`, `anthropicClient.ts`, `http.ts`); the share package is
+`buildAgentSharePackage` (`src/shared/lib/agentShare.ts`), handed to the share sheet with no network
+call; the update check is `src/features/more/api/updates.ts`, configured
 in `app.json` `updates` (`checkAutomatically: "ON_ERROR_RECOVERY"`); the web search link is
 `dtcWebSearchUrl` (`src/features/fault-codes/model/dtcDetail.ts`); the backup file is built by
 `src/shared/lib/backup.ts` (`redactBackup` blanks any API key) and written by

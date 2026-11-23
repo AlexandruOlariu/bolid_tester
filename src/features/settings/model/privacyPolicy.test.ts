@@ -56,4 +56,26 @@ describe('privacy policy (Settings → About ↔ docs/privacy-policy.md)', () =>
     expect(text).toMatch(/consent/);
     expect(text).toMatch(/turning the switch off/);
   });
+
+  it('the AI paragraph lists what the agent sends (plan 34d)', () => {
+    const ai = PRIVACY_POLICY.flatMap((s) => s.paragraphs).find((p) =>
+      p.startsWith('AI assistant:'),
+    )!;
+    for (const w of [
+      'each investigation step',
+      'part numbers',
+      'recorded trip values',
+      'the maintenance log',
+      'past diagnoses',
+      'recent app error messages',
+      'your answers to the on-screen driver steps',
+    ])
+      expect(ai).toContain(w);
+  });
+
+  it('describes Send to Claude / ChatGPT and the VIN switch (plan 34d)', () => {
+    const all = PRIVACY_POLICY.flatMap((s) => s.paragraphs).join(' ');
+    expect(all).toContain('Send to Claude / ChatGPT');
+    expect(all).toContain('The VIN is left out unless you turn on Include VIN');
+  });
 });
