@@ -1,0 +1,7 @@
+New: AI diagnostic agent (beta).
+• Describe a symptom or tap Check everything: the agent reads the car step by step, read-only, and shows every step it took
+• Checks for boost, fuel trims, cooling and misfires, with guided driver steps
+• Works without AI too, on-device rules only
+• Use your own model or send the report to Claude / ChatGPT
+• Investigations are saved in History
+Please send feedback from More → Report a problem.

@@ -1,0 +1,7 @@
+Nou: agent de diagnoză AI (beta).
+• Descrie un simptom sau apasă Verifică tot: agentul citește mașina pas cu pas, doar citire, și arată fiecare pas făcut
+• Verificări pentru turbo, corecții de combustibil, răcire și rateuri, cu pași ghidați pentru șofer
+• Merge și fără AI, doar cu reguli pe telefon
+• Folosește modelul tău sau trimite raportul la Claude / ChatGPT
+• Investigațiile se salvează în Istoric
+Scrie-ne din Mai multe → Raportează o problemă.
