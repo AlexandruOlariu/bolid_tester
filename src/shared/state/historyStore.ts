@@ -6,12 +6,13 @@
  *  without bound — each AI entry embeds a full `AiReport`, so unbounded growth meant an
  *  ever-larger `JSON.stringify` on every save and slow hydration at launch (finding F7). Writes are
  *  debounced (see `debouncedStorage`) so a burst of adds/removes rewrites the file once, not once
- *  per mutation. The embedded `AiReport` is kept intact — the detail view re-opens it. See
- *  docs/features/history.md. */
+ *  per mutation. The embedded `AiReport` is kept intact — the detail view re-opens it. Since plan
+ *  34d an AI entry also keeps the agent's investigation trail, bounded (`toStoredTrail`) so a long
+ *  run cannot balloon the file. See docs/features/history.md. */
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { fileStateStorage, debouncedStorage } from './persistStorage';
-import type { AiReport, Dtc } from '@/shared/obd-core';
+import type { AgentEnd, AgentRunRequest, AgentStep, AiReport, Dtc } from '@/shared/obd-core';
 import type { ReportSectionId } from '@/shared/lib/vehicleReport';
 
 /** Identity of the car an entry belongs to. `vin` is the true per-car key when the ECU reports it;
@@ -32,6 +33,43 @@ export function historyVehicleChipLabel(v: HistoryVehicle): string {
   return v.vin && v.vin.length >= 5 ? `${v.label} ·${v.vin.slice(-5)}` : v.label;
 }
 
+/** Most agent steps an AI history entry keeps (plan 34d): the 12-step budget plus the triage step
+ *  and headroom. */
+export const MAX_STORED_TRAIL_STEPS = 16;
+/** Longest digest an AI history entry keeps per step (plan 34d); a longer one is cut and ends
+ *  with `…`. */
+export const MAX_STORED_DIGEST_CHARS = 600;
+
+/** One step of the investigation trail as History stores it: what the trail view shows, without
+ *  the step's arguments, findings or timing. */
+export type TrailRow = Pick<
+  AgentStep,
+  'id' | 'kind' | 'tool' | 'why' | 'digest' | 'summary' | 'label' | 'status' | 'unconfirmed'
+>;
+
+/** The trail bounded for storage: the first `MAX_STORED_TRAIL_STEPS` steps, each digest cut to
+ *  `MAX_STORED_DIGEST_CHARS` characters plus `…`, only the `TrailRow` fields kept (findings,
+ *  arguments and timing dropped). Idempotent, so an already-stored trail passes through unchanged. */
+export function toStoredTrail(trail: readonly TrailRow[]): TrailRow[] {
+  return trail.slice(0, MAX_STORED_TRAIL_STEPS).map((s) => {
+    const row: TrailRow = {
+      id: s.id,
+      kind: s.kind,
+      why: s.why,
+      digest:
+        s.digest.length > MAX_STORED_DIGEST_CHARS
+          ? `${s.digest.slice(0, MAX_STORED_DIGEST_CHARS)}…`
+          : s.digest,
+      summary: s.summary,
+      label: s.label,
+      status: s.status,
+    };
+    if (s.tool !== undefined) row.tool = s.tool;
+    if (s.unconfirmed !== undefined) row.unconfirmed = s.unconfirmed;
+    return row;
+  });
+}
+
 /** A saved AI auto-diagnose run. */
 export interface AiHistoryEntry {
   kind: 'ai';
@@ -44,6 +82,12 @@ export interface AiHistoryEntry {
   findingCount: number;
   /** The full report, so the entry can be re-opened in detail later. */
   report: AiReport;
+  /** The agent's investigation trail, bounded (plan 34d); absent on runs saved before it. */
+  trail?: TrailRow[];
+  /** What the user asked for (plan 34d); absent on triage-only re-reads and older runs. */
+  request?: AgentRunRequest;
+  /** Why the agent run ended (plan 34d); absent on triage-only re-reads and older runs. */
+  end?: AgentEnd;
 }
 
 /** A saved fault-code read (Fault codes screen). */
@@ -84,7 +128,14 @@ const HISTORY_PERSIST_DEBOUNCE_MS = 500;
 
 interface HistoryState {
   entries: HistoryEntry[];
-  addAiRun: (e: Omit<AiHistoryEntry, 'kind' | 'id' | 'ts'> & { ts?: number }) => void;
+  /** Saves an AI run; a `trail` is stored bounded (`toStoredTrail`), so the agent's full steps can
+   *  be handed in. */
+  addAiRun: (
+    e: Omit<AiHistoryEntry, 'kind' | 'id' | 'ts' | 'trail'> & {
+      ts?: number;
+      trail?: readonly TrailRow[];
+    },
+  ) => void;
   addDtcCheck: (e: Omit<DtcHistoryEntry, 'kind' | 'id' | 'ts'> & { ts?: number }) => void;
   addReportRun: (e: Omit<ReportHistoryEntry, 'kind' | 'id' | 'ts'> & { ts?: number }) => void;
   remove: (id: string) => void;
@@ -104,9 +155,15 @@ export const useHistoryStore = create<HistoryState>()(
   persist(
     (set) => ({
       entries: [],
-      addAiRun: ({ ts, ...rest }) =>
+      addAiRun: ({ ts, trail, ...rest }) =>
         set((s) => ({
-          entries: withEntry(s.entries, { kind: 'ai', id: newId(), ts: ts ?? Date.now(), ...rest }),
+          entries: withEntry(s.entries, {
+            kind: 'ai',
+            id: newId(),
+            ts: ts ?? Date.now(),
+            ...rest,
+            ...(trail ? { trail: toStoredTrail(trail) } : {}),
+          }),
         })),
       addDtcCheck: ({ ts, ...rest }) =>
         set((s) => ({
@@ -131,11 +188,12 @@ export const useHistoryStore = create<HistoryState>()(
     }),
     {
       name: 'bolid.history',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() =>
         debouncedStorage(fileStateStorage, HISTORY_PERSIST_DEBOUNCE_MS),
       ),
-      // v1 entries had a flat `vehicleLabel`; lift it into a `vehicle` descriptor.
+      // v1 entries had a flat `vehicleLabel`; lift it into a `vehicle` descriptor. v2 → v3 (plan
+      // 34d) only adds the optional AI `trail` / `request` / `end`, so v2 entries pass unchanged.
       migrate: (persisted, version) => {
         const s = (persisted ?? {}) as { entries?: unknown };
         const raw = Array.isArray(s.entries) ? s.entries : [];

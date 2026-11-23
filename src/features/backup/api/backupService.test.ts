@@ -466,7 +466,7 @@ describe('restoreBackup', () => {
     expect(entries[0].vehicle.label).toBe('VW Golf Plus');
   });
 
-  it('migrates an older store version through its own migrate (history v1 → v2)', async () => {
+  it('migrates an older store version through its own migrate (history v1 → v3)', async () => {
     const bundle: BackupBundle = {
       format: 1,
       createdAt: T,
@@ -508,7 +508,60 @@ describe('restoreBackup', () => {
     // the migrated state was written back at the current version
     await settle();
     await import('@/shared/state/persistStorage').then((m) => m.flushPendingWrites());
-    expect(JSON.parse(files.get(`${DOC}bolid.history.json`)!).version).toBe(2);
+    expect(JSON.parse(files.get(`${DOC}bolid.history.json`)!).version).toBe(3);
+  });
+
+  it('restores a history v2 backup from before plan 34d: every entry survives, written as v3', async () => {
+    const vehicle = { id: 'golf-plus-2009-20tdi', label: 'VW Golf Plus', vin: null };
+    const report = {
+      overall: 'ok',
+      summary: 'All good.',
+      findings: [],
+      actions: [],
+      source: 'local',
+      disclaimer: 'd',
+    };
+    const oldAi = {
+      kind: 'ai',
+      id: 'old-ai',
+      ts: T,
+      vehicle,
+      source: 'local',
+      overall: 'ok',
+      summary: 'All good.',
+      findingCount: 0,
+      report,
+    };
+    const oldDtc = {
+      kind: 'dtc',
+      id: 'old-dtc',
+      ts: T - 1,
+      vehicle,
+      milOn: false,
+      stored: [],
+      pending: [],
+      permanent: [],
+      monitorsComplete: null,
+      monitorsTotal: null,
+    };
+    const bundle: BackupBundle = {
+      format: 1,
+      createdAt: T,
+      app: { version: '0.9.1', platform: 'android' },
+      stores: [{ name: 'bolid.history', version: 2, state: { entries: [oldAi, oldDtc] } }],
+      sizes: { storesBytes: 0, tripBytes: 0 },
+    };
+    const res = await restoreBackup(mods(), bundle, {
+      stores: ['bolid.history'],
+      includeTrips: false,
+    });
+    expect(res.ok && res.restored).toEqual(['bolid.history']);
+    expect(useHistoryStore.getState().entries).toEqual([oldAi, oldDtc]);
+    await settle();
+    await import('@/shared/state/persistStorage').then((m) => m.flushPendingWrites());
+    const written = JSON.parse(files.get(`${DOC}bolid.history.json`)!);
+    expect(written.version).toBe(3);
+    expect(written.state.entries).toEqual([oldAi, oldDtc]);
   });
 
   it('restores an unversioned (v0) scans blob from before plan 18', async () => {

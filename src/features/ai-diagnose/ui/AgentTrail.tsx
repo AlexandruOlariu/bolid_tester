@@ -2,11 +2,13 @@
  *  translated label, the model's one-line "why" and the digest it read behind "Show data"). While
  *  the run is going the header shows the step in progress against the budget with **Stop**, which
  *  stays visible for the whole run; after the run the header collapses and expands the rows.
+ *  History re-opens a saved run's stored trail (`TrailRow`s, plan 34d) collapsed and read-only.
  *  See docs/features/ai-diagnose.md#agent. */
 import React, { useState } from 'react';
 import { Card, XStack, YStack, Text, Paragraph, Button } from 'tamagui';
 import { Check, ChevronDown, ChevronUp, Square, TriangleAlert, X } from 'lucide-react-native';
 import type { AgentStep } from '@/shared/obd-core';
+import type { TrailRow } from '@/shared/state/historyStore';
 import { HIT_SLOP, SectionTitle, usePalette, type Tone } from '@/shared/ui';
 import { useTranslation } from '@/shared/i18n';
 
@@ -18,7 +20,7 @@ const STATUS_META: Record<AgentStep['status'], { Icon: typeof Check; tone: Tone 
   refused: { Icon: X, tone: 'statusError' },
 };
 
-function StepRow({ step }: { step: AgentStep }) {
+function StepRow({ step }: { step: TrailRow }) {
   const { t } = useTranslation('aiDiagnose');
   const palette = usePalette();
   const [showData, setShowData] = useState(false);
@@ -74,18 +76,21 @@ export function AgentTrail({
   maxSteps,
   onStop,
   collapsible,
+  initiallyExpanded = true,
 }: {
-  trail: AgentStep[];
+  trail: ReadonlyArray<TrailRow>;
   running: boolean;
   stepsUsed: number;
   maxSteps: number;
   onStop: () => void;
   /** After the run: the header toggles the rows. */
   collapsible: boolean;
+  /** Whether a collapsible trail starts with its rows shown (History starts it collapsed). */
+  initiallyExpanded?: boolean;
 }) {
   const { t } = useTranslation('aiDiagnose');
   const palette = usePalette();
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(initiallyExpanded);
   const open = running || !collapsible || expanded;
   // The step in progress: triage is step 1, so a run that has used n steps is working on n + 1.
   const current = Math.min(stepsUsed + 1, maxSteps);

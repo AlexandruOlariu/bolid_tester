@@ -11,6 +11,7 @@ import { connectSimulator } from '@test/simulator';
 import { mockPush, setMockSearchParams } from '@test/mocks/router';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 import { useVehicleStore } from '@/shared/state/vehicleStore';
+import { useHistoryStore, type AiHistoryEntry } from '@/shared/state/historyStore';
 import { faultCodesAgentTools } from '@/features/fault-codes';
 import { liveDataAgentTools } from '@/features/live-data';
 import { batteryHealthAgentTools } from '@/features/battery-health';
@@ -336,6 +337,30 @@ describe('AiDiagnoseScreen agent run with mock://ai', () => {
     await confirmClear(); // presses the red action, then "Clear" in the appAlert
     expect(await screen.findByText(/Codes cleared/)).toBeTruthy();
     expect(useAiDiagnoseStore.getState().trail.map((s) => s.kind)).toEqual(['triage']);
+  });
+
+  it('saves the trail, request and end with the run in History (plan 34d)', async () => {
+    useMockAi();
+    await connectSimulator({ injectedDtcs: ['P0401'] });
+    renderWithProviders(<AiDiagnoseScreen />);
+    await runDiagnosis();
+    const run = useHistoryStore.getState().entries[0] as AiHistoryEntry;
+    expect(run.kind).toBe('ai');
+    expect(run.trail?.map((s) => s.kind)).toEqual(
+      useAiDiagnoseStore.getState().trail.map((s) => s.kind),
+    );
+    expect(run.trail?.[0].label.key).toBe('aiDiagnose:agent.step.triage');
+    expect(run.request).toEqual({ mode: 'everything' });
+    expect(run.end).toBe('final');
+
+    // The triage-only re-read after Clear codes keeps its one step, with no request or end.
+    await confirmClear();
+    await screen.findByText(/Codes cleared/);
+    const reread = useHistoryStore.getState().entries[0] as AiHistoryEntry;
+    expect(reread.id).not.toBe(run.id);
+    expect(reread.trail?.map((s) => s.kind)).toEqual(['triage']);
+    expect(reread.request).toBeUndefined();
+    expect(reread.end).toBeUndefined();
   });
 });
 

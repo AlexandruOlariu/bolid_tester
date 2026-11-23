@@ -7,7 +7,9 @@ import { curatedProfileId } from '@/shared/vehicles';
 import {
   AGENT_BUDGET,
   type AgentContribution,
+  type AgentEnd,
   type AgentRunRequest,
+  type AgentStep,
   type AiReport,
   type DiagnosisOptions,
   type DiagnosticSnapshot,
@@ -29,7 +31,14 @@ const isRunning = (): boolean => {
   return phase === 'triage' || phase === 'investigating';
 };
 
-function addHistoryEntry(report: AiReport, snapshot: DiagnosticSnapshot): void {
+/** Saves the run in History with its trail (bounded by the store, plan 34d); `request` and `end`
+ *  only for an agent run, not for the triage-only re-read after Clear codes. */
+function addHistoryEntry(
+  report: AiReport,
+  snapshot: DiagnosticSnapshot,
+  trail: readonly AgentStep[],
+  run?: { request: AgentRunRequest; end: AgentEnd },
+): void {
   useHistoryStore.getState().addAiRun({
     vehicle: {
       id: getActiveProfile().id,
@@ -41,6 +50,8 @@ function addHistoryEntry(report: AiReport, snapshot: DiagnosticSnapshot): void {
     summary: report.summary,
     findingCount: report.findings.length,
     report,
+    trail,
+    ...(run ? { request: run.request, end: run.end } : {}),
   });
 }
 
@@ -123,7 +134,7 @@ export function useAiDiagnose(
         const o = await handle.done;
         if (!current()) return;
         useAiDiagnoseStore.getState().setOutcome(o, o.notice);
-        addHistoryEntry(o.report, o.snapshot);
+        addHistoryEntry(o.report, o.snapshot, o.trail, { request: req, end: o.end });
       } catch (e) {
         if (!current()) return;
         useAiDiagnoseStore.getState().setError(e instanceof Error ? e.message : String(e));
@@ -190,7 +201,7 @@ export function useAiDiagnose(
           { report: r, trail: [triage.step], snapshot: triage.snapshot, end: null, stepsUsed: 0 },
           translate('aiDiagnose:agent.clearedNotice'),
         );
-      addHistoryEntry(r, triage.snapshot);
+      addHistoryEntry(r, triage.snapshot, [triage.step]);
     } catch (e) {
       useAiDiagnoseStore.getState().setError(e instanceof Error ? e.message : String(e));
       logError({ source: 'ai-diagnose', error: e, context: { phase: 'clear-codes' } });

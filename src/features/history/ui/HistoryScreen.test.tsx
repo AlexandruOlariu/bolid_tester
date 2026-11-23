@@ -7,7 +7,12 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderWithProviders } from '@test/renderWithProviders';
 import { mockPush } from '@test/mocks/router';
 import { memoryFiles } from '@test/mocks/fileSystem';
-import { useHistoryStore, type HistoryVehicle } from '@/shared/state/historyStore';
+import {
+  useHistoryStore,
+  type AiHistoryEntry,
+  type HistoryVehicle,
+  type TrailRow,
+} from '@/shared/state/historyStore';
 import type { AiReport } from '@/shared/obd-core';
 import { useScanHistoryStore, type SavedScan } from '@/features/module-scan/model/scanHistoryStore';
 import { useTripStore, type TripSummary } from '@/features/trip-recording/model/tripStore';
@@ -384,6 +389,80 @@ describe('HistoryScreen — AI report sheet', () => {
     expect(screen.getByText('Underboost')).toBeTruthy();
     expect(screen.getByText('Inspect the boost hoses')).toBeTruthy();
     expect(screen.getByText('VIN WVWZZZ1KZ9W903398')).toBeTruthy();
+  });
+});
+
+describe('HistoryScreen — AI run trail (plan 34d)', () => {
+  const trail: TrailRow[] = [
+    {
+      id: 1,
+      kind: 'triage',
+      why: '',
+      digest: 'Codes: P0299\nBattery: 12.6 V',
+      summary: '1 code, battery 12.6 V',
+      label: { key: 'aiDiagnose:agent.step.triage', values: { count: 1, volts: '12.6' } },
+      status: 'ok',
+    },
+    {
+      id: 2,
+      kind: 'tool',
+      tool: 'read_live',
+      why: 'Check boost against the target',
+      digest: 'MAP 98 kPa',
+      summary: 'MAP 98 kPa',
+      label: { key: 'aiDiagnose:agent.tool.read_live', values: { pids: 'MAP' } },
+      status: 'ok',
+    },
+  ];
+  const base = {
+    vehicle: GOLF,
+    source: 'ai' as const,
+    overall: 'attention' as const,
+    summary: aiReport.summary,
+    findingCount: 1,
+    report: aiReport,
+  };
+
+  function seedHistory(): { withTrail: AiHistoryEntry; withoutTrail: AiHistoryEntry } {
+    const h = useHistoryStore.getState();
+    // Saved before plan 34d: no trail, request or end.
+    h.addAiRun({ ...base, ts: at(8) });
+    h.addAiRun({
+      ...base,
+      ts: at(9),
+      trail,
+      request: { mode: 'symptom', symptom: 'pulls weak' },
+      end: 'final',
+    });
+    const [withTrail, withoutTrail] = useHistoryStore.getState().entries as AiHistoryEntry[];
+    return { withTrail, withoutTrail };
+  }
+
+  const openEntry = (e: AiHistoryEntry) =>
+    act(async () => {
+      fireEvent.press(screen.getByTestId(`timeline-ai:${e.id}`));
+    });
+
+  it('re-opens a run with its trail; an old run without one shows no trail', async () => {
+    const { withTrail, withoutTrail } = seedHistory();
+    renderWithProviders(<HistoryScreen />);
+
+    await openEntry(withTrail);
+    // Collapsed and read-only: the header with the step count, no Stop.
+    expect(screen.getByText('Investigation · 2 steps')).toBeTruthy();
+    expect(screen.queryByText('Stop')).toBeNull();
+    expect(screen.queryByText(/Triage — /)).toBeNull();
+    fireEvent.press(screen.getByText('Investigation · 2 steps'));
+    expect(screen.getByText(/Triage — /)).toBeTruthy();
+    expect(screen.getByText('Live data — MAP')).toBeTruthy();
+    expect(screen.getByText('Check boost against the target')).toBeTruthy();
+    fireEvent.press(screen.getAllByText('Show data')[1]);
+    expect(screen.getByText('MAP 98 kPa')).toBeTruthy();
+
+    await openEntry(withoutTrail);
+    expect(screen.getByText('Findings (1)')).toBeTruthy();
+    expect(screen.queryByText(/Triage — /)).toBeNull();
+    expect(screen.queryByText(/^Investigation · /)).toBeNull();
   });
 });
 

@@ -3,7 +3,8 @@
  *  `AiReportView`, which renders a whole saved report without the run / clear / follow-up controls.
  *  The Diagnose (AI) screen composes the banner and cards with its live actions; the History
  *  timeline (plan 16) re-opens a saved run's report with `AiReportView` (exported through the
- *  slice's `index.ts`). See docs/features/ai-diagnose.md. */
+ *  slice's `index.ts`), with the run's stored investigation trail when it has one (plan 34d). See
+ *  docs/features/ai-diagnose.md. */
 import React from 'react';
 import { YStack, XStack, Card, Text, Paragraph } from 'tamagui';
 import {
@@ -18,7 +19,7 @@ import {
   Wrench,
   Activity,
 } from 'lucide-react-native';
-import { vagCodeForDtc } from '@/shared/obd-core';
+import { AGENT_BUDGET, vagCodeForDtc } from '@/shared/obd-core';
 import type { AiReport, AiFinding, AiAction, DiagSeverity, OverallHealth } from '@/shared/obd-core';
 import { GENERIC_GUIDE, matchFaultGuide, type FaultGuide } from '@/shared/vehicles/faultGuides';
 // The fault guide's deep-link buttons, from the fault-codes public index (same buttons as on the
@@ -27,6 +28,8 @@ import { GuideLinks } from '@/features/fault-codes';
 import { usePalette, type Tone, SectionTitle } from '@/shared/ui';
 import { useTranslation } from '@/shared/i18n';
 import { formatDateTime } from '@/shared/lib/format';
+import type { TrailRow } from '@/shared/state/historyStore';
+import { AgentTrail } from './AgentTrail';
 
 const SEV_TONE: Record<DiagSeverity, Tone> = {
   ok: 'statusOk',
@@ -187,6 +190,8 @@ export function UncitedNotice({ report }: { report: AiReport }) {
   );
 }
 
+const noop = (): void => undefined;
+
 /** Icon per recommended-action type (shared with the Diagnose screen's live action list). */
 export const ACTION_ICON: Record<AiAction['type'], typeof Eraser> = {
   clear_dtcs: Eraser,
@@ -197,20 +202,24 @@ export const ACTION_ICON: Record<AiAction['type'], typeof Eraser> = {
 };
 
 /** A saved report, read-only: verdict, findings (with the car's fault guides), the recommended
- *  actions as a list (no buttons — the run is over) and the disclaimer with the run time. A host
- *  that shows it in a sheet passes `onNavigate` to close the sheet before a fault-guide button
- *  ("Related data" / "Open routine") leaves the screen. */
+ *  actions as a list (no buttons — the run is over), the run's investigation trail collapsed when
+ *  one was stored (plan 34d; older runs have none and show no trail) and the disclaimer with the
+ *  run time. A host that shows it in a sheet passes `onNavigate` to close the sheet before a
+ *  fault-guide button ("Related data" / "Open routine") leaves the screen. */
 export function AiReportView({
   report,
   profileId,
   ranAt,
   onNavigate,
+  trail,
 }: {
   report: AiReport;
   /** The car the report was made for (its fault guides). */
   profileId: string;
   ranAt: number | null;
   onNavigate?: () => void;
+  /** The run's stored trail (History, plan 34d). */
+  trail?: ReadonlyArray<TrailRow>;
 }) {
   const { t } = useTranslation('aiDiagnose');
   const palette = usePalette();
@@ -248,6 +257,17 @@ export function AiReportView({
             );
           })}
         </YStack>
+      ) : null}
+      {trail && trail.length > 0 ? (
+        <AgentTrail
+          trail={trail}
+          running={false}
+          stepsUsed={trail.length}
+          maxSteps={AGENT_BUDGET.maxSteps}
+          onStop={noop}
+          collapsible
+          initiallyExpanded={false}
+        />
       ) : null}
       <Paragraph theme="alt2" fontSize="$1" marginTop="$2">
         {report.disclaimer}

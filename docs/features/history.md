@@ -90,6 +90,14 @@ profile / garage id) and a chip label (`historyVehicleChipLabel`, with a VIN suf
 
 - **AI diagnosis runs** — saved by `useAiDiagnose` after each run: vehicle, source (AI vs local),
   overall verdict, summary, finding count, and the full `AiReport` (the sheet re-opens it).
+  An AI run re-opens with its investigation trail; runs saved before plan 34d have none.
+  Since plan 34d the entry also keeps the agent's `trail` (`TrailRow`s: id, kind, tool, why,
+  digest, summary, label, status, unconfirmed — no arguments, findings or timing), bounded by
+  `toStoredTrail` to the first `MAX_STORED_TRAIL_STEPS` (16) steps with each digest cut to
+  `MAX_STORED_DIGEST_CHARS` (600) characters plus `…`, and, for an agent run, its `request` and
+  `end`. The triage-only re-read after **Clear codes** stores its one triage step and no request
+  or end. The sheet shows the trail collapsed and read-only ("Investigation · n steps", no Stop);
+  an entry without a trail shows no trail header.
 - **Fault-code checks** — saved by the fault-codes service (`dtcService.readAll`) on every read:
   vehicle, MIL state, stored/pending/permanent codes, and monitor-readiness counts.
 - **Vehicle reports** (plan 15) — saved by the [report](./report.md) export each time a report is
@@ -107,13 +115,15 @@ add, coding on backup); the timeline only reads them.
   `entries: HistoryEntry[]` (a union of `AiHistoryEntry | DtcHistoryEntry | ReportHistoryEntry`)
   plus `addAiRun`, `addDtcCheck`, `addReportRun`, `remove`, `clear`. `ReportHistoryEntry` (plan 15)
   is `{ kind: 'report', id, ts, vehicle, sections: ReportSectionId[], format, fileName }`. Persist
-  `version` 2. Lives in `shared/state` so any feature can record without depending on another
+  `version` 3 (plan 34d: `AiHistoryEntry` gains the optional `trail`, `request` and `end`). Lives in `shared/state` so any feature can record without depending on another
   feature.
 - Persist writes are wrapped in **`debouncedStorage(fileStateStorage, 500)`**: a burst of
   adds/removes rewrites the JSON file once, ~500 ms after the last mutation (finding F7).
 - A `merge` concatenates rehydrated + in-memory entries deduped by id and re-applies the cap, so an
   entry added during the async hydration window survives.
-- A persist `migrate` (v1→v2) lifts older `vehicleLabel`-only entries into the `vehicle` shape.
+- A persist `migrate` (v1→v2) lifts older `vehicleLabel`-only entries into the `vehicle` shape;
+  v2→v3 keeps every entry unchanged (the new AI fields are optional), so a backup made before
+  plan 34d restores in full.
 - `hooks/useTimeline.ts` reads the five stores (history, scans, trips, maintenance, coding
   backups) and the garage, maps them through the adapters and merges them (memoised); it also
   hands the screen the history entries by id (AI sheet, report re-share, export).
@@ -156,7 +166,10 @@ supported by this car`. No trips: `No trips recorded for this car.` before the l
 - `src/features/history/api/reportFile.test.ts` — re-share, missing file, no sharing, failure log.
 - `src/features/history/ui/HistoryScreen.test.tsx` — all seven sources on one day, day headers,
   kind / car / text filters, scan / trip / maintenance / backup links, the AI sheet, report
-  re-share, Export, and Clear keeping the other sources.
+  re-share, Export, Clear keeping the other sources, and an AI run re-opening with its trail
+  while an older run shows none (plan 34d).
+- `src/shared/state/historyStore.test.ts` — retention cap, the bounded stored trail
+  (`toStoredTrail`), and the v2 → v3 (and v1 → v3) persist migration keeping every entry.
 - `src/features/module-scan/ui/ScanHistorySection.test.tsx` — the compare deep link.
 
 ## Acceptance

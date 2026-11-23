@@ -159,8 +159,9 @@ function TimelineRow({
   );
 }
 
-/** The saved AI run's full report, shown in the History sheet. `onNavigate` closes the sheet before
- *  a fault-guide button leaves the screen (History is a tab that stays mounted). */
+/** The saved AI run's full report and, when it was stored (plan 34d), its investigation trail,
+ *  shown in the History sheet. `onNavigate` closes the sheet before a fault-guide button leaves
+ *  the screen (History is a tab that stays mounted). */
 export function AiEntryBody({
   entry,
   onNavigate,
@@ -185,6 +186,7 @@ export function AiEntryBody({
         profileId={entry.vehicle.id}
         ranAt={entry.ts}
         onNavigate={onNavigate}
+        trail={entry.trail}
       />
     </YStack>
   );
