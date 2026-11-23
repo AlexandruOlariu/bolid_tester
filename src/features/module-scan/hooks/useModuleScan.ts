@@ -35,18 +35,21 @@ import { translate } from '@/shared/i18n';
 async function busWake(session: DiagnosticSession, proto: ProtocolId): Promise<void> {
   const fh = functionalHeader(proto);
   if (!fh) return;
-  try {
-    await session.setHeader(fh);
-    await testerPresentBurst((cmd) => session.send(cmd), { count: 3, gapMs: 150 });
-  } catch {
-    // best-effort — swallow everything.
-  } finally {
+  // Inside `exclusive`, like every block that re-addresses the adapter.
+  await session.exclusive(async () => {
     try {
-      await session.resetAddressing();
+      await session.setHeader(fh);
+      await testerPresentBurst((cmd) => session.send(cmd), { count: 3, gapMs: 150 });
     } catch {
-      // ignore — the per-module loop re-addresses anyway.
+      // best-effort — swallow everything.
+    } finally {
+      try {
+        await session.resetAddressing();
+      } catch {
+        // ignore — the per-module loop re-addresses anyway.
+      }
     }
-  }
+  });
 }
 
 /** Why the TP2.0 gateway scan is unavailable over a link that cannot stream monitor mode. */
@@ -173,22 +176,27 @@ export function useModuleScan() {
         store.setTp20(result);
         store.setTp20Error(result.gatewayError ?? null);
       } else {
-        // Capability probe first: a clone that can't do raw CAN (or a sleeping bus) fails in
-        // ~1s here instead of burning a full scan's worth of timeouts.
-        const probe = await probeTp20Capability(session.client);
-        if (!probe.ok) {
-          store.setTp20Error(translate('moduleScan:tp20.noTraffic'));
-          return;
-        }
-        const link = new Elm327RawCanLink(session.client);
-        await link.begin();
-        try {
-          const result = await scanTp20(link, { wanted, timeoutMs: 1500 });
-          store.setTp20(result);
-          store.setTp20Error(result.gatewayError ?? null);
-        } finally {
-          await link.end();
-        }
+        // Raw CAN reconfigures the adapter (monitor mode, its own ATSH / ATCRA per frame): the
+        // whole probe + scan holds the session (`exclusive`), so no other addressed block (an AI
+        // agent run's module reads, the live poll sweep) talks to the adapter meanwhile.
+        await session.exclusive(async () => {
+          // Capability probe first: a clone that can't do raw CAN (or a sleeping bus) fails in
+          // ~1s here instead of burning a full scan's worth of timeouts.
+          const probe = await probeTp20Capability(session.client);
+          if (!probe.ok) {
+            store.setTp20Error(translate('moduleScan:tp20.noTraffic'));
+            return;
+          }
+          const link = new Elm327RawCanLink(session.client);
+          await link.begin();
+          try {
+            const result = await scanTp20(link, { wanted, timeoutMs: 1500 });
+            store.setTp20(result);
+            store.setTp20Error(result.gatewayError ?? null);
+          } finally {
+            await link.end();
+          }
+        });
       }
     } catch (e) {
       store.setTp20Error(e instanceof Error ? e.message : String(e));

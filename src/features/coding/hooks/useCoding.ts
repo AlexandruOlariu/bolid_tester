@@ -70,22 +70,26 @@ export function useCoding() {
   const read = useCallback(
     async (mod: CodingModule) => {
       if (!session) return null;
-      try {
-        await session.setHeader(mod.reqHeader);
-        await session.setRxFilter(mod.rxFilter);
-        const bytes = await session.readExtended(mod.codingDid);
-        if (bytes) setCurrent(mod.module, bytes);
-        return bytes;
-      } catch (e) {
-        logError({
-          source: 'coding/read',
-          error: e,
-          context: { module: mod.module, did: mod.codingDid },
-        });
-        return null;
-      } finally {
-        await session.resetAddressing();
-      }
+      // Inside `exclusive`: no other addressed block (the AI agent's module reads, the live poll
+      // sweep) can re-address the adapter between the header and the read.
+      return session.exclusive(async () => {
+        try {
+          await session.setHeader(mod.reqHeader);
+          await session.setRxFilter(mod.rxFilter);
+          const bytes = await session.readExtended(mod.codingDid);
+          if (bytes) setCurrent(mod.module, bytes);
+          return bytes;
+        } catch (e) {
+          logError({
+            source: 'coding/read',
+            error: e,
+            context: { module: mod.module, did: mod.codingDid },
+          });
+          return null;
+        } finally {
+          await session.resetAddressing();
+        }
+      });
     },
     [session, setCurrent],
   );
@@ -134,37 +138,44 @@ export function useCoding() {
         setLastResult(decision.message);
         return false;
       }
-      await session.setHeader(mod.reqHeader);
-      await session.setRxFilter(mod.rxFilter);
-      try {
-        const res = await codeModule((cmd) => session.send(cmd), {
-          did: mod.codingDid,
-          newData,
-          security: decision.kind === 'unlock' ? decision.security : undefined,
-        });
-        addBackup({ module: mod.module, did: mod.codingDid, bytes: res.backup, at: Date.now() });
-        if (res.verified) setCurrent(mod.module, newData);
-        if (!res.verified) {
+      // SAFETY: the header, the backup read, the write and the verify run as one `exclusive`
+      // block, so no other addressed block (an AI agent run's module reads, the live poll sweep)
+      // can re-address the adapter in between and land the write on another module.
+      return session.exclusive(async () => {
+        try {
+          await session.setHeader(mod.reqHeader);
+          await session.setRxFilter(mod.rxFilter);
+          const res = await codeModule((cmd) => session.send(cmd), {
+            did: mod.codingDid,
+            newData,
+            security: decision.kind === 'unlock' ? decision.security : undefined,
+          });
+          addBackup({ module: mod.module, did: mod.codingDid, bytes: res.backup, at: Date.now() });
+          if (res.verified) setCurrent(mod.module, newData);
+          if (!res.verified) {
+            logError({
+              source: 'coding/write',
+              error: 'Write sent but verification failed',
+              severity: 'warning',
+              context: { module: mod.module, did: mod.codingDid },
+            });
+          }
+          setLastResult(
+            res.verified ? translate('coding:verified') : translate('coding:unverified'),
+          );
+          return res.verified;
+        } catch (e) {
           logError({
             source: 'coding/write',
-            error: 'Write sent but verification failed',
-            severity: 'warning',
+            error: e,
             context: { module: mod.module, did: mod.codingDid },
           });
+          setLastResult(translate('coding:failed', { error: (e as Error).message }));
+          return false;
+        } finally {
+          await session.resetAddressing();
         }
-        setLastResult(res.verified ? translate('coding:verified') : translate('coding:unverified'));
-        return res.verified;
-      } catch (e) {
-        logError({
-          source: 'coding/write',
-          error: e,
-          context: { module: mod.module, did: mod.codingDid },
-        });
-        setLastResult(translate('coding:failed', { error: (e as Error).message }));
-        return false;
-      } finally {
-        await session.resetAddressing();
-      }
+      });
     },
     [session, unlocked, addBackup, setCurrent, setLastResult],
   );

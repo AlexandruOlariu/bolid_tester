@@ -39,25 +39,32 @@ export function useSensorTests() {
         setMode05(out05);
       }
       if (canModuleSensors) {
-        const out: ModuleReading[] = [];
-        for (const s of profile.moduleSensors ?? []) {
-          await session.setHeader(s.reqHeader);
-          await session.setRxFilter(s.rxFilter);
-          const data = await session.readExtended(s.did);
-          out.push({
-            name: s.name,
-            unit: s.unit,
-            value: data ? s.decode(data) : null,
-            raw: data ? data.map((b) => b.toString(16).padStart(2, '0')).join(' ') : 'no data',
-            ...(s.confirmed ? { confirmed: s.confirmed } : {}),
-          });
-        }
-        await session.resetAddressing();
+        // One `exclusive` block, addressing restored in `finally`: no other addressed block (an AI
+        // agent run's module reads, the live poll sweep) re-addresses the adapter mid-sweep.
+        const out = await session.exclusive(async () => {
+          const readings: ModuleReading[] = [];
+          try {
+            for (const s of profile.moduleSensors ?? []) {
+              await session.setHeader(s.reqHeader);
+              await session.setRxFilter(s.rxFilter);
+              const data = await session.readExtended(s.did);
+              readings.push({
+                name: s.name,
+                unit: s.unit,
+                value: data ? s.decode(data) : null,
+                raw: data ? data.map((b) => b.toString(16).padStart(2, '0')).join(' ') : 'no data',
+                ...(s.confirmed ? { confirmed: s.confirmed } : {}),
+              });
+            }
+          } finally {
+            await session.resetAddressing();
+          }
+          return readings;
+        });
         setModuleReadings(out);
       }
     } catch (e) {
       logError({ source: 'sensor-tests', error: e, severity: 'warning' });
-      await session.resetAddressing();
     }
   }, [session, profile, canModuleSensors, kline, setMode06, setMode05, setModuleReadings]);
 

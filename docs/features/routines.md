@@ -32,9 +32,13 @@ excluded.
 ## Feature
 
 - `routineService` — fail-closed interlock checks from standard Mode 01 (RPM/speed — works on any
-  car) plus `checkInterlocksDuringRun` (switches to the functional address and back around the
-  reads); start/stop with `ATSH`/`ATCRA` addressing (**both** restored via
-  `session.resetAddressing()`), keep-alive, live-value reads of the routine's `liveDids`.
+  car) plus `checkInterlocksDuringRun`; start, keep-alive (`keepAlive(session, routine)`),
+  live-value reads of the routine's `liveDids` and stop. Each step is one self-contained
+  `session.exclusive` block: it addresses the routine module (`ATSH`/`ATCRA`) itself and restores
+  **both** via `session.resetAddressing()` in `finally`, so the interlock reads between steps go out
+  on the functional header and no other addressed block (an AI agent run, the live poll sweep) can
+  re-address the adapter between a step's header and its request — a stop never reaches the wrong
+  module.
   `startRoutine(session, routine, { seedToKey? })` passes the routine's `security` level through
   with the plugin routine `useRoutines` resolved (`securityDecisionForActiveCar`), if any.
 - **Security access (plan 23).** Each routine row shows an **unlock badge** (“No unlock needed” /

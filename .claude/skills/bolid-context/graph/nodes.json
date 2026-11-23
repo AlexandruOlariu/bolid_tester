@@ -3657,6 +3657,7 @@
       "src/features/coding/api/carBackup.test.ts",
       "src/features/coding/api/codingRead.test.ts",
       "src/features/coding/hooks/useAdaptationRestore.security.test.tsx",
+      "src/features/coding/hooks/useCoding.agentRace.test.tsx",
       "src/features/coding/hooks/useCoding.security.test.tsx",
       "src/features/coding/ui/CodingBackup.test.tsx",
       "src/features/coding/ui/CodingTweaks.test.tsx"

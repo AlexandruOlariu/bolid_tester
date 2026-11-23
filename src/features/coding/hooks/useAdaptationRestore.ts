@@ -87,22 +87,26 @@ export function useAdaptationRestore() {
           }
         }
         const codingMod = profile.codingModules?.find((m) => m.reqHeader === module.reqHeader);
-        if (module.coding && codingMod) {
-          try {
-            await session.setHeader(codingMod.reqHeader);
-            await session.setRxFilter(codingMod.rxFilter);
-            const bytes = await session.readExtended(module.coding.did);
-            if (bytes) out[module.coding.did] = bytes;
-          } catch (e) {
-            logError({
-              source: 'coding/adaptation-restore/read',
-              error: e,
-              severity: 'warning',
-              context: { module: module.name },
-            });
-          } finally {
-            await session.resetAddressing();
-          }
+        const coding = module.coding;
+        if (coding && codingMod) {
+          // One `exclusive` block: no other addressed block re-addresses the adapter mid-read.
+          await session.exclusive(async () => {
+            try {
+              await session.setHeader(codingMod.reqHeader);
+              await session.setRxFilter(codingMod.rxFilter);
+              const bytes = await session.readExtended(coding.did);
+              if (bytes) out[coding.did] = bytes;
+            } catch (e) {
+              logError({
+                source: 'coding/adaptation-restore/read',
+                error: e,
+                severity: 'warning',
+                context: { module: module.name },
+              });
+            } finally {
+              await session.resetAddressing();
+            }
+          });
         }
         return out;
       } finally {

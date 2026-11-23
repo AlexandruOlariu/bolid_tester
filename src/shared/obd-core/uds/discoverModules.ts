@@ -53,27 +53,30 @@ export async function discoverUdsModules(
     const group = groups[i];
     const candidate = group[0];
     const t0 = Date.now();
-    let found: Omit<DiscoveredModule, 'ms'>;
-    try {
-      found = await session.withCommandTimeout(
-        timeoutMs,
-        async (): Promise<Omit<DiscoveredModule, 'ms'>> => {
-          await session.setHeader(candidate.reqHeader);
-          await session.setRxFilter(candidate.rxFilter);
-          const probe = await send('22F187');
-          if (!probe || probe.length === 0) return { candidate, ident: null, state: 'silent' };
-          const ident = await readModuleIdent(send);
-          return { candidate, ident, state: 'answered' };
-        },
-      );
-    } catch (e) {
-      const reason = e instanceof Error ? e.message : String(e);
-      found = isModuleUnreachableError(reason)
-        ? { candidate, ident: null, state: 'silent' }
-        : { candidate, ident: null, state: 'error', reason };
-    } finally {
-      await session.resetAddressing();
-    }
+    // One `exclusive` block per candidate (addressing restored in `finally`): no other addressed
+    // block re-addresses the adapter mid-probe, and the live poll sweep runs between candidates.
+    let found: Omit<DiscoveredModule, 'ms'> = await session.exclusive(async () => {
+      try {
+        return await session.withCommandTimeout(
+          timeoutMs,
+          async (): Promise<Omit<DiscoveredModule, 'ms'>> => {
+            await session.setHeader(candidate.reqHeader);
+            await session.setRxFilter(candidate.rxFilter);
+            const probe = await send('22F187');
+            if (!probe || probe.length === 0) return { candidate, ident: null, state: 'silent' };
+            const ident = await readModuleIdent(send);
+            return { candidate, ident, state: 'answered' };
+          },
+        );
+      } catch (e) {
+        const reason = e instanceof Error ? e.message : String(e);
+        return isModuleUnreachableError(reason)
+          ? { candidate, ident: null, state: 'silent' as const }
+          : { candidate, ident: null, state: 'error' as const, reason };
+      } finally {
+        await session.resetAddressing();
+      }
+    });
     if (group.length > 1) {
       const chosen = pickCandidateByIdent(group, found.ident);
       found = { ...found, candidate: chosen, alternatives: group.filter((c) => c !== chosen) };

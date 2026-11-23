@@ -35,6 +35,16 @@ Reachable from the **More** tab (`/ai-diagnose`). Every run is saved, with its t
   (`AGENT_EXCLUDED_MODULE_ADDRESSES`, `ModuleNotAllowedError`) before any traffic. Cluster mileage is
   out of scope. Module addressing happens only through `withModule`, inside the session's
   `exclusive`, with the addressing restored in `finally`.
+- **Header changes are exclusive, app-wide.** An agent run is a background job that keeps going
+  when the user leaves the AI tab, so every other block that re-addresses the adapter also runs as
+  one `exclusive` block with its addressing restored in `finally`: the coding read and write (header
+  → backup → `2E` → verify), adaptation reads and writes (UDS and KWP), each routine step (start,
+  keep-alive, live values, stop — each re-addresses the routine module itself; the interlock reads
+  run on the functional header), the service reset, the car backup and the adaptation-restore coding
+  read, the module-sensor sweep, the module scan's bus wake and TP2.0 raw-CAN scan, and each module
+  discovery probe. An agent `withModule` can therefore never re-address the adapter between a
+  write's header and its request. No block calls `exclusive` from inside another (it is not
+  re-entrant).
 - **Clear codes stays a button.** The only write on this screen is **clear fault codes (Mode 04)**, on the report, behind its explicit confirmation — it is **not** an agent tool, and the model
   can never trigger it. It never performs coding, adaptation, routine or service-reset writes (see
   [`coding.md`](./coding.md), [`service-reset.md`](./service-reset.md)).

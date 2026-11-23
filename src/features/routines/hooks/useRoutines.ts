@@ -91,7 +91,7 @@ export function useRoutines() {
           if (ticking.current) return; // previous tick still on the wire (slow BLE) — skip
           ticking.current = true;
           try {
-            await keepAlive(session).catch(() => undefined);
+            await keepAlive(session, routine).catch(() => undefined);
             const values = await readLiveValues(session, routine, profile.extendedPids ?? []);
             store.setLiveValues(values);
             // SAFETY: interlocks hold for the routine's whole life, not just its start — someone

@@ -54,17 +54,21 @@ export async function readChannel(
   ch: AdaptationChannel,
   opts: ReadChannelOptions = {},
 ): Promise<number[] | null> {
-  try {
-    await address(session, ch);
-    if (isKwpChannel(ch)) {
-      const send: UdsSend = (cmd) => session.send(cmd);
-      if (!opts.sessionOpen) await enterSession(send, ch.session ?? DEFAULT_KWP_SESSION);
-      return await kwpReadLocal(send, ch.did);
+  // Every addressed block runs inside `exclusive`, so nothing else (an AI agent run's module
+  // reads, the live poll sweep) can re-address the adapter in the middle of it.
+  return session.exclusive(async () => {
+    try {
+      await address(session, ch);
+      if (isKwpChannel(ch)) {
+        const send: UdsSend = (cmd) => session.send(cmd);
+        if (!opts.sessionOpen) await enterSession(send, ch.session ?? DEFAULT_KWP_SESSION);
+        return await kwpReadLocal(send, ch.did);
+      }
+      return await session.readExtended(ch.did);
+    } finally {
+      await session.resetAddressing();
     }
-    return await session.readExtended(ch.did);
-  } finally {
-    await session.resetAddressing();
-  }
+  });
 }
 
 /** The AI agent's read of one channel (plan 34b), through the read-only facade: the module is
@@ -130,23 +134,28 @@ export async function writeChannel(
   // future ones) must pass through the same guard.
   const outOfBounds = checkBounds(ch, newRaw);
   if (outOfBounds) return { ok: false, message: outOfBounds };
-  if (isKwpChannel(ch)) return writeKwpChannel(session, ch, newRaw, opts, security);
-  try {
-    await address(session, ch);
-    const res = await codeModule((cmd) => session.send(cmd), {
-      did: ch.did,
-      newData: newRaw,
-      security,
-    });
-    return verifiedOutcome(res.verified, res.backup);
-  } catch (e) {
-    return {
-      ok: false,
-      message: translate('adaptations:msg.failed', { error: (e as Error).message }),
-    };
-  } finally {
-    await session.resetAddressing();
-  }
+  // SAFETY: address → backup → write → verify as one `exclusive` block, so no other addressed
+  // block can re-address the adapter in between and land the write on another module.
+  if (isKwpChannel(ch))
+    return session.exclusive(() => writeKwpChannel(session, ch, newRaw, opts, security));
+  return session.exclusive(async () => {
+    try {
+      await address(session, ch);
+      const res = await codeModule((cmd) => session.send(cmd), {
+        did: ch.did,
+        newData: newRaw,
+        security,
+      });
+      return verifiedOutcome(res.verified, res.backup);
+    } catch (e) {
+      return {
+        ok: false,
+        message: translate('adaptations:msg.failed', { error: (e as Error).message }),
+      };
+    } finally {
+      await session.resetAddressing();
+    }
+  });
 }
 
 function verifiedOutcome(verified: boolean, backup: number[]): WriteOutcome {
@@ -161,7 +170,7 @@ function verifiedOutcome(verified: boolean, backup: number[]): WriteOutcome {
 
 /** KWP: session → login (when the channel needs one) → backup (`21`) → write (`3B`) → re-read →
  *  verify. The session is always (re)entered, so a module that dropped its session — and with it
- *  the login — is logged in again. */
+ *  the login — is logged in again. Called inside `session.exclusive` (never calls it itself). */
 async function writeKwpChannel(
   session: DiagnosticSession,
   ch: AdaptationChannel,

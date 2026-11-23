@@ -83,27 +83,30 @@ export function useCarBackup() {
         let partNumber: string | undefined;
         let softwareVersion: string | undefined;
         let coding: { did: string; bytes: number[] } | null = null;
-        // Ident + coding read share the same physical addressing.
-        try {
-          await session.setHeader(spec.reqHeader);
-          await session.setRxFilter(spec.rxFilter);
-          const ident = await readModuleIdent((cmd) => session.send(cmd));
-          partNumber = ident.partNumber ?? spec.coding?.partNumber;
-          softwareVersion = ident.softwareVersion;
-          if (spec.coding) {
-            const bytes = await session.readExtended(spec.coding.codingDid);
-            if (bytes) coding = { did: spec.coding.codingDid, bytes };
+        // Ident + coding read share the same physical addressing, as one `exclusive` block so no
+        // other addressed block (an AI agent run, the live poll sweep) re-addresses in between.
+        await session.exclusive(async () => {
+          try {
+            await session.setHeader(spec.reqHeader);
+            await session.setRxFilter(spec.rxFilter);
+            const ident = await readModuleIdent((cmd) => session.send(cmd));
+            partNumber = ident.partNumber ?? spec.coding?.partNumber;
+            softwareVersion = ident.softwareVersion;
+            if (spec.coding) {
+              const bytes = await session.readExtended(spec.coding.codingDid);
+              if (bytes) coding = { did: spec.coding.codingDid, bytes };
+            }
+          } catch (e) {
+            logError({
+              source: 'coding/backup',
+              error: e,
+              severity: 'warning',
+              context: { module: spec.name },
+            });
+          } finally {
+            await session.resetAddressing();
           }
-        } catch (e) {
-          logError({
-            source: 'coding/backup',
-            error: e,
-            severity: 'warning',
-            context: { module: spec.name },
-          });
-        } finally {
-          await session.resetAddressing();
-        }
+        });
         // Adaptation channels via the reused read path (each self-addresses + restores).
         const adaptations: CarBackupAdaptation[] = [];
         for (const ch of spec.channels) {

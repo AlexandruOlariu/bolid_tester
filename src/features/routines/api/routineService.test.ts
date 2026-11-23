@@ -1,7 +1,13 @@
-import { DiagnosticSession, MockTransport, UdsError, buildScenario } from '@/shared/obd-core';
+import {
+  DiagnosticSession,
+  MockTransport,
+  UdsError,
+  buildScenario,
+  createReadOnlySession,
+} from '@/shared/obd-core';
 import { bytesToString } from '@/shared/lib/bytes';
 import type { GuidedRoutine } from '@/shared/vehicles';
-import { describeRoutineFailure, startRoutine } from './routineService';
+import { describeRoutineFailure, keepAlive, startRoutine, stopRoutine } from './routineService';
 
 const basicSetting: GuidedRoutine = {
   module: 'Engine',
@@ -118,5 +124,59 @@ describe('startRoutine with SecurityAccess (plan 23, simulated Golf engine)', ()
     const { session, sent } = await securedEngine();
     await startRoutine(session, secured, { seedToKey: toyKey });
     expect(sent).toEqual(expect.arrayContaining(['1003', '2703', '2704edcb', '31010301']));
+  });
+});
+
+describe('routine steps while an AI agent run reads another module (final review, finding 9)', () => {
+  async function engine() {
+    const mock = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+    const sent: string[] = [];
+    const write = mock.write.bind(mock);
+    mock.write = async (bytes: Uint8Array) => {
+      sent.push(bytesToString(bytes).trim().toUpperCase());
+      return write(bytes);
+    };
+    const session = new DiagnosticSession(mock);
+    await session.connect();
+    sent.splice(0);
+    return { session, sent };
+  }
+
+  /** The agent addresses the BCM (70E / 778) and waits between two reads. */
+  const agentRead = (session: DiagnosticSession) =>
+    createReadOnlySession(session).withModule(
+      { address: '09', reqHeader: '70E', rxFilter: '778' },
+      async (send) => {
+        await send('22F187');
+        await new Promise((r) => setTimeout(r, 40));
+        await send('22F189');
+      },
+    );
+
+  /** Each `31` / `3E` request goes out right after the routine module's own addressing. */
+  function expectOnRoutineHeader(sent: string[], prefix: string) {
+    const at = sent.findIndex((c) => c.startsWith(prefix));
+    expect(at).toBeGreaterThan(0);
+    const lastAddressing = sent
+      .slice(0, at)
+      .filter((c) => c.startsWith('ATSH') || c.startsWith('ATCRA'))
+      .slice(-2);
+    expect(lastAddressing).toEqual(['ATSH7E0', 'ATCRA7E8']);
+  }
+
+  it('start, keep-alive and stop each go out on the routine module, never the agent header', async () => {
+    const { session, sent } = await engine();
+    await Promise.all([agentRead(session), startRoutine(session, basicSetting)]);
+    expectOnRoutineHeader(sent, '31010301');
+
+    sent.splice(0);
+    await Promise.all([agentRead(session), keepAlive(session, basicSetting)]);
+    expectOnRoutineHeader(sent, '3E');
+
+    sent.splice(0);
+    await Promise.all([agentRead(session), stopRoutine(session, basicSetting)]);
+    expectOnRoutineHeader(sent, '31020301');
+    // Default addressing is restored after the stop.
+    expect(sent.slice(-2)).toEqual(['ATSH7DF', 'ATCRA']);
   });
 });

@@ -61,54 +61,62 @@ export function useServiceReset() {
     setRunning(true);
     setLastResult(null);
     const transport = descriptor.transport ?? 'uds';
+    // SAFETY: the reset's addressing and its requests run as one `exclusive` block, so no other
+    // addressed block (an AI agent run's module reads, the live poll sweep) re-addresses the
+    // adapter in between and sends the reset to another module.
     try {
-      await session.setHeader(descriptor.reqHeader);
-      if (descriptor.rxFilter) await session.setRxFilter(descriptor.rxFilter);
-      const res = await serviceReset((cmd) => session.send(cmd), {
-        transport: descriptor.transport,
-        session: descriptor.session,
-        method: descriptor.method,
-        routineId: descriptor.routineId,
-        adaptations: descriptor.adaptations,
-        security: decision.kind === 'unlock' ? decision.security : undefined,
+      return await session.exclusive(async () => {
+        try {
+          await session.setHeader(descriptor.reqHeader);
+          if (descriptor.rxFilter) await session.setRxFilter(descriptor.rxFilter);
+          const res = await serviceReset((cmd) => session.send(cmd), {
+            transport: descriptor.transport,
+            session: descriptor.session,
+            method: descriptor.method,
+            routineId: descriptor.routineId,
+            adaptations: descriptor.adaptations,
+            security: decision.kind === 'unlock' ? decision.security : undefined,
+          });
+          if (!res.ok) {
+            logError({
+              source: 'service-reset',
+              error: 'Reset did not complete (no positive response from module)',
+              severity: 'warning',
+              context: { transport, module: descriptor.module, method: descriptor.method },
+            });
+          }
+          setLastResult(
+            res.ok ? translate('serviceReset:msg.done') : translate('serviceReset:msg.incomplete'),
+          );
+          return res.ok;
+        } catch (e) {
+          const msg = (e as Error).message;
+          // The target module never answered (No response / NO DATA / timeout / UNABLE TO CONNECT /
+          // BUS INIT ERROR). On any transport this usually means the adapter cannot reach the module
+          // (e.g. a KWP1281 cluster over a generic ELM327) — explain honestly instead of a bare failure.
+          const moduleUnreachable = isModuleUnreachableError(msg);
+          logError({
+            source: 'service-reset',
+            error: e,
+            severity: moduleUnreachable ? 'warning' : 'error',
+            context: { transport, module: descriptor.module, moduleUnreachable },
+          });
+          const manualHint = descriptor.manualProcedure?.length
+            ? ` ${translate('serviceReset:msg.useManual')}`
+            : '';
+          setLastResult(
+            moduleUnreachable
+              ? `${translate('serviceReset:msg.noResponse', { module: descriptor.module, error: msg })} ` +
+                  (descriptor.obdUnreachable ?? translate('serviceReset:msg.unreachable')) +
+                  manualHint
+              : (describeUnlockFailure(e) ?? translate('serviceReset:msg.failed', { error: msg })),
+          );
+          return false;
+        } finally {
+          await session.resetAddressing();
+        }
       });
-      if (!res.ok) {
-        logError({
-          source: 'service-reset',
-          error: 'Reset did not complete (no positive response from module)',
-          severity: 'warning',
-          context: { transport, module: descriptor.module, method: descriptor.method },
-        });
-      }
-      setLastResult(
-        res.ok ? translate('serviceReset:msg.done') : translate('serviceReset:msg.incomplete'),
-      );
-      return res.ok;
-    } catch (e) {
-      const msg = (e as Error).message;
-      // The target module never answered (No response / NO DATA / timeout / UNABLE TO CONNECT /
-      // BUS INIT ERROR). On any transport this usually means the adapter cannot reach the module
-      // (e.g. a KWP1281 cluster over a generic ELM327) — explain honestly instead of a bare failure.
-      const moduleUnreachable = isModuleUnreachableError(msg);
-      logError({
-        source: 'service-reset',
-        error: e,
-        severity: moduleUnreachable ? 'warning' : 'error',
-        context: { transport, module: descriptor.module, moduleUnreachable },
-      });
-      const manualHint = descriptor.manualProcedure?.length
-        ? ` ${translate('serviceReset:msg.useManual')}`
-        : '';
-      setLastResult(
-        moduleUnreachable
-          ? `${translate('serviceReset:msg.noResponse', { module: descriptor.module, error: msg })} ` +
-              (descriptor.obdUnreachable ?? translate('serviceReset:msg.unreachable')) +
-              manualHint
-          : (describeUnlockFailure(e) ?? translate('serviceReset:msg.failed', { error: msg })),
-      );
-      return false;
     } finally {
-      await session.resetAddressing();
       setRunning(false);
     }
   }, [session, descriptor, setRunning, setLastResult]);
