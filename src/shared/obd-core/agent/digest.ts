@@ -46,6 +46,25 @@ export function clampDigest(text: string, max = MAX_DIGEST_CHARS, opts: ClampOpt
   return cut + TRUNCATED;
 }
 
+/** `sections` joined by `separator` within `max` characters. When they do not fit, each section
+ *  gets a fair share of the room (a short section keeps all of its text and leaves the rest to the
+ *  longer ones) and is cut to it with a `… (N more)` line, so one long section never crowds out the
+ *  others (plan 34b history digest; the triage digest's tool sections). */
+export function fitSections(sections: string[], max = MAX_DIGEST_CHARS, separator = '\n'): string {
+  const joined = sections.join(separator);
+  if (joined.length <= max) return joined;
+  let room = Math.max(0, max - (sections.length - 1) * separator.length);
+  const budget: number[] = [];
+  const shortestFirst = sections
+    .map((_, i) => i)
+    .sort((a, b) => sections[a].length - sections[b].length);
+  shortestFirst.forEach((i, k) => {
+    budget[i] = Math.min(sections[i].length, Math.floor(room / (sections.length - k)));
+    room -= budget[i];
+  });
+  return sections.map((s, i) => clampDigest(s, budget[i], { countMore: true })).join(separator);
+}
+
 /** A number with at most one decimal (`98`, `100.3`). */
 export function oneDecimal(n: number): string {
   return String(Math.round(n * 10) / 10);

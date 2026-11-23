@@ -8,7 +8,8 @@ import { golfPlus2009 } from '../../vehicles/golf-plus-2009-20tdi';
 import { createReadOnlySession } from './readOnlySession';
 import { CORE_AGENT_CONTRIBUTION } from './coreTools';
 import { buildAgentRegistry } from './registry';
-import { TRIAGE_DIGEST_CHARS, runTriage } from './triage';
+import { TRIAGE_DIGEST_CHARS, TRIAGE_SNAPSHOT_CHARS, runTriage, triageDigest } from './triage';
+import { MAX_DIGEST_CHARS } from './digest';
 import type { AgentTool, SkillFinding, ToolContext, ToolResult } from './types';
 
 /** A Golf simulator behind the read-only facade, with a fake clock that `sleep` advances. */
@@ -184,7 +185,29 @@ it('records a failing triage tool and goes on, but a closed link ends the triage
 it('clamps the triage digest', async () => {
   const big = fakeTool('big', { triage: { args: {} }, digest: 'z\n'.repeat(3000) });
   const t = await runTriage(ctx, buildAgentRegistry([{ tools: [big] }]), () => []);
-  expect(TRIAGE_DIGEST_CHARS).toBe(2400);
-  expect(t.step.digest.length).toBeLessThanOrEqual(2400);
-  expect(t.step.digest).toMatch(/… \(truncated\)$/);
+  expect(TRIAGE_DIGEST_CHARS).toBe(4800);
+  expect(t.step.digest.length).toBeLessThanOrEqual(TRIAGE_DIGEST_CHARS);
+  expect(t.step.digest).toMatch(/… \(\d+ more\)$/);
+});
+
+it('gives each part of the triage digest its own budget: the last tool section is not lost', () => {
+  const snapshot = Array.from({ length: 200 }, (_, i) => `snapshot line ${i}`).join('\n');
+  const sectionOf = (name: string, last: string) =>
+    `## ${name}\n${Array.from({ length: 100 }, (_, i) => `${name} line ${i}`).join('\n')}\n${last}`;
+  const d = triageDigest(snapshot, [
+    sectionOf('first', 'first end'),
+    sectionOf('second', 'second end'),
+    sectionOf('third', 'third end'),
+  ]);
+  expect(d.length).toBeLessThanOrEqual(TRIAGE_DIGEST_CHARS);
+  expect(d.indexOf('\n## first')).toBeLessThanOrEqual(TRIAGE_SNAPSHOT_CHARS + 2);
+  for (const name of ['first', 'second', 'third']) expect(d).toContain(`## ${name}\n`);
+  expect(d).toMatch(/second line \d+\n… \(\d+ more\)\n\n## third/);
+});
+
+it('two triage tool sections at their full 1600-character cap fit whole', () => {
+  const full = (name: string) => `## ${name}\n${'x'.repeat(MAX_DIGEST_CHARS - 10)}\nEND ${name}`;
+  const d = triageDigest('s'.repeat(5000), [full('scan_modules'), full('read_history')]);
+  expect(d).toContain('END scan_modules');
+  expect(d).toContain('END read_history');
 });

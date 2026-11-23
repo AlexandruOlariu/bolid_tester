@@ -220,9 +220,12 @@ start (symptom | "check everything" | focus code)
 
 - **Triage** (`triage.ts`, `runTriage`): DTCs per the profile's modes, readiness, the freeze frame
   when codes are stored, one poll of the supported key PIDs (`KEY_DIAGNOSTIC_PIDS`), the adapter
-  voltage and the curated guides for the read codes, plus every tool that asks to run at triage. Its
-  digest is capped at `TRIAGE_DIGEST_CHARS` = 2400; a triage tool that fails is recorded as
-  `Read failed: <message>` and triage goes on.
+  voltage and the curated guides for the read codes, plus every tool that asks to run at triage. Each
+  part of its digest has its own budget (`triageDigest`): the snapshot summary is clamped to
+  `TRIAGE_SNAPSHOT_CHARS` = 1400, and the triage tool sections (`scan_modules`, `read_history`) share
+  the rest of `TRIAGE_DIGEST_CHARS` = 4800 with a fair share each (`fitSections`, `digest.ts`), so the
+  last section is never the one cut; two tool sections at their full 1600 characters fit whole. A
+  triage tool that fails is recorded as `Read failed: <message>` and triage goes on.
 - **One JSON action per turn** (`actionSchema.ts`, schema `bolid_agent_action`): a **flat** object
   (`tool` as an enum string, `args`, `why`, or `final`), not an `anyOf` union, because servers
   differ in union support. The first balanced JSON object in the reply is used; a reply with both

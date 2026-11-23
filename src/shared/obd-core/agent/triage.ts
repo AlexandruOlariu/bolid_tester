@@ -11,16 +11,30 @@ import {
 } from '../analysis/aiDiagnosis';
 import { Elm327ClosedError } from '../elm327/Elm327Client';
 import { readProfileDtcs } from './coreTools';
-import { clampDigest } from './digest';
+import { MAX_DIGEST_CHARS, clampDigest, fitSections } from './digest';
 import type { AgentRegistry } from './registry';
 import type { AgentStep, AvailabilityContext, SkillFinding, ToolContext } from './types';
 
-/** The triage digest's length cap (a bit above a tool digest: it is the run's base evidence). */
-export const TRIAGE_DIGEST_CHARS = 2400;
+/** The snapshot summary's own cap inside the triage digest. */
+export const TRIAGE_SNAPSHOT_CHARS = 1400;
+/** The triage digest's length cap: the snapshot summary plus room for two triage tool sections at
+ *  their full cap (`scan_modules`, `read_history`), so neither is cut. Each part has its own budget:
+ *  the snapshot is clamped to {@link TRIAGE_SNAPSHOT_CHARS}, and the tool sections share the rest
+ *  fairly (`fitSections`), so the last section is never the one that is lost. */
+export const TRIAGE_DIGEST_CHARS = TRIAGE_SNAPSHOT_CHARS + 2 * (MAX_DIGEST_CHARS + 100);
 
 export interface TriageResult {
   snapshot: DiagnosticSnapshot;
   step: AgentStep;
+}
+
+/** The triage digest: the snapshot summary within its own cap, then the tool sections fitted into
+ *  the room left with a fair share each. */
+export function triageDigest(snapshotSummary: string, sections: string[]): string {
+  const head = clampDigest(snapshotSummary, TRIAGE_SNAPSHOT_CHARS);
+  if (sections.length === 0) return head;
+  const room = TRIAGE_DIGEST_CHARS - head.length - 2;
+  return `${head}\n\n${fitSections(sections, room, '\n\n')}`;
 }
 
 /** Read the car once and run the triage tools; `knownChecks` gives the curated guides for the read
@@ -86,10 +100,7 @@ export async function runTriage(
       id: 1,
       kind: 'triage',
       why: '',
-      digest: clampDigest(
-        [summarizeSnapshot(snapshot), ...sections].join('\n\n'),
-        TRIAGE_DIGEST_CHARS,
-      ),
+      digest: triageDigest(summarizeSnapshot(snapshot), sections),
       summary: `Triage: ${codes.length} codes, battery ${volts} V`,
       label: { key: 'aiDiagnose:agent.step.triage', values: { count: codes.length, volts } },
       status: 'ok',
