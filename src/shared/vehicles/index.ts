@@ -8,9 +8,18 @@ import { generic } from './generic';
 import { golfPlus2009 } from './golf-plus-2009-20tdi';
 import { fiatPunto2008 } from './fiat-punto-2008-12';
 import { passatB55 } from './passat-b55-19tdi';
+import { tiguan2014 } from './tiguan-2014-20tdi';
+import { golf6Tsi } from './golf-6-2010-14tsi';
 import { isUserVehicleId } from './userVehicle';
 
-export const VEHICLE_PROFILES: VehicleProfile[] = [generic, golfPlus2009, fiatPunto2008, passatB55];
+export const VEHICLE_PROFILES: VehicleProfile[] = [
+  generic,
+  golfPlus2009,
+  fiatPunto2008,
+  passatB55,
+  tiguan2014,
+  golf6Tsi,
+];
 
 export const VEHICLE_REGISTRY: Record<string, VehicleProfile> = Object.fromEntries(
   VEHICLE_PROFILES.map((p) => [p.id, p]),

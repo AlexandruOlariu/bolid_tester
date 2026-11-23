@@ -3522,6 +3522,24 @@
     ],
     "type": "doc"
   },
+  "doc:vehicles/golf-6-2010-14tsi": {
+    "path": "docs/vehicles/golf-6-2010-14tsi.md",
+    "summary": "VW Golf 6 2010 \u2014 1.4 TSI CAXA 90 kW / 122 cp (petrol)",
+    "tokens": [
+      "122",
+      "14",
+      "2010",
+      "90",
+      "caxa",
+      "cp",
+      "golf",
+      "petrol",
+      "tsi",
+      "vehicles",
+      "vw"
+    ],
+    "type": "doc"
+  },
   "doc:vehicles/golf-plus-2009-20tdi": {
     "path": "docs/vehicles/golf-plus-2009-20tdi.md",
     "summary": "VW Golf Plus 2009 \u2014 2.0 TDI 81 kW / 109 cp (diesel)",
@@ -3551,6 +3569,24 @@
       "family",
       "passat",
       "tdi",
+      "vehicles",
+      "vw"
+    ],
+    "type": "doc"
+  },
+  "doc:vehicles/tiguan-2014-20tdi": {
+    "path": "docs/vehicles/tiguan-2014-20tdi.md",
+    "summary": "VW Tiguan 2014 \u2014 2.0 TDI CFFD 81 kW / 110 cp (diesel)",
+    "tokens": [
+      "110",
+      "20",
+      "2014",
+      "81",
+      "cffd",
+      "cp",
+      "diesel",
+      "tdi",
+      "tiguan",
       "vehicles",
       "vw"
     ],
@@ -5338,6 +5374,17 @@
     ],
     "type": "vehicle"
   },
+  "vehicle:golf-6-2010-14tsi": {
+    "path": "src/shared/vehicles/golf-6-2010-14tsi.ts",
+    "summary": "VW Golf 6 2010 1.4 TSI 90 kW (CAXA) \u2014 thin profile from registration data.",
+    "tokens": [
+      "14",
+      "2010",
+      "golf",
+      "tsi"
+    ],
+    "type": "vehicle"
+  },
   "vehicle:golf-plus-2009-20tdi": {
     "path": "src/shared/vehicles/golf-plus-2009-20tdi.ts",
     "summary": "VW Golf Plus 2009 2.0 TDI 81 kW \u2014 modern CAN diesel.",
@@ -5391,6 +5438,17 @@
     ],
     "tokens": [
       "resolve"
+    ],
+    "type": "vehicle"
+  },
+  "vehicle:tiguan-2014-20tdi": {
+    "path": "src/shared/vehicles/tiguan-2014-20tdi.ts",
+    "summary": "VW Tiguan 2014 2.0 TDI 81 kW (CFFD) \u2014 thin profile from registration data.",
+    "tokens": [
+      "20",
+      "2014",
+      "tdi",
+      "tiguan"
     ],
     "type": "vehicle"
   },

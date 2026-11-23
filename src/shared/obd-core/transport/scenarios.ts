@@ -11,6 +11,8 @@ const SAMPLE_VINS: Record<string, string> = {
   'golf-plus-2009-20tdi': 'WVWZZZ1KZ9W903398',
   'fiat-punto-2008-12': 'ZFA19900000438592', // real 199-body (Grande Punto) VIN
   'passat-b55-19tdi': 'WVWZZZ3BZ4E342958',
+  'tiguan-2014-20tdi': 'WVGZZZ5NZEW000001', // synthetic serial
+  'golf-6-2010-14tsi': 'WVWZZZ1KZAW000001', // synthetic serial
 };
 
 /** Secondary ECUs that answer FUNCTIONAL 0100 / Mode 03 on their OWN line, modelling a real
@@ -34,6 +36,8 @@ const SAMPLE_CALIDS: Record<string, string> = {
   'golf-plus-2009-20tdi': '03L906022LM',
   'fiat-punto-2008-12': '55230047AA',
   'passat-b55-19tdi': '038906019KC 4896',
+  'tiguan-2014-20tdi': 'SIM-CFFD-01', // synthetic: the real ECU part number is unknown
+  'golf-6-2010-14tsi': 'SIM-CAXA-01', // synthetic: the real ECU part number is unknown
 };
 
 /** Simulator-only KWP login placeholders (plan 22), per profile: ATSH header -> the code the

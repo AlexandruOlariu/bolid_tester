@@ -20,10 +20,10 @@ const GOLF = 'VW Golf Plus 2009 2.0 TDI 81 kW';
 const SUGGESTION = /tap to switch to that profile/;
 
 describe('VehicleSelectScreen', () => {
-  it('lists the four built-in profiles', () => {
+  it('lists the six built-in profiles', () => {
     renderWithProviders(<VehicleSelectScreen />);
 
-    expect(VEHICLE_PROFILES).toHaveLength(4);
+    expect(VEHICLE_PROFILES).toHaveLength(6);
     for (const p of VEHICLE_PROFILES) expect(screen.getByText(p.name)).toBeTruthy();
     // No session → no VIN → no suggestion card.
     expect(screen.queryByText(SUGGESTION)).toBeNull();

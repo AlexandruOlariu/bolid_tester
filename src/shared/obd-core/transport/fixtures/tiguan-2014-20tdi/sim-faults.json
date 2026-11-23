@@ -1,0 +1,59 @@
+{
+  "name": "sim-faults",
+  "pairs": {
+    "ATI": "ELM327 v2.2",
+    "ATZ": "ELM327 v2.2",
+    "ATE0": "OK",
+    "ATL0": "OK",
+    "ATS0": "OK",
+    "ATH0": "OK",
+    "ATAT1": "OK",
+    "ATSP0": "OK",
+    "0100": "4100183B8003",
+    "ATDPN": "6",
+    "ATRV": "12.3V",
+    "0120": "41208000A001",
+    "0140": "414044000014",
+    "0902": "014\r0:490201575647\r1:5A5A5A354E5A45\r2:57303030303031",
+    "0904": "00E\r0:49040153494D\r1:2D434646442D30\r2:31",
+    "0101": "4101820F2100",
+    "03": "430201130562",
+    "07": "4700",
+    "020200": "4202000113",
+    "020C00": "420C000CD0",
+    "020500": "4205007D",
+    "020D00": "420D0000",
+    "020400": "42040040",
+    "020B00": "420B0064",
+    "021100": "42110024",
+    "020201": "4202010562",
+    "020C01": "420C010CD0",
+    "020501": "4205017D",
+    "020D01": "420D0100",
+    "020401": "42040140",
+    "020B01": "420B0164",
+    "021101": "42110124",
+    "020202": "NO DATA"
+  },
+  "sequences": {},
+  "meta": {
+    "source": "simulator",
+    "vehicleId": "tiguan-2014-20tdi",
+    "flow": "faults",
+    "adapter": "ELM327 v2.2",
+    "protocol": "ISO_15765_4_CAN_11_500",
+    "notes": "Recorded from the simulator (MockTransport + buildScenario) by scripts/record-sim-fixtures.ts. Exercises the fixture pipeline; not a validation on the car."
+  },
+  "expect": {
+    "protocol": "ISO_15765_4_CAN_11_500",
+    "vin": "WVGZZZ5NZEW000001",
+    "supportedPidCount": 16,
+    "storedDtcs": [
+      "P0113",
+      "P0562"
+    ],
+    "pendingDtcs": [],
+    "milOn": true,
+    "freezeFrameCount": 2
+  }
+}

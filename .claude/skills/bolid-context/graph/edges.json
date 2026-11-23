@@ -3135,6 +3135,11 @@
     "documents"
   ],
   [
+    "doc:vehicles/golf-6-2010-14tsi",
+    "vehicle:golf-6-2010-14tsi",
+    "documents"
+  ],
+  [
     "doc:vehicles/golf-plus-2009-20tdi",
     "vehicle:golf-plus-2009-20tdi",
     "documents"
@@ -3142,6 +3147,11 @@
   [
     "doc:vehicles/passat-b55-19tdi",
     "vehicle:passat-b55-19tdi",
+    "documents"
+  ],
+  [
+    "doc:vehicles/tiguan-2014-20tdi",
+    "vehicle:tiguan-2014-20tdi",
     "documents"
   ],
   [
@@ -7445,9 +7455,24 @@
     "imports"
   ],
   [
-    "vehicle:golf-plus-2009-20tdi",
+    "vehicle:golf-6-2010-14tsi",
+    "doc:plans/14-mode22-charts-measuring-groups",
+    "named"
+  ],
+  [
+    "vehicle:golf-6-2010-14tsi",
     "doc:plans/35-tiguan-golf6-profiles",
     "named"
+  ],
+  [
+    "vehicle:golf-6-2010-14tsi",
+    "doc:vehicles/golf-6-2010-14tsi",
+    "named"
+  ],
+  [
+    "vehicle:golf-6-2010-14tsi",
+    "vehicle:types",
+    "imports"
   ],
   [
     "vehicle:golf-plus-2009-20tdi",
@@ -7557,6 +7582,21 @@
   [
     "vehicle:resolve",
     "vehicle:userVehicle",
+    "imports"
+  ],
+  [
+    "vehicle:tiguan-2014-20tdi",
+    "doc:plans/35-tiguan-golf6-profiles",
+    "named"
+  ],
+  [
+    "vehicle:tiguan-2014-20tdi",
+    "doc:vehicles/tiguan-2014-20tdi",
+    "named"
+  ],
+  [
+    "vehicle:tiguan-2014-20tdi",
+    "vehicle:types",
     "imports"
   ],
   [
