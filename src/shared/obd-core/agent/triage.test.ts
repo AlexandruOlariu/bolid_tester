@@ -211,3 +211,20 @@ it('two triage tool sections at their full 1600-character cap fit whole', () => 
   expect(d).toContain('END scan_modules');
   expect(d).toContain('END read_history');
 });
+
+it('short tool sections leave their room to the snapshot, so its known checks are not cut', () => {
+  const snapshot = `${'snapshot line\n'.repeat(120)}Known checks for this car:\n- P0401: EGR flow`;
+  expect(snapshot.length).toBeGreaterThan(TRIAGE_SNAPSHOT_CHARS);
+  const d = triageDigest(snapshot, [
+    '## scan_modules\n01 Engine: 2 codes',
+    '## read_history\nNone recorded.',
+  ]);
+  expect(d).toContain('Known checks for this car:\n- P0401: EGR flow');
+  expect(d).toContain('## read_history\nNone recorded.');
+  expect(d.length).toBeLessThanOrEqual(TRIAGE_DIGEST_CHARS);
+});
+
+it('with no tool sections the whole digest budget goes to the snapshot', () => {
+  const snapshot = `${'x'.repeat(3000)}\nKnown checks for this car:`;
+  expect(triageDigest(snapshot, [])).toContain('Known checks for this car:');
+});

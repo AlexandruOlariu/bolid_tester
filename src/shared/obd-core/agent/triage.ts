@@ -28,10 +28,14 @@ export interface TriageResult {
   step: AgentStep;
 }
 
-/** The triage digest: the snapshot summary within its own cap, then the tool sections fitted into
- *  the room left with a fair share each. */
+/** The triage digest: the snapshot summary, then the tool sections fitted into the room left with a
+ *  fair share each. The snapshot always keeps at least {@link TRIAGE_SNAPSHOT_CHARS} and also gets
+ *  whatever the tool sections leave unused, so short sections never cost the snapshot its tail (the
+ *  curated "Known checks for this car" guides). */
 export function triageDigest(snapshotSummary: string, sections: string[]): string {
-  const head = clampDigest(snapshotSummary, TRIAGE_SNAPSHOT_CHARS);
+  const sectionsLength = sections.length ? sections.join('\n\n').length + 2 : 0;
+  const snapshotRoom = Math.max(TRIAGE_SNAPSHOT_CHARS, TRIAGE_DIGEST_CHARS - sectionsLength);
+  const head = clampDigest(snapshotSummary, snapshotRoom);
   if (sections.length === 0) return head;
   const room = TRIAGE_DIGEST_CHARS - head.length - 2;
   return `${head}\n\n${fitSections(sections, room, '\n\n')}`;
