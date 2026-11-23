@@ -3,8 +3,10 @@
  *  digest back, until the model sends a cited final report or the budget ends. Budget: 12 steps
  *  (triage included), 4 min of model + adapter time, 2 min of adapter time, 3 invalid replies in a
  *  row. Time waiting for the driver counts toward none of them. Every ending other than a valid
- *  final falls back to the on-device rule report over what was gathered. Pure: the model, the
- *  driver prompt and the clock are injected. See docs/features/ai-diagnose.md. */
+ *  final falls back to the on-device rule report over what was gathered. Without AI (plan 34c) the
+ *  run sweeps every available skill with a procedure in `NO_AI_SKILL_ORDER` (driver steps
+ *  included, same Stop / adapter / disconnect rules, no step cap), then ends with the rule report.
+ *  Pure: the model, the driver prompt and the clock are injected. See docs/features/ai-diagnose.md. */
 
 import type { AiReport, DiagnosticSnapshot, VehicleContext } from '../analysis/aiDiagnosis';
 import { Elm327ClosedError } from '../elm327/Elm327Client';
@@ -32,6 +34,19 @@ import type {
   ToolResult,
 } from './types';
 
+/** Without AI: the skills a run sweeps after triage, in this order, when available for the car and
+ *  backed by a procedure. */
+export const NO_AI_SKILL_ORDER = [
+  'used_car_check',
+  'fuel_trims',
+  'boost',
+  'misfire',
+  'cooling',
+  'dpf',
+  'battery_charging',
+  'maintenance',
+] as const;
+
 export const AGENT_BUDGET = {
   maxSteps: 12,
   wallMs: 240_000,
@@ -53,7 +68,8 @@ export interface AgentDeps {
   registry: AgentRegistry;
   ctx: Omit<ToolContext, 'askDriver'>;
   triage: TriageResult;
-  /** null when AI is off or not configured: the run ends at once with the rule report. */
+  /** null when AI is off or not configured: the run sweeps `NO_AI_SKILL_ORDER`, then ends with the
+   *  rule report. */
   chat: AgentChat | null;
   /** Shows the driver prompt; the loop's gate decides whether it may open. */
   askDriver: (id: DriverInstructionId) => Promise<DriverReply>;
@@ -185,10 +201,7 @@ export async function runAgent(req: AgentRunRequest, deps: AgentDeps): Promise<A
     ...(error !== undefined ? { error } : {}),
   });
 
-  const chat = deps.chat;
-  if (chat === null) return outcome('no_ai', 0);
-
-  // What this car offers, the schema and the system prompt: once per run.
+  // What this car offers: once per run.
   const availability: AvailabilityContext = {
     profile: ctx.profile,
     protocol: ctx.session.currentProtocol,
@@ -219,14 +232,6 @@ export async function runAgent(req: AgentRunRequest, deps: AgentDeps): Promise<A
       },
     ],
   ]);
-  const schema = buildActionSchema([...tools.map((t) => t.name), ...BUILTIN_TOOLS]);
-  const system = buildAgentSystemPrompt({
-    language: deps.language,
-    tools,
-    skills,
-    maxSteps: AGENT_BUDGET.maxSteps,
-  });
-  const vehicle = vehicleLine(ctx.vehicle);
 
   const startedAt = ctx.now();
   let driverMs = 0;
@@ -379,6 +384,11 @@ export async function runAgent(req: AgentRunRequest, deps: AgentDeps): Promise<A
     };
   };
 
+  const skillLabel = (name: string): AgentStep['label'] => ({
+    key: 'aiDiagnose:agent.tool.run_skill',
+    values: { name },
+  });
+
   const notEnoughTime = (costMs: number, action: ToolAction): AgentStep | null =>
     costMs > AGENT_BUDGET.adapterMs - adapterMs
       ? invalidStep(`Not enough adapter time left for ${action.tool}; finish now.`, action)
@@ -411,11 +421,8 @@ export async function runAgent(req: AgentRunRequest, deps: AgentDeps): Promise<A
           );
         return (
           notEnoughTime(skill.maxAdapterMs ?? procedure.costMs, action) ??
-          execute(
-            'skill',
-            action,
-            { key: 'aiDiagnose:agent.tool.run_skill', values: { name: skill.name } },
-            async () => fromToolResult(await procedure.run(procCtx)),
+          execute('skill', action, skillLabel(skill.name), async () =>
+            fromToolResult(await procedure.run(procCtx)),
           )
         );
       }
@@ -442,6 +449,28 @@ export async function runAgent(req: AgentRunRequest, deps: AgentDeps): Promise<A
     }
   };
 
+  /** Without AI: each skill of `NO_AI_SKILL_ORDER` the car offers that has a procedure, one step
+   *  each. Stop and the adapter cap end the sweep early; a skill whose declared cost no longer fits
+   *  the adapter time left ends it as `adapter`. No model steps are used. */
+  const sweep = async (): Promise<AgentOutcome> => {
+    for (const name of NO_AI_SKILL_ORDER) {
+      if (signal.aborted) return outcome('stopped', 0);
+      if (adapterMs >= AGENT_BUDGET.adapterMs) return outcome('adapter', 0);
+      const skill = skillByName.get(name);
+      const procedure = skill?.procedure ? registry.procedures.get(skill.procedure) : undefined;
+      if (!skill || !procedure) continue;
+      if ((skill.maxAdapterMs ?? procedure.costMs) > AGENT_BUDGET.adapterMs - adapterMs)
+        return outcome('adapter', 0);
+      trail.push(
+        await execute('skill', { tool: name, args: {}, why: '' }, skillLabel(name), async () =>
+          fromToolResult(await procedure.run(procCtx)),
+        ),
+      );
+      emit();
+    }
+    return outcome(signal.aborted ? 'stopped' : 'no_ai', 0);
+  };
+
   const budgetEnd = (): AgentEnd | null => {
     if (signal.aborted) return 'stopped';
     if (trail.length >= AGENT_BUDGET.maxSteps) return 'steps';
@@ -450,7 +479,27 @@ export async function runAgent(req: AgentRunRequest, deps: AgentDeps): Promise<A
     return null;
   };
 
-  // ---- the loop ----
+  const chat = deps.chat;
+  if (chat === null) {
+    emit();
+    try {
+      return await sweep();
+    } catch (e) {
+      if (e instanceof Elm327ClosedError) return outcome('disconnected', 0);
+      throw e;
+    }
+  }
+
+  // ---- the loop (the schema and the system prompt: once per run) ----
+
+  const schema = buildActionSchema([...tools.map((t) => t.name), ...BUILTIN_TOOLS]);
+  const system = buildAgentSystemPrompt({
+    language: deps.language,
+    tools,
+    skills,
+    maxSteps: AGENT_BUDGET.maxSteps,
+  });
+  const vehicle = vehicleLine(ctx.vehicle);
 
   emit();
   try {

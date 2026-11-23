@@ -1,13 +1,24 @@
 import type { AiChatMessage, DiagnosticSnapshot } from '../analysis/aiDiagnosis';
 import { Elm327ClosedError } from '../elm327/Elm327Client';
-import type { LiveValue } from '../session/DiagnosticSession';
+import { DiagnosticSession, type LiveValue } from '../session/DiagnosticSession';
+import { MockTransport } from '../transport/MockTransport';
+import { buildScenario } from '../transport/scenarios';
 import { golfPlus2009 } from '../../vehicles/golf-plus-2009-20tdi';
-import { AGENT_BUDGET, runAgent, type AgentDeps, type AgentProgress } from './loop';
-import type { ReadOnlySession } from './readOnlySession';
+import { CORE_AGENT_CONTRIBUTION } from './coreTools';
+import {
+  AGENT_BUDGET,
+  NO_AI_SKILL_ORDER,
+  runAgent,
+  type AgentDeps,
+  type AgentProgress,
+} from './loop';
+import { PLAYBOOK_CONTRIBUTION } from './playbooks';
+import { createReadOnlySession, type ReadOnlySession } from './readOnlySession';
 import { buildAgentRegistry, type AgentRegistry } from './registry';
 import { SKILL_FORMAT, type SkillFile } from './skillFile';
 import type { TriageResult } from './triage';
 import type {
+  AgentContribution,
   AgentRunRequest,
   AgentTool,
   DriverReply,
@@ -152,7 +163,7 @@ const TRIAGE: TriageResult = {
   },
 };
 
-type DriverMode = 'done' | 'never' | 'done-after-3-polls' | 'done-after-170s';
+type DriverMode = 'done' | 'cant' | 'never' | 'done-after-3-polls' | 'done-after-170s';
 
 interface DepsOpts {
   signal?: AbortSignal;
@@ -164,6 +175,8 @@ interface DepsOpts {
   speedAfter?: (number | null)[];
   driver?: DriverMode;
   registry?: AgentRegistry;
+  /** A real (simulated) car instead of the speed-only fake. */
+  session?: ReadOnlySession;
 }
 
 type TestDeps = AgentDeps & { sentMessages: AiChatMessage[][]; progress: AgentProgress[] };
@@ -179,7 +192,7 @@ function deps(script: Scripted[], opts: DepsOpts = {}): TestDeps {
     return opts.speed === undefined ? 0 : opts.speed;
   };
 
-  const session = {
+  const fakeSession = {
     currentProtocol: 'ISO_15765_4_CAN_11_500',
     supportedPids: ['010C', '010D'],
     canMonitor: true,
@@ -202,7 +215,7 @@ function deps(script: Scripted[], opts: DepsOpts = {}): TestDeps {
 
   const signal = opts.signal ?? new AbortController().signal;
   const ctx: Omit<ToolContext, 'askDriver'> = {
-    session,
+    session: opts.session ?? fakeSession,
     profile: golfPlus2009,
     guideProfileId: golfPlus2009.id,
     vehicle: { label: golfPlus2009.name, engine: '2.0 TDI', fuel: 'diesel' },
@@ -235,6 +248,7 @@ function deps(script: Scripted[], opts: DepsOpts = {}): TestDeps {
     },
     askDriver: (): Promise<DriverReply> => {
       if (mode === 'done') return Promise.resolve({ kind: 'done' });
+      if (mode === 'cant') return Promise.resolve({ kind: 'cant' });
       if (mode === 'never') return new Promise<DriverReply>(() => undefined);
       return new Promise<DriverReply>((resolve) => {
         waiting = { resolve, askedAt: clock, polls: 0 };
@@ -322,11 +336,12 @@ it('a model error ends ai_error with the rule report', async () =>
     error: '503',
     report: { source: 'local' },
   }));
-it('no AI → rule report from triage', async () =>
-  expect(await runAgent(sym('x'), { ...deps([]), chat: null })).toMatchObject({
-    end: 'no_ai',
-    stepsUsed: 0,
-  }));
+it('no AI → rule report from triage', async () => {
+  const core = buildAgentRegistry([CORE_AGENT_CONTRIBUTION]);
+  const o = await runAgent(sym('x'), { ...deps([], { registry: core }), chat: null });
+  expect(o).toMatchObject({ end: 'no_ai', stepsUsed: 0, report: { source: 'local' } });
+  expect(o.trail).toHaveLength(1);
+});
 it('an adapter drop ends disconnected', async () =>
   expect((await runAgent(sym('x'), deps([TOOL_THROWS_CLOSED]))).end).toBe('disconnected'));
 it('ask_driver is refused while moving and when speed is unknown', async () => {
@@ -539,5 +554,182 @@ describe('details', () => {
         },
       },
     });
+  });
+});
+
+// ---- without AI: triage plus every available skill with a procedure, then the rule report ----
+
+/** Stand-ins for the 34b feature contributions the sweep reaches (obd-core never imports a
+ *  feature): the real skills' names, `requires` and procedure ids, with canned results. */
+function featureStandIn(
+  name: string,
+  tool: string,
+  over: Partial<SkillFile>,
+  result: ToolResult,
+): AgentContribution {
+  return {
+    tools: [fakeTool(tool, 1000, async () => result)],
+    skills: [skill(name, { tools: [tool], procedure: name, ...over })],
+    procedures: [{ id: name, costMs: 1000, run: async (ctx) => ctx.callTool(tool) }],
+  };
+}
+
+const FEATURE_STAND_INS: AgentContribution[] = [
+  featureStandIn('used_car_check', 'read_inspection', {}, ok('Verdict: pass (score 92/100)')),
+  featureStandIn(
+    'dpf',
+    'read_dpf',
+    { requires: { fuel: ['diesel'], protocol: 'can', profile: ['extendedPids'] } },
+    ok('Soot 12 g'),
+  ),
+  featureStandIn(
+    'maintenance',
+    'read_maintenance',
+    {},
+    {
+      ...ok('Oil change overdue by 1200 km'),
+      findings: [{ key: 'aiDiagnose:agent.finding.maintenance.overdue', severity: 'warn' }],
+    },
+  ),
+  // Has a procedure but is not in the no-AI order: never swept.
+  featureStandIn(
+    'module_scan',
+    'scan_modules',
+    { requires: { protocol: 'can', profile: ['modules'] } },
+    ok('scan'),
+  ),
+];
+
+const golfFullRegistry = buildAgentRegistry([
+  CORE_AGENT_CONTRIBUTION,
+  ...FEATURE_STAND_INS,
+  PLAYBOOK_CONTRIBUTION,
+]);
+
+/** The simulator Golf behind the read-only facade. */
+async function golfSession(): Promise<ReadOnlySession> {
+  const real = new DiagnosticSession(new MockTransport(buildScenario(golfPlus2009.id)), {
+    commandTimeoutMs: 1000,
+    firstCommandTimeoutMs: 1000,
+  });
+  await real.connect();
+  return createReadOnlySession(real);
+}
+
+describe('without AI', () => {
+  it('exposes the fixed sweep order', () =>
+    expect(NO_AI_SKILL_ORDER).toEqual([
+      'used_car_check',
+      'fuel_trims',
+      'boost',
+      'misfire',
+      'cooling',
+      'dpf',
+      'battery_charging',
+      'maintenance',
+    ]));
+
+  it('without AI it runs the available skills in the fixed order', async () => {
+    const d = deps([], {
+      registry: golfFullRegistry,
+      session: await golfSession(),
+      driver: 'cant',
+    });
+    const o = await runAgent({ mode: 'everything' }, { ...d, chat: null });
+    expect(o.end).toBe('no_ai');
+    expect(o.stepsUsed).toBe(0);
+    expect(o.trail.filter((s) => s.kind === 'skill').map((s) => s.tool)).toEqual([
+      'used_car_check',
+      'boost',
+      'cooling',
+      'dpf',
+      'battery_charging',
+      'maintenance',
+    ]);
+    expect(o.trail.map((s) => s.id)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(o.trail[1]).toMatchObject({
+      why: '',
+      args: {},
+      label: { key: 'aiDiagnose:agent.tool.run_skill', values: { name: 'used_car_check' } },
+    });
+    expect(o.report.source).toBe('local');
+    expect(o.report.findings.some((f) => (f.steps ?? [])[0] > 1)).toBe(true);
+    // the swept skills' driver steps went through the same gate (rev hold, restart, load)
+    expect(d.progress.some((p) => p.phase === 'driver' && p.driver === 'hold_2500_rpm')).toBe(true);
+    expect(d.sentMessages).toHaveLength(0);
+  });
+
+  it('a symptom without AI sweeps the same way', async () => {
+    const d = deps([], {
+      registry: golfFullRegistry,
+      session: await golfSession(),
+      driver: 'cant',
+    });
+    const o = await runAgent(sym('pulls weak'), { ...d, chat: null });
+    expect(o.end).toBe('no_ai');
+    expect(o.trail.filter((s) => s.kind === 'skill')).toHaveLength(6);
+  });
+
+  it('Stop during the no-AI sweep keeps what was gathered', async () => {
+    const ac = new AbortController();
+    const d = deps([], {
+      registry: golfFullRegistry,
+      session: await golfSession(),
+      driver: 'cant',
+      signal: ac.signal,
+      afterStep: (n) => n === 3 && ac.abort(),
+    });
+    const o = await runAgent({ mode: 'everything' }, { ...d, chat: null });
+    expect(o.end).toBe('stopped');
+    expect(o.trail).toHaveLength(3);
+    expect(o.trail.map((s) => s.tool)).toEqual([undefined, 'used_car_check', 'boost']);
+    expect(o.report.source).toBe('local');
+  });
+
+  it('an adapter drop during the sweep ends disconnected', async () => {
+    const reg = buildAgentRegistry([
+      CORE_AGENT_CONTRIBUTION,
+      {
+        tools: TOOLS,
+        skills: [skill('maintenance', { tools: ['drop'], procedure: 'maintenance' })],
+        procedures: [{ id: 'maintenance', costMs: 1000, run: (ctx) => ctx.callTool('drop') }],
+      },
+    ]);
+    const o = await runAgent(
+      { mode: 'everything' },
+      { ...deps([], { registry: reg }), chat: null },
+    );
+    expect(o.end).toBe('disconnected');
+    expect(o.trail).toHaveLength(1);
+  });
+
+  it('a skill that no longer fits the adapter time ends the sweep (adapter)', async () => {
+    const reg = buildAgentRegistry([
+      CORE_AGENT_CONTRIBUTION,
+      {
+        tools: TOOLS,
+        skills: [
+          skill('used_car_check', { procedure: 'used_car_check' }),
+          skill('maintenance', { procedure: 'maintenance' }),
+        ],
+        procedures: [
+          {
+            id: 'used_car_check',
+            costMs: 100_000,
+            run: async (ctx) => {
+              await ctx.sleep(100_000);
+              return ok('uc ok');
+            },
+          },
+          { id: 'maintenance', costMs: 40_000, run: async () => ok('m ok') },
+        ],
+      },
+    ]);
+    const o = await runAgent(
+      { mode: 'everything' },
+      { ...deps([], { registry: reg }), chat: null },
+    );
+    expect(o.end).toBe('adapter');
+    expect(o.trail.map((s) => s.tool)).toEqual([undefined, 'used_car_check']);
   });
 });

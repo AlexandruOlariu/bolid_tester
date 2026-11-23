@@ -203,6 +203,21 @@ describe('AiDiagnoseScreen with the on-device report', () => {
     // The local finding for the code still cites the Golf guide.
     expect(screen.getByText(/Known check for this car: EGR flow\/position fault/)).toBeTruthy();
   });
+
+  it('a symptom without AI checks everything and says why', async () => {
+    useSettingsStore.setState((s) => ({ ai: { ...s.ai, enabled: false } }));
+    await connectSimulator();
+    // core only: the sweep has nothing to run, so no driver prompt blocks the test
+    renderWithProviders(<AiDiagnoseScreen />);
+    fireEvent.changeText(screen.getByPlaceholderText(/pulls weak/), 'pulls weak');
+    await act(async () => {
+      fireEvent.press(screen.getByText('Investigate'));
+    });
+    expect(
+      await screen.findByText(/Understanding a described symptom needs an AI provider/),
+    ).toBeTruthy();
+    expect(screen.getByText('On-device rule-based analysis')).toBeTruthy();
+  });
 });
 
 describe('AiDiagnoseScreen agent run with mock://ai', () => {

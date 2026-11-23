@@ -54,6 +54,7 @@
   "agent": {
     "end": {
       "no_ai": "{{problem}} Showing an on-device rule-based report instead.",
+      "no_ai_symptom": "Understanding a described symptom needs an AI provider, so everything available was checked instead. {{problem}}",
       "steps": "The investigation used all 12 steps. This report uses the on-device rules over everything gathered so far.",
       "time": "The investigation reached its 4-minute limit. This report uses the on-device rules over everything gathered so far.",
       "adapter": "The investigation used its 2 minutes of adapter time. This report uses the on-device rules over everything gathered so far.",

@@ -139,10 +139,13 @@ export function startAgentRun(
             model: ai.model,
           },
         });
+      // A typed symptom without AI was swept like Check everything: say why.
+      const endKey =
+        outcome.end === 'no_ai' && req.mode === 'symptom' ? 'no_ai_symptom' : outcome.end;
       const notice =
         outcome.end === 'final'
           ? null
-          : translate(`aiDiagnose:agent.end.${outcome.end}`, {
+          : translate(`aiDiagnose:agent.end.${endKey}`, {
               error: outcome.error ?? '',
               problem: problem ?? '',
             });

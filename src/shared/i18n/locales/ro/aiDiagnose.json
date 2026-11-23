@@ -54,6 +54,7 @@
   "agent": {
     "end": {
       "no_ai": "{{problem}} Se afișează în schimb un raport pe dispozitiv, bazat pe reguli.",
+      "no_ai_symptom": "Înțelegerea unui simptom descris necesită un furnizor AI, așa că s-a verificat în schimb tot ce este disponibil. {{problem}}",
       "steps": "Investigația a folosit toți cei 12 pași. Acest raport folosește regulile de pe dispozitiv pentru tot ce s-a adunat până acum.",
       "time": "Investigația a atins limita de 4 minute. Acest raport folosește regulile de pe dispozitiv pentru tot ce s-a adunat până acum.",
       "adapter": "Investigația a folosit cele 2 minute de timp al adaptorului. Acest raport folosește regulile de pe dispozitiv pentru tot ce s-a adunat până acum.",
