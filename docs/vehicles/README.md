@@ -2,7 +2,7 @@
 
 Vehicles are **data**, not code paths. The engine is generic; a _profile_ tells the app what to
 expect for a given car (likely protocol, which live PIDs to surface, whether experimental extended
-PIDs apply, and an on-car test checklist). **The three cars here are examples** — add as many as you
+PIDs apply, and an on-car test checklist). **The five cars here are examples** — add as many as you
 like.
 
 ## Profile schema
@@ -185,3 +185,7 @@ on the car" table. Promotion happens in the same pull request that adds the evid
 - [`golf-plus-2009-20tdi.md`](./golf-plus-2009-20tdi.md) — modern CAN diesel (the easy case).
 - [`fiat-punto-2008-12.md`](./fiat-punto-2008-12.md) — Grande Punto petrol on CAN.
 - [`passat-b55-19tdi.md`](./passat-b55-19tdi.md) — older K-line diesel (the hard case).
+- [`tiguan-2014-20tdi.md`](./tiguan-2014-20tdi.md) — Tiguan 2.0 TDI CFFD diesel on CAN; written from
+  registration data, not validated on the car ([plan 35](../plans/35-tiguan-golf6-profiles.md)).
+- [`golf-6-2010-14tsi.md`](./golf-6-2010-14tsi.md) — Golf 6 1.4 TSI CAXA petrol on CAN; written from
+  registration data, not validated on the car ([plan 35](../plans/35-tiguan-golf6-profiles.md)).

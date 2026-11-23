@@ -32,7 +32,7 @@ and the code is written to match. When something changes, the docs change first 
 | [`testing.md`](./testing.md)                                   | Automated tests + per-car on-vehicle manual checklists.                                               |
 | [`accessibility.md`](./accessibility.md)                       | Palette tokens + contrast check, control names / roles / states, touch targets, dynamic type, motion. |
 | [`exchange-formats.md`](./exchange-formats.md)                 | Profile and label-pack JSON files: schemas, validation, import conflicts, versioning, licensing.      |
-| [`vehicles/`](./vehicles/)                                     | The vehicle registry. The three example cars + how to add more.                                       |
+| [`vehicles/`](./vehicles/)                                     | The vehicle registry. The five example cars + how to add more.                                        |
 | [`contributing/`](./contributing/README.md)                    | Community data guides: vehicle profile, label pack, DTC texts, coding tweak (with `CONTRIBUTING.md`). |
 | [`features/`](./features/)                                     | One spec per feature slice.                                                                           |
 | [`implementation-log.md`](./implementation-log.md)             | Running record of what we implemented.                                                                |
@@ -66,3 +66,7 @@ diesel). They are **examples**, not the app's fixed scope — see [`vehicles/`](
 - VW Golf Plus 2009, 2.0 TDI 81 kW / 109 cp, diesel, manual — expected **CAN** (ISO 15765-4).
 - Fiat Grande Punto 1.2 2008, petrol, manual — expected **CAN** (ISO 15765-4).
 - VW Passat B5.5, 1.9 TDI AVB-family, diesel, manual — expected **K-line KWP2000** (ISO 14230-4).
+
+Two more profiles, a **VW Tiguan 2014 2.0 TDI** (CFFD, diesel) and a **VW Golf 6 2010 1.4 TSI**
+(CAXA, petrol), both expected on **CAN**, are written from registration data only and are not yet
+validated on the car ([plan 35](./plans/35-tiguan-golf6-profiles.md)).

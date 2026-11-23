@@ -44,7 +44,8 @@ The store badges link to the listings once they are live
 - 🔄 **v0.2 "Trust the car"** — production first-run (BLE default), BLE robustness, sniffer
   captures, full DTC database, signed releases + OTA, replay fixtures, every slice specced
   ([`docs/roadmap.md`](./docs/roadmap.md)).
-- ⏳ on-car validation against the three example cars; store builds.
+- ⏳ on-car validation against the three example cars, and a first session with the two profiles
+  written from registration data (Tiguan 2.0 TDI, Golf 6 1.4 TSI); store builds.
 
 See [`docs/implementation-log.md`](./docs/implementation-log.md) for details.
 What comes next: [`docs/roadmap.md`](./docs/roadmap.md) (release plan) and
@@ -219,7 +220,9 @@ VCDS label files) and the checks CI runs (`npm run ci`, which includes
 
 ## Example cars
 
-The three cars in [`docs/vehicles/`](./docs/vehicles) are the owner's own, used as reference
+Three of the cars in [`docs/vehicles/`](./docs/vehicles) are the owner's own, used as reference
 profiles: **VW Golf Plus 2009 2.0 TDI** (CAN), **Fiat Grande Punto 1.2 2008** (CAN), and **VW Passat
-B5.5 1.9 TDI** (K-line). They are examples — the app works with any OBD2 car, and new cars are added
-as data (a Markdown profile + a typed object). See [`docs/architecture.md`](./docs/architecture.md).
+B5.5 1.9 TDI** (K-line). Two more profiles, **VW Tiguan 2014 2.0 TDI** and **VW Golf 6 2010 1.4
+TSI** (both CAN), are written from registration data only and are not yet validated on the car. All
+five are examples — the app works with any OBD2 car, and new cars are added as data (a Markdown
+profile + a typed object). See [`docs/architecture.md`](./docs/architecture.md).

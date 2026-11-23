@@ -5,6 +5,49 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## Two more registry cars: Tiguan 2.0 TDI, Golf 6 1.4 TSI (plan 35) (2026-11-23)
+
+- **Why:** the owner has access to two more VAG cars but only their registration data (a
+  registration certificate for the Tiguan, a vehicle-history report for the Golf 6): no VCDS scan,
+  no OBD2 export, no on-car session. The evidence rule allows a profile to carry what those
+  documents prove and nothing more ([plan 35](./plans/35-tiguan-golf6-profiles.md)).
+- **Profiles:** two thin profiles copied from the Punto template. `tiguan-2014-20tdi` (Tiguan 5N,
+  model year 2014, 2.0 TDI CFFD, 81 kW, diesel, VIN prefix `WVGZZZ5N`, 16 expected PIDs: the Golf
+  Plus set) and `golf-6-2010-14tsi` (Golf 6 5K, model year 2010, 1.4 TSI CAXA, 90 kW, petrol, VIN
+  prefix `WVWZZZ1KZA`, 15 expected PIDs, no MAF). Both CAN 11/500 expected, `make: 'vag'`,
+  `dtcModes` 03 / 07 only; no known faults, extended PIDs, boost ranges, modules, coding,
+  adaptations or routines. The PID lists are expected, not observed. Docs in
+  [`vehicles/tiguan-2014-20tdi.md`](./vehicles/tiguan-2014-20tdi.md) and
+  [`vehicles/golf-6-2010-14tsi.md`](./vehicles/golf-6-2010-14tsi.md); front-matter `vin:` is
+  omitted and only VIN prefixes are in the repo.
+- **VIN suggestion:** the Golf 6 and the Golf Plus share the `WVWZZZ1K` prefix, so the Vehicle
+  screen's single suggestion offered the Golf Plus to any 1K car. `suggestProfilesForVin` now
+  records each profile's longest matching pattern; the new `topVinSuggestions` returns every
+  profile tied for the longest match, and the Vehicle screen shows one recognition card per
+  candidate. The Golf Plus `vinPatterns` gained the model-year letter (`WVWZZZ1KZ9`), so the Golf
+  Plus and the Golf 6 sample VINs each get only their own profile; a 1K VIN of another model year
+  gets both cards ([vehicle-select](./features/vehicle-select.md)).
+- **Simulator:** both cars in the registry and the simulator picker, with synthetic VINs (serial
+  `000001`) and visibly synthetic calibration ids (`SIM-CFFD-01`, `SIM-CAXA-01`); `sim-connect`,
+  `sim-faults` and `sim-clear` fixtures recorded for both (the DTC flows seed the fallback codes)
+  ([simulator](./simulator.md#scenarios)).
+- **Tests:** `vinSuggest.test.ts` (Tiguan VIN, each Golf sample VIN alone, a third model year gets
+  both, longest pattern wins in any order, no match); `VehicleSelectScreen.test.tsx` (six built-in
+  profiles; a tied VIN shows one card per candidate). `vehicle-docs-sync`,
+  `sim-fixtures.freshness` and `fixtures.replay` cover the new ids on their own.
+- **Docs:** [vehicles/README](./vehicles/README.md) (five example cars), the root README and the
+  docs index (the three reference cars stay the owner's own; the two new profiles are marked as
+  written from registration data), [settings](./features/settings.md) (simulator picker), the
+  roadmap row, the plans index; the context graph rebuilt.
+- **Open (on-car, per car, by [testing.md → Recording results](./testing.md#recording-results)):**
+  connect, export the `connect` and `faults` fixtures, fill `validatedOn` / `observedProtocol` and
+  the "Validated on the car" table (a car fixture carries the VIN: for a car that is not the
+  owner's, get that owner's agreement before committing it); replace `supportedPids` and
+  `supportedPidCount` with the observed set and add `0A` to `dtcModes` if it answers; record the
+  engine ECU part number and put the real calibration id in `SAMPLE_CALIDS`; then decide, with
+  evidence in hand, the `boost` ranges (without them the agent's boost skill stays hidden), the
+  Tiguan DPF pack and `modules`; `knownFaults` only from a real scan of that car.
+
 ## AI agent: history, privacy, share (plan 34d) (2026-11-23)
 
 **The AI diagnostic agent, 34a–34d in one paragraph.** AI diagnose no longer reads the car once

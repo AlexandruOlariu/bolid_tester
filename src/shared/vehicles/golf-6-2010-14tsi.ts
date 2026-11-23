@@ -38,7 +38,7 @@ export const golf6Tsi: VehicleProfile = {
   testChecklist: [
     'Connect with ignition on; confirm the negotiated protocol is CAN 11/500.',
     'Read VIN (Mode 09) and confirm it matches the registration certificate.',
-    'Start the engine; read idle live data: RPM, coolant, MAP, fuel trims (near 0%), timing advance, voltage (~14 V).',
+    'Start the engine; read idle live data: RPM, coolant, MAP, fuel trims (near 0 %), timing advance, voltage (~14 V).',
     'Compare the discovered PID list with the 15 expected; note every difference.',
     'Read DTCs (Mode 03/07); note whether Mode 0A answers.',
   ],

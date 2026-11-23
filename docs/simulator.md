@@ -102,6 +102,14 @@ Built from the vehicle registry + overrides:
   `0100` and Mode 03/07 on its own line (regression coverage for the multi-ECU parser).
 - `passat-b55-19tdi` — KWP2000 fast, 9 PIDs, real VIN `WVWZZZ3BZ4E342958` in scenario data,
   **no MAF/oil/fuel-rate**, slower timing, Mode 09 VIN often absent.
+- `tiguan-2014-20tdi` — CAN 11/500, 16 PIDs (the Golf Plus set), synthetic VIN
+  `WVGZZZ5NZEW000001` and calibration id `SIM-CFFD-01`, no Mode 22 DIDs.
+- `golf-6-2010-14tsi` — CAN 11/500, 15 PIDs (petrol, no MAF), synthetic VIN `WVWZZZ1KZAW000001` and
+  calibration id `SIM-CAXA-01`, no Mode 22 DIDs.
+
+The Tiguan and Golf 6 scenarios come from profiles written from registration data
+([plan 35](./plans/35-tiguan-golf6-profiles.md)); neither car has been connected to the app. With
+no known faults, their DTC fixtures seed the fallback codes.
 
 Tests and the in-app Settings picker select a scenario. The picker also lists the user's **garage
 cars** (plan 06): `simulatorSourceFor(id, garage)` (`src/shared/vehicles/resolve.ts`) simulates a

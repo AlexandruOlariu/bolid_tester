@@ -98,6 +98,15 @@ Run in order; each plan ships working, tested software on its own.
 | 34c | [Symptom playbooks, no-AI mode, simulator faults, eval set](./34c-ai-agent-playbooks.md)             | 34a, 34b                     | Boost ranges on the Golf / Passat; trims; cold-start trip; eval on own model   |
 | 34d | [Trail in History, privacy, Send to Claude / ChatGPT, docs](./34d-ai-agent-history-privacy-share.md) | 34a (wording after 34b, 34c) | Romanian review; real hand-off to the Claude / ChatGPT apps; store forms       |
 
+### Registry growth
+
+New registry cars, written from what the owner can prove about them (see
+[CONTRIBUTING.md → Evidence levels](../../CONTRIBUTING.md#3-evidence-levels)).
+
+| #   | Plan                                                                                    | Depends on | Deferred / owner part              |
+| --- | --------------------------------------------------------------------------------------- | ---------- | ---------------------------------- |
+| 35  | [Two more registry cars: Tiguan 2.0 TDI, Golf 6 1.4 TSI](./35-tiguan-golf6-profiles.md) | —          | First on-car session with each car |
+
 ## Repo rules the plans assume
 
 - **Docs first.** Specs live in `docs/features/<slug>.md` and map 1:1 to `src/features/<slug>`

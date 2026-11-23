@@ -154,9 +154,10 @@ How it works (`src/shared/telemetry/`, [architecture → Telemetry](../architect
     `connectionService.switchAdapterSource()`, so switching disconnects any session built for the
     other source (a simulator session never survives under the real adapter, or vice versa) and
     clears the adapter log, so the log never mixes or carries over traffic from the other source. In
-    simulator mode a picker chooses which car to emulate (generic / Golf / Punto / Passat, then the
-    garage cars). A garage car is emulated from its base profile with its learned VIN, PIDs and
-    calibration id on top (plan 06, see [vehicle-select](./vehicle-select.md#simulator)).
+    simulator mode a picker chooses which car to emulate (generic / Golf Plus / Punto / Passat /
+    Tiguan / Golf 6, then the garage cars). A garage car is emulated from its base profile with its
+    learned VIN, PIDs and calibration id on top (plan 06, see
+    [vehicle-select](./vehicle-select.md#simulator)).
   - **Wi-Fi adapter address** (Wi-Fi only, `testID="settings-wifi"`) — a host field ("Wi-Fi adapter
     host") and a port field ("Wi-Fi adapter port"), prefilled with the saved endpoint (default
     `192.168.0.10` / `35000`, the `WiFi_OBDII` class). Every edit is checked with `parseEndpoint`
