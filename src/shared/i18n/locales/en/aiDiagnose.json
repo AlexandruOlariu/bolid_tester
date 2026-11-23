@@ -80,7 +80,7 @@
       "start_engine_idle": "Start the engine and let it idle.",
       "engine_off_ignition_on": "Switch the engine off and leave the ignition on.",
       "restart_engine": "Switch the engine off, then start it again.",
-      "hold_2500_rpm": "In Park or Neutral, hold the engine at 2500 rpm for 10 seconds.",
+      "hold_2500_rpm": "In Park or Neutral, bring the engine to 2500 rpm, tap Done and keep holding until the next message (about 10 seconds).",
       "electrical_load_on": "Switch on the headlights, the A/C and the rear demister.",
       "electrical_load_off": "Switch the headlights, the A/C and the rear demister off.",
       "wiggle_connector": "With the engine idling, gently flex the wiring and connector of the sensor the app is watching for 10 seconds.",
@@ -206,6 +206,10 @@
         "no_cold_trip": {
           "title": "Warm-up not checked",
           "detail": "No recorded drive started from a cold engine, so only the current coolant temperature ({{now}} °C) was checked. Record the next cold start to check the warm-up."
+        },
+        "warmup_not_judged": {
+          "title": "Warm-up not judged",
+          "detail": "The latest cold-start drive ended before the engine reached 80 °C (peak {{max}} °C after {{driven}} min of driving), so the warm-up and the thermostat could not be judged. Record a longer drive from a cold start."
         }
       },
       "misfire": {

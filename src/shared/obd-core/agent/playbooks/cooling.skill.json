@@ -18,6 +18,7 @@
     "A cold start (40 °C or less) driven 15 min or more that never reaches 75 °C points to a thermostat stuck open (often with P0128).",
     "Reaching 80 °C takes more than 20 min (petrol) or 25 min (diesel) after a cold start: a slow warm-up, an early sign of a thermostat opening too soon. Diesels warm slowly at idle, so judge driven trips only.",
     "A recorded trip that peaked at 105 °C or more points to overheating under load: coolant level, fan, water pump or head gasket.",
+    "A cold-start trip that ended before the engine reached 80 °C (too short, warmup_not_judged) judges neither the warm-up nor the thermostat: say so, never call the warm-up normal.",
     "A coolant reading that jumps, or disagrees with the gauge, points to the sensor rather than the cooling system."
   ],
   "profileNotes": {

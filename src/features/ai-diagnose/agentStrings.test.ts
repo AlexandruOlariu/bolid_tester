@@ -103,6 +103,7 @@ const CORE_FINDING_KEYS = [
     'slow_warmup',
     'trip_overheat',
     'no_cold_trip',
+    'warmup_not_judged',
   ].map((v) => `cooling.${v}`),
   ...['none', 'cylinder', 'random'].map((v) => `misfire.${v}`),
 ].map((k) => `aiDiagnose:agent.finding.${k}`);

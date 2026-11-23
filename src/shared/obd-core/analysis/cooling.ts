@@ -36,7 +36,8 @@ export type CoolingFindingId =
   | 'thermostat_open'
   | 'slow_warmup'
   | 'trip_overheat'
-  | 'no_cold_trip';
+  | 'no_cold_trip'
+  | 'warmup_not_judged';
 
 export interface CoolingResult {
   findings: { id: CoolingFindingId; severity: DiagSeverity }[];
@@ -105,10 +106,14 @@ export function assessCooling(
     else if (currentC >= HOT_C) findings.push({ id: 'hot_now', severity: 'warn' });
   }
 
+  let judged = currentC != null;
   if (!curve || !curve.coldStart) {
-    findings.push({ id: 'no_cold_trip', severity: 'info' });
-    notes.push('No recorded trip started cold; judged on the current reading only.');
+    if (currentC != null) {
+      findings.push({ id: 'no_cold_trip', severity: 'info' });
+      notes.push('No recorded trip started cold; judged on the current reading only.');
+    } else notes.push('No recorded trip started cold and no current reading: cooling not judged.');
   } else {
+    judged = true;
     const slowMin = fuel === 'diesel' ? SLOW_WARMUP_MIN.diesel : SLOW_WARMUP_MIN.petrol;
     notes.push(
       `Cold-start trip: started at ${curve.startC} °C, max ${curve.maxC} °C, driven ${curve.drivenMin} min, ` +
@@ -116,18 +121,21 @@ export function assessCooling(
           ? `never reached ${WARM_C} °C.`
           : `reached ${WARM_C} °C after ${curve.warmupMin} min (slow above ${slowMin} min).`),
     );
-    if (
+    const thermostatOpen =
       curve.drivenMin >= THERMOSTAT_DRIVE_MIN &&
       curve.maxC != null &&
-      curve.maxC < THERMOSTAT_OPEN_MAX_C
-    )
-      findings.push({ id: 'thermostat_open', severity: 'warn' });
+      curve.maxC < THERMOSTAT_OPEN_MAX_C;
+    if (thermostatOpen) findings.push({ id: 'thermostat_open', severity: 'warn' });
     if (curve.warmupMin != null && curve.warmupMin > slowMin)
       findings.push({ id: 'slow_warmup', severity: 'info' });
     if (curve.drivenMin < THERMOSTAT_DRIVE_MIN && curve.warmupMin == null)
       notes.push(
         `Driven under ${THERMOSTAT_DRIVE_MIN} min before warming: too short to judge the thermostat.`,
       );
+    // The trip ended before the engine warmed: neither the warm-up nor the thermostat was judged,
+    // so this is said instead of falling through to "ok".
+    if (curve.warmupMin == null && !thermostatOpen)
+      findings.push({ id: 'warmup_not_judged', severity: 'info' });
   }
 
   if (curve?.maxC != null) {
@@ -137,6 +145,6 @@ export function assessCooling(
       notes.push(`The recorded trip reached ${curve.maxC} °C.`);
   }
 
-  if (findings.length === 0) findings.push({ id: 'ok', severity: 'ok' });
+  if (findings.length === 0 && judged) findings.push({ id: 'ok', severity: 'ok' });
   return { findings, notes };
 }

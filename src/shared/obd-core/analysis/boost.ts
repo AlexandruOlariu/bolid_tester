@@ -3,8 +3,11 @@
  *  and judges both against barometric pressure (PID 0133, or `ASSUMED_BARO_KPA` when the car has no
  *  0133) and the car's expected range (`VehicleProfile.boost`). MAP and baro are standard PIDs, so
  *  an unconfirmed range is said in the notes but never caps a finding. A missing value is never
- *  judged: no idle MAP yields `insufficient`, a missing hold value leaves the hold part out. No
- *  device I/O. `notes` are English and model-facing. See docs/features/ai-diagnose.md. */
+ *  judged: no idle MAP yields `insufficient`, a missing hold value leaves the hold part out. With
+ *  the baro assumed (no 0133), the real baro is lower at altitude, so MAP below the assumed baro is
+ *  not judged (`map_below_baro` needs a measured baro) and the hold is judged on its rise over the
+ *  idle MAP (a diesel's idle MAP sits close to baro) instead of over the assumed baro. No device
+ *  I/O. `notes` are English and model-facing. See docs/features/ai-diagnose.md. */
 
 import type { BoostRange } from '../../vehicles/types';
 import type { DiagSeverity } from './aiDiagnosis';
@@ -51,7 +54,15 @@ export function assessBoost(input: BoostInput, range: BoostRange): BoostResult {
   const baroAssumed = input.baroKpa == null;
   const baro = input.baroKpa ?? ASSUMED_BARO_KPA;
   const idleDeltaKpa = input.idleMapKpa == null ? null : round1(input.idleMapKpa - baro);
-  const holdDeltaKpa = input.holdMapKpa == null ? null : round1(input.holdMapKpa - baro);
+  // Baro assumed: the hold is judged on its rise over the idle MAP, not on the assumed baro.
+  const holdDeltaKpa =
+    input.holdMapKpa == null
+      ? null
+      : baroAssumed
+        ? input.idleMapKpa == null
+          ? null
+          : round1(input.holdMapKpa - input.idleMapKpa)
+        : round1(input.holdMapKpa - baro);
   const findings: BoostResult['findings'] = [];
   const notes: string[] = [];
 
@@ -80,7 +91,11 @@ export function assessBoost(input: BoostInput, range: BoostRange): BoostResult {
   notes.push(
     `MAP ${input.idleMapKpa} kPa at ${idleAt}: ${idleDeltaKpa} kPa over baro (expected ${span(range.idleDeltaKpa)}).`,
   );
-  if (idleDeltaKpa < MAP_BELOW_BARO_KPA) {
+  if (idleDeltaKpa < MAP_BELOW_BARO_KPA && baroAssumed) {
+    notes.push(
+      `MAP more than ${-MAP_BELOW_BARO_KPA} kPa below the assumed baro at idle: baro is unknown (it is lower at altitude), so this is not judged.`,
+    );
+  } else if (idleDeltaKpa < MAP_BELOW_BARO_KPA) {
     findings.push({ id: 'map_below_baro', severity: 'warn' });
     notes.push(
       `MAP more than ${-MAP_BELOW_BARO_KPA} kPa below baro at idle: implausible for a diesel; suspect the MAP sensor or its wiring.`,
@@ -110,7 +125,9 @@ export function assessBoost(input: BoostInput, range: BoostRange): BoostResult {
     notes.push('Rpm at the rev hold not available (no data); hold part not judged.');
   } else {
     notes.push(
-      `MAP ${input.holdMapKpa} kPa at the rev hold (max ${Math.round(input.holdMaxRpm)} rpm): ${holdDeltaKpa} kPa over baro (expected ${span(range.holdDeltaKpa)}).`,
+      baroAssumed
+        ? `MAP ${input.holdMapKpa} kPa at the rev hold (max ${Math.round(input.holdMaxRpm)} rpm): ${holdDeltaKpa} kPa over the idle MAP, judged as over baro since baro is unknown (expected ${span(range.holdDeltaKpa)}).`
+        : `MAP ${input.holdMapKpa} kPa at the rev hold (max ${Math.round(input.holdMaxRpm)} rpm): ${holdDeltaKpa} kPa over baro (expected ${span(range.holdDeltaKpa)}).`,
     );
     const rpmRise = input.idleRpm == null ? null : input.holdMaxRpm - input.idleRpm;
     if (

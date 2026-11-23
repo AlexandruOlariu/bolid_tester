@@ -253,8 +253,9 @@ start (symptom | "check everything" | focus code)
   as "Can't".
 
 - **Driver steps** (`driver.ts`, `DRIVER_INSTRUCTIONS`): start the engine and idle, engine off
-  ignition on, restart, hold 2500 rpm ("In Park or Neutral, hold the engine at 2500 rpm for 10
-  seconds."), electrical load on / off, wiggle a connector, and `smoke_colour` ("what colour is the
+  ignition on, restart, hold 2500 rpm ("In Park or Neutral, bring the engine to 2500 rpm, tap Done and keep
+  holding until the next message (about 10 seconds)." Done means "I am at 2500 rpm now": the
+  procedure samples the hold after Done), electrical load on / off, wiggle a connector, and `smoke_colour` ("what colour is the
   smoke?" with the choices white · blue · black · grey · none; the chosen value goes into the step
   digest as "Driver answered: <value>"). Asked only while the car is stationary (above).
 - **Cited report** (`report.ts`, `parseAgentFinal`): every finding cites step ids; a finding citing
@@ -398,7 +399,8 @@ no turbo, so no boost range (`requires.profile: ['boost']`), and is petrol (no `
 this car".
 
 **The rev hold.** `fuel_trims` and `boost` ask the driver to hold 2500 rpm in Park or Neutral
-(`hold_2500_rpm`). On **Done** they sample the hold; when the hold's max rpm stays under the car's
+(`hold_2500_rpm`). **Done** means "I am at 2500 rpm now, and keep holding": the instruction asks the
+driver to tap Done once at 2500 rpm and hold until the next message, and on Done they sample the hold; when the hold's max rpm stays under the car's
 `boost.minHoldRpm` (2200 rpm; `HOLD_MIN_RPM` = 2200 for a car without a boost range) the digest
 says "rev hold not reached (max N rpm)" and the hold part is not judged. On **Can't**, a 3-minute
 timeout or a car that starts moving the digest says "rev hold: driver could not do it" (a prompt
@@ -411,6 +413,13 @@ it; `insufficient` (trims, boost) and `no_data` (misfire) produce no finding at 
 lines. Digests and playbook documents are model-facing English; finding texts are en + ro under
 `aiDiagnose:agent.finding.<module>.<id>.{title,detail}` (`trims.*`, `boost.*`, `cooling.*`,
 `misfire.*`, `charging.ok` / `charging.weakUnderLoad`).
+
+**Engine running, engine warm.** `fuel_trims` and `boost` judge nothing when the idle `010C` does
+not answer or reads at or below `ENGINE_RUNNING_MIN_RPM` (600 rpm) — ignition on, engine off reads
+STFT 0 % and MAP = baro — and say "engine not running (N rpm): … not judged" (no finding, no rev
+hold asked). `fuel_trims` also reads `0105` at idle: under `TRIMS_WARM_MIN_C` (70 °C), or with no
+`0105`, the engine may be in open loop and the trims are not judged ("engine cold" / "not confirmed
+warm").
 
 **Charging.** `battery_charging` reports `charging.weakUnderLoad` (`warn`) when the voltage under
 electrical load is under `CHARGING_UNDER_LOAD_MIN_V` = 13.2 V with the engine running
@@ -441,7 +450,10 @@ lean. `TRIM_LIMIT_PCT` = 10, `VACUUM_LEAK_DROP_PCT` = 5. Rules, in this order:
 "requested boost" PID), against baro `0133` or `ASSUMED_BARO_KPA` = 101.3 kPa when the car has no
 `0133` (the Passat; the notes say "baro assumed 101.3 kPa"). Deltas are MAP − baro. Idle MAP
 missing → `insufficient` (no finding). A stationary rev hold builds little boost, so this catches
-gross faults only.
+gross faults only. With the baro assumed, the real baro is lower at altitude (the idle delta reads
+low by about 1.2 kPa per 100 m), so MAP below the assumed baro is never `map_below_baro` (the notes
+say baro is unknown) and the hold delta is the rise over the idle MAP (a diesel's idle MAP sits close
+to baro) instead of MAP − 101.3.
 
 - Idle: delta < `MAP_BELOW_BARO_KPA` (−10) → `map_below_baro` (`warn`); > `STUCK_VNT_IDLE_KPA`
   (30) → `stuck_vnt` (`warn`); above the range's idle max (up to 30) → `idle_high` (`info`).
@@ -472,13 +484,16 @@ asked to wait for a warm-up.
   (`warn`) — the same thresholds as the local heuristics.
 - No curve or not a cold start → `no_cold_trip` (`info`, "No recorded trip started cold; judged on
   the current reading only."). The procedure says why there is no curve (trips not available here,
-  no cold-start trip, or a trip without coolant).
+  no cold-start trip, or a trip without coolant). With no current reading either, nothing is
+  judged: no finding, and the notes say "cooling not judged".
 - Cold start: `drivenMin` ≥ `THERMOSTAT_DRIVE_MIN` (15) and `maxC` < `THERMOSTAT_OPEN_MAX_C` (75 °C)
   → `thermostat_open` (`warn`); `warmupMin` over `SLOW_WARMUP_MIN` (petrol 20, diesel 25 min) →
-  `slow_warmup` (`info`).
+  `slow_warmup` (`info`). A cold start that never reached 80 °C and is not `thermostat_open` (driven
+  under 15 min, or a peak between 75 and 80 °C) → `warmup_not_judged` (`info`: the trip was too
+  short to judge the warm-up), never `ok`.
 - Trip `maxC` ≥ 115 °C → `trip_overheat` (`critical`), ≥ 105 °C → `trip_overheat` (`warn`), for
   any trip passed (the temperature was real even on a warm start).
-- Nothing else → `ok`.
+- Nothing else → `ok` (only when something was judged).
 
 **Misfire** (`misfire.ts`, `assessMisfire(results)`). Counts per cylinder from the Mode 06 misfire
 monitors `MISFIRE_MIDS` = `A2`–`A5` (cylinder = MID − `0xA1`; all three built-in cars are

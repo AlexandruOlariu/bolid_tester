@@ -295,7 +295,7 @@ it('an unknown tool is answered with an error and counts as a step', async () =>
   const d = deps(['{"tool":"clear_dtcs"}', FINAL]);
   const o = await runAgent(sym('x'), d);
   expect(o.trail[1]).toMatchObject({ kind: 'invalid', status: 'error' });
-  expect(d.sentMessages[1].at(-2)!.content).toContain('Unknown tool "clear_dtcs"');
+  expect(d.sentMessages[1].at(-1)!.content).toContain('Unknown tool "clear_dtcs"');
 });
 it('three invalid replies in a row end with the rule report', async () =>
   expect(await runAgent(sym('x'), deps(['no', 'no', 'no']))).toMatchObject({

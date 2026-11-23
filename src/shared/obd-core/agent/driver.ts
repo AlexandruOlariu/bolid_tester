@@ -27,7 +27,7 @@ export const DRIVER_INSTRUCTIONS: Record<DriverInstructionId, DriverInstruction>
     labelKey: 'aiDiagnose:agent.driver.restart_engine',
   },
   hold_2500_rpm: {
-    en: 'In Park or Neutral, hold the engine at 2500 rpm for 10 seconds.',
+    en: 'In Park or Neutral, bring the engine to 2500 rpm, tap Done and keep holding until the next message (about 10 seconds).',
     labelKey: 'aiDiagnose:agent.driver.hold_2500_rpm',
   },
   electrical_load_on: {

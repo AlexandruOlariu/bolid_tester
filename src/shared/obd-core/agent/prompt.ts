@@ -116,7 +116,23 @@ function stepResult(step: AgentStep, full: boolean): string {
     : `Step ${step.id} (earlier): ${step.summary}`;
 }
 
+/** Adds a user turn, or appends to the last message when it is already a user turn, so two user
+ *  messages are never adjacent. */
+function pushUser(messages: AiChatMessage[], content: string): void {
+  const last = messages[messages.length - 1];
+  if (last?.role === 'user')
+    messages[messages.length - 1] = {
+      ...last,
+      content: `${last.content}
+
+${content}`,
+    };
+  else messages.push({ role: 'user', content });
+}
+
 /** The messages for one model turn. `actions[i]` is the reply text that led to `steps[i]`.
+ *  Roles always alternate system, user, (assistant, user)*: the "reply with your next action" line
+ *  closes the last user message.
  *  Over {@link CONTEXT_TOKEN_TARGET}, more digests collapse to summaries (oldest first), and as the
  *  last resort the triage digest is clamped to 1200 characters. */
 export function buildAgentMessages(input: {
@@ -145,12 +161,12 @@ export function buildAgentMessages(input: {
     input.steps.forEach((step, i) => {
       const action = input.actions[i];
       if (action !== undefined) messages.push({ role: 'assistant', content: action });
-      messages.push({ role: 'user', content: stepResult(step, i >= firstFull) });
+      pushUser(messages, stepResult(step, i >= firstFull));
     });
-    messages.push({
-      role: 'user',
-      content: `Reply with your next action (step ${input.stepNo} of ${input.maxSteps}).`,
-    });
+    // Folded into the last user message, never sent as its own turn: chat templates that enforce
+    // strict user/assistant alternation (Gemma, Mistral on LM Studio / llama.cpp) reject two
+    // consecutive user messages, and the OpenAI-compatible wire sends `messages` unchanged.
+    pushUser(messages, `Reply with your next action (step ${input.stepNo} of ${input.maxSteps}).`);
     return messages;
   };
 

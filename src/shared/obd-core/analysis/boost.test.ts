@@ -56,6 +56,35 @@ describe('assessBoost', () => {
     expect(r.notes.join(' ')).toContain('baro assumed 101.3 kPa');
   });
 
+  it('without 0133, MAP 90 kPa at idle (about 850 m) is not called implausible', () => {
+    const r = assessBoost(
+      { idleMapKpa: 90, idleRpm: 820, holdMapKpa: null, holdMaxRpm: null, baroKpa: null },
+      passat,
+    );
+    expect(r.findings.map((f) => f.id)).not.toContain('map_below_baro');
+    expect(r.findings).toEqual([{ id: 'ok', severity: 'ok' }]);
+    expect(r.notes.join(' ')).toContain('baro is unknown');
+  });
+
+  it('without 0133 the hold is judged on its rise over the idle MAP (500 m, healthy)', () => {
+    // Baro ~95.5 kPa at 500 m: idle MAP 95.5, hold 101.5 = 6 kPa of boost, within the Passat's 5-60.
+    const r = assessBoost(
+      { idleMapKpa: 95.5, idleRpm: 820, holdMapKpa: 101.5, holdMaxRpm: 2500, baroKpa: null },
+      passat,
+    );
+    expect(r.holdDeltaKpa).toBe(6);
+    expect(r.findings).toEqual([{ id: 'ok', severity: 'ok' }]);
+    expect(r.notes.join(' ')).toContain('over the idle MAP');
+  });
+
+  it('without 0133 a hold with no rise is still no_boost_hold', () =>
+    expect(
+      assessBoost(
+        { idleMapKpa: 95, idleRpm: 820, holdMapKpa: 97, holdMaxRpm: 2500, baroKpa: null },
+        passat,
+      ).findings,
+    ).toEqual([{ id: 'no_boost_hold', severity: 'warn' }]));
+
   it('exports the thresholds', () => {
     expect(ASSUMED_BARO_KPA).toBe(101.3);
     expect(STUCK_VNT_IDLE_KPA).toBe(30);

@@ -107,7 +107,7 @@ name: AI agent — simulator low boost, mock AI, boost playbook
 # The boost procedure reads idle for 3 s, then asks for the stationary rev hold; Done makes the
 # simulator hold 2500 rpm for 15 s (MAP stays near baro with Low boost).
 - extendedWaitUntil:
-    visible: 'In Park or Neutral, hold the engine at 2500 rpm for 10 seconds\.'
+    visible: 'In Park or Neutral, bring the engine to 2500 rpm, tap Done and keep holding until the next message \(about 10 seconds\)\.'
     timeout: 90000
 - tapOn: 'Done'
 

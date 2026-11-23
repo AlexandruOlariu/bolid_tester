@@ -228,7 +228,7 @@ describe('DRIVER_INSTRUCTIONS', () => {
       'Switch the engine off, then start it again.',
     );
     expect(DRIVER_INSTRUCTIONS.hold_2500_rpm.en).toBe(
-      'In Park or Neutral, hold the engine at 2500 rpm for 10 seconds.',
+      'In Park or Neutral, bring the engine to 2500 rpm, tap Done and keep holding until the next message (about 10 seconds).',
     );
     expect(DRIVER_INSTRUCTIONS.wiggle_connector.en).toBe(
       'With the engine idling, gently flex the wiring and connector of the sensor the app is watching for 10 seconds.',

@@ -23,7 +23,7 @@
     "MAP that does not move while rpm rises by 1000 or more is a stuck MAP sensor: check the sensor before judging boost.",
     "Boost below the range at the hold: a boost leak (intercooler hoses, clamps), a sticking VNT or vane actuator, or a vacuum supply fault (N75 valve, vacuum pump, hoses).",
     "Boost above the range at the hold: overboost, usually a VNT sticking closed or its control (N75).",
-    "Without 0133, baro is assumed 101.3 kPa (sea level): at altitude the deltas read high by about 1 kPa per 100 m.",
+    "Without 0133, baro is assumed 101.3 kPa (sea level): at altitude the real baro is lower, so the idle delta reads LOW by about 1.2 kPa per 100 m. The app then does not flag MAP below baro at idle and judges the hold on its rise over the idle MAP; treat a slightly negative idle delta as normal.",
     "The expected ranges are initial values not yet confirmed on the car: quote them as indicative."
   ],
   "profileNotes": {

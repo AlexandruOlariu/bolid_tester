@@ -127,11 +127,16 @@ describe('cooling', () => {
         'No recorded trip started cold; judged on the current reading only.',
       );
     });
-    it('a cold start driven under 15 min is not judged for the thermostat', () =>
+    it('a cold start driven under 15 min that never warmed is said, not called ok', () =>
       expect(
         assessCooling(70, coldCurve({ drivenMin: 14, maxC: 60, warmupMin: null }), 'petrol')
           .findings,
-      ).toEqual([{ id: 'ok', severity: 'ok' }]));
+      ).toEqual([{ id: 'warmup_not_judged', severity: 'info' }]));
+    it('a cold start that peaked between 75 and 80 °C is not judged, not ok', () =>
+      expect(
+        assessCooling(85, coldCurve({ drivenMin: 20, maxC: 78, warmupMin: null }), 'petrol')
+          .findings,
+      ).toEqual([{ id: 'warmup_not_judged', severity: 'info' }]));
     it('reaching 75 °C is not a stuck-open thermostat', () =>
       expect(
         assessCooling(75, coldCurve({ maxC: 75, warmupMin: null }), 'petrol').findings.map(
@@ -166,10 +171,12 @@ describe('cooling', () => {
           'petrol',
         ).findings.map((f) => f.id),
       ).toEqual(['no_cold_trip', 'trip_overheat']));
-    it('no current reading is never judged and is said', () => {
+    it('no current reading and no cold trip: nothing judged, no finding, no "current reading only"', () => {
       const r = assessCooling(null, null, 'petrol');
-      expect(r.findings).toEqual([{ id: 'no_cold_trip', severity: 'info' }]);
+      expect(r.findings).toEqual([]);
       expect(r.notes.join(' ')).toContain('No current coolant reading (0105)');
+      expect(r.notes.join(' ')).toContain('cooling not judged');
+      expect(r.notes.join(' ')).not.toContain('judged on the current reading only');
     });
   });
 });

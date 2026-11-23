@@ -195,8 +195,7 @@ describe('mock AI server — agent scripts', () => {
       asst('{}'),
       user('Step 2 result:\nboost skill: stuck VNT, overboost, rev hold not reached, MAP sensor'),
       asst('{}'),
-      user(`Step 3 result:\n${digest}`),
-      user('Reply with your next action (step 4 of 12).'),
+      user(`Step 3 result:\n${digest}\n\nReply with your next action (step 4 of 12).`),
     ];
     const reply = await createMockAiClient().chat(messages, agent);
     return (JSON.parse(reply!) as { final: Record<string, unknown> }).final as {

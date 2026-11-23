@@ -162,11 +162,8 @@ describe('buildAgentMessages', () => {
     expect(msgs[1].content).toContain('Vehicle: VW Golf Plus 2009');
     expect(msgs[1].content).toContain('TRIAGE DIGEST');
     expect(msgs[1].content).toContain('The driver reports: "smoke"');
-    expect(msgs.at(-1)).toEqual({
-      role: 'user',
-      content: 'Reply with your next action (step 2 of 12).',
-    });
-    expect(msgs).toHaveLength(3);
+    expect(msgs[1].content.endsWith('\n\nReply with your next action (step 2 of 12).')).toBe(true);
+    expect(msgs).toHaveLength(2);
   });
   it('replays each step as the action sent and its result', () => {
     const steps = [step(2, { digest: 'RPM 800' })];
@@ -178,9 +175,31 @@ describe('buildAgentMessages', () => {
     });
     expect(msgs.slice(2)).toEqual([
       { role: 'assistant', content: '{"tool":"read_live","args":{"pids":["010C"]}}' },
-      { role: 'user', content: 'Step 2 result:\nRPM 800' },
-      { role: 'user', content: 'Reply with your next action (step 3 of 12).' },
+      {
+        role: 'user',
+        content: 'Step 2 result:\nRPM 800\n\nReply with your next action (step 3 of 12).',
+      },
     ]);
+  });
+  it.each([0, 1, 5])('alternates roles system, user, (assistant, user)* with %i steps', (n) => {
+    const steps = Array.from({ length: n }, (_, i) => step(i + 2, { digest: `d${i + 2}` }));
+    const msgs = buildAgentMessages({
+      ...base,
+      steps,
+      actions: steps.map(() => '{"tool":"read_live"}'),
+      stepNo: n + 2,
+    });
+    expect(msgs[0].role).toBe('system');
+    expect(msgs.at(-1)?.role).toBe('user');
+    expect(msgs.at(-1)?.content).toContain(`Reply with your next action (step ${n + 2} of 12).`);
+    for (let i = 2; i < msgs.length; i++) expect(msgs[i].role).not.toBe(msgs[i - 1].role);
+    expect(msgs).toHaveLength(2 + 2 * n);
+  });
+  it('never puts two user messages side by side when an action is missing', () => {
+    const steps = [step(2, { digest: 'a' }), step(3, { digest: 'b' })];
+    const msgs = buildAgentMessages({ ...base, steps, actions: [], stepNo: 4 });
+    for (let i = 2; i < msgs.length; i++) expect(msgs[i].role).not.toBe(msgs[i - 1].role);
+    expect(msgs).toHaveLength(2);
   });
   it('keeps the last 3 digests in full and stays under 8k tokens with 12 long steps', () => {
     const steps = Array.from({ length: 12 }, (_, i) =>
@@ -196,7 +215,9 @@ describe('buildAgentMessages', () => {
       msgs.filter((m) => m.content.startsWith('Step') && m.content.includes('result:')),
     ).toHaveLength(3);
     expect(msgs.some((m) => m.content === 'Step 2 (earlier): s2')).toBe(true);
-    expect(msgs.some((m) => m.content === 'Step 13 result:\n' + 'd'.repeat(1600))).toBe(true);
+    expect(
+      msgs.some((m) => m.content.startsWith('Step 13 result:\n' + 'd'.repeat(1600) + '\n\nReply')),
+    ).toBe(true);
     expect(estimateTokens(msgs)).toBeLessThanOrEqual(8000);
   });
   it('collapses more digests, oldest first, when over the 8k target', () => {
@@ -227,7 +248,7 @@ describe('buildAgentMessages', () => {
       actions: ['{"tool":"read_live"}'],
       stepNo: 3,
     });
-    expect(msgs.some((m) => m.content === 'Step 2 (earlier): s2')).toBe(true);
+    expect(msgs.some((m) => m.content.startsWith('Step 2 (earlier): s2\n\nReply'))).toBe(true);
     expect(msgs[1].content).toContain('(truncated)');
     expect(msgs[1].content.length).toBeLessThan(1200 + 200);
   });

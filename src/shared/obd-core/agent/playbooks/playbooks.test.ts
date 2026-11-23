@@ -71,6 +71,8 @@ interface CtxOpts {
   noData?: string[];
   /** PIDs that stop answering once the rev hold starts. */
   noDataAtHold?: string[];
+  /** The driver held the revs before tapping Done and let go: Done arrives at idle. */
+  holdEndedBeforeDone?: boolean;
   idle?: Record<string, number>;
   hold?: Record<string, number>;
   /** Extra tools / procedures / skills registered next to core + playbooks. */
@@ -145,7 +147,7 @@ async function simProcCtx(profileId: string, opts: CtxOpts = {}): Promise<TestCt
       asked.push(id);
       const d = opts.driver;
       const reply: DriverReply = isReply(d) ? d : (d?.[id] ?? { kind: 'done' });
-      if (id === 'hold_2500_rpm' && reply.kind === 'done') holding = true;
+      if (id === 'hold_2500_rpm' && reply.kind === 'done') holding = !opts.holdEndedBeforeDone;
       return reply;
     },
     callTool: async (name, args = {}) => {
@@ -391,6 +393,7 @@ describe('playbook catalogue', () => {
       'cooling.slow_warmup',
       'cooling.trip_overheat',
       'cooling.no_cold_trip',
+      'cooling.warmup_not_judged',
       'misfire.none',
       'misfire.cylinder',
       'misfire.random',
@@ -437,6 +440,13 @@ describe('boost procedure', () => {
     expect(keys(r)).toEqual([`${F}boost.hold_not_reached`]);
   });
 
+  it('a hold that ended before Done is not reached and is not judged', async () => {
+    const r = await proc('boost').run(await golfProcCtx({ holdEndedBeforeDone: true }));
+    expect(r.digest).toMatch(/rev hold not reached \(max \d+ rpm\)/);
+    expect(r.digest).not.toContain('at the rev hold (max');
+    expect(keys(r)).toEqual([`${F}boost.hold_not_reached`]);
+  });
+
   it('a timeout on the hold still reports the idle part', async () => {
     const r = await proc('boost').run(await golfProcCtx({ driver: { kind: 'timeout' } }));
     expect(r.digest).toContain('rev hold: driver could not do it');
@@ -452,6 +462,22 @@ describe('boost procedure', () => {
     const r = await proc('boost').run(await golfProcCtx({ noDataAtHold: ['010B'] }));
     expect(r.digest).toContain('010B not answered at the rev hold');
     expect(keys(r)).toEqual([`${F}boost.ok`]);
+  });
+
+  it('engine not running (ignition on, 0 rpm): not judged, no finding, no driver step', async () => {
+    const ctx = await golfProcCtx({ idle: { '010C': 0 } });
+    const r = await proc('boost').run(ctx);
+    expect(r.digest).toContain('engine not running (0 rpm): boost not judged');
+    expect(r.findings ?? []).toEqual([]);
+    expect(ctx.asked).toEqual([]);
+  });
+
+  it('no rpm at idle: engine running not confirmed, not judged', async () => {
+    const ctx = await golfProcCtx({ noData: ['010C'] });
+    const r = await proc('boost').run(ctx);
+    expect(r.digest).toContain('engine running not confirmed; boost not judged');
+    expect(r.findings ?? []).toEqual([]);
+    expect(ctx.asked).toEqual([]);
   });
 
   it('no MAP at idle: not judged, no finding, no driver step', async () => {
@@ -483,6 +509,41 @@ describe('fuel_trims procedure', () => {
     );
     expect(r.digest).toContain('rev hold not reached (max 1800 rpm)');
     expect(keys(r)).toEqual([`${F}trims.lean`]);
+  });
+
+  it('a hold that ended before Done is not reached: the idle part only', async () => {
+    const r = await proc('fuel_trims').run(
+      await puntoProcCtx({ simFault: 'lean_trims', holdEndedBeforeDone: true }),
+    );
+    expect(r.digest).toMatch(/rev hold not reached \(max \d+ rpm\)/);
+    expect(keys(r)).toEqual([`${F}trims.lean`]);
+  });
+
+  it('the rev-hold instruction says Done means "at 2500 rpm now, keep holding"', () => {
+    expect(DRIVER_INSTRUCTIONS.hold_2500_rpm.en).toContain('tap Done and keep holding');
+  });
+
+  it('engine not running (ignition on, 0 rpm): not judged, no finding, no driver step', async () => {
+    const ctx = await puntoProcCtx({ idle: { '010C': 0, '0106': 0, '0107': 0 } });
+    const r = await proc('fuel_trims').run(ctx);
+    expect(r.digest).toContain('engine not running (0 rpm): trims not judged');
+    expect(r.findings ?? []).toEqual([]);
+    expect(ctx.asked).toEqual([]);
+  });
+
+  it('a cold engine (open loop possible) is not judged', async () => {
+    const ctx = await puntoProcCtx({ simFault: 'lean_trims', idle: { '0105': 35 } });
+    const r = await proc('fuel_trims').run(ctx);
+    expect(r.digest).toContain('engine cold (coolant 35 °C, under 70 °C');
+    expect(r.findings ?? []).toEqual([]);
+    expect(ctx.asked).toEqual([]);
+  });
+
+  it('no coolant reading: engine not confirmed warm, not judged', async () => {
+    const ctx = await puntoProcCtx({ noData: ['0105'] });
+    const r = await proc('fuel_trims').run(ctx);
+    expect(r.digest).toContain('0105 not answered: engine not confirmed warm');
+    expect(r.findings ?? []).toEqual([]);
   });
 
   it('a trim going NO DATA at the hold still judges the idle part', async () => {
@@ -588,6 +649,9 @@ describe('cooling procedure', () => {
     const r = await proc('cooling').run(await golfProcCtx({ noData: ['0105'] }));
     expect(r.digest).toContain('0105 not answered');
     expect(keys(r)).not.toContain(`${F}cooling.ok`);
+    // No cold trip either: no "only the current coolant temperature (— °C) was checked" finding.
+    expect(keys(r)).toEqual([]);
+    expect(r.digest).not.toContain('judged on the current reading only');
   });
 });
 

@@ -81,7 +81,7 @@
       "start_engine_idle": "Pornește motorul și lasă-l la ralanti.",
       "engine_off_ignition_on": "Oprește motorul și lasă contactul pus.",
       "restart_engine": "Oprește motorul, apoi pornește-l din nou.",
-      "hold_2500_rpm": "În Park sau la punctul mort, ține motorul la 2500 rpm timp de 10 secunde.",
+      "hold_2500_rpm": "În Park sau la punctul mort, adu motorul la 2500 rpm, apasă Gata și menține turația până la mesajul următor (circa 10 secunde).",
       "electrical_load_on": "Aprinde farurile, aerul condiționat și dezaburirea lunetei.",
       "electrical_load_off": "Stinge farurile, aerul condiționat și dezaburirea lunetei.",
       "wiggle_connector": "Cu motorul la ralanti, îndoaie ușor cablajul și mufa senzorului pe care îl urmărește aplicația, timp de 10 secunde.",
@@ -207,6 +207,10 @@
         "no_cold_trip": {
           "title": "Încălzirea nu a fost verificată",
           "detail": "Niciun drum înregistrat nu a pornit cu motorul rece, așa că s-a verificat doar temperatura actuală ({{now}} °C). Înregistrează următoarea pornire la rece ca să se poată verifica încălzirea."
+        },
+        "warmup_not_judged": {
+          "title": "Încălzirea nu a putut fi evaluată",
+          "detail": "Ultimul drum pornit la rece s-a încheiat înainte ca motorul să ajungă la 80 °C (maxim {{max}} °C după {{driven}} min de mers), așa că încălzirea și termostatul nu au putut fi evaluate. Înregistrează un drum mai lung pornit la rece."
         }
       },
       "misfire": {

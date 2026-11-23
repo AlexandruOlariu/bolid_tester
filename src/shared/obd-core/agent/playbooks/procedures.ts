@@ -31,8 +31,10 @@ const FINDING = 'aiDiagnose:agent.finding.';
 export const HOLD_MIN_RPM = 2200;
 /** Charging under electrical load below this voltage (engine running) is weak. */
 export const CHARGING_UNDER_LOAD_MIN_V = 13.2;
-/** Above this rpm the engine counts as running for the charging check. */
+/** Above this rpm the engine counts as running (charging, fuel trims, boost). */
 export const ENGINE_RUNNING_MIN_RPM = 600;
+/** Below this coolant temperature the engine may still be in open loop: fuel trims mean nothing. */
+export const TRIMS_WARM_MIN_C = 70;
 /** Stored codes `check_engine_light` looks up one by one. */
 export const CHECK_ENGINE_MAX_DETAILS = 4;
 /** Recent app errors `keeps_disconnecting` lists. */
@@ -89,6 +91,17 @@ const notAnswered = (data: Record<string, LiveStats>, pids: string[]): string[] 
 // ---- fuel trims ----
 
 const TRIM_PIDS = [STFT, LTFT, RPM, MAF];
+const IDLE_TRIM_PIDS = [...TRIM_PIDS, COOLANT];
+
+/** The digest line when the engine is not confirmed running at idle (010C silent or at or below
+ *  {@link ENGINE_RUNNING_MIN_RPM}), or null when it runs. */
+function engineNotRunning(data: Record<string, LiveStats>, what: string): string | null {
+  const rpm = data[RPM]?.avg;
+  if (rpm == null) return `010C not answered: engine running not confirmed; ${what} not judged.`;
+  if (rpm <= ENGINE_RUNNING_MIN_RPM)
+    return `engine not running (${Math.round(rpm)} rpm): ${what} not judged.`;
+  return null;
+}
 
 function trimReading(data: Record<string, LiveStats>): TrimReading {
   const avg = (pid: string) => (data[pid] ? round1(data[pid].avg) : null);
@@ -97,11 +110,25 @@ function trimReading(data: Record<string, LiveStats>): TrimReading {
 
 async function fuelTrims(ctx: ProcedureContext): Promise<ToolResult> {
   const lines = ['Fuel trims (STFT 0106 + LTFT 0107, bank 1), idle then a 2500 rpm hold.'];
-  const idleData = await readLive(ctx, TRIM_PIDS, IDLE_TRIM_SECONDS);
+  const idleData = await readLive(ctx, IDLE_TRIM_PIDS, IDLE_TRIM_SECONDS);
   const idleMissing = notAnswered(idleData, [STFT, LTFT]);
   if (idleMissing.length) {
     lines.push(`${idleMissing.join(', ')} not answered: trims not judged.`);
     return { digest: lines.join('\n'), summary: 'Fuel trims: not judged (no data)' };
+  }
+  const notRunning = engineNotRunning(idleData, 'trims');
+  if (notRunning) {
+    lines.push(notRunning);
+    return { digest: lines.join('\n'), summary: 'Fuel trims: not judged (engine not running)' };
+  }
+  const coolantC = idleData[COOLANT] ? round1(idleData[COOLANT].avg) : null;
+  if (coolantC == null || coolantC < TRIMS_WARM_MIN_C) {
+    lines.push(
+      coolantC == null
+        ? '0105 not answered: engine not confirmed warm (open loop possible); trims not judged.'
+        : `engine cold (coolant ${coolantC} °C, under ${TRIMS_WARM_MIN_C} °C; open loop possible): trims not judged.`,
+    );
+    return { digest: lines.join('\n'), summary: 'Fuel trims: not judged (engine not warm)' };
   }
 
   let hold: TrimReading | null = null;
@@ -158,6 +185,11 @@ async function boost(ctx: ProcedureContext): Promise<ToolResult> {
   if (!idle[MAP]) {
     lines.push('010B not answered: boost not judged.');
     return { digest: lines.join('\n'), summary: 'Boost: not judged (no data)' };
+  }
+  const notRunning = engineNotRunning(idle, 'boost');
+  if (notRunning) {
+    lines.push(notRunning);
+    return { digest: lines.join('\n'), summary: 'Boost: not judged (engine not running)' };
   }
 
   let holdMapKpa: number | null = null;
