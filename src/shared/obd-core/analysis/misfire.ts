@@ -2,7 +2,7 @@
  *  counts reported by the Mode 06 misfire monitors (MID A2–A5 = cylinders 1–4) and tells a single
  *  bad cylinder apart from misfires spread across the engine. Counts come from the misfire-cycle
  *  test (TID 0x0C), else the EWMA test (TID 0x0B). A cylinder without a count result is left out,
- *  never judged as zero. No device I/O. See docs/features/ai-agent.md. */
+ *  never judged as zero. No device I/O. See docs/features/ai-diagnose.md. */
 
 import type { Mode06Result } from '../obd/mode06';
 import type { DiagSeverity } from './aiDiagnosis';

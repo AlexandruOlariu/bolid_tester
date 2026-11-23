@@ -5,6 +5,50 @@ other docs; this file is the "what we did" history.)
 
 ---
 
+## AI agent playbooks (plan 34c) (2026-11-23)
+
+- **Why:** the agent knew the car's features but not the complaints a driver actually has, and
+  without an AI provider **Check everything** only re-read triage. Now 17 symptom playbooks guide
+  the model, ten of them with an on-device procedure, and the same procedures run without AI —
+  still strictly read-only (spec `docs/superpowers/specs/2026-11-22-ai-agent-diagnose-design.md`).
+- **Analysis (pure, `src/shared/obd-core/analysis/`):** `fuelTrims.ts` (STFT + LTFT at idle and a
+  2500 rpm hold: `vacuum_leak` / `lean_all_speeds` / `lean` / `rich` / `ok`, ±10 %, a 5 % drop
+  for a leak), `boost.ts` (MAP only, against `0133` or an assumed 101.3 kPa; per-profile
+  `VehicleProfile.boost` ranges for the Golf and the Passat, unconfirmed), `cooling.ts` (coolant
+  now plus the warm-up curve of the most recent recorded trip that started cold; never waits for a
+  warm-up), `misfire.ts` (Mode 06 MID `A2`–`A5` counts: one cylinder vs random). A missing value
+  is never judged. Thresholds in [ai-diagnose](./features/ai-diagnose.md#analysis-modules-plan-34c).
+- **Playbooks (`src/shared/obd-core/agent/playbooks/`, `PLAYBOOK_CONTRIBUTION`):** `fuel_trims`,
+  `boost`, `battery_charging`, `cooling`, `misfire`, `dpf_regen`, `used_car`,
+  `check_engine_light`, `before_long_trip`, `keeps_disconnecting` (with procedures) and
+  `hard_start`, `rough_idle`, `limp_mode`, `high_consumption`, `smoke`, `glow_plugs`, `egr`
+  (documents only). New driver instruction `smoke_colour` with five choices. `ProcedureContext`
+  gained `hasTool` / `hasSkill` so a procedure reaches a feature tool only when the car offers it.
+  Availability per car in [ai-diagnose](./features/ai-diagnose.md#playbooks-plan-34c).
+- **No-AI mode:** with the AI off or not configured, `runAgent` runs triage plus every available
+  skill with a procedure in `NO_AI_SKILL_ORDER` (driver prompts included, same Stop / adapter /
+  disconnect rules, no step cap), then the rule report; a typed symptom says that understanding it
+  needs AI (`agent.end.no_ai_symptom`).
+- **Simulator:** opt-in scripted faults (Settings → Developer & simulator → **Scripted fault**: Low
+  boost · Lean fuel trims · Weak charging, runtime only) and `MockTransport.holdRevs(ms)`; the AI
+  screen starts a 15 s hold when the driver confirms the 2500 rpm hold. Default scenarios and the
+  recorded `sim-*.json` fixtures are unchanged ([simulator](./simulator.md#scripted-faults-plan-34c)).
+- **Mock AI and e2e:** `mock://ai` plays a boost script for "pulls weak" / "boost" / "turbo";
+  `.maestro/ai-agent.yaml` drives it on the simulator Golf with **Low boost**.
+- **Eval set:** `npm run eval:agent` runs fixed cases against a configured model; skipped unless
+  `BOLID_EVAL_URL` is set, so it is not in CI ([testing](./testing.md#agent-eval-set)). The vehicle
+  context and known checks it sends moved to the store-free `src/shared/vehicles/agentContext.ts`.
+- **Tests:** a unit suite per analysis module; `playbooks.test.ts` (catalogue, availability,
+  every procedure incl. NO DATA, Can't, hold not reached, no baro, no cold trip); `loop.test.ts`
+  (the no-AI sweep order, Stop mid-sweep); `AiDiagnoseScreen.test.tsx` (a symptom without AI);
+  `MockTransport.test.ts` (default bytes unchanged, each fault, the hold window);
+  `test/app/aiDiagnoseRoute.test.tsx` (17 playbooks composed, offered per car).
+- **Open (owner, on the car):** confirm the boost ranges on the Golf and the Passat (warm, in
+  Neutral, idle and a 2500 rpm hold, twice) and record them with `confirmed`; the Punto's fuel trims
+  at idle and 2500 rpm before touching `TRIM_LIMIT_PCT`; a real cold-start trip of ≥ 20 min for the
+  cooling playbook; three eval runs against the self-hosted model, results in
+  `docs/testing.md`; `maestro test .maestro/ai-agent.yaml` on a debug build.
+
 ## AI agent capability skills (plan 34b) (2026-11-23)
 
 - **Why:** after 34a the agent could read only codes, live PIDs and the battery. Now every app

@@ -2,7 +2,7 @@
  *  reading at idle and, optionally, one during a stationary 2500 rpm hold, and classifies the
  *  pattern. Total trim = STFT + LTFT (%), positive = the ECU is adding fuel (lean), negative = it is
  *  removing fuel (rich). A missing trim is never judged: it yields `insufficient`. No device I/O.
- *  `notes` are English and model-facing. See docs/features/ai-agent.md. */
+ *  `notes` are English and model-facing. See docs/features/ai-diagnose.md. */
 
 import type { DiagSeverity } from './aiDiagnosis';
 

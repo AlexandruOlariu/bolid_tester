@@ -4,7 +4,7 @@
  *  0133) and the car's expected range (`VehicleProfile.boost`). MAP and baro are standard PIDs, so
  *  an unconfirmed range is said in the notes but never caps a finding. A missing value is never
  *  judged: no idle MAP yields `insufficient`, a missing hold value leaves the hold part out. No
- *  device I/O. `notes` are English and model-facing. See docs/features/ai-agent.md. */
+ *  device I/O. `notes` are English and model-facing. See docs/features/ai-diagnose.md. */
 
 import type { BoostRange } from '../../vehicles/types';
 import type { DiagSeverity } from './aiDiagnosis';

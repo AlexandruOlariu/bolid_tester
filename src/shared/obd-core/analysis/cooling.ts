@@ -3,7 +3,7 @@
  *  that started cold — the user is never asked to wait for a warm-up. Overheat thresholds match
  *  `localHeuristicReport`. A missing value is never judged: no current reading leaves the current
  *  part out, NO DATA coolant samples are skipped, and a trip without coolant has no curve. No device
- *  I/O. `notes` are English and model-facing. See docs/features/ai-agent.md. */
+ *  I/O. `notes` are English and model-facing. See docs/features/ai-diagnose.md. */
 
 import type { Fuel } from '../../vehicles/types';
 import type { DiagSeverity } from './aiDiagnosis';

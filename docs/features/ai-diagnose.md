@@ -123,7 +123,10 @@ symptom run with the code.
   dip and the charging voltage). The app layer composes them in `src/app/ai-diagnose.tsx`
   (`AGENT_CONTRIBUTIONS`), since features never import each other.
 - **Driver steps** (`driver.ts`, `DRIVER_INSTRUCTIONS`): a fixed list (start the engine, engine
-  off ignition on, restart, hold 2500 rpm, electrical load on / off). Asked only while the car is
+  off ignition on, restart, hold 2500 rpm "in Park or Neutral … for 10 seconds", electrical load on
+  / off, wiggle a connector, and `smoke_colour` — "what colour is the smoke?" with the choices
+  white · blue · black · grey · none, labelled from `aiDiagnose:agent.driverChoice.<value>`; the
+  chosen value goes into the step digest as "Driver answered: <value>"). Asked only while the car is
   stationary: refused unless `010D` reads exactly 0 km/h, aborted if the speed rises. The screen's
   answer reaches the run through the driver gate (`api/driverGate.ts`).
 - **Stop** aborts the run at once (an open driver prompt settles as "Can't"); the run ends
@@ -134,8 +137,10 @@ symptom run with the code.
 - **Fallbacks — never worse than before.** Any other ending (AI off or not configured, the step /
   time / adapter budget, three invalid replies, Stop, an adapter disconnect, an AI error) ends in the
   on-device rule report over everything gathered (`agentRuleReport`) with a notice
-  (`aiDiagnose:agent.end.<end>`). With the AI off, **Check everything** gives the rule report over
-  triage. An AI error or a disconnect is logged as an `ai-diagnose` warning.
+  (`aiDiagnose:agent.end.<end>`). With the AI off or not configured, the run first sweeps every
+  available skill with a procedure, then gives the rule report (see
+  [No-AI mode](#no-ai-mode-plan-34c)). An AI error or a disconnect is logged as an `ai-diagnose`
+  warning.
 - **After the run**: Re-run repeats the request; Clear codes runs Mode 04, then a triage-only
   re-read (`runTriageOnly`) with the "Codes cleared" notice; follow-up questions read the trail's
   digests (`buildAgentFollowUpMessages`).
@@ -194,6 +199,180 @@ has; `adaptations_read` needs the profile's adaptation channels; `bus_listen` ne
 monitor-capable adapter. Store-backed skills (trips, fuel economy, performance, maintenance,
 history, alerts, app errors) are always offered and answer "none recorded" in one line on an empty
 store, for the active car only.
+
+### Playbooks (plan 34c)
+
+A **playbook** is a skill for a complaint a driver actually has (`kind: 'playbook'`,
+`src/shared/obd-core/agent/playbooks/`, one `<name>.skill.json` each, composed as
+`PLAYBOOK_CONTRIBUTION` after the features in `src/app/ai-diagnose.tsx`). Its document tells the
+model which capability skills and tools to use and how to read them; ten have an **on-device
+procedure** (`procedures.ts`, procedure id = playbook name) that the model runs in one step with
+`run_skill`. Playbooks name only built-in and core tools (`run_skill`, `ask_driver`, `read_live`,
+`read_dtcs`), so the registry accepts them with or without the features; a playbook that needs a
+feature says so in `requires.skills`, and a procedure reaches a feature tool only when the car is
+offered it (`ProcedureContext.hasTool` / `hasSkill`). Every procedure is read-only: no forced
+regeneration, output test or basic setting, and **Clear codes** stays the report's button.
+
+| Playbook              | Procedure                                                                                                          | `requires`                                  | Golf | Punto | Passat |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- | :--: | :---: | :----: |
+| `fuel_trims`          | `0106`/`0107`/`010C`/`0110` 5 s at idle → hold 2500 rpm → 5 s → `assessFuelTrims`                                  | `pids: ['0106','0107']`                     |  —   |  yes  |   —    |
+| `boost`               | `010B`/`0133`/`010C` 3 s at idle → hold 2500 rpm → `010B`/`010C` 5 s → `assessBoost` with the car's range          | `profile: ['boost'], pids: ['010B','010C']` | yes  |   —   |  yes   |
+| `battery_charging`    | `battery_capture` → electrical load on → `0142`/`010C` 5 s (adapter voltage when `0142` is unsupported) → load off | —                                           | yes  |  yes  |  yes   |
+| `cooling`             | `0105` once + `read_trip {id:'latest_cold'}` when trips are registered → `warmupCurve` → `assessCooling`           | `pids: ['0105']`                            | yes  |  yes  |  yes   |
+| `misfire`             | Mode 06 MID `A2`–`A5` → `assessMisfire`                                                                            | `protocol: 'can', fuel: ['petrol','lpg']`   |  —   |  yes  |   —    |
+| `dpf_regen`           | the `dpf` procedure                                                                                                | `skills: ['dpf']`                           | yes  |   —   |   —    |
+| `used_car`            | the `used_car_check` procedure                                                                                     | `skills: ['used_car_check']`                | yes  |  yes  |  yes   |
+| `check_engine_light`  | `read_dtcs`, then `read_dtcs_detail` for up to 4 stored codes when registered                                      | —                                           | yes  |  yes  |  yes   |
+| `before_long_trip`    | each available of `cooling`, `maintenance`, `dpf`, merged                                                          | —                                           | yes  |  yes  |  yes   |
+| `keeps_disconnecting` | the `adapter_health` procedure + `read_app_errors {limit: 10}` when registered                                     | `skills: ['adapter_health']`                | yes  |  yes  |  yes   |
+| `hard_start`          | — (document only)                                                                                                  | —                                           | yes  |  yes  |  yes   |
+| `rough_idle`          | — (document only)                                                                                                  | —                                           | yes  |  yes  |  yes   |
+| `limp_mode`           | — (document only)                                                                                                  | —                                           | yes  |  yes  |  yes   |
+| `high_consumption`    | — (document only)                                                                                                  | —                                           | yes  |  yes  |  yes   |
+| `smoke`               | — (document only; asks `ask_driver smoke_colour`)                                                                  | —                                           | yes  |  yes  |  yes   |
+| `glow_plugs`          | — (document only)                                                                                                  | `fuel: ['diesel']`                          | yes  |   —   |  yes   |
+| `egr`                 | — (document only)                                                                                                  | —                                           | yes  |  yes  |  yes   |
+
+The car columns are what `availableSkills` offers the built-in profiles on their expected protocol
+with the profile's own PID list (before a live PID bitmap is read);
+`test/app/aiDiagnoseRoute.test.tsx` pins a sample of them. Why a cell is empty: the two diesels do
+not report the fuel trims `0106`/`0107`, and misfire needs a petrol engine on CAN; the Punto has
+no turbo, so no boost range (`requires.profile: ['boost']`), and is petrol (no `glow_plugs`);
+`dpf_regen` needs the `dpf` skill (CAN and the profile's DPF DIDs: the Golf only).
+`before_long_trip` runs only the checks the car offers and lists the rest as "Not available on
+this car".
+
+**The rev hold.** `fuel_trims` and `boost` ask the driver to hold 2500 rpm in Park or Neutral
+(`hold_2500_rpm`). On **Done** they sample the hold; when the hold's max rpm stays under the car's
+`boost.minHoldRpm` (2200 rpm; `HOLD_MIN_RPM` = 2200 for a car without a boost range) the digest
+says "rev hold not reached (max N rpm)" and the hold part is not judged. On **Can't**, a 3-minute
+timeout or a car that starts moving the digest says "rev hold: driver could not do it" (a prompt
+refused because the car is not stationary: "rev hold: not asked"), and the idle part is still
+judged and reported.
+
+**A missing value is never judged.** A PID that answers `NO DATA` is named in the digest ("0107
+not answered: trims not judged", "010B not answered: boost not judged") and no finding comes from
+it; `insufficient` (trims, boost) and `no_data` (misfire) produce no finding at all, only digest
+lines. Digests and playbook documents are model-facing English; finding texts are en + ro under
+`aiDiagnose:agent.finding.<module>.<id>.{title,detail}` (`trims.*`, `boost.*`, `cooling.*`,
+`misfire.*`, `charging.ok` / `charging.weakUnderLoad`).
+
+**Charging.** `battery_charging` reports `charging.weakUnderLoad` (`warn`) when the voltage under
+electrical load is under `CHARGING_UNDER_LOAD_MIN_V` = 13.2 V with the engine running
+(`ENGINE_RUNNING_MIN_RPM` = 600 rpm), else `charging.ok`; no running engine or no voltage → not
+judged. Every skill document uses the same plain charging rule: module voltage under 13.5 V with
+the engine running = not charging.
+
+### Analysis modules (plan 34c)
+
+Four pure modules in `src/shared/obd-core/analysis/` (unit-tested, no device I/O, English
+model-facing `notes`) judge what the procedures measure.
+
+**Fuel trims** (`fuelTrims.ts`, `assessFuelTrims(idle, hold)`). Total = STFT + LTFT (%), positive =
+lean. `TRIM_LIMIT_PCT` = 10, `VACUUM_LEAK_DROP_PCT` = 5. Rules, in this order:
+
+1. Either idle trim missing → `insufficient` (`info`, no finding). A missing hold trim drops only the
+   hold part.
+2. Idle total ≥ +10 % and (idle − hold) ≥ 5 → `vacuum_leak` (`warn`). The drop is checked first: idle
+   +30.5 % → hold +12.5 % is a vacuum leak although the hold is still ≥ 10.
+3. Idle total ≥ +10 % and hold total ≥ +10 % → `lean_all_speeds` (`warn`: the MAF or fuel
+   delivery rather than a leak).
+4. Idle total ≥ +10 % otherwise (no hold, or a hold under +10 % that improved by less than 5) →
+   `lean` (`warn`).
+5. Idle or hold total ≤ −10 % → `rich` (`warn`).
+6. Otherwise `ok` (lean only at the hold is noted, not flagged).
+
+**Boost** (`boost.ts`, `assessBoost(input, range)`) — **MAP only** (`010B`), against baro `0133`
+or `ASSUMED_BARO_KPA` = 101.3 kPa when the car has no `0133` (the Passat; the notes say "baro
+assumed 101.3 kPa"). Deltas are MAP − baro. Idle MAP missing → `insufficient` (no finding).
+
+- Idle: delta < `MAP_BELOW_BARO_KPA` (−10) → `map_below_baro` (`warn`); > `STUCK_VNT_IDLE_KPA`
+  (30) → `stuck_vnt` (`warn`); above the range's idle max (up to 30) → `idle_high` (`info`).
+- Hold: max rpm < `minHoldRpm` → `hold_not_reached` (`info`, the hold not judged); MAP changing
+  by less than `STUCK_SENSOR_KPA` (2 kPa) while rpm rose ≥ 1000 → `stuck_sensor` (`warn`,
+  instead of a hold verdict; needs the idle rpm); delta under the range min → `no_boost_hold`
+  (`warn`); over the range max → `overboost_hold` (`warn`).
+- Nothing flagged → `ok`. A range without `confirmed` adds "Boost expected range not yet confirmed
+  on this car" to the notes but never caps a finding (MAP and baro are standard PIDs).
+- Per-profile ranges (`VehicleProfile.boost`, copied to a garage car from its base; initial,
+  unconfirmed — see the vehicle docs' "Expected boost (agent)"; the Punto has none, so `boost` is
+  not offered there):
+
+| Car            | `idleDeltaKpa` | `holdDeltaKpa` | `holdRpm` | `minHoldRpm` |
+| -------------- | -------------- | -------------- | --------- | ------------ |
+| Golf 2.0 TDI   | −5 to 15       | 8 to 60        | 2500      | 2200         |
+| Passat 1.9 TDI | −5 to 15       | 5 to 60        | 2500      | 2200         |
+| Punto 1.2      | —              | —              | —         | —            |
+
+**Cooling** (`cooling.ts`, `warmupCurve(samples)`, `assessCooling(currentC, curve, fuel)`). Uses
+the coolant now (`0105`) and the **most recent recorded trip that started cold**; the user is never
+asked to wait for a warm-up.
+
+- `warmupCurve`: null when the trip logged no `0105`; a cold start = first coolant reading ≤
+  `COLD_START_MAX_C` (40 °C); `warmupMin` = minutes to `WARM_C` (80 °C), interpolated between
+  samples (null for a warm start); `drivenMin` = minutes with `010D` > 0; `maxC`.
+- Now: ≥ `OVERHEAT_C` (115 °C) → `overheat_now` (`critical`); ≥ `HOT_C` (105 °C) → `hot_now`
+  (`warn`) — the same thresholds as the local heuristics.
+- No curve or not a cold start → `no_cold_trip` (`info`, "No recorded trip started cold; judged on
+  the current reading only."). The procedure says why there is no curve (trips not available here,
+  no cold-start trip, or a trip without coolant).
+- Cold start: `drivenMin` ≥ `THERMOSTAT_DRIVE_MIN` (15) and `maxC` < `THERMOSTAT_OPEN_MAX_C` (75 °C)
+  → `thermostat_open` (`warn`); `warmupMin` over `SLOW_WARMUP_MIN` (petrol 20, diesel 25 min) →
+  `slow_warmup` (`info`).
+- Trip `maxC` ≥ 115 °C → `trip_overheat` (`critical`), ≥ 105 °C → `trip_overheat` (`warn`), for
+  any trip passed (the temperature was real even on a warm start).
+- Nothing else → `ok`.
+
+**Misfire** (`misfire.ts`, `assessMisfire(results)`). Counts per cylinder from the Mode 06 misfire
+monitors `MISFIRE_MIDS` = `A2`–`A5` (cylinder = MID − `0xA1`; all three built-in cars are
+4-cylinder), from TID `0x0C` (`MISFIRE_TID_CYCLE`), else `0x0B` (`MISFIRE_TID_EWMA`); a duplicate
+result keeps the higher value, and a cylinder without a count is left out, never read as zero.
+
+- No `0x0C` / `0x0B` count on any of `A2`–`A5` → `no_data` (`info`, no finding).
+- One cylinder ≥ `MISFIRE_MIN_COUNT` (5) and ≥ 2 × the next highest → `cylinder` (`warn`, with the
+  cylinder number).
+- Total ≥ 10 otherwise → `random` (`warn`).
+- Otherwise `none` (`ok`).
+
+### No-AI mode (plan 34c)
+
+With the AI off or not configured (`chat === null`), a run still does more than triage:
+`runAgent` runs triage, then each skill of `NO_AI_SKILL_ORDER` that the car offers **and** that has
+a procedure, one `kind: 'skill'` step each (no "why"), then builds `agentRuleReport` over the whole
+trail; the run ends `no_ai`.
+
+```ts
+NO_AI_SKILL_ORDER = [
+  'used_car_check',
+  'fuel_trims',
+  'boost',
+  'misfire',
+  'cooling',
+  'dpf',
+  'battery_charging',
+  'maintenance',
+];
+```
+
+- **Driver steps included.** The swept procedures' driver prompts (the rev hold, the restart and
+  electrical load of `battery_charging`) appear exactly as in an AI run, with the same stationary
+  gate and 3-minute timeout; **Can't** keeps the part that was measured.
+- **Same rules as an AI run.** **Stop** ends the sweep at once (`stopped`, keeping the steps
+  gathered); an adapter disconnect ends it `disconnected`; the 2-minute adapter budget applies, and
+  when the next skill's declared cost no longer fits the adapter time left the sweep ends `adapter`
+  (it does not skip ahead to a cheaper skill). No model steps are used and the 12-step cap does not
+  apply.
+- **What each car sweeps** (built-in profiles): Golf — `used_car_check`, `boost`, `cooling`, `dpf`,
+  `battery_charging`, `maintenance`; Punto — `used_car_check`, `fuel_trims`, `misfire`, `cooling`,
+  `battery_charging`, `maintenance`; Passat — `used_car_check`, `boost`, `cooling`,
+  `battery_charging`, `maintenance`.
+- **Notices.** **Check everything** without AI shows `agent.end.no_ai` ("{{problem}} Showing an
+  on-device rule-based report instead."). A typed symptom (or **Explain with AI**) without AI does
+  the same sweep and shows `agent.end.no_ai_symptom`: "Understanding a described symptom needs an
+  AI provider, so everything available was checked instead. {{problem}}".
+- The rule report cites the steps its findings come from, so e.g. the Punto with the simulator's
+  **Lean fuel trims** fault ([simulator](../simulator.md#scripted-faults-plan-34c)) gets the
+  "Likely vacuum leak" finding based on the `fuel_trims` step.
 
 ## Settings (Settings → AI assistant)
 
@@ -369,11 +548,11 @@ warn → `attention`, else `ok`).
 Every diagnosis includes the **selected vehicle's details as default context** for the model: label
 (make/model/year), engine, fuel, expected transport, and the profile's free-form notes — built by
 `toVehicleContext()` from the chosen `VehicleProfile` (always present, even for the generic profile).
-`toVehicleContext()` and `knownChecksFor()` live in the store-free `src/shared/vehicles/agentContext.ts`,
-so the app and the offline eval set (`docs/testing.md#agent-eval-set`) send the model the same context.
 They appear at the top of the snapshot digest, and the system prompt instructs the model to tailor
 its analysis to that specific car and its fuel type. The live-detected protocol and VIN are included
 alongside, so the model sees both what the car _should_ be and what was actually read.
+`toVehicleContext()` and `knownChecksFor()` live in the store-free `src/shared/vehicles/agentContext.ts`,
+so the app and the offline eval set (`docs/testing.md#agent-eval-set`) send the model the same context.
 
 ## Acceptance
 
