@@ -154,6 +154,8 @@ describe('adapter-health agent tools', () => {
       ...ctxWith(stubSession({})),
       callTool,
       runProcedure: jest.fn(),
+      hasTool: () => false,
+      hasSkill: () => false,
     } as ProcedureContext;
     await expect(proc!.run(ctx)).resolves.toEqual({ digest: 'd', summary: 's' });
     expect(callTool).toHaveBeenCalledWith('check_adapter', {});

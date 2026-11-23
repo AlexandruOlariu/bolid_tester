@@ -83,7 +83,15 @@
       "hold_2500_rpm": "În Park sau la punctul mort, ține motorul la 2500 rpm timp de 10 secunde.",
       "electrical_load_on": "Aprinde farurile, aerul condiționat și dezaburirea lunetei.",
       "electrical_load_off": "Stinge farurile, aerul condiționat și dezaburirea lunetei.",
-      "wiggle_connector": "Cu motorul la ralanti, îndoaie ușor cablajul și mufa senzorului pe care îl urmărește aplicația, timp de 10 secunde."
+      "wiggle_connector": "Cu motorul la ralanti, îndoaie ușor cablajul și mufa senzorului pe care îl urmărește aplicația, timp de 10 secunde.",
+      "smoke_colour": "Cu motorul pornit, uită-te la eșapament: ce culoare are fumul?"
+    },
+    "driverChoice": {
+      "white": "Alb",
+      "blue": "Albastru",
+      "black": "Negru",
+      "grey": "Gri",
+      "none": "Fără fum"
     },
     "finding": {
       "battery": {
@@ -102,6 +110,116 @@
         "unknown": {
           "title": "Verificarea bateriei este incompletă",
           "detail": "În repaus {{resting}} V, scădere la pornire {{dip}} V, încărcare {{charging}} V. Repornirea motorului nu a fost surprinsă, așa că starea bateriei nu a putut fi apreciată."
+        }
+      },
+      "trims": {
+        "ok": {
+          "title": "Corecțiile de amestec sunt normale",
+          "detail": "Corecție totală {{idle}} % la ralanti, în limita de ±10 %: calculatorul motorului nu compensează un defect de amestec."
+        },
+        "lean": {
+          "title": "Motorul merge sărac la ralanti",
+          "detail": "Corecție totală {{idle}} % la ralanti: calculatorul adaugă combustibil ca să compenseze aer în plus sau prea puțin combustibil. Caută o priză de aer, un senzor MAF murdar sau o alimentare slabă."
+        },
+        "rich": {
+          "title": "Motorul merge bogat",
+          "detail": "Corecția totală este -10 % sau mai mică (la ralanti: {{idle}} %): calculatorul scoate combustibil. Verifică injectoare care curg, presiune mare de combustibil, o supapă de purjare blocată sau un senzor de oxigen ori de temperatură defect."
+        },
+        "vacuum_leak": {
+          "title": "Probabil o priză de aer",
+          "detail": "Corecția totală {{idle}} % la ralanti scade la {{hold}} % la 2500 rpm: aer în plus care contează mai ales la ralanti. Verifică furtunurile de admisie, furtunul servofrânei, ventilația carterului și garnitura de admisie."
+        },
+        "lean_all_speeds": {
+          "title": "Motorul merge sărac la toate turațiile",
+          "detail": "Corecție totală {{idle}} % la ralanti și tot {{hold}} % la 2500 rpm: mai probabil senzorul MAF sau alimentarea (pompă, filtru, injectoare) decât o priză de aer."
+        }
+      },
+      "boost": {
+        "ok": {
+          "title": "Presiunea turbo arată normal",
+          "detail": "{{idle}} kPa peste presiunea atmosferică la ralanti, în intervalul așteptat pentru această mașină (la fel și la turația menținută, când s-a făcut)."
+        },
+        "idle_high": {
+          "title": "Presiune turbo puțin mare la ralanti",
+          "detail": "{{idle}} kPa peste presiunea atmosferică la ralanti depășește intervalul așteptat, dar nu destul cât să indice palete turbo blocate. Reverifică dacă apar probleme de putere."
+        },
+        "stuck_vnt": {
+          "title": "Paletele turbinei pot fi blocate",
+          "detail": "{{idle}} kPa peste presiunea atmosferică la ralanti: o turbină cu geometrie variabilă blocată închis face presiune acolo unde ar trebui să fie aproape zero. Verifică paletele turbinei și actuatorul lor."
+        },
+        "map_below_baro": {
+          "title": "Citire de presiune în galerie neplauzibilă",
+          "detail": "Presiunea din galeria de admisie este {{idle}} kPa față de presiunea atmosferică la ralanti, ceea ce un diesel nu poate face. Verifică senzorul MAP și cablajul lui înainte de a judeca turbina."
+        },
+        "no_boost_hold": {
+          "title": "Presiune turbo mică sau deloc la 2500 rpm",
+          "detail": "Doar {{hold}} kPa peste presiunea atmosferică la turația menținută ({{rpm}} rpm), sub intervalul așteptat. Caută o pierdere de presiune (furtunuri intercooler, coliere), palete turbo care se blochează sau o problemă de vacuum."
+        },
+        "overboost_hold": {
+          "title": "Presiune turbo prea mare la 2500 rpm",
+          "detail": "{{hold}} kPa peste presiunea atmosferică la turația menținută ({{rpm}} rpm), peste intervalul așteptat: suprapresiune, adesea palete turbo blocate închis sau supapa lor de comandă."
+        },
+        "stuck_sensor": {
+          "title": "Senzorul de presiune din galerie pare blocat",
+          "detail": "Presiunea din galerie aproape nu s-a schimbat cât timp motorul a urcat de la ralanti la {{rpm}} rpm. Verifică senzorul MAP înainte de a judeca presiunea turbo."
+        },
+        "hold_not_reached": {
+          "title": "Turația cerută nu a fost atinsă",
+          "detail": "Motorul a ajuns doar la {{rpm}} rpm la turația menținută, deci presiunea turbo la turație nu a fost judecată. S-a verificat doar ralantiul ({{idle}} kPa peste presiunea atmosferică)."
+        }
+      },
+      "charging": {
+        "ok": {
+          "title": "Alternatorul face față sub sarcină",
+          "detail": "{{volts}} V la {{rpm}} rpm cu farurile, aerul condiționat și dezaburirea lunetei pornite: alternatorul încarcă bine sub sarcină."
+        },
+        "weakUnderLoad": {
+          "title": "Încărcare slabă sub sarcină",
+          "detail": "Doar {{volts}} V la {{rpm}} rpm cu farurile, aerul condiționat și dezaburirea lunetei pornite (așteptat cel puțin 13,2 V). Verifică alternatorul, cureaua lui și conexiunile bateriei."
+        }
+      },
+      "cooling": {
+        "ok": {
+          "title": "Răcirea arată normal",
+          "detail": "Lichid de răcire {{now}} °C acum; ultima pornire la rece s-a încălzit normal (maxim {{max}} °C)."
+        },
+        "hot_now": {
+          "title": "Motorul merge cald",
+          "detail": "Lichid de răcire {{now}} °C acum, cel puțin 105 °C. Verifică nivelul lichidului (doar cu motorul rece), ventilatorul radiatorului și termostatul."
+        },
+        "overheat_now": {
+          "title": "Motorul se supraîncălzește",
+          "detail": "Lichid de răcire {{now}} °C acum, cel puțin 115 °C. Oprește motorul imediat ce poți în siguranță și lasă-l să se răcească; nu deschide bușonul cât este fierbinte."
+        },
+        "thermostat_open": {
+          "title": "Termostatul poate fi blocat deschis",
+          "detail": "La ultima pornire la rece lichidul a ajuns doar la {{max}} °C după {{driven}} min de mers. Un termostat blocat deschis ține motorul prea rece: consum mai mare, încălzire slabă și uzură mai mare."
+        },
+        "slow_warmup": {
+          "title": "Motorul se încălzește greu",
+          "detail": "La ultima pornire la rece lichidul a avut nevoie de {{warmup}} min ca să ajungă la 80 °C. Termostatul se poate deschide prea devreme; reverifică după alte câteva porniri la rece."
+        },
+        "trip_overheat": {
+          "title": "Motorul s-a încălzit tare la un drum recent",
+          "detail": "Un drum înregistrat a ajuns la {{max}} °C. Verifică nivelul lichidului de răcire, ventilatorul radiatorului și pompa de apă."
+        },
+        "no_cold_trip": {
+          "title": "Încălzirea nu a fost verificată",
+          "detail": "Niciun drum înregistrat nu a pornit cu motorul rece, așa că s-a verificat doar temperatura actuală ({{now}} °C). Înregistrează următoarea pornire la rece ca să se poată verifica încălzirea."
+        }
+      },
+      "misfire": {
+        "none": {
+          "title": "Fără rateuri semnificative",
+          "detail": "Monitoarele de rateuri au numărat {{total}} rateuri în total: nimic care să indice un defect."
+        },
+        "cylinder": {
+          "title": "Rateuri la cilindrul {{cylinder}}",
+          "detail": "Cilindrul {{cylinder}} a avut {{count}} rateuri, mult mai multe decât ceilalți. Verifică bujia, bobina și injectorul lui (mutarea bobinei pe cilindrul vecin arată dacă rateul o urmează)."
+        },
+        "random": {
+          "title": "Rateuri pe mai mulți cilindri",
+          "detail": "{{total}} rateuri împărțite între cilindri: mai probabilă e o cauză comună, ca o priză de aer, presiune mică de combustibil, bujii uzate sau EGR-ul."
         }
       }
     },

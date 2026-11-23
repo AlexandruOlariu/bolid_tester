@@ -82,7 +82,15 @@
       "hold_2500_rpm": "In Park or Neutral, hold the engine at 2500 rpm for 10 seconds.",
       "electrical_load_on": "Switch on the headlights, the A/C and the rear demister.",
       "electrical_load_off": "Switch the headlights, the A/C and the rear demister off.",
-      "wiggle_connector": "With the engine idling, gently flex the wiring and connector of the sensor the app is watching for 10 seconds."
+      "wiggle_connector": "With the engine idling, gently flex the wiring and connector of the sensor the app is watching for 10 seconds.",
+      "smoke_colour": "With the engine running, look at the exhaust: what colour is the smoke?"
+    },
+    "driverChoice": {
+      "white": "White",
+      "blue": "Blue",
+      "black": "Black",
+      "grey": "Grey",
+      "none": "No smoke"
     },
     "finding": {
       "battery": {
@@ -101,6 +109,116 @@
         "unknown": {
           "title": "Battery check incomplete",
           "detail": "Resting {{resting}} V, cranking dip {{dip}} V, charging {{charging}} V. The engine restart was not captured, so the battery condition could not be judged."
+        }
+      },
+      "trims": {
+        "ok": {
+          "title": "Fuel trims are normal",
+          "detail": "Total fuel trim {{idle}} % at idle, within ±10 %: the engine control is not correcting for a mixture fault."
+        },
+        "lean": {
+          "title": "Engine runs lean at idle",
+          "detail": "Total fuel trim {{idle}} % at idle: the engine control adds fuel to make up for extra air or too little fuel. Look for a vacuum leak, a dirty MAF sensor or weak fuel delivery."
+        },
+        "rich": {
+          "title": "Engine runs rich",
+          "detail": "The total fuel trim is -10 % or lower (at idle: {{idle}} %): the engine control removes fuel. Check for leaking injectors, high fuel pressure, a sticking purge valve or a faulty oxygen or coolant sensor."
+        },
+        "vacuum_leak": {
+          "title": "Likely vacuum leak",
+          "detail": "Total fuel trim {{idle}} % at idle improves to {{hold}} % at 2500 rpm: extra air that matters most at idle. Check the intake hoses, the brake-servo hose, the crankcase ventilation and the intake gasket."
+        },
+        "lean_all_speeds": {
+          "title": "Engine runs lean at all speeds",
+          "detail": "Total fuel trim {{idle}} % at idle and still {{hold}} % at 2500 rpm: more likely the MAF sensor or the fuel supply (pump, filter, injectors) than a vacuum leak."
+        }
+      },
+      "boost": {
+        "ok": {
+          "title": "Boost pressure looks normal",
+          "detail": "{{idle}} kPa over atmospheric pressure at idle, within the expected range for this car (and the rev hold too, when it was done)."
+        },
+        "idle_high": {
+          "title": "Boost slightly high at idle",
+          "detail": "{{idle}} kPa over atmospheric pressure at idle is above the expected range, but not enough to suggest stuck turbo vanes. Recheck if power problems appear."
+        },
+        "stuck_vnt": {
+          "title": "Turbo vanes may be stuck",
+          "detail": "{{idle}} kPa over atmospheric pressure at idle: a variable-vane turbo stuck closed builds boost where there should be almost none. Have the turbo vanes and their actuator checked."
+        },
+        "map_below_baro": {
+          "title": "Manifold pressure reading implausible",
+          "detail": "The intake manifold pressure reads {{idle}} kPa against atmospheric pressure at idle, which a diesel cannot do. Check the MAP sensor and its wiring before judging the turbo."
+        },
+        "no_boost_hold": {
+          "title": "Little or no boost at 2500 rpm",
+          "detail": "Only {{hold}} kPa over atmospheric pressure during the rev hold ({{rpm}} rpm), below the expected range. Look for a boost leak (intercooler hoses, clamps), sticking turbo vanes or a vacuum supply fault."
+        },
+        "overboost_hold": {
+          "title": "Boost too high at 2500 rpm",
+          "detail": "{{hold}} kPa over atmospheric pressure during the rev hold ({{rpm}} rpm), above the expected range: overboost, often turbo vanes sticking closed or their control valve."
+        },
+        "stuck_sensor": {
+          "title": "Manifold pressure sensor looks stuck",
+          "detail": "The manifold pressure barely changed while the engine went from idle to {{rpm}} rpm. Check the MAP sensor before judging the boost."
+        },
+        "hold_not_reached": {
+          "title": "Rev hold not reached",
+          "detail": "The engine reached only {{rpm}} rpm during the rev hold, so boost at speed was not judged. Only the idle part ({{idle}} kPa over atmospheric pressure) was checked."
+        }
+      },
+      "charging": {
+        "ok": {
+          "title": "Alternator keeps up under load",
+          "detail": "{{volts}} V at {{rpm}} rpm with the headlights, A/C and rear demister on: the alternator charges well under load."
+        },
+        "weakUnderLoad": {
+          "title": "Charging weak under load",
+          "detail": "Only {{volts}} V at {{rpm}} rpm with the headlights, A/C and rear demister on (expected 13.2 V or more). Have the alternator, its belt and the battery connections checked."
+        }
+      },
+      "cooling": {
+        "ok": {
+          "title": "Cooling looks normal",
+          "detail": "Coolant {{now}} °C now; the latest cold start warmed up normally (peak {{max}} °C)."
+        },
+        "hot_now": {
+          "title": "Engine running hot",
+          "detail": "Coolant {{now}} °C now, at or above 105 °C. Check the coolant level (only with the engine cold), the radiator fan and the thermostat."
+        },
+        "overheat_now": {
+          "title": "Engine overheating",
+          "detail": "Coolant {{now}} °C now, at or above 115 °C. Stop the engine as soon as it is safe and let it cool; do not open the coolant cap while hot."
+        },
+        "thermostat_open": {
+          "title": "Thermostat may be stuck open",
+          "detail": "On the latest cold start the coolant peaked at only {{max}} °C after {{driven}} min of driving. A thermostat stuck open keeps the engine too cold: more fuel, a weak heater and more wear."
+        },
+        "slow_warmup": {
+          "title": "Engine warms up slowly",
+          "detail": "On the latest cold start the coolant took {{warmup}} min to reach 80 °C. The thermostat may be opening too early; recheck after a few more cold starts."
+        },
+        "trip_overheat": {
+          "title": "Engine got hot on a recent drive",
+          "detail": "A recorded drive reached {{max}} °C. Check the coolant level, the radiator fan and the water pump."
+        },
+        "no_cold_trip": {
+          "title": "Warm-up not checked",
+          "detail": "No recorded drive started from a cold engine, so only the current coolant temperature ({{now}} °C) was checked. Record the next cold start to check the warm-up."
+        }
+      },
+      "misfire": {
+        "none": {
+          "title": "No significant misfires",
+          "detail": "The misfire monitors counted {{total}} misfires in total: nothing that points to a fault."
+        },
+        "cylinder": {
+          "title": "Misfires on cylinder {{cylinder}}",
+          "detail": "Cylinder {{cylinder}} misfired {{count}} times, far more than the others. Check its spark plug, ignition coil and injector (swapping the coil with a neighbour shows whether the misfire follows)."
+        },
+        "random": {
+          "title": "Misfires on several cylinders",
+          "detail": "{{total}} misfires spread across the cylinders: a shared cause is more likely, such as a vacuum leak, low fuel pressure, worn spark plugs or the EGR."
         }
       }
     },

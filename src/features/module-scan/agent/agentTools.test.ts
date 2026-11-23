@@ -309,7 +309,13 @@ describe('module-scan agent tools', () => {
     const proc = agentTools.procedures?.find((p) => p.id === 'module_scan');
     expect(proc).toBeDefined();
     const callTool = jest.fn().mockResolvedValue({ digest: 'd', summary: 's' });
-    const ctx = { ...(await golfCtx()), callTool, runProcedure: jest.fn() } as ProcedureContext;
+    const ctx = {
+      ...(await golfCtx()),
+      callTool,
+      runProcedure: jest.fn(),
+      hasTool: () => false,
+      hasSkill: () => false,
+    } as ProcedureContext;
     await expect(proc!.run(ctx)).resolves.toEqual({ digest: 'd', summary: 's' });
     expect(callTool).toHaveBeenCalledWith('scan_modules', {});
   });

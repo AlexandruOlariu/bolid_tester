@@ -1,0 +1,22 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "battery_charging",
+  "kind": "playbook",
+  "description": "Use when the car cranks slowly, will not start, the battery light flickers or the battery keeps going flat: battery, cranking and charging under load.",
+  "tools": ["run_skill", "ask_driver", "read_live"],
+  "driverSteps": ["restart_engine", "electrical_load_on", "electrical_load_off"],
+  "procedure": "battery_charging",
+  "instructions": [
+    "Call run_skill {\"name\":\"battery_charging\"}: it runs the battery capture (the driver restarts the engine: resting voltage, cranking dip, charging), then asks the driver to switch on the headlights, A/C and rear demister, reads the voltage and rpm for 5 s and asks for them to be switched off.",
+    "Read the battery verdict and the under-load line; a part the digest says was not judged (the driver could not do it, the engine was not running) is no evidence either way.",
+    "For a battery that goes flat overnight, also open alerts_history (low-voltage alerts) and maintenance (battery age) when they are offered."
+  ],
+  "interpret": [
+    "Resting voltage (engine off): about 12.6 V is fully charged; under 12.2 V the battery is discharged.",
+    "Cranking dip under 9.6 V: a weak battery, or a cable or starter drawing too much.",
+    "With the engine running, a module voltage under 13.5 V = not charging.",
+    "Under electrical load (lights, A/C, demister) the voltage may sag a little but should stay at or above 13.2 V with the engine running; under 13.2 V points to a worn alternator, a slipping belt or a poor ground or B+ connection.",
+    "Over 14.5 V with the engine running is overcharging: the regulator.",
+    "A weak battery explains slow cranking, hard starts and random communication codes after a start: settle it before chasing those codes."
+  ]
+}

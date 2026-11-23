@@ -1,0 +1,24 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "limp_mode",
+  "kind": "playbook",
+  "description": "Use when the car suddenly loses power, goes into limp or emergency mode, or will not rev past a limit: codes, boost, DPF and EGR.",
+  "tools": ["run_skill", "ask_driver", "read_live", "read_dtcs"],
+  "instructions": [
+    "Call read_dtcs: limp mode almost always stores a code. Detail each code with fault_codes (read_dtcs_detail).",
+    "On a turbo diesel run boost (P0299, P0234 and P2563 are the usual triggers), then dpf_regen and egr when they are offered.",
+    "On a petrol look for throttle and pedal codes (P0120-P0124, P0220-P0229, P2135) and run misfire and fuel_trims when they are offered.",
+    "On a car with modules, module_scan shows a gearbox or ABS fault that can limit power too."
+  ],
+  "interpret": [
+    "Limp mode is the ECU protecting the engine: it caps rpm (often near 3000) and boost until the fault clears or is repaired.",
+    "Overboost or underboost codes with a normal stationary boost check mean the fault appears only under load: look at a recorded drive that logged MAP.",
+    "A blocked DPF (soot 90 % or more) or an EGR stuck open can trigger limp mode on a diesel.",
+    "Low battery voltage can make several modules limit functions at once."
+  ],
+  "profileNotes": {
+    "golf-plus-2009-20tdi": [
+      "Among this car's known codes are P2015 (intake manifold flap position sensor) and P0121 (pedal / throttle position sensor): when either is stored now, it can explain reduced power."
+    ]
+  }
+}

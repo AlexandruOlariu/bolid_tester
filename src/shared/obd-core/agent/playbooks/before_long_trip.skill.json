@@ -1,0 +1,19 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "before_long_trip",
+  "kind": "playbook",
+  "description": "Use when the owner plans a long trip and wants a quick check that nothing is wrong or due: cooling, maintenance due and the DPF.",
+  "tools": ["run_skill", "read_dtcs"],
+  "procedure": "before_long_trip",
+  "instructions": [
+    "Call run_skill {\"name\":\"before_long_trip\"}: it runs each check offered for this car among cooling, maintenance and dpf and merges their results.",
+    "When the triage shows codes, call read_dtcs or open check_engine_light; when the triage battery voltage is low, add battery_charging.",
+    "End with a short list: fine to go, or what to check first, each point citing its step."
+  ],
+  "interpret": [
+    "Any overheating or critical finding: the trip should wait until it is checked.",
+    "Overdue maintenance (oil, timing belt, brake fluid) matters more before a long drive: name the items due.",
+    "A DPF that is filling or due for a regeneration is usually helped by the motorway drive itself, as long as no warning light is on.",
+    "Pending codes deserve a mention: they may turn into a warning light on the way."
+  ]
+}

@@ -77,8 +77,7 @@ function hasProfileFeature(ctx: AvailabilityContext, feature: SkillProfileFeatur
     case 'codingModules':
       return (p.codingModules?.length ?? 0) > 0;
     case 'boost':
-      // Boost data joins VehicleProfile in plan 34c; until then no car has it.
-      return false;
+      return p.boost !== undefined;
   }
 }
 

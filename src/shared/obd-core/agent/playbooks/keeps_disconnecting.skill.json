@@ -1,0 +1,21 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "keeps_disconnecting",
+  "kind": "playbook",
+  "description": "Use when the app keeps losing the adapter, live readings drop out or the connection is unstable: adapter health and recent app errors.",
+  "tools": ["run_skill"],
+  "requires": {
+    "skills": ["adapter_health"]
+  },
+  "procedure": "keeps_disconnecting",
+  "instructions": [
+    "Call run_skill {\"name\":\"keeps_disconnecting\"}: it runs the adapter health check (grade, firmware, voltage, protocol) and, when the error log is present, lists the app's last 10 errors.",
+    "Open adapter_health and app_errors to read them; tell adapter and phone problems apart from car problems before suggesting anything about the car."
+  ],
+  "interpret": [
+    "A poor adapter grade or a clone firmware explains dropouts on its own: suggest a better adapter.",
+    "With the engine running, a module voltage under 13.5 V = not charging; a supply under 11.5 V with the engine off makes many adapters reset.",
+    "Many connection errors in the last 24 h with a good adapter grade point to Bluetooth range, the phone's battery saver or a loose OBD socket.",
+    "Errors only while cranking are normal: the voltage dip resets many adapters."
+  ]
+}

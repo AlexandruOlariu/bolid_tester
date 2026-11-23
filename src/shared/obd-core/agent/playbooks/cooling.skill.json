@@ -1,0 +1,28 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "cooling",
+  "kind": "playbook",
+  "description": "Use when the engine runs hot or stays cold, the heater blows cold, the gauge moves oddly or coolant is lost: coolant now plus a cold-start trip.",
+  "tools": ["run_skill", "read_live"],
+  "requires": {
+    "pids": ["0105"]
+  },
+  "procedure": "cooling",
+  "instructions": [
+    "Call run_skill {\"name\":\"cooling\"}: it reads the coolant temperature now (0105) and, when trips are recorded, the warm-up curve of the latest trip that started cold. It never asks the driver to wait for a warm-up.",
+    "When no cold-start trip exists, say the warm-up could not be judged and suggest recording the next cold start with trip recording for a later check.",
+    "With coolant sensor or thermostat codes (P0115-P0119, P0128, P2183), open fault_codes and use read_dtcs_detail before blaming the thermostat."
+  ],
+  "interpret": [
+    "105 °C or more now is hot (warn); 115 °C or more is overheating: the engine should be stopped (critical).",
+    "A cold start (40 °C or less) driven 15 min or more that never reaches 75 °C points to a thermostat stuck open (often with P0128).",
+    "Reaching 80 °C takes more than 20 min (petrol) or 25 min (diesel) after a cold start: a slow warm-up, an early sign of a thermostat opening too soon. Diesels warm slowly at idle, so judge driven trips only.",
+    "A recorded trip that peaked at 105 °C or more points to overheating under load: coolant level, fan, water pump or head gasket.",
+    "A coolant reading that jumps, or disagrees with the gauge, points to the sensor rather than the cooling system."
+  ],
+  "profileNotes": {
+    "golf-plus-2009-20tdi": [
+      "This car has P2183 among its known codes (coolant temperature sensor 2, radiator outlet, G83): G83 is not the 0105 sensor, but a G83 fault can upset fan control; check it before blaming the thermostat."
+    ]
+  }
+}

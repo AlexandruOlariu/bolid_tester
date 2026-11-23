@@ -1,0 +1,21 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "smoke",
+  "kind": "playbook",
+  "description": "Use when the exhaust smokes (white, blue, black or grey): asks the driver the colour, then checks the systems that colour points to.",
+  "tools": ["ask_driver", "run_skill", "read_live", "read_dtcs"],
+  "driverSteps": ["smoke_colour"],
+  "instructions": [
+    "Call ask_driver {\"id\":\"smoke_colour\"}: the driver answers white, blue, black, grey or none.",
+    "Then call read_dtcs and follow the colour: black → boost, egr and dpf_regen (diesel) or fuel_trims (petrol); white → cooling (coolant loss) and glow_plugs (cold diesel); blue → oil burning, which no OBD reading shows: say a workshop must check the turbo seals, valve stem seals or rings.",
+    "Call read_live {\"pids\":[\"0105\"]} once: white smoke only while cold is condensation."
+  ],
+  "interpret": [
+    "White, thin and gone once warm: condensation, normal. White, thick and sweet-smelling with coolant loss: a head gasket or EGR cooler leak.",
+    "White-grey on a cold diesel: unburnt fuel from the glow plugs or injectors.",
+    "Blue: oil burning (turbo oil seals, valve stem seals, piston rings, crankcase ventilation).",
+    "Black: too much fuel or too little air: a boost leak, an EGR stuck open, a dirty air filter or a leaking injector. A puff under hard acceleration on an older diesel is normal; constant black smoke is not.",
+    "A little white-grey vapour during a DPF regeneration is normal.",
+    "None: no smoke now; ask in the report's actions when it appears (cold start, acceleration)."
+  ]
+}

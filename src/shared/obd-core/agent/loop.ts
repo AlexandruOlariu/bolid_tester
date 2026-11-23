@@ -138,7 +138,7 @@ function driverResult(id: DriverInstructionId, reply: DriverReply, stopped: bool
       return { digest: `Driver did: ${text}`, summary: `Driver: ${id} — done`, status: 'ok' };
     case 'choice':
       return {
-        digest: `Driver was asked: ${text} Answer: ${JSON.stringify(reply.value)}.`,
+        digest: `Driver was asked: ${text} Driver answered: ${reply.value}.`,
         summary: `Driver: ${id} — ${reply.value}`,
         status: 'ok',
       };
@@ -320,6 +320,8 @@ export async function runAgent(req: AgentRunRequest, deps: AgentDeps): Promise<A
       if (!procedure) throw new Error(`Unknown procedure "${id}"`);
       return procedure.run(procCtx);
     },
+    hasTool: (name) => toolByName.has(name),
+    hasSkill: (name) => skillByName.has(name),
   };
 
   // ---- steps ----

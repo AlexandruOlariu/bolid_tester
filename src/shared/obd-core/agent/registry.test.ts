@@ -137,6 +137,7 @@ it('checks each requires clause against the connected car', () => {
     'diesel',
     'can',
     'ext',
+    'boost', // the Golf has an expected boost range (plan 34c)
     'nothing',
   ]);
 });

@@ -219,6 +219,7 @@ describe('DRIVER_INSTRUCTIONS', () => {
       'electrical_load_on',
       'electrical_load_off',
       'wiggle_connector',
+      'smoke_colour',
     ];
     expect(Object.keys(DRIVER_INSTRUCTIONS)).toEqual(ids);
     for (const id of ids)

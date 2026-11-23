@@ -20,10 +20,11 @@ import { historyAgentTools } from '@/features/history';
 import { alertsAgentTools } from '@/features/alerts';
 import { errorLogAgentTools } from '@/features/error-log';
 import { canSnifferAgentTools } from '@/features/can-sniffer';
-import type { AgentContribution } from '@/shared/obd-core';
+import { PLAYBOOK_CONTRIBUTION, type AgentContribution } from '@/shared/obd-core';
 
 /** What each feature contributes to the AI diagnostic agent (plan 34a). Features never import each
- *  other, so the app layer composes the list; 34b and 34c append to it. */
+ *  other, so the app layer composes the list; 34b and 34c append to it. The symptom playbooks
+ *  (plan 34c) come last: they reach the features' skills and tools by name. */
 export const AGENT_CONTRIBUTIONS: AgentContribution[] = [
   faultCodesAgentTools,
   liveDataAgentTools,
@@ -45,6 +46,7 @@ export const AGENT_CONTRIBUTIONS: AgentContribution[] = [
   alertsAgentTools,
   errorLogAgentTools,
   canSnifferAgentTools,
+  PLAYBOOK_CONTRIBUTION,
 ];
 
 export default function AiDiagnoseRoute() {

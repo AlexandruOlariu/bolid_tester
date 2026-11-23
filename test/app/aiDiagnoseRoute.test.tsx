@@ -94,6 +94,25 @@ describe('AI diagnose route', () => {
     expect(offered).toEqual(expect.arrayContaining(names));
   });
 
+  it('composes the 17 playbooks after the features, each reaching its capability skill', () => {
+    const reg = buildAgentRegistry([CORE_AGENT_CONTRIBUTION, ...AGENT_CONTRIBUTIONS]);
+    expect([...reg.skills.values()].filter((s) => s.kind === 'playbook')).toHaveLength(17);
+    const offered = (id: string) => availableSkills(reg, availability(id)).map((s) => s.name);
+    expect(offered('golf-plus-2009-20tdi')).toEqual(
+      expect.arrayContaining([
+        'boost',
+        'dpf_regen',
+        'used_car',
+        'keeps_disconnecting',
+        'glow_plugs',
+      ]),
+    );
+    expect(offered('fiat-punto-2008-12')).toEqual(
+      expect.arrayContaining(['fuel_trims', 'misfire', 'cooling', 'check_engine_light']),
+    );
+    expect(offered('fiat-punto-2008-12')).not.toContain('dpf_regen');
+  });
+
   it('no capability tool is a write', () => {
     const reg = buildAgentRegistry([CORE_AGENT_CONTRIBUTION, ...AGENT_CONTRIBUTIONS]);
     for (const name of reg.tools.keys())

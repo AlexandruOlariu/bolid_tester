@@ -42,4 +42,9 @@ export const DRIVER_INSTRUCTIONS: Record<DriverInstructionId, DriverInstruction>
     en: 'With the engine idling, gently flex the wiring and connector of the sensor the app is watching for 10 seconds.',
     labelKey: 'aiDiagnose:agent.driver.wiggle_connector',
   },
+  smoke_colour: {
+    en: 'With the engine running, look at the exhaust: what colour is the smoke?',
+    labelKey: 'aiDiagnose:agent.driver.smoke_colour',
+    choices: ['white', 'blue', 'black', 'grey', 'none'],
+  },
 };

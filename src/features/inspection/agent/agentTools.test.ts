@@ -142,7 +142,13 @@ describe('inspection agent tools', () => {
     const proc = inspectionTools.procedures?.find((p) => p.id === 'used_car_check');
     expect(proc?.costMs).toBe(6000);
     const callTool = jest.fn().mockResolvedValue({ digest: 'd', summary: 's' });
-    const ctx = { ...(await ctxFor()).ctx, callTool, runProcedure: jest.fn() } as ProcedureContext;
+    const ctx = {
+      ...(await ctxFor()).ctx,
+      callTool,
+      runProcedure: jest.fn(),
+      hasTool: () => false,
+      hasSkill: () => false,
+    } as ProcedureContext;
     await expect(proc!.run(ctx)).resolves.toEqual({ digest: 'd', summary: 's' });
     expect(callTool).toHaveBeenCalledWith('read_inspection', {});
   });

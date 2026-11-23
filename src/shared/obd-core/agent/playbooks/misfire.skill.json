@@ -1,0 +1,24 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "misfire",
+  "kind": "playbook",
+  "description": "Use when a petrol engine shakes, misfires, idles rough, the MIL flashes or P0300-P0304 is stored: misfire counts per cylinder from Mode 06.",
+  "tools": ["run_skill", "read_live"],
+  "requires": {
+    "protocol": "can",
+    "fuel": ["petrol", "lpg"]
+  },
+  "procedure": "misfire",
+  "instructions": [
+    "Call run_skill {\"name\":\"misfire\"}: it reads the Mode 06 misfire monitors (MID A2-A5 = cylinders 1-4) and tells one bad cylinder from misfires spread across the engine.",
+    "Open fault_codes for P0300 (random) and P0301-P0304 (cylinder 1-4); open sensor_tests for the other Mode 06 results when it is offered.",
+    "With spread misfires, run fuel_trims when it is offered: a lean mixture misfires on every cylinder.",
+    "When the car reports no counts, say misfires could not be counted: the monitor may not have run since the codes were cleared."
+  ],
+  "interpret": [
+    "One cylinder with 5 or more misfires and at least twice the next highest: look at that cylinder's coil, plug, injector and compression (swap its coil with a neighbour's to see whether the misfire follows).",
+    "Misfires spread across cylinders (10 or more in total): a shared cause such as a vacuum leak or lean mixture, low fuel pressure, EGR, worn plugs all round or the LPG mixture.",
+    "Counts cover the latest driving cycles; a cold engine or a rough road can add a few counts without a fault.",
+    "A flashing MIL means misfires bad enough to damage the catalytic converter: drive gently and have it checked soon."
+  ]
+}

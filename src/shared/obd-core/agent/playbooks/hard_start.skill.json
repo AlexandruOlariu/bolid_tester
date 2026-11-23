@@ -1,0 +1,20 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "hard_start",
+  "kind": "playbook",
+  "description": "Use when the engine is slow to start, cranks but will not start, or starts and dies: battery, codes, coolant reading and glow plugs.",
+  "tools": ["run_skill", "ask_driver", "read_live", "read_dtcs"],
+  "instructions": [
+    "Call read_dtcs: crank or cam sensor codes (P0335, P0340), fuel pressure (P0087, P0191) or glow-plug codes (P0380, P0670-P0684) narrow it down at once. Immobilizer faults are out of scope: say only that a workshop must check them.",
+    "Run battery_charging, or battery when only the restart is possible: a weak battery or a deep cranking dip explains most slow starts.",
+    "Call read_live {\"pids\":[\"0105\",\"0142\"]} once: a coolant reading far from the real temperature (for example -40 °C on a warm engine) makes the ECU fuel the start wrongly.",
+    "On a diesel open glow_plugs; on a petrol run fuel_trims and misfire when they are offered.",
+    "When it starts and dies, read the freeze frame through fault_codes (read_dtcs_detail) for the conditions."
+  ],
+  "interpret": [
+    "Slow cranking: battery or starter circuit. Normal cranking but no start: fuel, ignition, sensors or the immobilizer.",
+    "A cranking dip under 9.6 V: the battery or its connections first.",
+    "A coolant sensor stuck cold floods a warm petrol engine; one stuck hot makes cold starts hard.",
+    "A diesel that is hard to start only when cold: glow plugs or their control; only when warm: fuel pressure or injector leak-back."
+  ]
+}

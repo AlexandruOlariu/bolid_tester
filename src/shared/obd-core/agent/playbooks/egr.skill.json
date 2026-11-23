@@ -1,0 +1,24 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "egr",
+  "kind": "playbook",
+  "description": "Use when EGR codes are stored (P0400-P0409), or a diesel smokes black, idles rough or lacks power at low rpm.",
+  "tools": ["run_skill", "read_live", "read_dtcs"],
+  "instructions": [
+    "Call read_dtcs, then detail EGR codes with fault_codes (read_dtcs_detail).",
+    "Open extended_data when it is offered: the EGR valve position tells a stuck valve. read_live {\"pids\":[\"0110\",\"010C\",\"010B\"],\"seconds\":10} at idle shows MAF and MAP.",
+    "There is no output test in this phase: the app does not move the EGR valve; say a workshop can run the EGR output test.",
+    "Also run boost and dpf_regen when they are offered: a clogged EGR adds soot, and a boost leak looks like an EGR fault."
+  ],
+  "interpret": [
+    "EGR stuck open: rough idle, black smoke and low power at low rpm; MAF at idle lower than usual (exhaust gas replaces fresh air).",
+    "EGR stuck closed: little effect on driving, sometimes P0401 (insufficient flow).",
+    "P0401 (insufficient flow): a clogged valve or cooler; P0403 (circuit): the actuator wiring or the valve motor.",
+    "Short trips clog the EGR and the DPF together."
+  ],
+  "profileNotes": {
+    "golf-plus-2009-20tdi": [
+      "The extended data includes the EGR valve position; this DID is not yet confirmed on the car, so treat it as indicative."
+    ]
+  }
+}

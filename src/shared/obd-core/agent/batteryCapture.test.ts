@@ -63,6 +63,8 @@ function fake(
     runProcedure: async () => {
       throw new Error('not used');
     },
+    hasTool: () => false,
+    hasSkill: () => false,
   };
   return { ctx, clock, reads, asked };
 }

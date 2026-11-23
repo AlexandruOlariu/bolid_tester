@@ -1,0 +1,24 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "rough_idle",
+  "kind": "playbook",
+  "description": "Use when the idle is rough, hunting, too high or too low, or the engine shakes at standstill: misfires, trims, idle data and codes.",
+  "tools": ["run_skill", "ask_driver", "read_live", "read_dtcs"],
+  "instructions": [
+    "Call read_dtcs, then read_live {\"pids\":[\"010C\",\"0105\",\"0104\",\"0111\"],\"seconds\":10} at a warm idle and watch how steady rpm and load are.",
+    "On a petrol run misfire and fuel_trims when they are offered: a vacuum leak is the most common rough-idle cause.",
+    "On a diesel open extended_data (injector corrections, EGR position) and egr when they are offered; record_live gives a longer rpm trace.",
+    "When the engine is off, use ask_driver start_engine_idle before reading idle data."
+  ],
+  "interpret": [
+    "Rpm swinging more than about ±100 rpm at a warm idle is hunting: a vacuum leak, the throttle body, an EGR stuck open or the injectors.",
+    "A steady but high idle on a warm engine: a coolant sensor reading cold, a vacuum leak or throttle adaptation.",
+    "On a diesel, an injector correction far from 0 (beyond about ±2 mg/stroke) points to the injector that makes the idle rough.",
+    "Rough only when cold and gone when warm: glow plugs on a diesel, a cold-start sensor or enrichment issue on a petrol."
+  ],
+  "profileNotes": {
+    "golf-plus-2009-20tdi": [
+      "The extended data has per-cylinder injector corrections (mg/stroke) and the EGR valve position; these DIDs are not yet confirmed on the car, so use them as indicative only."
+    ]
+  }
+}

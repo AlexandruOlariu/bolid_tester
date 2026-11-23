@@ -21,7 +21,8 @@ export type DriverInstructionId =
   | 'hold_2500_rpm'
   | 'electrical_load_on'
   | 'electrical_load_off'
-  | 'wiggle_connector'; // 34b/34c extend this union
+  | 'wiggle_connector'
+  | 'smoke_colour'; // 34b/34c extend this union
 
 /** How an `ask_driver` step ended. */
 export type DriverReply =
@@ -96,6 +97,11 @@ export interface ToolContext {
 export interface ProcedureContext extends ToolContext {
   callTool(name: string, args?: Record<string, unknown>): Promise<ToolResult>;
   runProcedure(id: string): Promise<ToolResult>;
+  /** True when `callTool(name)` would run: the tool is registered and offered for this car. Lets a
+   *  core procedure use a feature's tool only when that feature contributed it (plan 34c). */
+  hasTool(name: string): boolean;
+  /** True when the skill `name` is registered and offered for this car (plan 34c). */
+  hasSkill(name: string): boolean;
 }
 
 /** A read-only capability the model can call by name. */

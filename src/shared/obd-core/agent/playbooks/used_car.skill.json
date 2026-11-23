@@ -1,0 +1,22 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "used_car",
+  "kind": "playbook",
+  "description": "Use when the owner is buying or selling a used car and wants a quick check for hidden faults or recently cleared codes.",
+  "tools": ["run_skill"],
+  "requires": {
+    "skills": ["used_car_check"]
+  },
+  "procedure": "used_car",
+  "instructions": [
+    "Call run_skill {\"name\":\"used_car\"}: it runs the used_car_check inspection (MIL, codes, readiness, distance since codes were cleared, in-use counters) and returns a pass / caution / fail verdict.",
+    "Open used_car_check for how to read it; open fault_codes for each stored or permanent code; open history for past scans of this car when it is offered.",
+    "Say plainly that this screens the engine ECU only: not the body, the mechanics or the accident history."
+  ],
+  "interpret": [
+    "Fail: a stored or permanent code or the MIL is on. Permanent codes cannot be hidden by clearing.",
+    "Caution: pending codes, a likely recent code clear (3 or more monitors not ready, no stored codes, 80 km or less since clearing) or recently reset in-use counters.",
+    "Monitors not ready on their own are no proof of tampering: a battery disconnect does the same; advise a re-check after a full drive cycle.",
+    "Pass never proves the car is sound; it means the engine ECU shows nothing suspicious now."
+  ]
+}

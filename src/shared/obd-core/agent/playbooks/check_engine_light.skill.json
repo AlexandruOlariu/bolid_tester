@@ -1,0 +1,21 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "check_engine_light",
+  "kind": "playbook",
+  "description": "Use when the check-engine light (MIL) is or was on, or the owner asks what a fault code means: codes, readiness and per-code details.",
+  "tools": ["run_skill", "read_dtcs"],
+  "procedure": "check_engine_light",
+  "instructions": [
+    "Call run_skill {\"name\":\"check_engine_light\"}: it reads the stored, pending and permanent codes with the MIL and readiness, then details up to 4 stored codes (freeze frame, guide note) when the fault_codes feature is present.",
+    "Open fault_codes and use read_dtcs_detail or lookup_guide for codes not detailed yet.",
+    "Then open the playbook the codes point to: boost for P0299 / P0234, fuel_trims for P0171-P0175, misfire for P0300-P0304, dpf_regen for P2002, cooling for P0128 / P0117, battery_charging for P0562, egr for P0400-P0409, glow_plugs for P0380 / P0670.",
+    "When the engine ECU shows nothing but a warning light is on, scan the other modules with module_scan when it is offered."
+  ],
+  "interpret": [
+    "MIL on with stored codes: a confirmed fault. A pending code alone is not yet confirmed (one failed drive cycle); a permanent code stays until the ECU sees the fault fixed.",
+    "Stored codes with the MIL off: a fault not serious enough for the MIL, or one that has healed.",
+    "A freeze frame gives the conditions when the code set (rpm, load, coolant, speed): use it to say whether it happened cold, at idle or under load.",
+    "Never present clearing codes as a fix: it hides the evidence and resets readiness. Clearing stays the owner's own confirmed button.",
+    "Several codes at once often share one cause (low battery voltage, a ground, a vacuum leak): look for the common factor before listing parts."
+  ]
+}

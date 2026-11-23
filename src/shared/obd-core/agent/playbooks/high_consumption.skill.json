@@ -1,0 +1,19 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "high_consumption",
+  "kind": "playbook",
+  "description": "Use when the car uses more fuel than it used to or more than expected: fuel economy history, trims, coolant, DPF regenerations.",
+  "tools": ["run_skill", "read_live", "read_dtcs"],
+  "instructions": [
+    "Open fuel_economy (read_fuel_economy) when it is offered to compare the instant figure and recent trips with the car's own past.",
+    "Call read_live {\"pids\":[\"0105\"]} once and run cooling: an engine that stays cold burns more fuel.",
+    "On a petrol run fuel_trims and misfire when they are offered; on a diesel run dpf_regen when it is offered (frequent regenerations burn fuel).",
+    "Open maintenance when it is offered for an air filter, spark plugs or a service that is due."
+  ],
+  "interpret": [
+    "Short trips, cold weather and city driving raise consumption with no fault: compare like with like.",
+    "A rich trim (-10 % or less) burns more fuel; a lean trim does not raise consumption by itself.",
+    "An engine that never reaches 80 °C (thermostat stuck open) can use noticeably more fuel.",
+    "A diesel that regenerates every few hundred km burns extra fuel each time."
+  ]
+}

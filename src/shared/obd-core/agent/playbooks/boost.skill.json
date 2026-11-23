@@ -1,0 +1,39 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "boost",
+  "kind": "playbook",
+  "description": "Use when a turbo car pulls weak, lacks power, goes into limp mode or stores P0299 / P0234: MAP-only boost at idle and at a 2500 rpm hold.",
+  "tools": ["run_skill", "ask_driver", "read_live"],
+  "driverSteps": ["hold_2500_rpm"],
+  "requires": {
+    "profile": ["boost"],
+    "pids": ["010B", "010C"]
+  },
+  "procedure": "boost",
+  "instructions": [
+    "Call run_skill {\"name\":\"boost\"}: it reads MAP (010B), baro (0133) and rpm for 3 s at idle, asks the driver to hold 2500 rpm in Park or Neutral (hold_2500_rpm), reads MAP and rpm for 5 s and judges both against this car's expected range.",
+    "Read every line: a part not measured (the driver could not hold, the rev hold was not reached, a PID did not answer) is not judged; say so instead of guessing.",
+    "A stationary hold builds little boost, so this catches gross faults only (no boost, overboost, a stuck sensor). For underboost under load, open trips and read a recorded drive that logged 010B.",
+    "With a boost finding, open fault_codes for P0299 (underboost), P0234 (overboost), P2563 / P0045 (VNT position or actuator) and P0106 (MAP sensor)."
+  ],
+  "interpret": [
+    "There is no standard requested-boost PID: the check is MAP minus barometric pressure (kPa over baro).",
+    "On a VAG diesel, MAP minus baro at idle near 0 kPa is normal; more than 30 kPa at idle points to a stuck VNT (variable vanes stuck closed).",
+    "MAP more than 10 kPa below baro at idle is implausible on a diesel (no throttle plate): suspect the MAP sensor or its wiring.",
+    "MAP that does not move while rpm rises by 1000 or more is a stuck MAP sensor: check the sensor before judging boost.",
+    "Boost below the range at the hold: a boost leak (intercooler hoses, clamps), a sticking VNT or vane actuator, or a vacuum supply fault (N75 valve, vacuum pump, hoses).",
+    "Boost above the range at the hold: overboost, usually a VNT sticking closed or its control (N75).",
+    "Without 0133, baro is assumed 101.3 kPa (sea level): at altitude the deltas read high by about 1 kPa per 100 m.",
+    "The expected ranges are initial values not yet confirmed on the car: quote them as indicative."
+  ],
+  "profileNotes": {
+    "golf-plus-2009-20tdi": [
+      "2.0 TDI common rail (engine CBD) with a VNT turbo. Expected over baro: -5 to 15 kPa at idle, 8 to 60 kPa at a 2500 rpm hold (initial values, not yet confirmed on the car).",
+      "A stationary hold on this engine builds only a little boost; a low hold value with no boost codes is a reason to check a recorded drive, not proof of a fault."
+    ],
+    "passat-b55-19tdi": [
+      "1.9 TDI PD (engine AVB) with a vacuum-controlled VNT turbo (N75 valve). Expected over baro: -5 to 15 kPa at idle, 5 to 60 kPa at a 2500 rpm hold (initial values, not yet confirmed on the car).",
+      "This car has no barometric PID (0133): baro is assumed 101.3 kPa, so say the deltas are approximate."
+    ]
+  }
+}

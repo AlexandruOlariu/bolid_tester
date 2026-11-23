@@ -1,0 +1,22 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "glow_plugs",
+  "kind": "playbook",
+  "description": "Use when a diesel is hard to start cold, smokes white or idles rough after a cold start, or the glow-plug light flashes.",
+  "tools": ["run_skill", "read_live", "read_dtcs"],
+  "requires": {
+    "fuel": ["diesel"]
+  },
+  "instructions": [
+    "Call read_dtcs: glow-plug codes P0380-P0384 (circuit or relay) and P0670-P0684 (per plug or control module) name the plug or the controller.",
+    "Open fault_codes and use read_dtcs_detail on each glow-plug code; open module_scan when it is offered for the engine module's own codes.",
+    "Call read_live {\"pids\":[\"0105\",\"0142\"]} once: battery voltage and coolant temperature decide the glow time.",
+    "There is no output test in this phase: say a workshop can measure the plugs or run the glow-plug output test."
+  ],
+  "interpret": [
+    "One failed plug: a rough start and some white smoke in the first seconds when cold; two or more: hard cold starts.",
+    "A glow-plug light that flashes while driving signals a stored engine fault, not only a plug.",
+    "A coolant sensor that reads warm on a cold engine shortens the glow time and makes cold starts hard.",
+    "A weak battery (under about 11 V while glowing) heats the plugs less: check the battery first."
+  ]
+}

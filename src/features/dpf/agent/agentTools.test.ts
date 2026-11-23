@@ -210,7 +210,13 @@ describe('dpf agent tools', () => {
     const proc = dpfTools.procedures?.find((p) => p.id === 'dpf');
     expect(proc).toBeDefined();
     const callTool = jest.fn().mockResolvedValue({ digest: 'd', summary: 's' });
-    const ctx = { ...(await golfCtx()), callTool, runProcedure: jest.fn() } as ProcedureContext;
+    const ctx = {
+      ...(await golfCtx()),
+      callTool,
+      runProcedure: jest.fn(),
+      hasTool: () => false,
+      hasSkill: () => false,
+    } as ProcedureContext;
     await expect(proc!.run(ctx)).resolves.toEqual({ digest: 'd', summary: 's' });
     expect(callTool).toHaveBeenCalledWith('read_dpf', {});
   });

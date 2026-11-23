@@ -1,0 +1,23 @@
+{
+  "format": "bolid.skill.v1",
+  "name": "dpf_regen",
+  "kind": "playbook",
+  "description": "Use when a diesel shows a DPF warning, needs a regeneration, regenerates too often or loses power after short trips: soot load and regen state.",
+  "tools": ["run_skill"],
+  "requires": {
+    "skills": ["dpf"]
+  },
+  "procedure": "dpf_regen",
+  "instructions": [
+    "Call run_skill {\"name\":\"dpf_regen\"}: it runs the dpf check (soot load and mass, ash, km since the last regeneration, regeneration count, exhaust temperature) and returns its status.",
+    "Open the dpf skill for how to read each value; open fault_codes for P2002 and P2452-P2463 (filter and differential pressure sensor) and P0401 / P0403 (EGR adds soot).",
+    "The app does not run a forced regeneration: when the soot load is high, advise 15-20 min of steady driving above 60 km/h, or a workshop when the light stays on."
+  ],
+  "interpret": [
+    "Soot load under 45 % is ok; 45-69 % filling; 70-89 % a regeneration is due; 90 % or more high: a service regeneration may be needed.",
+    "Exhaust temperature at 500 °C or more with soot present means a regeneration is running now: keep driving steadily and do not switch off.",
+    "Frequent regenerations (few km since the last one, a high count) point to an underlying cause: EGR, injectors, the pressure sensor or oil dilution.",
+    "High ash with low soot is an aged filter: a regeneration does not burn ash.",
+    "Values marked unconfirmed support at most an indicative verdict."
+  ]
+}
