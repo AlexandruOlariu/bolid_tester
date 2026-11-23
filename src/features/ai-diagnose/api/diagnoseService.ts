@@ -7,46 +7,16 @@ import {
   type AgentStep,
   type AiChatMessage,
   type AiReport,
-  type KnownCheck,
-  type VehicleContext,
   aiConfigProblem,
   buildAgentFollowUpMessages,
-  vagCodeForDtc,
 } from '@/shared/obd-core';
 import { getAiClient } from '@/shared/ai';
-import { vehicleLabel, type VehicleProfile } from '@/shared/vehicles';
-import { GENERIC_GUIDE, matchFaultGuide } from '@/shared/vehicles/faultGuides';
 import { useSessionStore } from '@/shared/state/sessionStore';
 import { useSettingsStore } from '@/shared/state/settingsStore';
 
-/** Map the selected vehicle profile into the AI's default vehicle context. Always returns something
- *  (even for the generic profile) so the model knows what kind of car it is looking at. */
-export function toVehicleContext(p: VehicleProfile): VehicleContext {
-  return {
-    label: vehicleLabel(p),
-    year: p.year || undefined,
-    engine: p.engine && p.engine !== '—' ? p.engine : undefined,
-    fuel: p.fuel && p.fuel !== 'other' ? p.fuel : undefined,
-    expectedProtocol:
-      p.expectedProtocol && p.expectedProtocol !== 'AUTO' ? p.expectedProtocol : undefined,
-    notes: p.notes || undefined,
-    make: p.make,
-  };
-}
-
-/** The curated guides (not the generic fallback) that match the read codes on this car, one entry
- *  per distinct guide, listed to the model as "Known checks for this car". */
-export function knownChecksFor(profileId: string, codes: string[]): KnownCheck[] {
-  const out: KnownCheck[] = [];
-  const seen = new Set<object>();
-  for (const code of codes) {
-    const guide = matchFaultGuide(profileId, code, vagCodeForDtc(code) || undefined);
-    if (guide === GENERIC_GUIDE || seen.has(guide)) continue;
-    seen.add(guide);
-    out.push({ code, note: guide.note });
-  }
-  return out;
-}
+/** The vehicle context and known checks live in `@/shared/vehicles/agentContext` (store-free, shared
+ *  with the offline eval set); re-exported here for the agent service. */
+export { knownChecksFor, toVehicleContext } from '@/shared/vehicles/agentContext';
 
 /** Answer one follow-up question about `report` (plan 19, over the agent trail since plan 34a): the
  *  trail's digests, the report and the last turns of the conversation go to the configured provider

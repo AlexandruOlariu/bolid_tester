@@ -20,7 +20,6 @@ import {
   createReadOnlySession,
   runAgent,
   runTriage,
-  vagCodeForDtc,
   type AgentChat,
   type AgentOutcome,
   type AgentRunRequest,
@@ -29,13 +28,11 @@ import {
   type DriverInstructionId,
   type DriverReply,
   type FindingTranslator,
-  type KnownCheck,
   type SimFaultId,
   type ToolContext,
-  type VehicleContext,
 } from '@/shared/obd-core';
-import { getVehicleProfile, vehicleLabel, type VehicleProfile } from '@/shared/vehicles';
-import { GENERIC_GUIDE, matchFaultGuide } from '@/shared/vehicles/faultGuides';
+import { getVehicleProfile } from '@/shared/vehicles';
+import { knownChecksFor, toVehicleContext } from '@/shared/vehicles/agentContext';
 import en from '@/shared/i18n/locales/en/aiDiagnose.json';
 import { getAiClient } from '../index';
 import cases from './cases.json';
@@ -86,29 +83,6 @@ const translateFinding: FindingTranslator = (f) => ({
   detail: englishText(`${f.key}.detail`, f.values),
 });
 
-/** The curated guides matching the read codes, as the app's agent service lists them. */
-function knownChecksFor(profileId: string, codes: string[]): KnownCheck[] {
-  const out: KnownCheck[] = [];
-  const seen = new Set<object>();
-  for (const code of codes) {
-    const guide = matchFaultGuide(profileId, code, vagCodeForDtc(code) || undefined);
-    if (guide === GENERIC_GUIDE || seen.has(guide)) continue;
-    seen.add(guide);
-    out.push({ code, note: guide.note });
-  }
-  return out;
-}
-
-function vehicleContext(p: VehicleProfile): VehicleContext {
-  return {
-    label: vehicleLabel(p),
-    year: p.year || undefined,
-    engine: p.engine && p.engine !== '—' ? p.engine : undefined,
-    fuel: p.fuel && p.fuel !== 'other' ? p.fuel : undefined,
-    make: p.make,
-  };
-}
-
 /** The most severe finding, the first one on ties. */
 function topFinding(findings: AiFinding[]): AiFinding | undefined {
   const rank = (f: AiFinding) => DIAG_SEVERITIES.indexOf(f.severity);
@@ -144,7 +118,7 @@ async function runCase(c: EvalCase): Promise<CaseResult> {
       session: createReadOnlySession(session),
       profile,
       guideProfileId: profile.id,
-      vehicle: vehicleContext(profile),
+      vehicle: toVehicleContext(profile),
       vin: info.vin ?? null,
       now: () => Date.now(),
       sleep: (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),

@@ -369,6 +369,8 @@ warn → `attention`, else `ok`).
 Every diagnosis includes the **selected vehicle's details as default context** for the model: label
 (make/model/year), engine, fuel, expected transport, and the profile's free-form notes — built by
 `toVehicleContext()` from the chosen `VehicleProfile` (always present, even for the generic profile).
+`toVehicleContext()` and `knownChecksFor()` live in the store-free `src/shared/vehicles/agentContext.ts`,
+so the app and the offline eval set (`docs/testing.md#agent-eval-set`) send the model the same context.
 They appear at the top of the snapshot digest, and the system prompt instructs the model to tailor
 its analysis to that specific car and its fuel type. The live-detected protocol and VIN are included
 alongside, so the model sees both what the car _should_ be and what was actually read.
