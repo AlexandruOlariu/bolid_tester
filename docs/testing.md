@@ -183,7 +183,8 @@ app's real labels; when a screen's copy changes, update the flow in the same cha
 
 `.maestro/ai-agent.yaml` drives a whole agent investigation with no car and no AI server: fresh
 install → **Settings → Developer & simulator → Simulator (no car) → Scripted fault: Low boost** →
-back → **Settings → AI assistant** → switch on → **Provider: Custom** → **Server URL** `mock://ai` →
+back → **Settings → AI assistant** → make sure it is on (it is on by default; the flow taps the switch
+only while the "off" help text shows) → **Provider: Custom** → **Server URL** `mock://ai` →
 **Connect → Connect to simulator** → pick the Golf → **More → Diagnose (AI)** → type
 `pulls weak above 2000 rpm` → **Investigate** → the rev-hold prompt ("In Park or Neutral, hold the
 engine at 2500 rpm for 10 seconds.") → **Done** (the simulator then holds 2500 rpm with MAP near

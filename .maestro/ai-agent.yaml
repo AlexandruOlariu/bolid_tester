@@ -46,7 +46,8 @@ name: AI agent — simulator low boost, mock AI, boost playbook
     timeout: 60000
 - tapOn: 'Low boost'
 
-# Back to the Settings hub → AI assistant → on → Provider Custom → Server URL mock://ai.
+# Back to the Settings hub → AI assistant → make sure it is on → Provider Custom → Server URL
+# mock://ai.
 - back
 - scrollUntilVisible:
     element:
@@ -55,7 +56,19 @@ name: AI agent — simulator low boost, mock AI, boost playbook
     timeout: 60000
 # The hub row is one button labelled "AI assistant. <Off | On · provider>".
 - tapOn: 'AI assistant.*'
-- tapOn: 'AI assistant enabled'
+- extendedWaitUntil:
+    visible: 'AI assistant enabled'
+    timeout: 10000
+# The assistant is on by default (a fresh install shows the provider settings), so a bare tap
+# would switch it OFF and hide them. Tap the switch only while the off help text shows.
+- runFlow:
+    when:
+      visible:
+        id: 'settings-ai-off'
+    commands:
+      - tapOn: 'AI assistant enabled'
+- assertNotVisible:
+    id: 'settings-ai-off'
 - tapOn: 'Custom'
 - tapOn: 'AI server URL'
 - inputText: 'mock://ai'
