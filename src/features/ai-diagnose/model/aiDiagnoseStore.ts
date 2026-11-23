@@ -116,6 +116,8 @@ export const useAiDiagnoseStore = create<AiDiagnoseState>((set) => ({
     set({
       phase: 'triage',
       progress: translate('aiDiagnose:msg.gathering'),
+      // The re-read is not about one code: no "Focused on …" card above its report.
+      focusCode: null,
       trail: [],
       stepsUsed: 0,
       driver: null,

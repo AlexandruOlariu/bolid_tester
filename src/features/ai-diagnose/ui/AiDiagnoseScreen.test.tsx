@@ -16,6 +16,7 @@ import { useErrorLogStore } from '@/shared/state/errorLogStore';
 import { faultCodesAgentTools } from '@/features/fault-codes';
 import { liveDataAgentTools } from '@/features/live-data';
 import { batteryHealthAgentTools } from '@/features/battery-health';
+import { localHeuristicReport, type DiagnosticSnapshot } from '@/shared/obd-core';
 import { useAiDiagnoseStore } from '../model/aiDiagnoseStore';
 import * as diagnoseService from '../api/diagnoseService';
 import * as agentService from '../api/agentService';
@@ -362,6 +363,109 @@ describe('AiDiagnoseScreen agent run with mock://ai', () => {
     expect(reread.trail?.map((s) => s.kind)).toEqual(['triage']);
     expect(reread.request).toBeUndefined();
     expect(reread.end).toBeUndefined();
+  });
+});
+
+describe('AiDiagnoseScreen — a reset while a run is going', () => {
+  beforeEach(() => {
+    useVehicleStore.setState({ selectedProfileId: GOLF });
+  });
+
+  it('a run that ends after a reset is stopped and saves nothing', async () => {
+    useMockAi();
+    await connectSimulator({ injectedDtcs: ['P0401'] });
+    let finish: (o: agentService.AgentRunOutcome) => void = () => undefined;
+    const stop = jest.fn();
+    const spy = jest.spyOn(agentService, 'startAgentRun').mockImplementation(() => ({
+      done: new Promise<agentService.AgentRunOutcome>((resolve) => {
+        finish = resolve;
+      }),
+      stop,
+    }));
+    try {
+      renderWithProviders(<AiDiagnoseScreen />);
+      await act(async () => {
+        fireEvent.press(screen.getByText('Check everything'));
+      });
+      expect(useAiDiagnoseStore.getState().phase).toBe('triage');
+
+      // Settings → reset app data puts the in-memory store back to its initial state.
+      act(() => {
+        useAiDiagnoseStore.setState(useAiDiagnoseStore.getInitialState(), true);
+        useHistoryStore.setState({ entries: [] });
+      });
+      expect(stop).toHaveBeenCalledTimes(1);
+
+      // The run only notices the closed link later and ends "disconnected" with a report.
+      const snapshot: DiagnosticSnapshot = {
+        protocol: 'ISO_15765_4_CAN_11_500',
+        vin: 'WVWZZZ1KZ9W903398',
+        voltage: 12.4,
+        supportedPidCount: 20,
+        readiness: null,
+        dtcs: { stored: [], pending: [], permanent: [] },
+        freezeFrame: null,
+        live: [],
+      };
+      await act(async () => {
+        finish({
+          report: localHeuristicReport(snapshot),
+          trail: [],
+          snapshot,
+          end: 'disconnected',
+          stepsUsed: 1,
+          notice: 'disconnected',
+        });
+      });
+      expect(useHistoryStore.getState().entries).toEqual([]);
+      expect(useAiDiagnoseStore.getState().phase).toBe('idle');
+      expect(useAiDiagnoseStore.getState().report).toBeNull();
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('a Clear codes re-read that ends after a reset saves nothing', async () => {
+    useMockAi();
+    await connectSimulator({ injectedDtcs: ['P0401'] });
+    renderWithProviders(<AiDiagnoseScreen />);
+    await runDiagnosis();
+    const real = agentService.runTriageOnly;
+    let release: () => void = () => undefined;
+    const gateOpen = new Promise<void>((r) => {
+      release = r;
+    });
+    const spy = jest.spyOn(agentService, 'runTriageOnly').mockImplementation(async (c) => {
+      const r = await real(c);
+      await gateOpen;
+      return r;
+    });
+    try {
+      await confirmClear();
+      expect(useAiDiagnoseStore.getState().phase).toBe('triage');
+      act(() => {
+        useAiDiagnoseStore.getState().reset();
+        useHistoryStore.setState({ entries: [] });
+      });
+      expect(spy).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        release();
+        await spy.mock.results[0].value;
+        await new Promise((r) => setTimeout(r, 0));
+      });
+      expect(useHistoryStore.getState().entries).toEqual([]);
+      expect(useAiDiagnoseStore.getState().phase).toBe('idle');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('Clear codes drops the focus card of an Explain-with-AI run', async () => {
+    useMockAi();
+    await connectSimulator({ injectedDtcs: ['P0401'] });
+    useAiDiagnoseStore.setState({ focusCode: 'P0401' });
+    useAiDiagnoseStore.getState().startTriageOnly();
+    expect(useAiDiagnoseStore.getState().focusCode).toBeNull();
   });
 });
 

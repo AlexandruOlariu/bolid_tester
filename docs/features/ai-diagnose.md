@@ -58,7 +58,9 @@ Reachable from the **More** tab (`/ai-diagnose`). Every run is saved, with its t
     and the digest behind **Show data**; after the run its header ("Investigation · n steps")
     collapses / expands the rows.
   - **Stop** aborts the run at once (an open driver prompt settles as "Can't"); the run ends
-    `stopped`. A double tap, or a tap while a run is going, starts nothing.
+    `stopped`. A double tap, or a tap while a run is going, starts nothing. A reset (the store's
+    `reset()`, or Settings → reset app data) stops the run in flight (`stopActiveAgentRun`); a run
+    or a Clear codes re-read that ends after the reset saves nothing to the screen or History.
   - **Driver prompt** (`ui/DriverPrompt.tsx`) while the run waits for the driver: the instruction,
     "The car must stay stationary.", the instruction's choice buttons when it has any (labelled
     from `aiDiagnose:agent.driverChoice.<value>`) and **Done** / **Can't**. The answer reaches the run through the

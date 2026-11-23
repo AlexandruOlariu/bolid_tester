@@ -26,6 +26,21 @@ import { translate } from '@/shared/i18n';
  *  state so a remounted screen still reaches the run its store shows. */
 let activeRun: { stop(): void; gate: DriverGate } | null = null;
 
+/** Stops the run in flight and forgets it, so it neither keeps the adapter nor saves its outcome.
+ *  Called when the store's request is dropped (`reset()`, or Settings → reset app data, which puts
+ *  the store back to its initial state). */
+export function stopActiveAgentRun(): void {
+  const run = activeRun;
+  activeRun = null;
+  run?.stop();
+}
+
+// A reset drops the request: a run still waiting on the model or on the driver must not write its
+// outcome (VIN, report, trail) into a store and a History that were just cleared.
+useAiDiagnoseStore.subscribe((s, prev) => {
+  if (prev.request !== null && s.request === null && activeRun) stopActiveAgentRun();
+});
+
 const isRunning = (): boolean => {
   const phase = useAiDiagnoseStore.getState().phase;
   return phase === 'triage' || phase === 'investigating';
@@ -106,8 +121,10 @@ export function useAiDiagnose(
       }
       store.startRun(req);
       const gate = createDriverGate();
-      // A superseded run (the store was reset and another run started) must not touch the store.
-      const current = (): boolean => activeRun?.gate === gate;
+      // A superseded run (the store was reset, maybe another run started) must not touch the store:
+      // a reset stops and forgets the run and drops the request, `startRun` keeps `req` itself.
+      const current = (): boolean =>
+        activeRun?.gate === gate && useAiDiagnoseStore.getState().request === req;
       let handle: agentService.AgentRunHandle;
       try {
         handle = agentService.startAgentRun(req, contributions, {
@@ -140,7 +157,7 @@ export function useAiDiagnose(
         useAiDiagnoseStore.getState().setError(e instanceof Error ? e.message : String(e));
         logError({ source: 'ai-diagnose', error: e, context: { phase: 'agent' } });
       } finally {
-        if (current()) activeRun = null;
+        if (activeRun?.gate === gate) activeRun = null;
       }
     },
     [contributions],
@@ -193,8 +210,16 @@ export function useAiDiagnose(
     if (!ok || isRunning()) return ok;
     const store = useAiDiagnoseStore.getState();
     store.startTriageOnly();
+    const request = useAiDiagnoseStore.getState().request;
+    // A reset during the re-read (phase back to idle, request dropped) or a new run started after
+    // it makes the re-read stale: it must not land in the store or in History.
+    const stale = (): boolean => {
+      const cur = useAiDiagnoseStore.getState();
+      return cur.phase !== 'triage' || cur.request !== request || activeRun !== null;
+    };
     try {
       const { triage, report: r } = await agentService.runTriageOnly(contributions);
+      if (stale()) return ok;
       useAiDiagnoseStore
         .getState()
         .setOutcome(
@@ -203,6 +228,7 @@ export function useAiDiagnose(
         );
       addHistoryEntry(r, triage.snapshot, [triage.step]);
     } catch (e) {
+      if (stale()) return ok;
       useAiDiagnoseStore.getState().setError(e instanceof Error ? e.message : String(e));
       logError({ source: 'ai-diagnose', error: e, context: { phase: 'clear-codes' } });
     }
