@@ -133,10 +133,10 @@ describe('buildAgentSharePackage', () => {
     ).toContain('Complaint: pulls weak above 2000 rpm');
     expect(
       buildAgentSharePackage(
-        { ...input, request: { mode: 'everything', focusCode: 'P0401' } },
+        { ...input, request: { mode: 'symptom', symptom: 'P0401', focusCode: 'P0401' } },
         { includeVin: false },
       ),
-    ).toContain('Complaint: explain fault code P0401');
+    ).toMatch(/^Complaint: explain fault code P0401$/m);
   });
 
   it('is clamped', () => {

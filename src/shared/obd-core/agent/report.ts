@@ -18,6 +18,14 @@ import {
 } from '../analysis/aiDiagnosis';
 import type { AgentStep, FindingTranslator } from './types';
 
+/** The agent rule report's disclaimer. Neutral about why the report is on-device: it also covers
+ *  Stop, the step / time / adapter budgets, invalid replies, runs without AI and the triage-only
+ *  re-read after Clear codes, where "the AI server was unavailable" would be wrong (the end notice
+ *  says why). */
+export const DISCLAIMER_ON_DEVICE =
+  'Generated on-device from rule-based checks over the data read from your car. Not a substitute ' +
+  'for inspection by a qualified mechanic.';
+
 function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
@@ -126,5 +134,6 @@ export function agentRuleReport(
     summary: localSummary(findings),
     findings,
     source: 'local',
+    disclaimer: DISCLAIMER_ON_DEVICE,
   };
 }

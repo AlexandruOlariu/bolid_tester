@@ -288,7 +288,10 @@ start (symptom | "check everything" | focus code)
   `adapter`, `invalid`, `stopped`, `disconnected`, `ai_error`) ends in the on-device rule report over
   everything gathered (`agentRuleReport`: the rule checks on the triage snapshot, each citing step 1,
   plus one translated finding per tool finding in the trail, citing its step) with the notice
-  `aiDiagnose:agent.end.<end>`. An AI error or a disconnect is logged as an `ai-diagnose` warning.
+  `aiDiagnose:agent.end.<end>` and a neutral on-device disclaimer (`DISCLAIMER_ON_DEVICE`: it never
+  says "the AI server was unavailable", which the notice would contradict after a Stop, a budget
+  end, a run without AI or the Clear codes re-read). An AI error or a disconnect is logged as an
+  `ai-diagnose` warning.
   With the AI off or not configured, the run first sweeps the available procedures (see
   [Without AI](#without-ai)).
 - **After the run**: Re-run repeats the request; Clear codes runs Mode 04, then a triage-only

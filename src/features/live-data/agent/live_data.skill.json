@@ -16,6 +16,6 @@
     "Warm idle: usually 700-900 rpm. A min-max swing over about 100 rpm while sampling points to an unstable idle.",
     "MAP (010B) at idle: close to barometric pressure (about 100 kPa) on a diesel, about 25-45 kPa on a petrol engine.",
     "Fuel trims (0106 / 0107) within ±10 % are normal; beyond +20 % points to lean (air leak, low fuel delivery), beyond -20 % to rich.",
-    "Module voltage (0142) with the engine running: 13.5-14.5 V means the alternator charges; under 13 V it does not."
+    "Module voltage (0142) with the engine running: 13.5-14.5 V means the alternator charges; under 13.5 V it does not (not charging)."
   ]
 }

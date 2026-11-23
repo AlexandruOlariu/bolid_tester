@@ -28,7 +28,7 @@ from the app unless you turn on crash reports (below).
   them, control-module part numbers, software versions and fault codes, manufacturer readings
   (extended data, adaptation and coding values, DPF values), recorded trip values, fuel-economy and
   performance-test results, the maintenance log, past diagnoses and fault-code checks from History,
-  your alert rules, recent app error messages (with VINs and addresses removed), adapter details,
+  your alert rules, recent app error messages (with VINs masked and addresses removed), adapter details,
   and your answers to the on-screen driver steps, plus your question and the earlier answers. It
   goes only to the provider you chose. A local server stays on your network; a cloud provider
   (OpenAI or Anthropic) receives it over the internet and handles it under its own privacy policy

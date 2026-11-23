@@ -1,5 +1,5 @@
 import { localHeuristicReport, type DiagnosticSnapshot } from '../analysis/aiDiagnosis';
-import { agentRuleReport, parseAgentFinal } from './report';
+import { DISCLAIMER_ON_DEVICE, agentRuleReport, parseAgentFinal } from './report';
 import type { AgentStep, FindingTranslator } from './types';
 
 function step(id: number, over: Partial<AgentStep> = {}): AgentStep {
@@ -241,6 +241,11 @@ describe('agentRuleReport', () => {
       steps: [3],
     });
     expect(r.overall).toBe('ok');
+  });
+  it('carries a neutral on-device disclaimer, not "the AI server was unavailable"', () => {
+    const r = agentRuleReport(snapshotWith([]), [step(1)], { translate });
+    expect(r.disclaimer).toBe(DISCLAIMER_ON_DEVICE);
+    expect(r.disclaimer).not.toMatch(/unavailable/i);
   });
   it('overall and summary follow the skill findings', () => {
     const r = agentRuleReport(

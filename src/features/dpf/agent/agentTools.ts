@@ -44,6 +44,11 @@ const ROLE_LABELS: [NonNullable<ExtendedPid['role']>, string][] = [
 
 const UNCONFIRMED = ' (unconfirmed)';
 
+/** The values a step's confirmation rests on: the assessment inputs when any answered, else every
+ *  answered value. */
+const confirmationBasis = (used: DpfValue[], read: DpfValue[]): DpfValue[] =>
+  used.length > 0 ? used : read;
+
 const valueText = (v: DpfValue): string =>
   v.value == null ? 'no answer' : `${oneDecimal(v.value)}${v.unit ? ` ${v.unit}` : ''}`;
 
@@ -78,6 +83,7 @@ async function runReadDpf(_args: Record<string, unknown>, ctx: ToolContext): Pro
   const read = values.filter((v) => v.value != null);
   // The values the assessment used: every answered input role (the diesel extras do not feed it).
   const used = read.filter((v) => isDpfInputRole(v.role));
+  const basis = confirmationBasis(used, read);
   const finding: SkillFinding = {
     key: `dpf:agent.finding.${report.status}`,
     severity: SEVERITY[report.status],
@@ -91,7 +97,10 @@ async function runReadDpf(_args: Record<string, unknown>, ctx: ToolContext): Pro
         ? `DPF: ${report.status}, soot ${oneDecimal(report.sootPct)} %`
         : `DPF: ${report.status}`,
     findings: [finding],
-    ...(read.length > 0 && read.every(unverified) ? { unconfirmed: true } : {}),
+    // Judged on the assessment inputs, not on every answered value: a confirmed extra (oil, EGR)
+    // next to unverified soot must not make the step look confirmed and leave a model-cited "high"
+    // uncapped. With no input answered, the extras alone decide.
+    ...(basis.length > 0 && basis.every(unverified) ? { unconfirmed: true } : {}),
   };
 }
 

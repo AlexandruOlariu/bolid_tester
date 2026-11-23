@@ -28,6 +28,12 @@ describe('privacy policy (Settings → About ↔ docs/privacy-policy.md)', () =>
     }
   });
 
+  it('says app error messages go to the AI with VINs masked (scrubText keeps the last 5), not removed', () => {
+    const all = plain(PRIVACY_POLICY.flatMap((s) => s.paragraphs).join(' '));
+    expect(all).toContain('recent app error messages (with VINs masked and addresses removed)');
+    expect(all).not.toContain('VINs and addresses removed');
+  });
+
   it('carries the same "last updated" date', () => {
     expect(PRIVACY_POLICY_UPDATED).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(doc).toContain(`Last updated: ${PRIVACY_POLICY_UPDATED}`);

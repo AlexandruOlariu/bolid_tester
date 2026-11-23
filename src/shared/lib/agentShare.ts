@@ -43,7 +43,10 @@ function complaint(request: AgentRunRequest | null): string | null {
   if (!request) return null;
   const parts: string[] = [];
   const symptom = request.mode === 'symptom' ? request.symptom?.trim() : undefined;
-  if (symptom) parts.push(symptom);
+  // "Explain with AI" sends the code as the symptom too: say it once, not "P0401 — explain … P0401".
+  const sameAsFocus =
+    !!symptom && !!request.focusCode && symptom.toUpperCase() === request.focusCode.toUpperCase();
+  if (symptom && !sameAsFocus) parts.push(symptom);
   if (request.focusCode) parts.push(`explain fault code ${request.focusCode}`);
   return parts.length > 0 ? parts.join(' — ') : 'Check everything';
 }

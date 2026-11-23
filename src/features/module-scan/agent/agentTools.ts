@@ -169,7 +169,13 @@ async function scanModules(args: Record<string, unknown>, ctx: ToolContext): Pro
   );
 
   const outcomes: ModuleOutcome[] = [];
+  let notScanned = 0;
   for (const m of chosen) {
+    // Stop releases the adapter at once, not after a scan of up to 30 s.
+    if (ctx.signal.aborted) {
+      notScanned = chosen.length - outcomes.length;
+      break;
+    }
     // Never even ask the facade for an excluded module: it would refuse, but there is no reason to.
     outcomes.push(
       isExcluded(m.address)
@@ -211,6 +217,7 @@ async function scanModules(args: Record<string, unknown>, ctx: ToolContext): Pro
     ...(tp20 ? [tp20] : []),
     ...outcomes.map((o) => o.line),
     ...extra,
+    ...(notScanned > 0 ? [`Stopped: ${notScanned} modules not scanned.`] : []),
   ];
 
   const findings: SkillFinding[] = withCodes.map((o) => ({

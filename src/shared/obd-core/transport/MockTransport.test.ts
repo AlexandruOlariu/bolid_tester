@@ -490,13 +490,20 @@ describe('MockTransport scripted faults and the rev hold (plan 34c)', () => {
       expect(buildScenario(id).simFault).toBeUndefined();
   });
 
-  it('holdRevs raises rpm and MAP for its window only', async () => {
+  it('holdRevs raises rpm and MAP while the hold lasts', async () => {
     const m = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
     await connect(m);
-    m.holdRevs(50);
+    // A window long enough that a slow CI worker still asserts inside it.
+    m.holdRevs(1_000);
     expect(await answer(m, '010C')).toBe('410C2710');
     expect(await answer(m, '010B')).toBe('410B7D');
-    await sleep(60);
+  });
+
+  it('holdRevs ends after its window', async () => {
+    const m = new MockTransport(buildScenario('golf-plus-2009-20tdi'));
+    await connect(m);
+    m.holdRevs(5);
+    await sleep(30);
     expect(await answer(m, '010C')).toBe('410C0CD0');
     expect(await answer(m, '010B')).toBe('410B64');
   });
@@ -512,7 +519,7 @@ describe('MockTransport scripted faults and the rev hold (plan 34c)', () => {
     const m = new MockTransport(buildScenario('golf-plus-2009-20tdi', { simFault: 'low_boost' }));
     await connect(m);
     expect(await answer(m, '010B')).toBe('410B64'); // idle is untouched
-    m.holdRevs(50);
+    m.holdRevs(1_000);
     expect(await answer(m, '010B')).toBe('410B68');
     expect(await answer(m, '010C')).toBe('410C2710');
   });

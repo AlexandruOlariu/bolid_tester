@@ -24,6 +24,7 @@ import type {
   AgentTool,
   AvailabilityContext,
   ProcedureContext,
+  ReadOnlySession,
   ToolContext,
 } from '@/shared/obd-core';
 import { getVehicleProfile } from '@/shared/vehicles';
@@ -169,6 +170,28 @@ describe('module-scan agent tools', () => {
     expect(r.findings?.[1]).toMatchObject({ codes: ['C0130'], unconfirmed: true });
     expect(r.status ?? 'ok').toBe('ok');
     expect(r.summary).toMatch(/3 modules.*4 DTCs/);
+  });
+
+  it('Stop between modules ends the scan at once', async () => {
+    const ctx = await golfCtx();
+    const controller = new AbortController();
+    const withModule = ctx.session.withModule;
+    let blocks = 0;
+    const session: ReadOnlySession = {
+      ...ctx.session,
+      withModule: async (addr, fn) => {
+        blocks++;
+        const r = await withModule(addr, fn);
+        controller.abort();
+        return r;
+      },
+    };
+    const r = await toolOf(agentTools, 'scan_modules').run(
+      {},
+      { ...ctx, session, signal: controller.signal },
+    );
+    expect(blocks).toBe(1);
+    expect(r.digest).toMatch(/Stopped: \d+ modules not scanned\./);
   });
 
   it('starts with the counts, so a clamped digest still carries them', async () => {

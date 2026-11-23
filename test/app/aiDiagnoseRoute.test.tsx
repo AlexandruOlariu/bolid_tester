@@ -60,6 +60,13 @@ describe('AI diagnose route', () => {
     );
   });
 
+  it('every skill document uses the one 13.5 V charging threshold (no "under 13 V")', () => {
+    const docs = [...AGENT_CONTRIBUTIONS, CORE_AGENT_CONTRIBUTION].flatMap((c) => c.skills ?? []);
+    for (const s of docs) expect(JSON.stringify(s)).not.toMatch(/under 13 V/);
+    const liveData = docs.find((s) => s.name === 'live_data');
+    expect(JSON.stringify(liveData)).toContain('under 13.5 V it does not (not charging)');
+  });
+
   it('every composed skill parses and asks only for listed driver instructions', () => {
     for (const s of AGENT_CONTRIBUTIONS.flatMap((c) => c.skills ?? [])) {
       expect(parseSkillFile(s).ok).toBe(true);

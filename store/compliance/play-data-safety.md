@@ -47,7 +47,7 @@ recordings, make / model / engine, the VIN, the car's known checks for those cod
 investigation reads them, control-module part numbers, software versions and fault codes,
 manufacturer readings (extended data, adaptation and coding values, DPF values), recorded trip
 values, fuel-economy and performance-test results, the maintenance log, past diagnoses and
-fault-code checks from History, the user's alert rules, recent app error messages (VINs and
+fault-code checks from History, the user's alert rules, recent app error messages (VINs masked,
 addresses removed), adapter details, the user's answers to the on-screen driver steps, the user's
 question and the earlier answers. It goes to their own local server, or a cloud provider (OpenAI,
 Anthropic, a custom URL) with **their own API key** (`src/shared/ai/openaiClient.ts`,

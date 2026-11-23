@@ -181,6 +181,17 @@ describe('dpf agent tools', () => {
     expect(oneLeft.findings?.[0].unconfirmed).toBe(true);
   });
 
+  it('a confirmed extra next to unverified soot leaves the step unconfirmed (34a caps it)', async () => {
+    // Oil temperature (1707) confirmed, every assessment input still unverified.
+    const r = await toolOf(dpfTools, 'read_dpf').run(
+      {},
+      await ctxFor(golfConfirming(['1707']), golfDidsWith('1702', [0xf5])),
+    );
+    expect(r.digest).toMatch(/^1707 Oil temperature: 90 °C$/m);
+    expect(r.findings?.[0].unconfirmed).toBe(true);
+    expect(r.unconfirmed).toBe(true);
+  });
+
   it('is offered on the diesel CAN Golf only', () => {
     const tool = toolOf(dpfTools, 'read_dpf');
     expect(tool.available(availability(golfPlus2009))).toBe(true);

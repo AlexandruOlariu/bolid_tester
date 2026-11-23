@@ -46,7 +46,7 @@ VIN, the car's known checks for those codes and, when the investigation reads th
 part numbers, software versions and fault codes, manufacturer readings (extended data, adaptation
 and coding values, DPF values), recorded trip values, fuel-economy and performance-test results, the
 maintenance log, past diagnoses and fault-code checks from History, the user's alert rules, recent
-app error messages (VINs and addresses removed), adapter details, the user's answers to the
+app error messages (VINs masked, addresses removed), adapter details, the user's answers to the
 on-screen driver steps, the user's question and the earlier answers. **Send to Claude / ChatGPT** on
 an AI report only hands a plain-text summary to the share sheet (the VIN left out unless the user
 turns on **Include VIN** in the preview); the app sends nothing itself. If App Review asks, answer
